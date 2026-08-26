@@ -254,6 +254,95 @@ def serialize_children(root: etree._Element) -> str:
     )
 
 
+def set_text_only(element: etree._Element, value: str) -> None:
+    """Replace a heading without retaining Quarto numbering-node tails."""
+    for child in list(element):
+        element.remove(child)
+    element.text = value
+
+
+def append_style(element: etree._Element, declaration: str) -> None:
+    existing = element.get("style", "").strip().rstrip(";")
+    element.set(
+        "style",
+        f"{existing};{declaration}" if existing else declaration,
+    )
+
+
+def inline_wechat_styles(article: etree._Element) -> None:
+    """Apply conservative inline CSS supported by the WeChat editor."""
+    rules = [
+        ('.//header[contains(@class,"article-header")]', "margin:0 0 26px 0;color:#172033;"),
+        ('.//*[contains(@class,"article-kicker")]', "color:#0072b2;font-size:13px;font-weight:700;letter-spacing:1px;"),
+        ('.//h1', "margin:10px 0 14px;font-size:30px;line-height:1.35;color:#172033;font-weight:700;"),
+        ('.//*[contains(@class,"article-deck")]', "margin:0 0 20px;color:#667085;font-size:17px;line-height:1.75;"),
+        ('.//*[contains(@class,"fact-grid")]', "margin:20px 0 28px;border:1px solid #e5e7eb;border-radius:12px;background:#f5f8fc;overflow:hidden;"),
+        ('.//*[contains(@class,"fact-grid")]/div', "padding:11px 14px;border-bottom:1px solid #e5e7eb;background:#f5f8fc;"),
+        ('.//*[contains(@class,"fact-grid")]//strong', "display:block;color:#667085;font-size:13px;font-weight:700;"),
+        ('.//*[contains(@class,"fact-grid")]//span', "display:block;color:#172033;font-size:16px;font-weight:700;"),
+        ('.//h2', "margin:40px 0 16px;padding-left:12px;border-left:4px solid #0072b2;color:#172033;font-size:23px;line-height:1.4;font-weight:700;"),
+        ('.//h3', "margin:28px 0 12px;color:#172033;font-size:19px;line-height:1.5;font-weight:700;"),
+        ('.//p[not(contains(@class,"article-deck"))]', "margin:12px 0;color:#172033;font-size:16px;line-height:1.82;"),
+        ('.//a', "color:#0072b2;text-decoration:none;"),
+        ('.//blockquote', "margin:20px 0;padding:14px 17px;border-left:4px solid #d55e00;background:#fff7ed;color:#172033;"),
+        ('.//figure', "margin:24px 0;"),
+        ('.//img', "display:block;width:100%;height:auto;margin:0 auto;"),
+        ('.//figcaption', "margin-top:8px;color:#667085;font-size:14px;line-height:1.6;text-align:center;"),
+        ('.//*[contains(@class,"quarto-layout-row")]', "display:block;width:100%;"),
+        ('.//*[contains(@class,"quarto-layout-cell")]', "display:block;width:100%;margin:0 0 24px;"),
+        ('.//*[contains(@class,"callout")]', "margin:20px 0;padding:0;border:1px solid #cfe4f3;border-radius:10px;background:#f2f8fc;overflow:hidden;"),
+        ('.//*[contains(@class,"callout-header")]', "padding:10px 14px;color:#075985;font-size:16px;font-weight:700;"),
+        ('.//*[contains(@class,"callout-body-container")]', "padding:0 14px 12px;"),
+        ('.//*[contains(@class,"callout-caution")]', "border-color:#fed7aa;background:#fff7ed;"),
+        ('.//*[contains(@class,"wechat-details")]', "display:block;margin:20px 0;padding:12px 15px;border:1px solid #e5e7eb;border-radius:10px;background:#fafafa;"),
+        ('.//*[contains(@class,"wechat-details-title")]', "margin:0 0 10px;color:#172033;font-size:16px;font-weight:700;"),
+        ('.//table', "width:100%;margin:18px 0;border-collapse:collapse;color:#172033;font-size:13px;line-height:1.55;"),
+        ('.//th', "padding:8px;border:1px solid #d0d5dd;background:#f5f8fc;text-align:left;vertical-align:top;"),
+        ('.//td', "padding:8px;border:1px solid #d0d5dd;text-align:left;vertical-align:top;"),
+        ('.//code', "padding:1px 4px;border-radius:4px;background:#f2f4f7;color:#9a3412;font-family:Menlo,Consolas,monospace;font-size:0.9em;"),
+        ('.//ul | .//ol', "padding-left:1.35em;color:#172033;line-height:1.8;"),
+        ('.//li', "margin:5px 0;"),
+        ('.//*[contains(@class,"resource-card") or contains(@class,"next-card")]', "margin:20px 0;padding:15px 17px;border-radius:10px;background:#f5f8fc;color:#172033;"),
+        ('.//*[contains(@class,"resource-link")]', "display:inline-block;margin-top:8px;padding:7px 13px;border-radius:999px;background:#0072b2;color:#ffffff;font-weight:700;"),
+        ('.//*[contains(@class,"references")]', "color:#475467;font-size:14px;line-height:1.7;"),
+        ('.//*[contains(@class,"screen-reader-only")]', "display:none;"),
+    ]
+    for xpath, declaration in rules:
+        for element in article.xpath(xpath):
+            append_style(element, declaration)
+
+
+def prepare_wechat_dom(article: etree._Element) -> None:
+    """Expand unsupported widgets, clean links, and inline presentation."""
+    for details in article.xpath('.//details'):
+        details.tag = "section"
+        details.set(
+            "class",
+            (details.get("class", "") + " wechat-details").strip(),
+        )
+        for summary in details.xpath('./summary'):
+            summary.tag = "p"
+            summary.set(
+                "class",
+                (summary.get("class", "") + " wechat-details-title").strip(),
+            )
+
+    drop_matches(
+        article,
+        './/*[contains(concat(" ", normalize-space(@class), " "), " callout-icon-container ")]',
+    )
+    for link in article.xpath('.//a[@href]'):
+        href = link.get("href", "").strip()
+        if not href.startswith(("#", "https://", "http://", "mailto:")):
+            link.attrib.pop("href", None)
+            link.tag = "span"
+    for element in article.iter():
+        for attribute in list(element.attrib):
+            if attribute.startswith("data-"):
+                element.attrib.pop(attribute, None)
+    inline_wechat_styles(article)
+
+
 def display_path(path: Path, root: Path) -> str:
     """Return a stable report path without assuming the output is under root."""
     try:
@@ -293,7 +382,7 @@ def rewrite_public_headings(article: etree._Element, title: str) -> None:
     for section_id, heading in headings.items():
         matches = article.xpath(f'.//section[@id="{section_id}"]/h2')
         if matches:
-            matches[0].text = heading
+            set_text_only(matches[0], heading)
 
 
 def main() -> int:
@@ -357,7 +446,6 @@ def main() -> int:
         raise SystemExit("wechat.resources must contain at least one item.")
     intentionally_removed_images = len(setup[0].xpath('.//img[@src]'))
     replace_setup(setup[0], repo_url, resources)
-    rewrite_public_headings(article, str(title))
     for section_id in wechat.get("strip_sections", []):
         stripped = article.xpath(f'.//section[@id="{section_id}"]')
         intentionally_removed_images += sum(
@@ -374,7 +462,7 @@ def main() -> int:
 
     code_heading = article.xpath('.//section[@id="sec-code"]/h2')
     if code_heading and wechat.get("code_heading"):
-        code_heading[0].text = str(wechat["code_heading"])
+        set_text_only(code_heading[0], str(wechat["code_heading"]))
 
     refs = article.xpath('.//section[@id="sec-refs"]')
     if refs:
@@ -435,6 +523,8 @@ def main() -> int:
         element.attrib.pop("data-anchor-id", None)
         element.attrib.pop("style", None)
 
+    rewrite_public_headings(article, str(title))
+
     facts = wechat.get("facts", [])
     if not isinstance(facts, list) or len(facts) != 4:
         raise SystemExit("wechat.facts must contain exactly four items.")
@@ -455,7 +545,9 @@ def main() -> int:
       </div>
     </header>
     """.strip()
-    body = header + "\n" + serialize_children(article)
+    article.insert(0, lxml_html.fragment_fromstring(header))
+    prepare_wechat_dom(article)
+    body = serialize_children(article)
     standalone = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
