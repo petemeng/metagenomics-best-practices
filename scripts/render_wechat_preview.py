@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 from copy import deepcopy
@@ -261,6 +262,212 @@ def set_text_only(element: etree._Element, value: str) -> None:
     element.text = value
 
 
+def normalized_text(element: etree._Element) -> str:
+    return re.sub(r"\s+", " ", element.text_content()).strip()
+
+
+def class_has(element: etree._Element, class_name: str) -> bool:
+    return class_name in (element.get("class") or "").split()
+
+
+def candidate_blocks(section: etree._Element):
+    """Yield readable blocks in source order without duplicating descendants."""
+    container_classes = {"callout", "resource-card"}
+    block_tags = {"p", "h3", "blockquote", "ul", "ol", "table", "figure"}
+
+    def walk(parent: etree._Element):
+        for child in parent:
+            tag = str(child.tag).lower()
+            classes = set((child.get("class") or "").split())
+            if tag == "h2":
+                continue
+            if tag in block_tags or classes.intersection(container_classes):
+                yield child
+                continue
+            if tag in {"details", "section", "div"}:
+                yield from walk(child)
+
+    yield from walk(section)
+
+
+def truncated_block(block: etree._Element, remaining: int) -> etree._Element | None:
+    """Keep a readable prefix when a prose/list block exceeds its quota."""
+    if remaining < 100:
+        return None
+    text = normalized_text(block)
+    if not text:
+        return None
+    clipped = text[: max(1, remaining - 1)].rstrip("，,；;：:。 ") + "…"
+    tag = str(block.tag).lower()
+    if tag == "h3":
+        replacement = etree.Element("h3")
+    elif tag in {"ul", "ol"}:
+        replacement = etree.Element(tag)
+        item = etree.SubElement(replacement, "li")
+        item.text = clipped
+        return replacement
+    elif class_has(block, "callout") or tag == "blockquote":
+        replacement = etree.Element("blockquote")
+    else:
+        replacement = etree.Element("p")
+    replacement.text = clipped
+    return replacement
+
+
+def fitted_block(block: etree._Element, remaining: int) -> etree._Element | None:
+    """Copy prose compactly and flatten markup-heavy tables/callouts."""
+    text = normalized_text(block)
+    if not text or remaining < 100:
+        return None
+    tag = str(block.tag).lower()
+    if tag in {"p", "h3"} and len(text) <= remaining:
+        return deepcopy(block)
+    clipped = text[: max(1, remaining - 1)].rstrip("，,；;：:。 ")
+    if len(text) > remaining:
+        clipped += "…"
+
+    if tag in {"ul", "ol"}:
+        result = etree.Element(tag)
+        used = 0
+        for source_item in block.xpath('./li'):
+            item_text = normalized_text(source_item)
+            if not item_text or used >= remaining:
+                continue
+            available = remaining - used
+            value = item_text[:available].rstrip()
+            if len(item_text) > available:
+                value = value.rstrip("，,；;：:。 ") + "…"
+            item = etree.SubElement(result, "li")
+            item.text = value
+            used += len(value)
+        return result if len(result) else None
+
+    if class_has(block, "resource-card"):
+        result = etree.Element("div")
+        result.set("class", "resource-card")
+        paragraph = etree.SubElement(result, "p")
+        paragraph.text = clipped
+        links = block.xpath('.//a[starts-with(@href,"http")]')
+        if links:
+            result.append(deepcopy(links[0]))
+        return result
+
+    if class_has(block, "callout") or tag == "blockquote":
+        result = etree.Element("blockquote")
+        result.text = clipped
+        return result
+
+    if tag == "table":
+        result = etree.Element("p")
+        result.text = "表格要点：" + clipped
+        return result
+
+    return truncated_block(block, remaining)
+
+
+def compact_section(
+    section: etree._Element,
+    budget: int,
+    selected_image_sources: set[str],
+) -> etree._Element | None:
+    compact = etree.Element("section")
+    if section.get("id"):
+        compact.set("id", section.get("id"))
+    heading = section.xpath('./h2[1]')
+    if heading:
+        compact.append(deepcopy(heading[0]))
+
+    used = 0
+    content_blocks = 0
+    for block in candidate_blocks(section):
+        if str(block.tag).lower() == "figure":
+            sources = {img.get("src", "") for img in block.xpath('.//img[@src]')}
+            if sources.intersection(selected_image_sources):
+                compact.append(deepcopy(block))
+                used += min(160, len(normalized_text(block)))
+                content_blocks += 1
+            continue
+        length = len(normalized_text(block))
+        if not length:
+            continue
+        remaining = budget - used
+        if remaining <= 0:
+            continue
+        fitted = fitted_block(block, remaining)
+        if fitted is not None:
+            compact.append(fitted)
+            used += min(length, remaining)
+            content_blocks += 1
+    return compact if content_blocks else None
+
+
+def compact_wechat_article(article: etree._Element, max_images: int) -> dict:
+    """Create a sub-20k-character editorial slice from a full Quarto chapter."""
+    images = list(article.xpath('.//img[@src]'))
+    selected_sources = {img.get("src", "") for img in images[:max_images]}
+    section_budgets = {
+        "sec-target": 400,
+        "sec-theory": 650,
+        "wechat-repro": 250,
+        "sec-code": 500,
+        "sec-audit": 650,
+        "sec-polish": 180,
+        "sec-publication": 180,
+        "sec-pub": 180,
+        "sec-style": 180,
+        "sec-figure": 180,
+        "sec-figures": 180,
+        "sec-pitfalls": 320,
+        "sec-methods": 250,
+        "sec-own-data": 250,
+        "sec-yourdata": 250,
+    }
+    intro_budget = 300
+    intro_used = 0
+    new_children: list[etree._Element] = []
+    for child in list(article):
+        tag = str(child.tag).lower()
+        section_id = child.get("id", "") if tag == "section" else ""
+        if section_id in {"sec-refs", "sec-references"}:
+            continue
+        if tag == "section":
+            compact = compact_section(
+                child,
+                section_budgets.get(section_id, 500),
+                selected_sources,
+            )
+            if compact is not None:
+                new_children.append(compact)
+            continue
+        if class_has(child, "next-card"):
+            new_children.append(deepcopy(child))
+            continue
+        length = len(normalized_text(child))
+        remaining = intro_budget - intro_used
+        if length and remaining > 0:
+            if length <= remaining:
+                new_children.append(deepcopy(child))
+                intro_used += length
+            else:
+                clipped = truncated_block(child, remaining)
+                if clipped is not None:
+                    new_children.append(clipped)
+                    intro_used = intro_budget
+
+    for child in list(article):
+        article.remove(child)
+    for child in new_children:
+        article.append(child)
+    return {
+        "images_available": len(images),
+        "images_selected": len(article.xpath('.//img[@src]')),
+        "images_editorially_removed": max(
+            0,
+            len(images) - len(article.xpath('.//img[@src]')),
+        ),
+    }
+
+
 def append_style(element: etree._Element, declaration: str) -> None:
     existing = element.get("style", "").strip().rstrip(";")
     element.set(
@@ -333,14 +540,19 @@ def prepare_wechat_dom(article: etree._Element) -> None:
     )
     for link in article.xpath('.//a[@href]'):
         href = link.get("href", "").strip()
-        if not href.startswith(("#", "https://", "http://", "mailto:")):
+        if href.startswith("#") or not href.startswith(
+            ("https://", "http://", "mailto:")
+        ):
             link.attrib.pop("href", None)
             link.tag = "span"
+    inline_wechat_styles(article)
     for element in article.iter():
         for attribute in list(element.attrib):
-            if attribute.startswith("data-"):
+            if (
+                attribute.startswith(("data-", "aria-"))
+                or attribute in {"class", "id", "role"}
+            ):
                 element.attrib.pop(attribute, None)
-    inline_wechat_styles(article)
 
 
 def display_path(path: Path, root: Path) -> str:
@@ -468,6 +680,9 @@ def main() -> int:
     if refs:
         refs[0].set("class", (refs[0].get("class", "") + " references").strip())
 
+    max_wechat_images = int(wechat.get("max_images", 3))
+    compaction = compact_wechat_article(article, max_wechat_images)
+
     assets_dir = output_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
     image_records: list[dict] = []
@@ -513,10 +728,7 @@ def main() -> int:
             </div>
             """
         )
-        if refs:
-            refs[0].addprevious(next_card)
-        else:
-            article.append(next_card)
+        article.append(next_card)
 
     for element in article.iter():
         element.attrib.pop("data-number", None)
@@ -582,10 +794,10 @@ def main() -> int:
             raise SystemExit(f"Pandoc failed while creating article.md: {completed.stderr}")
 
     rendered_text = article_html.read_text(encoding="utf-8")
+    rendered_body = body_html.read_text(encoding="utf-8")
     expected_images = int(wechat.get("expected_images", 0))
-    expected_retained_images = int(
-        wechat.get("expected_retained_images", expected_images)
-    )
+    expected_retained_images = compaction["images_selected"]
+    max_content_chars = int(wechat.get("max_content_chars", 17500))
     checks = {
         "qa_gate_passed": qa_report.get("status") == "passed",
         "has_title": title in rendered_text,
@@ -594,6 +806,7 @@ def main() -> int:
         ),
         "has_no_quarto_source_code": "sourceCode" not in rendered_text and "cell-code" not in rendered_text,
         "has_reproduction_link": repo_url in rendered_text,
+        "content_within_wechat_limit": len(rendered_body) <= max_content_chars,
         "live_publish_disabled": True,
     }
     status = "passed" if all(checks.values()) else "failed"
@@ -610,7 +823,10 @@ def main() -> int:
         "code_blocks_removed": code_blocks_removed,
         "source_images_expected": expected_images,
         "images_intentionally_removed": intentionally_removed_images,
+        "images_editorially_removed": compaction["images_editorially_removed"],
         "images_retained": len(image_records),
+        "content_chars": len(rendered_body),
+        "content_limit_chars": max_content_chars,
         "images": image_records,
         "checks": checks,
     }
