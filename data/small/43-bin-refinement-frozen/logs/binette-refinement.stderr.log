@@ -1,0 +1,134 @@
+[06:58:47] INFO     Program started                                   main.py:65
+           INFO     Command line:                                     main.py:66
+                    ${HOME}/miniconda3/envs/metagenome-           
+                    mag-qc-2026.07/bin/binette -b                               
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/tables/metabat2-mock1-only.contig2bin.tsv             
+                    -b                                                          
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/tables/metabat2-multisample.contig2bin.tsv            
+                    -b                                                          
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/tables/semibin2-self-supervised.contig2bin.           
+                    tsv -b                                                      
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/tables/taxvamb-kraken2.contig2bin.tsv -b              
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/tables/vamb-taxonomy-free.contig2bin.tsv -c           
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/inputs/megahit-coassembly.ge1500.fna -p               
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/inputs/megahit-coassembly.ge1500.proteins.f           
+                    aa -o                                                       
+                    ${PROJECT_ROOT}/work/arti           
+                    cle43/refinement/binette --prefix article43                 
+                    --threads 24 --min_completeness 40                          
+                    --max_contamination 10 --min_length 200000                  
+                    --contamination_weight 2.0 --checkm2_db                     
+                    ${HOME}/databases/metagenome-mag-qc           
+                    /checkm2-v1.1.0/CheckM2_database/uniref100.KO.1.d           
+                    mnd --no-progress                                           
+           INFO     Parsing bin2contig files                         main.py:169
+           INFO     Processing 5 bin sets                            main.py:177
+           INFO       metabat2-mock1-only - 33 bins                  main.py:179
+           INFO       metabat2-multisample - 34 bins                 main.py:179
+           INFO       semibin2-self-supervised - 43 bins             main.py:179
+           INFO       taxvamb-kraken2 - 35 bins                      main.py:179
+           INFO       vamb-taxonomy-free - 26 bins                   main.py:179
+           INFO     Found 9812 contigs in input bins                 main.py:182
+           INFO     Parsing contig fasta file                        main.py:192
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/inputs/megahit-coassembly.ge1500.fna' to            
+                    retrieve contig lengths                                     
+           INFO     Using the provided protein sequences file        main.py:630
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/inputs/megahit-coassembly.ge1500.protein            
+                    s.faa'                                                      
+[06:58:50] INFO     Processing protein sequences from                 cds.py:276
+                    '${PROJECT_ROOT}/work/art           
+                    icle43/inputs/megahit-coassembly.ge1500.proteins.           
+                    faa'                                                        
+           INFO     Filtered                                          cds.py:277
+                    '${PROJECT_ROOT}/work/art           
+                    icle43/inputs/megahit-coassembly.ge1500.proteins.           
+                    faa' to retain genes from 9812 contigs that are             
+                    included in the input bins                                  
+           INFO     Parsing protein sequences from                   main.py:260
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/refinement/binette/temporary_files/assem            
+                    bly_proteins.faa.gz'                                        
+           INFO     Coding density will not be computed (using       main.py:269
+                    provided protein sequences)                                 
+           INFO     Running diamond                               diamond.py:104
+           INFO     Command: diamond blastp --outfmt 6            diamond.py:105
+                    --max-target-seqs 1 --query                                 
+                    ${PROJECT_ROOT}/work/               
+                    article43/refinement/binette/temporary_files/               
+                    assembly_proteins.faa.gz -o                                 
+                    ${PROJECT_ROOT}/work/               
+                    article43/refinement/binette/temporary_files/               
+                    diamond_result.tsv.gz --threads 24 --db                     
+                    ${HOME}/databases/metagenome-ma               
+                    g-qc/checkm2-v1.1.0/CheckM2_database/uniref10               
+                    0.KO.1.dmnd --compress 1 --query-cover 80                   
+                    --subject-cover 80 --id 30 --evalue 1e-05                   
+                    --block-size 2 2>                                           
+                    ${PROJECT_ROOT}/work/               
+                    article43/refinement/binette/temporary_files/               
+                    diamond_result.log                                          
+[07:02:32] INFO     Finished running DIAMOND                      diamond.py:113
+           INFO     Parsing diamond results                          main.py:308
+[07:02:33] INFO     Computing CDS metadata                           main.py:664
+           INFO     Collecting contig amino acid composition using 24 cds.py:211
+                    threads                                                     
+[07:02:36] INFO     Calculating amino acid composition in parallel    cds.py:219
+           INFO     Calculating total amino acid length in parallel   cds.py:225
+           INFO     Adding size and assessing quality of input bins  main.py:670
+           INFO     Assessing bin quality for 164 bins using  bin_quality.py:387
+                    24 threads                                                  
+           INFO     Only 164 bins (≤ 3000). Using sequential  bin_quality.py:417
+                    processing to avoid multiprocessing                         
+                    overhead.                                                   
+[07:02:52] INFO     Writing original input bin metrics to directory  main.py:685
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/refinement/binette/input_bins_quality_re            
+                    ports'                                                      
+           INFO     Creating intermediate bins                       main.py:690
+           INFO     Making bin graph                          bin_manager.py:612
+           INFO     Creating union, difference, and           bin_manager.py:619
+                    intersection bins                                           
+           INFO     Intermediate bins filtered by minimum     bin_manager.py:624
+                    length of 200000 and maximum length of                      
+                    10000000.                                                   
+[07:02:53] INFO     Intersection: 184 bins created, 217       bin_manager.py:737
+                    discarded due to size constraints.                          
+           INFO     Symmetric Difference: 2196 bins created,  bin_manager.py:741
+                    1307 discarded due to size constraints.                     
+           INFO     Union: 2164 bins created, 55 discarded    bin_manager.py:745
+                    due to size constraints.                                    
+           INFO     4544 new bins created from 164 input      bin_manager.py:754
+                    bins.                                                       
+           INFO     Assessing quality for 4544 intermediate bins     main.py:704
+           INFO     Assessing bin quality for 4544 bins using bin_quality.py:387
+                    24 threads                                                  
+[07:07:43] INFO     Selecting best bins                       bin_manager.py:473
+           INFO     Filtering bins: only bins with            bin_manager.py:475
+                    completeness >= 40 and contamination <=                     
+                    10                                                          
+           INFO     Sorting bins                              bin_manager.py:485
+           INFO     Building contig index                     bin_manager.py:496
+[07:07:44] INFO     Selecting bins                            bin_manager.py:499
+           INFO     Selected 27 bins                          bin_manager.py:523
+           INFO     Writing selected bins information to             main.py:736
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/refinement/binette/final_bins_quality_re            
+                    ports.tsv'                                                  
+           INFO     Writing contig2bin table to                io_manager.py:309
+                    '${PROJECT_ROOT}/w                  
+                    ork/article43/refinement/binette/final_con                  
+                    tig_to_bin.tsv'                                             
+           INFO     Writing selected bins FASTA files to             main.py:746
+                    '${PROJECT_ROOT}/work/ar            
+                    ticle43/refinement/binette/final_bins'                      
+[07:07:45] INFO     19/27 selected bins have high quality            main.py:365
+                    (completeness >= 90 and contamination <= 5)                 

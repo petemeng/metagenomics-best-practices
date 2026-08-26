@@ -1,0 +1,331 @@
+---
+title: "第 39 篇 · Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界"
+author: "宏基因组分析最佳实践 · Shotgun 系列"
+date: last-modified
+draft: false
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    code-copy: true
+    number-sections: true
+execute:
+  eval: false
+  freeze: auto
+  warning: false
+  message: false
+fig-dpi: 350
+fig-format: png
+wechat:
+  deck: "Virulome 最危险的误读，是把 VFDB 同源序列直接叫致病性。本文用 ABRicate 1.4.0 实跑 VFDB core/full、90/80 与 80/80 阈值，并以双物种正控拆开 sequence evidence、genomic context 与 phenotype。"
+  facts:
+    - {label: "真实输入", value: "93,782 genes · 84.81 Mb contigs"}
+    - {label: "主候选", value: "93 core 90/80 genes"}
+    - {label: "阈值敏感性", value: "+30 genes at 80/80"}
+    - {label: "数据库敏感性", value: "+91 genes in full set"}
+  resources:
+    - {label: "建议节点", value: "32 cores · >=8 GB RAM"}
+    - {label: "工作磁盘", value: ">=10 GB"}
+    - {label: "锁定版本", value: "ABRicate 1.4.0 · VFDB 2026-07-24"}
+    - {label: "实测耗时", value: "43 s primary · 101 s full"}
+  code_heading: "从 VFDB snapshot 到 core/full、threshold sensitivity 和 VFC category ledger"
+  expected_images: 4
+  image_alt:
+    39-threshold-database-sensitivity.png: "Catalog virulence-associated genes shared with or added beyond the core 90/80 branch"
+    39-hit-quality.png: "Nucleotide identity and reference coverage of primary VFDB core hits colored by virulence category"
+    39-vfc-category-profile.png: "VFDB category composition using catalog gene counts and assigned read weights"
+    39-context-controls.png: "Hit sequence and category counts across catalog coassembly and two control genomes"
+---
+
+> **学习目标：**构建可审计的 VFDB core/full databases；用 ABRicate 同时锁定 minimum identity 与 reference coverage；把 threshold sensitivity 与 database sensitivity 分开；解析 VFDB general categories；理解 virulence-associated sequence 与 pathogenic phenotype 之间缺失的证据。  
+> **真实数据：**Article 34 的 93,782 条代表基因核酸序列、Article 30 的 84.81 Mb co-assembly、Article 35 的 assigned-read ledger，以及 *Pseudomonas aeruginosa* ATCC 9027 和 *Staphylococcus aureus* USA300 FPR3757 正控。  
+> **结论边界：**本文的“virulome”指 VFDB-matched sequence repertoire。单个 adhesion、motility、nutritional、regulatory 或 secretion-associated homolog 不能独立证明一个菌株致病，更不能证明样本对宿主造成疾病。
+
+## 这一步对应论文里的哪张图 {#sec-target}
+
+锚定 VFDB 2022 的 general classification scheme：该研究把不同病原体的 virulence factors 统一整理到可用于 pan-bacterial/metagenomic analysis 的 VFC categories [@liu2022vfdb]。这正对应本文的 category summary，但数据库作者强调的是知识库和分类框架，不是“检测到一条同源序列即可判定致病”。
+
+VFDB 下载页把 core set A 定义为 experimentally verified virulence factors 的 representative genes，把 full set B 扩展到所有与 known/predicted VFs 相关的 genes。本文因此将 set A 固定为主数据库，把 set B 作为数据库范围敏感性，而不是将两者混用。
+
+![阈值放宽与数据库扩容回答不同问题：前者增加较远同源，后者扩大 reference universe。](../figures/39-threshold-database-sensitivity.png){#fig-39-sensitivity}
+
+::: {.callout-important title="先给结论：93、123 和 184 不能任选一个"}
+VFDB core set A、identity ≥90%、reference coverage ≥80% 的预设主分支检出 93 条 catalog genes。把 identity 放宽到 80% 增加 30 条；保持 90/80 但换成 full set B 增加 91 条。主结果只能是预先声明的 93 条，另两组用于回答结论对阈值和数据库范围是否敏感。
+:::
+
+## 理论：virulence-associated sequence 需要四层解释 {#sec-theory}
+
+### 1. Identity 与 coverage 缺一不可
+
+ABRicate 报告 query/reference nucleotide alignment。设 aligned identical bases 为 $M$，aligned length 为 $L$，reference length 为 $R$：
+
+$$
+\text{identity}=100\frac{M}{L},\qquad
+\text{reference coverage}=100\frac{L}{R}.
+$$
+
+高 identity 的短片段可能只是 conserved domain；高 coverage 的远同源也可能已经改变功能。因此主分支同时要求 90% identity 与 80% reference coverage。它们是 operational screening thresholds，不是病原性判定标准。
+
+### 2. Core 与 full 是两个 reference universes
+
+- **Core set A**：代表性的、与实验验证 VF 关联的 genes；更适合作为高 specificity 主筛选。
+- **Full set B**：包含更多 known/predicted VF-related genes；提高 recall，也更容易纳入广泛保守的结构、代谢和调控 genes。
+
+数据库差异产生的 91 条 additional hits 不应写成“新发现 91 个毒力基因”；它们首先表明结论依赖 reference scope。
+
+### 3. VFC category 仍不是 phenotype
+
+VFC general categories 包含 adherence、effector delivery、immune modulation、motility、biofilm、nutritional/metabolic factor 等。许多类别参与致病过程，但同源 genes 也可能出现在环境菌、共生菌或不具相同调控/基因组背景的菌株中。完整 operon、allele、synteny、host taxonomy、表达和实验模型决定解释强度。
+
+### 4. Gene 与 contig 两条视角不能混为重复
+
+catalog branch 提供稳定 gene IDs 和 read weights；co-assembly branch保留邻近关系，却可能让同一 contig 上的多个 hits 共用 `SEQUENCE`。本次 93 个 catalog hits 对应 93 条 representative genes，而 co-assembly 的 92 hits 聚集在 38 条 contigs。后者说明 context clustering，不是“只有 38 个毒力基因”。
+
+![所有主命中均位于预设 90/80 区域；颜色表示 VFDB general category，而非疾病严重度。](../figures/39-hit-quality.png){#fig-39-quality}
+
+## 准备工作 {#sec-setup}
+
+### 算力门槛
+
+| 项目 | 本次实跑 | 队列级建议 |
+|---|---:|---:|
+| CPU | 32 cores | 8–32 cores |
+| RAM | 各分支 peak 0.10–0.24 GiB | 预留 8 GB |
+| 磁盘 | raw core/full 约 12.7 MB；formatted + BLAST indexes <0.2 GB | 至少 10 GB |
+| 耗时 | core primary 0:43；core sensitivity 0:43；full 1:41 | 与 sequence 数和 BLAST I/O 相关 |
+
+没有服务器时，可直接读取 `data/small/39-virulome-vfdb-abricate-frozen/` 的 93,782-gene ledger、所有分支 hit-quality 表、VFC category summary 和正控表。若研究真实致病风险，还需宿主/菌株归属、完整基因簇、临床表型或感染模型数据。
+
+<details>
+<summary>点开：锁定环境、VFDB snapshot 与内联出版主题</summary>
+
+```bash
+mamba create -n metagenome-virulome-2026.07 \
+  --file env/virulome-linux-64.lock
+
+VF_ENV="$HOME/miniconda3/envs/metagenome-virulome-2026.07"
+VFDB_ROOT="/absolute/path/vfdb-20260724"
+mkdir -p "${VFDB_ROOT}/raw" "${VFDB_ROOT}/abricate"
+
+curl -fL --retry 5 https://www.mgc.ac.cn/VFs/Down/VFDB_setA_nt.fas.gz \
+  -o "${VFDB_ROOT}/raw/VFDB_setA_nt.fas.gz"
+curl -fL --retry 5 https://www.mgc.ac.cn/VFs/Down/VFDB_setB_nt.fas.gz \
+  -o "${VFDB_ROOT}/raw/VFDB_setB_nt.fas.gz"
+
+echo "0bc8a522660bc13b1891f41cccc8eb30d3dfe0f13fb236ef9dc1245365113afb  ${VFDB_ROOT}/raw/VFDB_setA_nt.fas.gz" | sha256sum -c -
+echo "1dd2df13b77d791bd29ec8aefb5eaaabfd3d9007ba751545e91e5516edcdef60  ${VFDB_ROOT}/raw/VFDB_setB_nt.fas.gz" | sha256sum -c -
+```
+
+这里的 release label 是 HTTP snapshot date `2026-07-24`；VFDB 没有为这两个 FASTA 提供独立 semantic version，因此 Methods 必须同时给访问日期、sequence count 和 SHA-256。
+
+```{r}
+install.packages(c("ggplot2", "dplyr", "readr", "tidyr", "forcats", "scales", "patchwork"))
+library(ggplot2); library(dplyr); library(readr); library(tidyr); library(forcats)
+set.seed(20260739)
+
+pal_pub <- c(
+  `Core 90/80` = "#0072B2", `Core 80/80` = "#E69F00", `Full 90/80` = "#009E73",
+  `Catalog genes` = "#4D4D4D", `MOCK1 reads` = "#0072B2", `MOCK2 reads` = "#D55E00"
+)
+scale_color_pub <- function(...) scale_color_manual(values = pal_pub, ...)
+scale_fill_pub  <- function(...) scale_fill_manual(values = pal_pub, ...)
+theme_pub <- function(base_size = 12) {
+  theme_bw(base_size = base_size) + theme(
+    panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(),
+    axis.text = element_text(color = "black"), legend.key = element_blank(),
+    strip.background = element_rect(fill = "#EEF3F5", color = NA), plot.title.position = "plot"
+  )
+}
+save_pub <- function(plot, file_base, width = 180, height = 120, units = "mm", dpi = 350) {
+  dir.create(dirname(file_base), recursive = TRUE, showWarnings = FALSE)
+  ggsave(paste0(file_base, ".pdf"), plot, width = width, height = height, units = units, device = cairo_pdf)
+  ggsave(paste0(file_base, ".png"), plot, width = width, height = height, units = units, dpi = dpi, bg = "white")
+  ggsave(paste0(file_base, ".tiff"), plot, width = width, height = height, units = units, dpi = dpi, compression = "lzw", bg = "white")
+  invisible(plot)
+}
+```
+
+</details>
+
+### 构建 ABRicate databases
+
+官方 FASTA headers 包含 VFG、gene、accession、VF/VFC category 与 source strain。构建器将它们转成 ABRicate 的 `database~~~gene~~~accession~~~description` contract，并以 BLAST+ 2.17.0 建索引：
+
+```bash
+python3 scripts/build_vfdb_abricate_database.py \
+  --input "${VFDB_ROOT}/raw/VFDB_setA_nt.fas.gz" \
+  --output-dir "${VFDB_ROOT}/abricate/vfdb-core" \
+  --database-name vfdb-core \
+  --makeblastdb "${VF_ENV}/bin/makeblastdb"
+
+python3 scripts/build_vfdb_abricate_database.py \
+  --input "${VFDB_ROOT}/raw/VFDB_setB_nt.fas.gz" \
+  --output-dir "${VFDB_ROOT}/abricate/vfdb-full" \
+  --database-name vfdb-full \
+  --makeblastdb "${VF_ENV}/bin/makeblastdb"
+```
+
+本次 core/full 分别含 4,895/35,188 条 sequences。构建器保留 Latin-1 legacy descriptions，重复 VFG 或无法解析的 header 会终止。
+
+## 可复制代码：主分支、双敏感性与正控 {#sec-code}
+
+### 第 1 步：准备并核对真实输入
+
+```bash
+ROOT="$PWD"
+WORK="work/article39"
+VF_ENV="$HOME/miniconda3/envs/metagenome-virulome-2026.07"
+VFDB_ROOT="/absolute/path/vfdb-20260724"
+
+python3 scripts/prepare_article39_virulome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}" \
+  --database-root "${VFDB_ROOT}" --env-prefix "${VF_ENV}"
+```
+
+准备器同时核对 raw snapshots、formatted sequences、build manifests、catalog、co-assembly 与 controls。formatted hash 也被锁定，避免同一 raw FASTA 因 header parser 改动产生不同数据库。
+
+### 第 2 步：运行六个预设分支
+
+```bash
+python3 scripts/run_article39_virulome.py \
+  --work-dir "${WORK}" --database-root "${VFDB_ROOT}" \
+  --env-prefix "${VF_ENV}" --threads 32
+```
+
+主命令为：
+
+```bash
+env PATH="${VF_ENV}/bin:/usr/bin:/bin" \
+  abricate --datadir "${VFDB_ROOT}/abricate" \
+    --db vfdb-core --minid 90 --mincov 80 \
+    --threads 32 --nopath \
+    "${WORK}/inputs/catalog.fna" \
+    > "${WORK}/catalog-core-primary/hits.tsv"
+```
+
+其余分支只改变一个因素：`vfdb-core 80/80` 测 threshold sensitivity，`vfdb-full 90/80` 测 database sensitivity；co-assembly 与两套 controls 均保持 core 90/80。
+
+### 第 3 步：补回零命中并解析 VFC
+
+```bash
+python3 scripts/summarize_article39_virulome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}"
+
+gzip -cd "${WORK}/summary/virulome-gene-calls.tsv.gz" | sed -n '1,6p'
+```
+
+```text
+GeneID  CorePrimary  CoreSensitive  FullPrimary  Gene  VirulenceFactor  VFCCategory
+megahit-co__c000001_1  no  no  no  -  -  -
+megahit-co__c000002_1  no  no  no  -  -  -
+megahit-co__c000303_2  no  no  yes pilA Type IV pili Adherence
+```
+
+主集合 93 条 genes 在 MOCK1/MOCK2 分别承载 3,469/3,303 assigned reads。表中 `CoreSensitive` 和 `FullPrimary` 是独立 flags，不能用 OR 合并成新的“主 virulome”。
+
+### 第 4 步：读取固化证据并复核门槛
+
+```{r}
+frozen <- "data/small/39-virulome-vfdb-abricate-frozen"
+sensitivity <- read_tsv(file.path(frozen, "sensitivity-summary.tsv"), show_col_types = FALSE)
+hits <- read_tsv(file.path(frozen, "all-hit-quality.tsv"), show_col_types = FALSE)
+vfc <- read_tsv(file.path(frozen, "vfc-category-summary.tsv"), show_col_types = FALSE)
+
+primary <- filter(hits, Branch == "Core 90/80")
+stopifnot(nrow(primary) == 93)
+stopifnot(all(primary$IdentityPercent >= 90), all(primary$ReferenceCoveragePercent >= 80))
+stopifnot(sum(vfc$Genes) == 93)
+
+p_quality <- ggplot(primary, aes(IdentityPercent, ReferenceCoveragePercent, color = VFCCategory)) +
+  geom_hline(yintercept = 80, linetype = 2, color = "grey40") +
+  geom_vline(xintercept = 90, linetype = 2, color = "grey40") +
+  geom_point(size = 2.2, alpha = 0.75) +
+  labs(x = "Nucleotide identity (%)", y = "Reference coverage (%)", color = NULL) + theme_pub()
+save_pub(p_quality, "figures/39-hit-quality")
+```
+
+### 第 5 步：冻结与验收
+
+```bash
+python3 scripts/freeze_article39_virulome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}" \
+  --output-dir data/small/39-virulome-vfdb-abricate-frozen
+
+python3 scripts/validate_article39_virulome.py \
+  --project-root "${ROOT}" \
+  --frozen-dir data/small/39-virulome-vfdb-abricate-frozen \
+  --output-dir results/39-virulome-vfdb-abricate \
+  --figure-dir figures --chapter chapters/39-virulome.qmd
+```
+
+## 审计与升级 {#sec-audit}
+
+### 主结果先固定 reference scope
+
+core 90/80 的 93 条主 genes 全部被 core 80/80 和 full 90/80 回收。放宽 identity 新增 30 条，扩大数据库新增 91 条。这个嵌套关系使 sensitivity 可解释：前者衡量 sequence-distance boundary，后者衡量 database-content boundary。
+
+### VFC category 只描述 annotation composition
+
+主集合包括 nutritional/metabolic factor 28、immune modulation 22、effector delivery 19、adherence 15，以及少量 enzyme、post-translational modification 和 stress survival genes。这些 categories 是 VFDB curation labels；“metabolic factor”或“adherence homolog”尤其不能单独用来给样本贴 pathogenic 标签。
+
+![主集合的 gene counts 与 read weights；read-weight 仍是 catalog-assigned relative mass。](../figures/39-vfc-category-profile.png){#fig-39-vfc}
+
+### 正控与 contig context 是解释门，不是表型替代
+
+*P. aeruginosa* 正控得到 199 hits、8 个 VFC categories；*S. aureus* 正控得到 89 hits、7 个 categories。co-assembly 有 92 hits 分布在 38 条 contigs。应进一步查看同一 contig/MAG 上的完整 operon、邻域、移动元件和 host taxonomy；对关键候选，再用 expression、cell model 或 infection phenotype 验证。
+
+![catalog、co-assembly 与双正控的 hit、hit-bearing sequence 和 category 数量。](../figures/39-context-controls.png){#fig-39-context}
+
+### ABRicate 的适用范围
+
+ABRicate 是快速 nucleotide screening wrapper [@seemann2026abricate]，适合 exact-ish gene detection 和数据库敏感性审计。对高度发散 homolog、结构域重排、短 reads 或需要 model-specific variant rules 的问题，应改用 profile HMM、protein-level orthology、专用 caller 或实验验证，而不是无限放宽 `--minid`。
+
+## 出版级美化 {#sec-publication}
+
+- sensitivity 图把 shared 与 additional 分开，避免仅画三个总数造成“数据库越大越好”的暗示。
+- identity/coverage 图画出 90/80 operational gates，并在图注声明它们不是 pathogenicity thresholds。
+- VFC labels 全部使用英文；长标签横向排列。
+- 主图固定 core 90/80；full/80-identity 只用 secondary color。
+- 同时导出 PDF、350 dpi PNG 与 LZW TIFF。
+
+## 常见坑 {#sec-pitfalls}
+
+::: {.callout-caution title="审稿人最常追问的七件事"}
+
+1. 不写 VFDB 是 core 还是 full，也不写 snapshot date/hash。
+2. 只设 identity、不设 reference coverage，短 conserved fragments 大量进入结果。
+3. 观察结果后反复调阈值，最后只报告命中最多的一组。
+4. 把 set B 的 predicted/related genes 与 set A 主结果混为一个证据等级。
+5. 把 motility、adhesion、metabolism 或 regulation homolog 直接称为 pathogen。
+6. 将 catalog 与 co-assembly 的 hits 当作独立重复进行显著性检验。
+7. 没有 host/strain、operon completeness、expression 或 phenotype，却下疾病风险结论。
+
+:::
+
+## 这段 Methods 怎么写 {#sec-methods}
+
+### Methods template
+
+> Virulence-associated sequences were screened with ABRicate v1.4.0 and BLAST+ v2.17.0. The primary database was the VFDB core set A snapshot downloaded on 24 July 2026 (4,895 sequences; SHA-256 recorded), and primary hits required at least 90% nucleotide identity and 80% reference-sequence coverage. Two prespecified sensitivity analyses used the core set at 80% identity/80% coverage and the VFDB full set B (35,188 sequences) at 90% identity/80% coverage. Catalogue genes were linked to audited raw read assignments; co-assembly and two control genomes were analysed separately for genomic-context and recovery checks. VFDB general categories were parsed from the original headers. Deterministic interfaces used seed 20260739. Sequence matches were interpreted as virulence-associated annotations, not as evidence of pathogenic phenotype.
+
+结果段可接：
+
+> The primary core 90/80 screen identified 93 catalogue genes. Relaxing identity to 80% added 30 genes, whereas expanding the reference universe to the full VFDB set at the primary thresholds added 91 genes. These branches were retained as sensitivity analyses and were not merged with the primary set.
+
+## 换成你自己的数据怎么做 {#sec-own-data}
+
+你需要 assembled genes/contigs、稳定 IDs、abundance，以及与研究问题匹配的 host/strain/context metadata。
+
+1. 下载并 hash VFDB core/full snapshots；记录访问日期和 sequence counts。
+2. 预注册 primary database、identity、coverage 与 sensitivity branches。
+3. 将主 hits 左连接回完整 gene universe，保留零命中。
+4. 对 contig/MAG 检查 operon completeness、contig edges、host taxonomy 与 mobile context。
+5. 若声称 pathogenic potential，至少加入完整 factor combination、strain background 与表达证据。
+6. 若声称实际 virulence，加入细胞/动物模型、临床 phenotype 或其他直接功能证据。
+
+## 参考 {#sec-references}
+
+- VFDB general classification [@liu2022vfdb]
+- ABRicate software [@seemann2026abricate]

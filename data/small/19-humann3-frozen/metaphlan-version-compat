@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# HUMAnN 3.9 parses the last non-empty line of `metaphlan --version` as the
+# version string. MetaPhlAn 4.2.5 appends an installed-database status line,
+# so expose only its first, canonical version line to that legacy check.
+# Every non-version invocation is delegated unchanged to the locked binary.
+
+real_metaphlan="${ARTICLE19_METAPHLAN_REAL:-}"
+if [[ -z "${real_metaphlan}" || ! -x "${real_metaphlan}" ]]; then
+  printf 'ARTICLE19_METAPHLAN_REAL must name the executable MetaPhlAn binary\n' >&2
+  exit 2
+fi
+
+if [[ "$#" -eq 1 && ( "$1" == "--version" || "$1" == "-v" ) ]]; then
+  "${real_metaphlan}" "$@" | sed -n '1p'
+  exit 0
+fi
+
+exec "${real_metaphlan}" "$@"

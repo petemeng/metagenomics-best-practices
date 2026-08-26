@@ -1,0 +1,96 @@
+Article 33 data, software, and interpretation notice
+===================================================
+
+Biological source and publication anchor
+----------------------------------------
+The biological inputs are real assemblies from Meslier et al., Benchmarking
+second and third-generation sequencing platforms for microbial metagenomics,
+Scientific Data 9:694 (2022), DOI 10.1038/s41597-022-01762-z (CC BY 4.0).
+MOCK1 contains 71 strains and MOCK2 contains 87 strains. The official author
+repository and reference genomes are locked at commit
+a429a3724d4593f35b8d7323b20252a6be90e1cd. The chapter anchors its evaluation
+to the study's Table 3 and Supplementary Table S2 but redraws all figures from
+the newly computed QUAST/MetaQUAST tables.
+
+Assembly inputs and non-duplication policy
+------------------------------------------
+Fifteen biological assembly branches are selected from checksum-locked
+Article 30, 31, and 32 intermediate bundles. They comprise six short-read
+single/co assemblies, four long-read assemblies, and five non-duplicated
+short/hybrid/polished assemblies. The Flye ONT and Flye HiFi sequences present
+in both Article 31 and Article 32 are included once, from Article 31, after
+their compressed hashes were shown to agree across bundles. No FASTQ is read
+and no assembly is rerun for Article 33.
+
+Each selected compressed FASTA must appear in its upstream
+file-checksums.sha256 and match that digest before it is decompressed. The
+computed input-lineage table records source path, compressed SHA-256,
+canonical record-and-sequence SHA-256, record count, total bases, length
+statistics, GC, N bases, and IUPAC violations. The new frozen bundle stores
+the compact lineage and QC evidence rather than duplicating all 15 large
+FASTA files.
+
+Truth sets and taxonomy aliases
+-------------------------------
+Supplementary Table S1 and the official MOCK_001.list/MOCK_002.list define
+membership. The audit requires 71 MOCK1 and 87 MOCK2 accessions and verifies
+that MOCK1 is a strict subset of MOCK2. Per-genome decompressed sequence-hash
+multisets must exactly equal MOCK_001.fasta.gz and MOCK_002.fasta.gz. Twelve
+explicit current-name to repository-name aliases are retained; aliases are
+file-lineage corrections, not changes to the underlying reference sequence.
+
+The two co-assemblies contain equal selected read-pair budgets from MOCK1 and
+MOCK2. Their reference universe is the union of both truth sets, which equals
+MOCK2 membership. For abundance-bin diagnostics only, co-assembly expected
+abundance is the arithmetic mean of MOCK1 and MOCK2 percentages with NP
+treated as zero. This operational value is not an independently measured DNA
+concentration or realized sequencing coverage.
+
+Deterministic diagnostic controls
+---------------------------------
+Two controls are derived from the real Flye HiFi assembly with seed namespace
+20260733. They are diagnostic transformations, never biological workflows.
+
+1. The fragmented control splits every contig deterministically at 50,000 bp;
+   a terminal remainder below 1,000 bp is merged into the preceding piece.
+   It preserves every base but lowers N50.
+2. The chimeric control selects the 20 longest eligible contigs by the fixed
+   rule length-descending/name-ascending and rotates one central 100,000-bp
+   block among them. It preserves the total base multiset and the complete
+   contig-length multiset, so N50 is unchanged while reference adjacency is
+   deliberately damaged.
+
+These controls isolate metric behavior. They cannot be counted when ranking
+assemblers, estimating biological recovery, or claiming a platform effect.
+
+Locked evaluation contract
+--------------------------
+QUAST/MetaQUAST 5.3.0 uses its bundled minimap2 2.28-r1209. All assemblies are
+evaluated at a common >=1,000-bp contig threshold. MetaQUAST uses minimum
+alignment 500 bp, identity >=97%, fragmented-reference mode, and the original
+study's split-scaffolds sensitivity. Primary rows always use the original
+assembly labels; *_broken rows remain a separate sensitivity table.
+
+MOCK1, MOCK2, and MOCK1+MOCK2 are separate MetaQUAST runs because their truth
+universes differ. Genome fraction and recovered-genome proportions may be
+compared only with their truth-set denominator visible. Missing physical
+per-reference reports are expanded into explicit zero-recovery rows;
+mismatch and indel rates remain NA when no aligned denominator exists.
+
+Interpretation boundary
+-----------------------
+N50 and contig counts describe a length distribution, not biological
+correctness, completeness, contamination, or strain resolution. NA50 breaks
+aligned sequence at extensive misassemblies and therefore answers a different
+question. Genome fraction, mismatch/indel rate, duplication ratio,
+misassemblies, unaligned sequence, read consistency, gene recovery, and MAG
+quality remain separate evidence layers.
+
+There is no universal usable-assembly threshold. Gene-centric analysis,
+binning/MAG recovery, and complete-replicon claims require different minimum
+lengths and orthogonal checks. In natural communities without exact truth,
+reference-free QUAST must be paired with read-back consistency, coverage,
+gene/marker recovery, assembly-graph inspection, and downstream MAG/contig
+quality checks. A nearby public reference is not automatically ground truth;
+biological structural variation can otherwise be misclassified as an
+assembly error.

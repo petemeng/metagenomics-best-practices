@@ -1,0 +1,72 @@
+Article 15 data and database notice
+===================================
+
+Biological input
+----------------
+
+ERR9765746 is the real paired Illumina run for the 71-strain MOCK1 DNA
+material described by Meslier et al. (2022,
+doi:10.1038/s41597-022-01762-z), project PRJEB52977 and sample
+SAMEA14435832. Article 15 starts from all 99,991 synchronized read pairs
+retained by the fixed Article 13 fastp branch from the first 100,000 complete
+pairs in the checksum-identified ENA files. This is a laboratory community,
+not a natural microbiome and not a cohort from which prevalence, association,
+causality, or ecological generalization can be inferred.
+
+The clean input contains 199,982 mate records. Twenty-two R1 records and 31 R2
+records are 50--69 bp long; the fixed MetaPhlAn --read_min_len 70 rule therefore
+passes 199,929 reads into mapping and abundance estimation. Input reads and
+profiling reads are reported as separate denominators.
+
+No raw or cleaned FASTQ is committed. The ignored files are tied to the
+Article 13 evidence by compressed and uncompressed SHA-256, record counts,
+base counts, and a normalized paired-read-ID hash. Routine QA reads only the
+small frozen profile and aggregate evidence.
+
+MetaPhlAn database
+------------------
+
+The analysis fixes MetaPhlAn 4.2.5 and the exact database index
+mpa_vJan26_CHOCOPhlAnSGB_202605. It does not use the mutable label "latest".
+The official release is split into a marker-metadata archive and a separate
+Bowtie2-index archive:
+
+marker metadata archive
+  bytes: 6014095360
+  MD5:   7162b0c3493663dce9abef08ccc06aea
+  SHA256: f945834fb9b8204a0b2235c51a41cd6084cc1965939a9768dd045e5c61c8c946
+
+Bowtie2 index archive
+  bytes: 41742510080
+  MD5:   ac93e1e9c0829629266f5b6ab19c318d
+  SHA256: 0df03a3d877be434c2e89b6cc3201d92c387215700ad66b44585e8883e87bb26
+
+Both archives, the extracted database, and read-to-marker mapout files remain
+outside Git. The one-time initialization verifies the official byte counts and
+MD5 values, records local SHA-256 fingerprints for the archives and every
+extracted database file, then freezes only publishable profiles, aggregate
+marker support, normalized logs, resource measurements, and checksums.
+
+The release-specific PKL contains 72,000 SGB taxonomy entries: 27,891 are
+known SGBs and 44,109 are unknown SGBs under the database species-label rule.
+It contains 13,907,686 marker records. These catalog counts belong to
+mpa_vJan26_CHOCOPhlAnSGB_202605 and must not be replaced with the smaller
+catalog counts reported for the database generation used in the 2023 method
+paper.
+
+Interpretation boundary
+-----------------------
+
+MetaPhlAn estimates community composition from clade-specific marker support.
+Its relative abundance is not an absolute cell count, biomass measurement,
+viability assay, transcriptional activity measurement, or strain-transmission
+result. MetaPhlAn 4.2 estimates an UNCLASSIFIED fraction by default; a profile
+generated with --skip_unclassified_estimation instead renormalizes reported
+clades internally. Those denominators are kept separate.
+
+An SGB whose species label contains _SGB is retained as an unknown SGB rather
+than assigned a fabricated species name. Marker breadth, coverage, estimated
+read support, sequencing depth, controls, and post-profile threshold
+sensitivity are reported alongside relative abundance. The --perc_nonzero
+default of 0.33 belongs to quasi-marker disambiguation and is not presented as
+a universal taxon-detection limit.

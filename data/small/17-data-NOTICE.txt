@@ -1,0 +1,89 @@
+Article 17 data and evidence notice
+===================================
+
+Positive truth input
+--------------------
+The positive benchmark is the same 71-strain MOCK1 DNA library used in
+Articles 08, 13, 15 and 16: ENA run ERR9765746 (PRJEB52977;
+SAMEA14435832), described by Meslier et al. (2022), Scientific Data,
+DOI 10.1038/s41597-022-01762-z. Article 17 reuses the 99,991 synchronized
+clean pairs from Article 13. The paired FASTQ remains under data/raw/ and is
+excluded from Git.
+
+The composition truth is transcribed without renormalization from the
+publisher's CC BY 4.0 Supplementary Table S3
+(41597_2022_1762_MOESM3_ESM.xlsx; 18,203 bytes;
+SHA-256 6bb36d2121ff74b0542620e1e15b96d83256c797576f6e9fb192929f1ec3c12f).
+It contains 71 assembly accessions. The publisher's printed expected genome
+percentages sum to 100.01215654459679% because of source-table precision; the
+values are preserved rather than silently renormalized. Current assembly
+metadata and sequence accessions were queried once on
+2026-07-21 with the official NCBI Datasets CLI 18.33.1 and frozen as JSONL.
+
+Negative method control
+-----------------------
+The negative-boundary input is the deterministic first 20,000 synchronized
+pairs from public human WGS run ERR194147 (PRJEB3381; SAMEA1573618), already
+audited in Article 14. It is a human-rich method control because all three
+Kraken databases include human reference sequence. It is not an extraction
+blank, a sterile sample, or a guarantee that every non-human sequence is a
+classifier error. Results are therefore called "unsupported-control calls",
+not an experimental false-positive rate, contamination diagnosis, or clinical
+finding. Human reads and read identifiers are never placed in the public
+frozen bundle.
+
+Reference-database comparison
+-----------------------------
+All three databases are dated 2026-06-26 and come from the Langmead Lab AWS
+Index Zone. Standard-8 and Standard-16 hold content/release constant while
+changing the Kraken hash cap. Standard-8 and PlusPF-8 use approximately the
+same cap while PlusPF adds RefSeq fungi and protozoa. Because capped indexes
+sample the hash table, PlusPF-8 is not assumed to be a strict performance
+superset of Standard-8. Archive byte counts, upstream archive MD5 values and
+all 17 internal-file MD5 values are fixed in tracked manifests.
+
+Truth/reference boundary
+------------------------
+For every database and expected assembly, the one-time run intersects NCBI
+sequence accessions with the database seqid2taxid map and follows the frozen
+NCBI taxonomy to the species rank. Each truth member is labelled as exact
+expected assembly represented, same-species alternate reference only, or no
+same-species reference. Reference-aware sensitivity uses only the first two
+classes; absent-reference expected abundance remains visible as a separate
+database limitation.
+
+Parameter boundary
+------------------
+The primary matrix changes confidence while fixing minimum-hit-groups at 2.
+A secondary Standard-16 matrix changes minimum-hit-groups while fixing
+confidence at 0.10. These parameters are screening controls, not posterior
+probabilities or universal biological detection limits. Bracken uses rank S,
+threshold 10, and the database distribution nearest each input's single-end
+read length (150 bp for MOCK1; 100 bp for the 101 bp human control).
+
+Human-control classification partition
+--------------------------------------
+The human control is partitioned into three mutually exclusive categories:
+fragments assigned within the Homo sapiens clade, fragments assigned directly
+to a taxonomic ancestor on the Homo sapiens lineage (for example Homo,
+Hominidae or Eukaryota), and unsupported classifications outside that lineage.
+Ancestor-level calls are compatible with human sequence and are therefore not
+counted as unsupported. The three categories plus unclassified fragments must
+sum exactly to the input fragment count for every branch.
+
+Empty Bracken boundary
+----------------------
+At stringent Kraken confidence settings, some reports contain no species with
+enough evidence for Bracken's threshold of 10. The one-time runner accepts only
+Bracken's exact documented "no reads found" terminal condition, retains the
+real non-zero exit status in the resource ledger, and freezes a header-only
+species table. It does not synthesize abundance estimates or treat an empty
+table as a pipeline failure. Any other Bracken error remains fatal.
+
+Public bundle
+-------------
+Only standard Kraken reports, Bracken tables, reference/truth crosswalks,
+aggregate audits, normalized commands/logs, resource measurements and
+checksums are frozen. Raw FASTQ, database archives/indexes, and per-fragment
+Kraken outputs remain outside Git. Routine QA is network-free and does not
+require any large database.

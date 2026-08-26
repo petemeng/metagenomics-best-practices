@@ -1,0 +1,28 @@
+Item	Value	Interpretation
+seed	20260728	Fixed before splitting, tuning, fitting and bootstrap
+resource_release	2021-03-31	All profiles use one cMD release and one MetaPhlAn3 lineage
+cohorts	8	Five discovery/meta-analysis and three independent-validation cohorts
+samples	771	One stool profile per independent subject
+control_samples	385	Class count before any model fitting
+crc_samples	386	Class count before any model fitting
+raw_species_features	897	Union of species rows across eight profiles; absent rows are structural zero under the shared database
+outcome	CRC vs Control; adenoma and post-surgery profiles excluded	Non-CRC disease states are not relabeled as controls
+positive_class	CRC	All probabilities and AUROC values target CRC
+outer_validation	8 outer leave-one-dataset-out iterations; N-1 cohorts train and one complete cohort tests	The outer cohort never participates in filtering, transformation, tuning or calibration
+outer_test_unit	study_name	The generalization unit is an entire study, not a random subject fold
+inner_validation	leave-one-training-cohort-out within each outer training set	Hyperparameters are selected for transfer to an unseen training cohort
+inner_validation_unit	study_name	No sample-level random split substitutes for study-level selection
+model	glmnet L1-penalized binomial logistic regression	Sparse coefficients permit signature-stability auditing
+lambda_grid	41 fixed values from 1 to 0.0001	Grid is prespecified rather than inferred from outer-test performance
+lambda_selection	one-standard-error rule on mean inner-cohort AUROC	Choose the largest eligible lambda to favor a sparse transferable signature
+cohort_class_weights	each training cohort contributes equal total weight; CRC and Control each contribute half within cohort	Large cohorts and majority classes cannot dominate pooled training
+training_prevalence_filter	nonzero prevalence >= 0.10 in the current training pool	Fit on training data only and applied unchanged to validation/test data
+training_abundance_filter	maximum relative abundance >= 0.0001 in the current training pool	Fit on training data only and applied unchanged to validation/test data
+training_cohort_support_filter	prevalence >= 0.05 in at least half of current training cohorts	Requires a taxon to recur across training cohorts without consulting labels
+log10_pseudocount	0.000001	Fixed transformation parameter
+standardization	glmnet training-only feature centering and scaling	Held-out cohorts use training means and scales through the fitted glmnet object
+primary_auc_interval	DeLong 95% CI within each untouched outer cohort	Intervals are cohort-specific external-validation uncertainty
+performance_meta_analysis	random-effects REML on logit AUROC; report tau-squared and I-squared	Heterogeneity is treated as evidence, not averaged away
+hierarchical_bootstrap	2000 cohort-and-class-stratified bootstrap replicates for macro AUROC	Resamples cohorts and subjects rather than treating cohorts as fixed duplicates
+single_study_transfer	secondary author-faithful 8-by-8 single-study train/test matrix	Reproduces the original transfer question but is not the primary N-1 model
+batch_correction_policy	no joint train-test ComBat; any transductive batch normalization must be labeled sensitivity-only	Combining the outer test cohort in batch correction would leak its distribution

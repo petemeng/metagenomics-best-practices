@@ -1,0 +1,23 @@
+Item	Value	Interpretation
+seed	20260727	Fixed before every fold, fit, bootstrap and permutation
+study	ZellerG_2014	One study and one processing lineage; external validation is Article 28
+outcome	CRC vs Control	Adenoma profiles are excluded rather than relabeled
+positive_class	CRC	All reported probabilities target CRC
+samples	114	Every included sample is an independent subject
+control_samples	61	Class count before any cross-validation split
+crc_samples	53	Class count before any cross-validation split
+raw_species_features	661	No global label-informed feature selection
+outer_resamples	5	Each subject receives one held-out prediction per repeat
+outer_folds	5	Stratified outer error-estimation folds
+inner_folds	4	Stratified inner hyperparameter-selection folds
+fold_unit	subject_id	Related samples must never cross folds
+training_prevalence_filter	nonzero prevalence >= 0.10 within each training fold	Fit on training data only and applied unchanged to held-out data
+training_abundance_filter	maximum relative abundance >= 0.0001 within each training fold	Fit on training data only and applied unchanged to held-out data
+log10_pseudocount	0.000001	Log transform parameter is fixed a priori
+algorithms	ranger probability forest | xgboost binary logistic	Both models are prespecified and both are reported
+tuning_metric	inner-fold AUROC	Outer test folds never select hyperparameters
+sample_score	mean of five out-of-fold probabilities per subject	Reduces repeated-CV predictions to one score per independent subject
+auc_interval	DeLong 95% CI on subject-level aggregated OOF scores	Conditional discrimination interval; not external-validation uncertainty
+paired_difference_bootstrap	2000 subject bootstraps	Paired model comparison resamples subjects, not individual predictions
+feature_importance	outer-test permutation delta AUROC	Importance is measured on held-out folds, not by impurity decrease
+leakage_audit_permutations	50	Safe and deliberately leaky branches use permuted subject labels

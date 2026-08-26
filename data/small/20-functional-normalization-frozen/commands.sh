@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+export PYTHONHASHSEED=0
+/workspace/miniconda3/envs/metagenome-biobakery-2026.07/bin/humann_renorm_table --input /workspace/wechat/Metagenome/data/small/19-humann3-frozen/pathabundance-rpk.tsv --output /workspace/wechat/Metagenome/data/small/20-functional-normalization-frozen/pathabundance-relab-community-special-y.tsv --units relab --mode community --special y
+/workspace/miniconda3/envs/metagenome-biobakery-2026.07/bin/humann_renorm_table --input /workspace/wechat/Metagenome/data/small/19-humann3-frozen/pathabundance-rpk.tsv --output /workspace/wechat/Metagenome/data/small/20-functional-normalization-frozen/pathabundance-relab-community-special-n.tsv --units relab --mode community --special n
+/workspace/miniconda3/envs/metagenome-biobakery-2026.07/bin/humann_renorm_table --input /workspace/wechat/Metagenome/data/small/19-humann3-frozen/pathabundance-rpk.tsv --output /workspace/wechat/Metagenome/data/small/20-functional-normalization-frozen/pathabundance-relab-levelwise-special-y.tsv --units relab --mode levelwise --special y
+/workspace/miniconda3/envs/metagenome-biobakery-2026.07/bin/humann_renorm_table --input /workspace/wechat/Metagenome/data/small/19-humann3-frozen/pathabundance-rpk.tsv --output /workspace/wechat/Metagenome/data/small/20-functional-normalization-frozen/pathabundance-relab-levelwise-special-n.tsv --units relab --mode levelwise --special n

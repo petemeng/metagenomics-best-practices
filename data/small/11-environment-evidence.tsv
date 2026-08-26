@@ -1,0 +1,22 @@
+environment	tool	command	expected	observed	evidence_class	status	notes
+biobakery	Python (bioBakery)	python --version	Python 3.12	Python 3.12.13	entrypoint	PASS	Executed with PYTHONNOUSERSITE=1 and empty PYTHONPATH.
+biobakery	MetaPhlAn	metaphlan --version	MetaPhlAn 4.2.5	MetaPhlAn version 4.2.5 (13 Jul 2026)	entrypoint	PASS	The same command also reported that no complete Bowtie2 database was present; no database workflow is claimed.
+biobakery	HUMAnN	humann --version	HUMAnN 3.9	humann v3.9	entrypoint	PASS	Python 3.12 emitted non-fatal invalid-escape SyntaxWarnings from HUMAnN source before the version line.
+biobakery	Bowtie2 (bioBakery)	bowtie2 --version	Bowtie2 2.5.5	bowtie2-align-s version 2.5.5	entrypoint	PASS	The x86-64-v3 launcher fell back to the default binary; the fallback binary reported the required version.
+biobakery	DIAMOND (bioBakery)	diamond version	DIAMOND 2.2.4	diamond version 2.2.4	entrypoint	PASS	Verified after exact standalone-package relink.
+assembly	Python (assembly)	python --version	Python 3.10	Python 3.10.20	entrypoint	PASS	Executed with PYTHONNOUSERSITE=1 and empty PYTHONPATH.
+assembly	MEGAHIT	megahit --version	MEGAHIT 1.2.9	MEGAHIT v1.2.9	entrypoint	PASS	Native Linux executable.
+assembly	SPAdes	spades.py --version	SPAdes 4.3.0	SPAdes genome assembler v4.3.0	entrypoint	PASS	Native Linux Python entry point.
+assembly	Bowtie2 (assembly)	bowtie2 --version	Bowtie2 2.5.5	bowtie2-align-s version 2.5.5	entrypoint	PASS	Re-audited on 2026-07-26 for Article 30 read-back mapping; the x86-64-v3 launcher fell back to the default binary, which reported the required version.
+assembly	MetaBAT2	metabat2 -h	MetaBAT2 2.18	MetaBAT version 2:2.18; build 20260506_185317	entrypoint	PASS	MetaBAT2 rejects --version; version was read from its help header.
+assembly	MaxBin2	run_MaxBin.pl -v	MaxBin 2.2.7	MaxBin 2.2.7	entrypoint	PASS	Perl entry point.
+assembly	CONCOCT	concoct --version	CONCOCT 1.1.0	concoct 1.1.0	entrypoint	PASS	Verified after disabling user site and constraining setuptools below 81.
+assembly	DAS Tool	DAS_Tool --version	DAS Tool 1.1.7	DAS Tool 1.1.7	entrypoint	PASS	R/Perl-backed entry point.
+assembly	CoverM	coverm --version	CoverM 0.8.0	coverm 0.8.0	entrypoint	PASS	Rust executable.
+assembly	NumPy (assembly)	python -c 'import numpy; print(numpy.__version__, numpy.__file__)'	NumPy 1.26.4 inside target prefix	NumPy 1.26.4 inside metagenome-assembly-2026.07	entrypoint	PASS	User-site NumPy 2.2.6 was excluded.
+assembly	setuptools (assembly)	python -c 'import setuptools; print(setuptools.__version__)'	setuptools below 81	setuptools 80.10.2	entrypoint	PASS	Direct ceiling preserves CONCOCT's pkg_resources import.
+assembly	MEGAHIT built-in test	megahit --test	ALL DONE	ALL DONE in 3.854110 seconds	built_in_test	PASS	Install test used 604 reads across bundled tiny inputs; it is not a metagenome benchmark.
+assembly	SPAdes built-in test	spades.py --test	TEST PASSED CORRECTLY	TEST PASSED CORRECTLY	built_in_test	PASS	Bundled E. coli test passed with a high-uniform-coverage mode warning; it is not a metagenome benchmark.
+biobakery	HUMAnN unit tests	humann_test	All packaged unit tests pass	Ran 186 tests in 52.407s; OK	built_in_test	PASS	No full nucleotide or protein database was required.
+assembly	CONCOCT initial entry-point audit	concoct --version	Failure must be diagnosed before acceptance	User-site NumPy 2.2.6 caused an ABI error; clean user-site isolation then exposed missing pkg_resources under setuptools 83	compatibility_regression	EXPECTED_FAIL	Resolved with PYTHONNOUSERSITE=1, empty PYTHONPATH, and setuptools<81.
+biobakery	HUMAnN bundled executable audit	bowtie2 --version; diamond version	Executable versions must match conda metadata	Initial commands reported Bowtie2 2.2.3 and DIAMOND 2.0.15 while conda metadata reported 2.5.5 and 2.2.4	compatibility_regression	EXPECTED_FAIL	HUMAnN 3.9 owned the same bin paths; exact standalone packages were force-relinked and re-audited.

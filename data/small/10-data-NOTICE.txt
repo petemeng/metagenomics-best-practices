@@ -1,0 +1,78 @@
+Article 10 compute-planning evidence
+====================================
+
+Checked: 2026-07-19
+
+1. Real metagenomic input footprint
+-----------------------------------
+
+The resource planner reads the same checksum-identified public sources used by
+Article 08:
+
+  data/small/08-ena-fastq-sources.tsv
+  SHA-256: 96638ae0d16ce5953760b596887c9f8f443c1dc33e0f82bef2e6ac040e69d962
+
+  data/small/08-read-prefix-metrics.tsv
+  SHA-256: 6c426e0c89a95b1c1cc7ec631629e3635a7fd83c61c90d4086801b28495b5a61
+
+The source is Meslier et al. 2022, project PRJEB52977, sample
+SAMEA14435832. The four ENA compressed FASTQ files total 10,944,966,814
+bytes: 3,845,199,421 Illumina paired-end bytes, 3,117,261,341 historical
+ONT R9 bytes, and 3,982,506,052 PacBio CCS bytes. Raw FASTQ is not stored
+in Git. Article 10 does not infer assembler memory from these compressed
+byte counts.
+
+2. Local compute and scheduler evidence boundary
+------------------------------------------------
+
+The validator records a redacted, read-only snapshot of CPU, memory, filesystem
+type/capacity, and command availability on the native Ubuntu host. It executes
+three deterministic 5,000-record tasks against the committed Article 08
+metrics, measures them with GNU time, and reruns them to verify checksum
+sentinel-based skipping. This is a workflow-plumbing smoke test, not a
+MEGAHIT/metaSPAdes/long-read assembly benchmark.
+
+No SLURM controller is attached to this host. sbatch/sacct are therefore
+reported as NOT_RUN. The job-array file is syntax-checked and executed locally
+with explicit RUN_MODE=native-smoke; local execution must never be reported as
+a scheduler run.
+
+3. Container evidence boundary
+------------------------------
+
+The current official Apptainer release was checked at:
+
+  https://github.com/apptainer/apptainer/releases/tag/v1.5.2
+
+Release: 1.5.2
+Release date: 2026-06-23
+
+The fixed Linux/amd64 OCI smoke payload is:
+
+  docker://alpine@sha256:eafc1edb577d2e9b458664a15f23ea1c370214193226069eb22921169fc7e43f
+
+The tag alpine:3.22.1 resolved to that amd64 manifest during the audit.
+Docker ran the fixed digest once and returned Alpine 3.22.1, uid 0, gid 0.
+That check validates payload identity only; it is not an Apptainer runtime
+claim.
+
+The host had legacy Singularity 3.7.2. It converted alpine:3.22.1 to a
+3,727,360-byte SIF with SHA-256
+5dd8b9d84e1dfec614fdece44123833d2acc6330a44538bf6b9ab2f0b76902d8.
+Execution then failed because this local Singularity installation had neither
+setuid support nor a usable unprivileged configuration. The SIF itself is not
+committed: it is a disposable container artifact, and its build metadata makes
+the SIF file hash specific to that conversion. The failure is preserved as
+EXPECTED_FAIL rather than rewritten as a successful Apptainer run.
+
+Apptainer 1.5.2 and SLURM were not installed or exercised on this native host.
+Readers must run the supplied control-plane checks on their own cluster and
+record the actual module/runtime/scheduler versions, image checksum, JobID,
+MaxRSS, Elapsed, and disk accounting.
+
+4. Licensing
+------------
+
+The Meslier benchmark is CC BY 4.0; full lineage is in
+data/small/08-data-NOTICE.txt. Alpine and the container tooling retain their
+own upstream licenses. No OCI layer or SIF image is redistributed here.

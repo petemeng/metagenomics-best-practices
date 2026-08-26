@@ -1,0 +1,79 @@
+Article 09 environment and documentation notice
+===============================================
+
+Checked on: 2026-07-19
+
+Official installation and storage guidance
+------------------------------------------
+
+1. Microsoft WSL installation:
+   https://learn.microsoft.com/en-us/windows/wsl/install
+   The current one-command route requires Windows 10 version 2004
+   (build 19041) or newer, or Windows 11. The documented command is
+   `wsl --install`; new installations use WSL 2 by default, and
+   `wsl.exe --list --verbose` reports the distribution version.
+
+2. Microsoft Windows/Linux filesystem guidance:
+   https://learn.microsoft.com/en-us/windows/wsl/filesystems
+   Linux command-line workloads should keep active project files in the WSL
+   Linux filesystem, for example `/home/<user>/Project`, rather than under
+   `/mnt/c`.
+
+3. Microsoft WSL configuration guidance:
+   https://learn.microsoft.com/en-us/windows/wsl/wsl-config
+   `.wslconfig` is a Windows-user-level WSL 2 VM configuration file. Resource
+   changes may require `wsl --shutdown` before they take effect.
+
+4. Mamba installation guidance:
+   https://mamba.readthedocs.io/en/stable/installation/mamba-installation.html
+   The documentation recommends a fresh Miniforge installation, avoiding
+   Anaconda default channels and avoiding package installation into `base`.
+
+Pinned Miniforge installer
+--------------------------
+
+- Release: Miniforge 26.3.2-2
+- Release page:
+  https://github.com/conda-forge/miniforge/releases/tag/26.3.2-2
+- Asset: Miniforge3-26.3.2-2-Linux-x86_64.sh
+- SHA-256:
+  42260ffe3830fb953d5eee1bbb32229ff06aa7c3833c1ed7a9a0420a95685d94
+- Approximate asset size: 101 MB
+
+The checksum belongs to the named release asset. Do not apply it to
+`Miniforge3-Linux-x86_64.sh` from a future release.
+
+Validation boundary
+-------------------
+
+The 2026-07-19 repository validation host is native Ubuntu Linux, not a
+Windows machine and not WSL. It can validate the Linux execution-plane
+contract, environment solve, exact tool versions, channel policy, and the
+real-data smoke test. It cannot provide Windows-side proof for WSL
+installation, `wsl.exe`, virtualization, `.wslconfig`, or VERSION 2. Those
+checks must be captured on the reader's Windows host.
+
+The host already used a Miniconda installation. This does not change the
+fresh-install recommendation for readers, which follows Mamba's current
+Miniforge guidance. The audit records the manager versions and safe channel
+fields without exporting installation prefixes, user names, proxy URLs,
+tokens, or the full `.condarc`.
+
+The repository smoke environment pins Python 3.12.13, SeqKit 2.10.0,
+pigz 2.8, and Matplotlib 3.10.5. Matplotlib is part of the contract because
+the validator itself regenerates the evidence figures; it is not a hidden
+host dependency.
+
+Real-data smoke input
+---------------------
+
+The smoke test reads the committed Article 08 evidence for the 71-strain
+MOCK1 sample SAMEA14435832 in ENA project PRJEB52977:
+
+- data/small/08-ena-fastq-sources.tsv
+- data/small/08-prefix-source-summary.json
+- data/small/08-read-prefix-metrics.tsv
+
+These are public-source metadata and deterministic per-read metrics derived
+from checksum-identified ENA FASTQ prefixes. Raw FASTQ is intentionally not
+stored in the repository.

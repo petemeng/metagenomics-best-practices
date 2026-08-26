@@ -1,0 +1,528 @@
+---
+title: "开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）"
+author: "宏基因组分析最佳实践 · Shotgun 系列"
+date: last-modified
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    code-copy: true
+    number-sections: true
+execute:
+  eval: true
+  freeze: auto
+  warning: false
+  message: false
+fig-dpi: 300
+fig-format: png
+wechat:
+  deck: "先把“检测到 DNA”“正在表达”“形成代谢物”和“导致表型”分开，再决定该做哪一种分析。"
+  facts:
+    - {label: "真实研究", value: "Wirbel CRC meta-analysis"}
+    - {label: "分析规模", value: "8 cohorts · 768 samples"}
+    - {label: "阅读时间", value: "约 20 分钟"}
+    - {label: "上手成本", value: "普通笔记本 · 约 1 分钟"}
+  resources:
+    - {label: "公开数据", value: "Zenodo 3517209 v1.0，CC BY 4.0"}
+    - {label: "输入文件", value: "meta_all.tsv（148 kB）"}
+    - {label: "MD5", value: "da18b10fdabae6308329e80b73991f84"}
+    - {label: "固定环境", value: "R 4.4.1、Quarto 1.9.38、seed 20260719"}
+  strip_sections: [sec-polish]
+  code_heading: "真实数据：先审计输入，再决定能说什么"
+  expected_images: 2
+  image_alt:
+    01-crc-cohorts.png: "CRC cohort design"
+    01-assay-boundaries.png: "Microbiome assay evidence boundaries"
+---
+
+> **学习目标：**分清 16S、shotgun metagenome、宏转录组、宏蛋白组和代谢组各自直接测到了什么；读完后能把“检测到基因”“基因在表达”“形成了代谢物”和“导致了表型”分开。  
+> **真实数据：**Wirbel 等 CRC 跨队列研究公开的 `meta_all.tsv`，这里只读取队列、分组和样本量，不下载原始 FASTQ。  
+> **预计资源：**8 个 CRC 队列、768 个 CRC/对照样本；普通笔记本约 1 分钟，内存低于 500 MB。
+
+## 这一步对应论文里的哪张图 {#sec-target}
+
+Wirbel 等在 2019 年的 CRC shotgun meta-analysis 中先面对一个很现实的问题：不同国家、实验流程和人群产生的结果能否共同支持一个疾病信号？论文 **Figure 1** 展示跨研究仍一致的 CRC 相关物种，**Figure 3** 检查分类模型能否迁移到其他研究，**Figure 5** 再用三个独立队列验证结果 [@wirbel2019crc]。
+
+这里不转载论文原图，而是从作者公开的 CC BY 4.0 元数据重建队列结构：
+
+::: {layout-ncol=2}
+![五个发现队列与三个独立验证队列中的 CRC 和 control 样本数。](figures/01-crc-cohorts.png){#fig-crc-cohorts}
+
+![不同组学对九类问题的直接支持、条件性支持和测量空白。](figures/01-assay-boundaries.png){#fig-assay-boundaries}
+:::
+
+图 @fig-crc-cohorts 说明“跨队列”首先是一种研究设计，而不是换一个绘图函数。图 @fig-assay-boundaries 则给所有结果加上一条解释上限：**shotgun metagenomics 测的是样本中的 DNA；它能支持物种、基因、MAG 和菌株层分析，但不能单独证明转录活性、蛋白表达、代谢通量或因果作用。**
+
+::: {.callout-important title="先问测到了哪一层，再问用什么软件"}
+检测到丁酸合成基因，只能说明存在相应遗传潜力。要说这些基因正在转录，需要宏转录组；要说蛋白已经表达，需要宏蛋白组；要说丁酸真的形成并发生变化，需要代谢组或靶向定量；要说它导致了疾病，还需要时间顺序、干预和机制证据。
+:::
+
+## 理论：shotgun DNA 把分辨率推进了多远 {#sec-theory}
+
+### 1. 16S 回答“谁可能在那里”，shotgun 还能查看“携带了什么”
+
+16S/18S/ITS 扩增子只测一个标记区域，适合低成本描述群落结构，但分类分辨率受引物、扩增区域和参考库限制。由 16S 推断功能时，得到的是参考基因组映射出的**预测功能**，不是样本中直接测到的基因 [@knight2018best]。
+
+Shotgun metagenomics 对样本中的 DNA 进行非靶向测序。它可以走三条相互关联但产物不同的路线：
+
+1. **Reference-based read profiling：**reads 直接与 marker 或参考数据库比较，得到物种和功能谱；
+2. **Gene / contig-centric：**先组装或建立基因目录，再分析基因、ARG、CAZyme、BGC、病毒和质粒 contig；
+3. **Genome-resolved：**将 contig 分箱为 MAG，再做分类、系统发育、菌株、泛基因组和代谢重建。
+
+这三层都依赖测序深度、数据库覆盖、序列相似性和质量控制。复杂环境中的未知物种越多，纯参考比对的未分类比例通常越高；组装和分箱则会受到群落复杂度、低丰度和近缘菌株混合影响 [@quince2017shotgun]。
+
+### 2. “功能潜力”不是“功能活性”
+
+DNA 层能够回答某个基因或通路是否可被检出、丰度是否关联于条件、可能属于哪个物种或 MAG。它不能直接回答：
+
+- 这个基因采样时是否正在转录；
+- 对应蛋白是否已经形成；
+- 反应是否真的发生、方向和通量是多少；
+- 观察到的代谢物来自哪个微生物、宿主还是饮食；
+- 微生物变化是疾病原因、疾病结果还是共同混杂造成。
+
+Integrative Human Microbiome Project 将宏基因组与转录组、蛋白组、代谢组和宿主信息联合，正是因为单一 DNA 层无法覆盖动态活动和宿主—微生物机制 [@ihmp2019]。
+
+### 3. shotgun 也不是绝对定量
+
+常规 shotgun 丰度仍受总 DNA 量、宿主 DNA 比例、提取效率、基因组大小、测序深度和组成约束影响。某个物种相对丰度升高，既可能是它增加，也可能是其他成员减少。若科学问题要求“每克粪便多少细胞”或“每毫升多少 ARG copies”，需要 spike-in、流式计数、qPCR/ddPCR 或其他外部定量参照。
+
+<details>
+<summary><strong>深入：九类问题分别需要什么证据</strong></summary>
+
+| 问题 | shotgun DNA 能否支持 | 还需补什么 |
+|---|---|---|
+| 样本里有哪些物种？ | 可以，但依赖参考库、阈值和覆盖度 | mock、阴性对照、工具敏感性分析 |
+| 是否存在某个基因或通路？ | 可以描述 DNA 潜力 | identity、coverage、基因长度与数据库版本 |
+| 功能属于谁？ | 可用 stratified profile、contig、MAG 或长读连接推断 | 组装图、覆盖度、嵌合与污染检查 |
+| 是否有菌株差异或传播？ | 深度足够时可分析 SNV、marker phylogeny 和 accessory genes | 排除共同来源、批次和种水平相似 |
+| 基因是否正在表达？ | 不能 | 宏转录组 |
+| 蛋白是否表达？ | 不能 | 宏蛋白组 |
+| 代谢物是否形成？ | 不能 | 代谢组或靶向化学定量 |
+| 微生物绝对数量是否变化？ | 常规相对谱不能 | spike-in、流式、qPCR/ddPCR |
+| 是否造成疾病或表型？ | 不能由横断面 DNA 关联证明 | 纵向、干预、培养、FMT/无菌动物和机制实验 |
+
+</details>
+
+## 准备工作 {#sec-setup}
+
+<details>
+<summary><strong>展开：安装依赖、取得真实数据和定义作图函数</strong></summary>
+
+首次运行安装轻量绘图依赖：
+
+```{r}
+#| eval: false
+install.packages(c("ggplot2", "dplyr", "scales", "digest"))
+```
+
+作者在 Zenodo 记录 `3517209` 发布了分析输入。元数据文件只有约 148 kB，许可为 CC BY 4.0：
+
+```bash
+mkdir -p data/raw data/small
+
+curl -fL --retry 3 \
+  "https://zenodo.org/records/3517209/files/meta_all.tsv?download=1" \
+  -o data/raw/meta_all.tsv
+
+echo "da18b10fdabae6308329e80b73991f84  data/raw/meta_all.tsv" \
+  | md5sum -c -
+
+Rscript scripts/prepare_intro_data.R \
+  data/raw/meta_all.tsv \
+  data/small/01-crc-cohort-summary.tsv \
+  results/01-data-summary.json
+```
+
+每篇需要的出版级函数在正文中直接定义：
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(scales)
+
+set.seed(20260719)
+
+pal_pub <- c(
+  "#0072B2", "#D55E00", "#009E73", "#CC79A7",
+  "#E69F00", "#56B4E9", "#F0E442", "#999999"
+)
+
+scale_color_pub <- function(...) {
+  ggplot2::scale_color_manual(values = pal_pub, ...)
+}
+
+scale_fill_pub <- function(...) {
+  ggplot2::scale_fill_manual(values = pal_pub, ...)
+}
+
+theme_pub <- function(base_size = 12) {
+  ggplot2::theme_bw(base_size = base_size, base_family = "sans") +
+    ggplot2::theme(
+      panel.grid = ggplot2::element_blank(),
+      axis.text = ggplot2::element_text(color = "black"),
+      axis.ticks = ggplot2::element_line(color = "black", linewidth = 0.3),
+      legend.key = ggplot2::element_blank(),
+      legend.background = ggplot2::element_rect(
+        fill = scales::alpha("white", 0.7),
+        color = NA
+      ),
+      plot.title.position = "plot"
+    )
+}
+
+save_pub <- function(
+  plot,
+  file_base,
+  width = 130,
+  height = 95,
+  units = "mm",
+  dpi = 300
+) {
+  dir.create(dirname(file_base), recursive = TRUE, showWarnings = FALSE)
+  ggplot2::ggsave(
+    paste0(file_base, ".pdf"),
+    plot,
+    width = width,
+    height = height,
+    units = units,
+    device = grDevices::cairo_pdf
+  )
+  ggplot2::ggsave(
+    paste0(file_base, ".png"),
+    plot,
+    width = width,
+    height = height,
+    units = units,
+    dpi = dpi,
+    bg = "white"
+  )
+  ggplot2::ggsave(
+    paste0(file_base, ".tiff"),
+    plot,
+    width = width,
+    height = height,
+    units = units,
+    dpi = dpi,
+    compression = "lzw",
+    bg = "white"
+  )
+  invisible(plot)
+}
+```
+
+</details>
+
+## 可复制代码：先审计输入，再决定能说什么 {#sec-code}
+
+### 第 1 步：读取作者公开元数据生成的队列表
+
+```{r}
+cohorts <- read.delim(
+  "data/small/01-crc-cohort-summary.tsv",
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+stopifnot(
+  nrow(cohorts) == 8L,
+  sum(cohorts$Total) == 768L,
+  sum(cohorts$CRC) == 386L,
+  sum(cohorts$Control) == 382L
+)
+
+cohorts
+```
+
+作者仓库将 `FR-CRC`、`AT-CRC`、`CN-CRC`、`US-CRC`、`DE-CRC` 定义为发现/meta-analysis 队列，将 `IT-CRC`、`IT-CRC-2`、`JP-CRC` 定义为独立验证队列。这样得到 5 个发现队列的 575 个样本，以及 3 个验证队列的 193 个样本。
+
+### 第 2 步：读取测量边界证据表
+
+```{r}
+assay_wide <- read.delim(
+  "data/small/01-assay-evidence.tsv",
+  check.names = FALSE,
+  stringsAsFactors = FALSE
+)
+
+assay_names <- setdiff(names(assay_wide), "Question")
+assay_long <- do.call(
+  rbind,
+  lapply(
+    assay_names,
+    function(assay_name) {
+      data.frame(
+        Question = assay_wide$Question,
+        Assay = assay_name,
+        Evidence = assay_wide[[assay_name]],
+        stringsAsFactors = FALSE
+      )
+    }
+  )
+)
+
+stopifnot(
+  all(assay_long$Evidence %in% 0:2),
+  nrow(assay_long) == nrow(assay_wide) * length(assay_names)
+)
+
+assay_long$Evidence_label <- c(
+  "Not measured", "Conditional", "Direct"
+)[assay_long$Evidence + 1L]
+head(assay_long, 10)
+```
+
+这张表的编码含义是：
+
+- `0`：该组学没有直接测量这一层；
+- `1`：结果依赖参考库、间接推断、额外归属步骤或覆盖度；
+- `2`：该组学直接测量了对应分子层，但仍需质控和统计验证。
+
+即使标为 `Direct`，也不等于“结论自动正确”。例如宏转录组直接测 RNA，但仍存在 RNA 提取、rRNA 去除、宿主 RNA、基因归属和组成型问题。
+
+## 审计与升级：从 2019 复现到当前研究设计 {#sec-audit}
+
+Wirbel 研究给出的关键升级不是“换一个分类器”，而是把证据从单队列推进到多队列训练和独立验证。公开仓库清楚区分了 5 个 reference studies、3 个 external CRC studies 和非 CRC 疾病队列；这种分层应在分析前固定，不能看完结果再挑验证集。
+
+复现时还要审计四个边界：
+
+1. **不要混淆 profiler 谱系。** 该 Zenodo 物种文件名明确记录 `mOTUs2.0.0`。`curatedMetagenomicData` 当前提供的是 MetaPhlAn3/HUMAnN3 统一重处理结果；它们不是同一张表，也不能冒充 MetaPhlAn4 输出。
+2. **同一版本统一重处理。** 若升级 profiler 或数据库，应把所有队列用同一版本重跑，并把旧版复现和新版敏感性分析分开报告。
+3. **预处理必须留在训练边界内。** 特征筛选、标准化、缺失处理和超参数选择都不能偷看留出队列。真正 LODO 是用 N−1 个完整队列训练，只在第 N 个从未参与建模的队列测试。
+4. **DNA 关联不能升级成活性或因果。** 蛋白降解、黏液利用或胆汁酸相关基因富集是功能潜力证据；要描述实际活动，应补转录、蛋白、代谢物或实验验证。
+
+::: {.callout-note title="数据谱系卡片"}
+```text
+Study:            Wirbel et al. CRC metagenome meta-analysis
+Public record:    Zenodo 3517209, version 1.0
+Input used here:  meta_all.tsv
+Input checksum:   MD5 da18b10fdabae6308329e80b73991f84
+Raw reads:        PRJEB27928, PRJEB10878, PRJEB12449,
+                  ERP008729, ERP005534, SRP136711, DRA006684
+Profile source:   author-provided analysis inputs
+Profiler lineage: mOTUs 2.0.0 for the published species profile
+Feature type:     cohort metadata only in article 01
+Unit:             sample counts
+Normalization:    none
+Reprocessed:      cohort counts regenerated from the public metadata
+License:          CC BY 4.0
+```
+:::
+
+## 出版级美化 {#sec-polish}
+
+### 图 1：不同组学的测量边界
+
+```{r}
+assay_long$Question <- factor(
+  assay_long$Question,
+  levels = rev(assay_wide$Question)
+)
+assay_long$Assay <- factor(assay_long$Assay, levels = assay_names)
+assay_long$Evidence_factor <- factor(assay_long$Evidence, levels = 0:2)
+
+p_assay <- ggplot(
+  assay_long,
+  aes(x = Assay, y = Question, fill = Evidence_factor)
+) +
+  geom_tile(color = "white", linewidth = 0.7) +
+  geom_text(
+    aes(
+      label = c("No", "Conditional", "Direct")[Evidence + 1L],
+      color = Evidence_factor
+    ),
+    size = 2.7,
+    fontface = "bold"
+  ) +
+  scale_fill_manual(
+    values = c("0" = "#E5E7EB", "1" = "#E69F00", "2" = "#0072B2"),
+    labels = c("Not measured", "Conditional", "Direct"),
+    drop = FALSE
+  ) +
+  scale_color_manual(
+    values = c("0" = "grey25", "1" = "black", "2" = "white"),
+    guide = "none"
+  ) +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = "Evidence level",
+    title = "What each microbiome assay can directly support"
+  ) +
+  theme_pub(base_size = 11) +
+  theme(
+    axis.text.x = element_text(angle = 28, hjust = 1),
+    axis.ticks = element_blank(),
+    panel.border = element_blank(),
+    legend.position = "bottom"
+  )
+
+p_assay
+```
+
+```{r}
+save_pub(
+  p_assay,
+  "figures/01-assay-boundaries",
+  width = 180,
+  height = 125
+)
+```
+
+### 图 2：CRC 发现与独立验证队列
+
+```{r}
+cohort_long <- rbind(
+  data.frame(
+    Study = cohorts$Study,
+    Role = cohorts$Role,
+    Outcome = "Control",
+    Samples = cohorts$Control
+  ),
+  data.frame(
+    Study = cohorts$Study,
+    Role = cohorts$Role,
+    Outcome = "CRC",
+    Samples = cohorts$CRC
+  )
+)
+
+cohort_long$Study <- factor(
+  cohort_long$Study,
+  levels = rev(cohorts$Study)
+)
+cohort_long$Role <- factor(
+  cohort_long$Role,
+  levels = c("Discovery / meta-analysis", "Independent validation")
+)
+cohort_long$Role_plot <- factor(
+  ifelse(
+    cohort_long$Role == "Discovery / meta-analysis",
+    "Discovery",
+    "Validation"
+  ),
+  levels = c("Discovery", "Validation")
+)
+cohort_long$Outcome <- factor(
+  cohort_long$Outcome,
+  levels = c("Control", "CRC")
+)
+
+p_crc <- ggplot(
+  cohort_long,
+  aes(x = Samples, y = Study, fill = Outcome)
+) +
+  geom_col(
+    position = position_dodge2(width = 0.8, preserve = "single"),
+    width = 0.7
+  ) +
+  geom_text(
+    aes(label = Samples),
+    position = position_dodge2(width = 0.8, preserve = "single"),
+    hjust = -0.18,
+    size = 3
+  ) +
+  facet_grid(
+    Role_plot ~ .,
+    scales = "free_y",
+    space = "free_y",
+    switch = "y"
+  ) +
+  scale_fill_manual(
+    values = c("Control" = "#0072B2", "CRC" = "#D55E00")
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.13))) +
+  labs(
+    x = "Number of samples",
+    y = NULL,
+    fill = "Group",
+    title = "CRC cohorts used for discovery and independent validation"
+  ) +
+  theme_pub(base_size = 11) +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text.y.left = element_text(angle = 0, face = "bold"),
+    legend.position = "bottom"
+  )
+
+p_crc
+```
+
+```{r}
+save_pub(
+  p_crc,
+  "figures/01-crc-cohorts",
+  width = 150,
+  height = 115
+)
+```
+
+两张图都输出 PDF、PNG 和 TIFF。PDF 适合后续排版和文字编辑；PNG 适合网页与公众号；TIFF 使用 LZW 压缩和 300 ppi，适合要求位图的投稿系统。
+
+## 常见坑方框 {#sec-pitfalls}
+
+::: {.callout-caution title="九个最容易把结论说过头的地方"}
+1. **把“metagenomics”当成 16S 的同义词。** 16S 是 marker-gene amplicon；这里的 shotgun metagenomics 是非靶向群落 DNA 测序。
+2. **把基因存在写成基因表达。** DNA 只支持功能潜力，表达需要 RNA 或蛋白证据。
+3. **把通路丰度写成代谢通量。** HUMAnN、基因目录或 MAG 注释不能直接测通量。
+4. **把相对丰度写成绝对数量。** 没有外部定量参照时，不知道每克或每毫升的真实负荷。
+5. **把物种相关写成菌株传播。** 传播至少需要菌株级 SNV/基因组证据，并排除共同来源。
+6. **把 bin 直接叫高质量 MAG。** 完整度、污染、GUNC、rRNA/tRNA、组装图和人工检查缺一不可。
+7. **把同队列交叉验证写成外部验证。** 真正外部验证的测试队列在训练、特征选择和调参阶段完全不可见。
+8. **把数据库没检出写成不存在。** “0”可能是深度不足、参考库缺失、阈值过滤或宿主 reads 挤占造成。
+9. **把横断面关联写成因果。** 疾病、药物、饮食、年龄和采样流程都可能产生相同模式。
+:::
+
+## 这段 Methods 怎么写 {#sec-methods}
+
+> The study structure was reconstructed from the public metadata (`meta_all.tsv`; Zenodo record 3517209, version 1.0; MD5 `da18b10fdabae6308329e80b73991f84`) accompanying Wirbel et al. Five discovery/meta-analysis cohorts and three independent validation cohorts were selected according to the study authors' public parameter file. Only colorectal cancer and control samples were retained, yielding 768 samples (386 CRC and 382 controls). Cohort counts and assay-boundary figures were generated in R 4.4.1. The assay-boundary matrix distinguishes direct measurement, conditional inference, and unmeasured molecular layers based on established microbiome and multi-omics method literature. Figures were exported as PDF and as 300-ppi PNG/TIFF files.
+
+需要替换的不是这段话里的事实，而是换数据后对应的 record、checksum、队列规则、样本数、R 版本和图形参数。若实际读取物种或功能谱，还必须补 profiler、软件版本、数据库 release、feature 类型、单位和归一化。
+
+## 换成你自己的数据怎么做 {#sec-yourdata}
+
+### 先写一张“问题—证据—数据”表
+
+在下载 FASTQ 或安装数据库前，先完成下面四列：
+
+| Scientific question | Required evidence | Available data | Claim limit |
+|---|---|---|---|
+| Which species differ? | shotgun taxonomic profile + covariates | FASTQ / species table | association |
+| Which genes are carried? | gene/pathway profile or assembly | DNA reads / contigs | functional potential |
+| Are the genes active? | matched metatranscriptome | RNA reads | transcription |
+| Is the metabolite produced? | matched metabolomics + standards | peak table / concentrations | abundance, not flux unless measured |
+| Does it cause the phenotype? | temporal/intervention/mechanistic evidence | longitudinal or experiment | causal only at supported level |
+
+若 `Required evidence` 在 `Available data` 中不存在，正确做法是降低结论强度或补实验，而不是增加更多统计模型。
+
+### 队列表只需要五列
+
+把自己的研究设计整理为：
+
+```text
+SampleID    Cohort    Role          Group      Batch
+S001        Center_A  Discovery     Control    Run1
+S002        Center_A  Discovery     Case       Run1
+S101        Center_B  Validation    Control    Run2
+S102        Center_B  Validation    Case       Run2
+```
+
+`Role` 必须在看结果前确定。若只有一个中心或一个批次，就只能报告内部交叉验证；不要把随机拆出的 20% 样本称作“独立外部队列”。
+
+## 小结
+
+shotgun metagenomics 的优势不是“比 16S 图更多”，而是把证据推进到物种、基因、contig、MAG 和菌株层，并能追问“功能可能属于谁”。它的上限同样明确：**DNA 告诉我们群落具备什么遗传潜力，不自动告诉我们当时做了什么，更不自动证明为什么会发生。**
+
+CRC 公开数据还展示了第二条主线：可投稿的证据不仅来自分辨率，也来自独立队列、明确训练边界和可审计数据谱系。
+
+## 参考 {#sec-refs}
+
+- Quince C, Walker AW, Simpson JT, Loman NJ, Segata N. Shotgun metagenomics, from sampling to analysis. *Nature Biotechnology*. 2017;35:833–844. <https://doi.org/10.1038/nbt.3935>
+- Knight R, Vrbanac A, Taylor BC, et al. Best practices for analysing microbiomes. *Nature Reviews Microbiology*. 2018;16:410–422. <https://doi.org/10.1038/s41579-018-0029-9>
+- Integrative HMP Research Network Consortium. The Integrative Human Microbiome Project. *Nature*. 2019;569:641–648. <https://doi.org/10.1038/s41586-019-1238-8>
+- Wirbel J, Pyl PT, Kartal E, et al. Meta-analysis of fecal metagenomes reveals global microbial signatures that are specific for colorectal cancer. *Nature Medicine*. 2019;25:679–689. <https://doi.org/10.1038/s41591-019-0406-6>
+- Wirbel J, et al. Public analysis data, Zenodo record 3517209, version 1.0, CC BY 4.0. <https://doi.org/10.5281/zenodo.3517209>
+- Bowers RM, Kyrpides NC, Stepanauskas R, et al. Minimum information about a single amplified genome and a metagenome-assembled genome. *Nature Biotechnology*. 2017;35:725–731. <https://doi.org/10.1038/nbt.3893>

@@ -1,0 +1,119 @@
+Article 32 data, software, and interpretation notice
+===================================================
+
+Biological source
+-----------------
+All three read types come from the same uneven synthetic MOCK1 DNA sample:
+71 microbial strains, ENA sample SAMEA14435832, project PRJEB52977. The source
+study is Meslier V, Quinquis B, Da Silva K, et al. Benchmarking second and
+third-generation sequencing platforms for microbial metagenomics. Scientific
+Data. 2022;9:694. DOI: 10.1038/s41597-022-01762-z (CC BY 4.0).
+
+The Illumina HiSeq 3000 run is ERR9765746, the historical ONT MinION R9 run is
+ERR9765780, and the PacBio CCS/HiFi run is ERR9765783. These are real reads
+from the same DNA, not simulated reads. That controls biological composition,
+but it does not equalize read yield, read length, chemistry, library process,
+or error model. The workflow is therefore an assembly-strategy audit rather
+than a causal sequencing-platform trial.
+
+Checksum-identified input archives
+----------------------------------
+Full FASTQ archives remain under Git-ignored data/raw directories. Download
+scripts require official ENA bytes and MD5 before use; the Article 30 and 31
+frozen audits independently recorded SHA-256 and FASTQ grammar/counts.
+
+- ERR9765746 R1: 1,740,647,656 bytes; MD5
+  ed0e6e0ee846542531c742a45181cd6f; SHA-256
+  8a26ae83abb5bb6ab8c8d30f9fcbfb43c2e04fd7b333eb11c6a40ef6e85c8c2f.
+- ERR9765746 R2: 2,104,551,765 bytes; MD5
+  5b60ac93cb69dff77ae38cfa501afd06; SHA-256
+  7834df2021f96259061bdfcff9a7e7549950ec2509cd2e0730e5c07d17ecfd48.
+- ERR9765780: 3,117,261,341 bytes; MD5
+  33eb90ac7437b0039180f03e7a697269; SHA-256
+  fba6ae446bbd0436ed000d28059f982cde0c508aa6c4dd02f28730e40fcf2916.
+- ERR9765783: 3,982,506,052 bytes; MD5
+  02ec4bc541b4e1ec5d0f58e4a519f2cb; SHA-256
+  0edd53596da282cf947073cf8e4bdd6d980d6b9dd0811af2065d58dfa0624cd6.
+
+The Illumina run contains 20,597,525 synchronized source pairs. The primary
+analysis follows the paper's ten-million-pair budget with one-pass exact
+sampling without replacement. The namespace is
+20260732:MOCK1:ERR9765746; selected pairs remain in source order. The frozen
+selection record includes the selected-pair ID digest, compressed and
+uncompressed mate digests, base totals, and the locked Python/zlib versions.
+The fastp outputs are scanned again before freezing: FASTQ grammar,
+record/base counts, mate-synchronized pair-ID hashes, compressed bytes, and
+SHA-256 must agree with the fastp JSON. Clean FASTQ files remain outside Git;
+their audit row identifies the exact assembly input.
+
+- Clean R1: 843,284,587 compressed bytes; SHA-256
+  691e8190af5206a1b748212f8f0f785b2c9bf516b48920a4265250550baf0a52.
+- Clean R2: 1,013,512,874 compressed bytes; SHA-256
+  f02ad9333d405e0882ecba10dde870facc91fdb43cb1ba778b71244154d4a8ae.
+
+Reference and publication anchors
+---------------------------------
+The official author repository is locked at commit
+a429a3724d4593f35b8d7323b20252a6be90e1cd. Supplementary Table S1 defines
+mock membership, expected abundances, and accession mapping. Supplementary
+Table S2 provides the published short-only, Illumina+ONT, ONT-only,
+Illumina+HiFi, and HiFi-only outcomes. The reference audit requires exactly
+71 MOCK1 genome files and proves that their decompressed sequence-hash
+multiset equals the 310 records / 239,414,479 bases in MOCK_001.fasta.gz.
+Nine documented current/repository taxonomy-name aliases are retained rather
+than silently relabelled.
+
+The source repository carries a GPL-3.0 LICENSE. The Scientific Data article
+and its article-level supplementary material are CC BY 4.0. Underlying public
+sequence records retain their source-database terms. Attribution, accession,
+commit, and cryptographic digest are preserved with the frozen evidence.
+
+Prespecified assembly and polishing branches
+---------------------------------------------
+Three SPAdes 4.3.0 branches use the same fastp-filtered ten-million Illumina
+pairs and k=21,33,55,77: short-only; supplementary historical ONT R9 reads;
+and supplementary PacBio HiFi reads. SPAdes is a short-read-first graph in
+both hybrid branches; --nanopore and --pacbio do not convert it into a
+long-read-first assembler.
+
+The long-read-first ONT draft and HiFi comparator read checksum-locked frozen
+Flye 2.9.6 outputs generated from the complete ERR9765780 and ERR9765783
+archives. The chapter records the exact reconstruction commands; no output
+from another chapter's work directory is required. The ONT draft is polished
+once with Polypolish 0.6.1 after BWA-MEM 0.7.19 maps mates separately with -a
+and Polypolish filters paired alignments. Default and --careful branches are
+both retained. Polypolish targets bacterial isolate assemblies; on a
+strain-rich metagenome, cross-mapping in conserved regions can introduce as
+well as fix consensus changes. Polishing is therefore judged against the 71
+known truth references, not accepted from a change count alone. Polypolish
+0.6.1 preserves the first-field contig identifier and appends `polypolish` in
+the FASTA description field. The sequence audit requires that exact header
+annotation plus a one-to-one identifier set and order before comparing
+per-contig sequence hashes and length deltas.
+
+All seven assemblies are normalized at >=1,000 bp and evaluated by MetaQUAST
+5.3.0 with its bundled minimap2 2.28-r1209, minimum alignment 500 bp, and
+identity >=97%. The standalone minimap2 2.31 package is not the aligner used
+for these MetaQUAST tables. Per-genome recovery is reported for all 71
+references; >=99% genome fraction is an operational
+full-genome threshold, not proof of an error-free closed genome. The original
+study's --split-scaffolds setting is retained, but any *_broken output is kept
+in a separate sensitivity ledger and is never counted as an eighth primary
+assembly. Missing reference-by-branch report columns are represented as
+explicit zero-recovery rows rather than silently dropped. Mismatch and indel
+rates for those rows remain NA because no aligned denominator exists.
+
+Interpretation boundary
+-----------------------
+N50, genome fraction, complete-genome count, mismatch/indel rate,
+misassemblies, unaligned sequence, runtime, and peak memory answer different
+questions. A hybrid branch is not an unconditional upgrade when contiguity or
+recovery rises while consensus error, strain collapse, or resource cost also
+rises. Modern high-accuracy long reads can make short-read polishing
+unnecessary; the decision must be supported by the project's own truth,
+read-backed variants, coding-sequence integrity, or orthogonal controls.
+
+Raw reads and third-party references are not presented as repository-authored
+content. Repository text, new scripts, normalized summaries, and original
+redraws follow the repository licenses; third-party attribution and license
+boundaries remain explicit.

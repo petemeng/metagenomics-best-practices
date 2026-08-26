@@ -1,0 +1,73 @@
+Article 19 data and database provenance
+=======================================
+
+Biological input
+----------------
+The biological input is the 99,991-pair clean subset of ERR9765746 prepared
+and validated in Article 13. ERR9765746 is MOCK1 from Meslier et al. 2022
+(PRJEB52977, SAMEA14435832). The source study distributes its data under
+CC-BY-4.0. Article 19 does not redistribute raw FASTQ; it records the two
+compressed-file hashes, record counts, base counts, and paired-ID hash in
+19-source-manifest.tsv.
+
+MetaPhlAn compatibility profile
+--------------------------------
+HUMAnN 3.9 accepts MetaPhlAn 3 profiles and MetaPhlAn 4 profiles containing
+the vJun23 database signature. The primary run therefore generates a new
+profile from the same clean FASTQ with MetaPhlAn 4.2.5 and
+mpa_vJun23_CHOCOPhlAnSGB_202403. Both MetaPhlAn archives have publisher MD5
+sidecars. The Article 15 vJan26 profile is retained only for a cross-release
+taxon-selection audit; its header is never rewritten and HUMAnN is not patched.
+HUMAnN 3.9 still checks the MetaPhlAn executable even when a profile is
+supplied. MetaPhlAn 4.2.5 prints an additional installed-database status line
+after its canonical version line, which the legacy HUMAnN parser mistakes for
+the version. scripts/humann39-compat-bin/metaphlan exposes only that first line
+for --version and delegates every non-version invocation unchanged. The wrapper
+is checksum-locked with the frozen evidence; --bypass-prescreen is not used.
+
+HUMAnN databases
+----------------
+The nucleotide database is full ChocoPhlAn v201901_v31 and the translated
+database is the full annotated UniRef90 v201901b DIAMOND build. Their official,
+release-specific endpoints expose exact Content-Length values but no checksum
+sidecars as checked on 2026-07-22. Initial acquisition is therefore labelled a
+retrieval lock, not publisher-checksum verification: HTTPS headers, effective
+URL, byte count, tar/gzip integrity, local SHA-256, extraction inventory, and
+per-file SHA-256 are recorded. After the first acquisition, the manifest is
+changed to fail closed on the observed exact byte count and SHA-256.
+The Globus endpoint advertises byte ranges but does not expose a usable total
+length to aria2's ordinary GET path. The acquisition script therefore divides
+the HEAD-verified Content-Length into 16 non-overlapping HTTP ranges, requires
+HTTP 206 plus the exact byte count for every segment, and assembles the archive
+in order before the whole-file integrity and SHA-256 checks.
+
+Reaction regroup mapping
+------------------------
+The sensitivity branch uses HUMAnN 3.9's packaged
+metacyc_reactions_level4ec_only.uniref.bz2 mapping through
+humann_regroup_table --groups uniref90_rxn. The installed file is 57,511,575
+bytes with SHA-256
+8419ce78a62ca9130914f2c347a9708111cedc7de52ba274659ce51ec7de7752.
+Regrouping is applied by sum to native gene-family RPK with UNGROUPED and
+protected rows retained; reaction CPM and relative abundance are derived only
+after regrouping. Because one UniRef90 cluster can map to multiple reactions,
+regrouped totals can exceed their source totals and are not read counts.
+
+Large artifacts
+---------------
+MetaPhlAn and HUMAnN archives, extracted databases, concatenated FASTQ,
+Bowtie2 indexes, per-read alignments, and DIAMOND intermediates remain under
+the Git-ignored db/humann-cache/ and data/raw/article19/ locations. Only small
+tables, normalized logs, aggregate evidence, and checksum manifests are kept
+under data/small/19-humann3-frozen/.
+
+Primary references
+------------------
+Meslier et al. (2022), Scientific Data 9:694.
+https://doi.org/10.1038/s41597-022-01762-z
+
+Beghini et al. (2021), eLife 10:e65088.
+https://doi.org/10.7554/eLife.65088
+
+HUMAnN User Manual.
+https://github.com/biobakery/humann/blob/master/readme.md

@@ -1,0 +1,64 @@
+
+[1;4;93mStarting Polypolish filter[0m [2m(2026-07-26 23:04:26)[0m
+[2m    This runs a pre-processing filter on SAM alignments before they are used to
+polish. It looks at each read pair and flags alignments that do not seem to be
+part of a concordant pair. This can improve the accuracy Polypolish, especially
+near the edges of repeats.[0m
+
+Polypolish version: 0.6.1
+
+Input alignments:
+  ${ARTICLE32_WORK_DIR}/polish/alignments_R1.sam
+  ${ARTICLE32_WORK_DIR}/polish/alignments_R2.sam
+
+Output alignments:
+  ${ARTICLE32_WORK_DIR}/polish/filtered_R1.sam.partial
+  ${ARTICLE32_WORK_DIR}/polish/filtered_R2.sam.partial
+
+Settings:
+  --orientation auto
+  --low 0.1
+  --high 99.9
+
+
+[1;4;93mLoading alignments[0m [2m(2026-07-26 23:04:26)[0m
+${ARTICLE32_WORK_DIR}/polish/alignments_R1.sam: 11,822,434 alignments from 9,602,764 reads
+${ARTICLE32_WORK_DIR}/polish/alignments_R2.sam: 11,871,663 alignments from 9,593,365 reads
+
+
+[1;4;93mFinding insert size thresholds[0m [2m(2026-07-26 23:05:59)[0m
+[2m    Read pairs with exactly one alignment per read are used to determine the
+orientation and insert size thresholds for the read set.[0m
+
+fr: 8,733,736 pairs
+rf: 813 pairs
+ff: 804 pairs
+rr: 916 pairs
+
+Automatically determined correct orientation: fr
+
+Low threshold:  159 (0.1st percentile)
+High threshold: 1005 (99.9th percentile)
+
+
+[1;4;93mFiltering SAM files[0m [2m(2026-07-26 23:06:22)[0m
+[2m    Read alignments that are part of a good pair (correct orientation and
+insert size) pass the filter and are written unaltered to the output file. Read
+alignments which are not part of good pair are written to the output file with a
+"ZP:Z:fail" tag so Polypolish will not use them.[0m
+
+Filtering ${ARTICLE32_WORK_DIR}/polish/alignments_R1.sam:
+  11,023,089 pass
+  799,345 fail
+
+Filtering ${ARTICLE32_WORK_DIR}/polish/alignments_R2.sam:
+  11,020,093 pass
+  851,570 fail
+
+
+[1;4;93mFinished![0m [2m(2026-07-26 23:07:43)[0m
+Alignments before filtering: 23,694,097
+Alignments after filtering:  22,043,182
+
+Time to run: 0:03:16.573046
+

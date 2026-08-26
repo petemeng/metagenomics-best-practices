@@ -1,0 +1,69 @@
+Article 31 data, software, and interpretation notice
+===================================================
+
+Biological source
+-----------------
+Both long-read archives represent the same uneven synthetic MOCK1 DNA sample:
+71 microbial strains, ENA sample SAMEA14435832, project PRJEB52977. The source
+study is Meslier V, Quinquis B, Da Silva K, et al. Benchmarking second and
+third-generation sequencing platforms for microbial metagenomics. Scientific
+Data. 2022;9:694. DOI: 10.1038/s41597-022-01762-z (CC BY 4.0).
+
+The ONT MinION R9 run is ERR9765780; the PacBio CCS/HiFi run is ERR9765783.
+These are sequenced biological mock-community reads, not simulated reads. They
+control the biological DNA source but not read yield, length, library process,
+chemistry, or error model. Consequently, the comparison is not interpreted as
+a platform-only causal experiment.
+
+Checksum-identified full FASTQ inputs
+-------------------------------------
+The complete compressed archives are downloaded to data/raw/article31/full/
+and excluded from Git. The downloader requires both the official ENA byte
+count and MD5 before an archive can be used.
+
+- ERR9765780.fastq.gz: 3,117,261,341 bytes; MD5
+  33eb90ac7437b0039180f03e7a697269; 696,944 reads; 3,125,920,499 bases.
+- ERR9765783.fastq.gz: 3,982,506,052 bytes; MD5
+  02ec4bc541b4e1ec5d0f58e4a519f2cb; 524,805 reads; 5,400,038,744 bases.
+
+The manifest keeps the study-reported mean and maximum read lengths in
+explicitly named StudyReported* columns. These are not silently recomputed
+from the raw ENA archive totals: for example, the paper reports an ONT mean of
+4,408.41 bp, whereas ENA raw base_count/read_count is 4,485.18 bp. The frozen
+source audit independently streams each complete FASTQ and records its
+Observed* length statistics.
+
+No random subsampling is applied in the primary run. Full-run assemblies are
+required because low-abundance genomes are precisely where coverage loss is
+most consequential. A separate tutorial subset may be generated for command
+practice, but its output must not replace the frozen full-run evidence.
+
+Platform-adapted assembly branches
+----------------------------------
+The historical ONT R9 reads use Flye 2.9.6 with --nano-raw and --meta. They do
+not satisfy the assumptions of current R10 high-quality presets. The HiFi run
+uses the same Flye version with --pacbio-hifi and --meta, hifiasm-meta 0.3.5
+(r81) with the documented mock-community --force-rs branch, and metaMDBG 1.4.
+This design permits a within-HiFi assembler comparison and a same-Flye,
+platform-adapted contrast, but it does not create equal input budgets.
+Assembly-length summaries retain five prespecified thresholds. Every read-back
+mapping uses a separately materialized >=1,000-bp FASTA, so assembler-specific
+short-contig defaults cannot change the reference search space.
+
+hifiasm-meta is built from the official hamtv0.3.5 source archive. The archive
+SHA-256 is 8c1c1f394e0d4d3be2c78cb76c4122dd0caf2d088a8b986c161d4d90c194f560.
+Its source release is stored only in the Git-ignored raw workspace; the build
+script, version, source URL, archive digest, and compiler identity are frozen.
+
+Interpretation boundary
+-----------------------
+Contiguity, read recruitment, mapping identity, supplementary/split alignment
+signals, circular-candidate flags, runtime, and peak memory are descriptive
+workflow outputs. N50 is not correctness. A software circular flag is not
+proof of a closed, correctly reconstructed chromosome or plasmid. Reference-
+aware misassembly and genome-fraction analysis belongs to the assembly-QC
+workflow and is not inferred from read-back mapping alone.
+
+Raw reads retain the ENA/source-study terms and license. Repository text,
+scripts, normalized tables, and original redraws are released under the
+repository licenses; third-party reads are not redistributed through Git.

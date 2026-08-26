@@ -1,0 +1,331 @@
+---
+title: "第 38 篇 · Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界"
+author: "宏基因组分析最佳实践 · Shotgun 系列"
+date: last-modified
+draft: false
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: true
+    code-copy: true
+    number-sections: true
+execute:
+  eval: false
+  freeze: auto
+  warning: false
+  message: false
+fig-dpi: 350
+fig-format: png
+wechat:
+  deck: "ARG 不是一个统一 identity cutoff。本文以 RGI 6.0.8 + CARD 4.0.1 实跑 protein catalog、co-assembly 与双阳性对照，严格分开 Perfect/Strict 与 Loose，并解释为什么基因存在不等于耐药表型。"
+  facts:
+    - {label: "真实输入", value: "93,782 proteins · 84.81 Mb contigs"}
+    - {label: "主 ARG 集", value: "36 Strict genes"}
+    - {label: "Loose 敏感性", value: "6,763 genes"}
+    - {label: "阳性对照", value: "32 / 21 primary hits"}
+  resources:
+    - {label: "建议节点", value: "32 cores · >=16 GB RAM"}
+    - {label: "工作磁盘", value: ">=20 GB"}
+    - {label: "锁定版本", value: "RGI 6.0.8 · CARD 4.0.1"}
+    - {label: "实测耗时", value: "37 s protein · 76 s contig"}
+  code_heading: "从 protein/contig 到 CARD model、证据层级和 read-weighted resistome"
+  expected_images: 4
+  image_alt:
+    38-evidence-tiers.png: "Perfect Strict and Loose CARD evidence tiers across catalog coassembly and two control genomes"
+    38-primary-hit-quality.png: "Amino acid identity and reference-length ratio for primary CARD hits"
+    38-drug-class-profile.png: "Fractionally allocated drug classes for primary catalog resistance genes"
+    38-positive-controls.png: "Perfect and Strict CARD hits in Pseudomonas and Staphylococcus positive controls"
+---
+
+> **学习目标：**用 Resistance Gene Identifier（RGI）调用 Comprehensive Antibiotic Resistance Database（CARD）的 model-aware resistome；分清 Perfect、Strict 与 Loose；理解 protein 与 contig 分支能看见的模型不同；用正控验证流程；把 ARG sequence evidence 与 antimicrobial susceptibility phenotype 分开。  
+> **真实数据：**93,782 条 Article 34 catalog proteins、Article 30 的 18,354 条 $≥1$ kb co-assembly contigs（84.81 Mb），以及 *Pseudomonas aeruginosa* ATCC 9027 和 *Staphylococcus aureus* USA300 FPR3757。catalog read weights来自 Article 35。  
+> **结论边界：**RGI 命中表示 sequence/model evidence；它不等同于 isolate 的 MIC、临床耐药、基因表达或可移动性。Loose 不进入主 ARG abundance。
+
+## 这一步对应论文里的哪张图 {#sec-target}
+
+锚定 CARD 2023 的数据库/模型框架与在线 RGI 部分：CARD 把 curated reference sequences、Antibiotic Resistance Ontology（ARO）和 detection models 连在一起，不是把所有 ARG 压成一个固定 identity threshold [@alcock2023card]。该论文的 model inventory 也说明 homolog、variant、overexpression 与 rRNA models 的可观测输入并不相同。
+
+DeepARG 使用深度学习从 sequence features 预测 ARG category，适合扩展候选搜索，但原始 DeepARG 1.0.4 的软件与训练数据库已经形成 legacy stack [@arangoargoty2018deeparg]。本文把它放在隔离的 sensitivity environment，不让它替代 CARD-RGI 的 curated model thresholds。
+
+![Perfect/Strict 与 Loose 相差两个数量级；任何主结论都必须保留这一证据分层。](../figures/38-evidence-tiers.png){#fig-38-tiers}
+
+::: {.callout-important title="先给结论：主分析只有 36 条，不是 6,799 条"}
+catalog protein 分支共输出 6,799 hits，其中 36 条为 Strict，0 条为 Perfect，6,763 条为 Loose。主 resistome 只包含 Perfect + Strict；Loose 是预先声明的 sensitivity set。若把全部输出行都叫 ARG，结果会被 6,763 个低于 curated model threshold 的候选支配。
+:::
+
+## 理论：CARD 是 model-aware classifier，不是通用 BLAST 表 {#sec-theory}
+
+### 1. 三个 tier 的含义
+
+- **Perfect**：query 与 CARD curated reference model 的预期序列完全匹配；这不是“表型必然耐药”。
+- **Strict**：通过相应 CARD detection model 的 curated bit-score/variant rule，但不要求 100% identity。
+- **Loose**：有一定相似性，却没有通过该 model 的 Strict 门槛；可用于发现候选，不宜直接作 prevalence 或 abundance 主结果。
+
+因此不存在一个可以替代 RGI model rules 的统一“identity $≥90% 即 ARG”公式。不同 families 的可区分近邻、长度与 resistance-conferring variants 不同。
+
+### 2. 输入类型决定可观测模型
+
+| Input | 优势 | 主要盲点 |
+|---|---|---|
+| Protein catalog | 快；可直接连接 gene abundance；适合 protein homolog models | 看不到 rRNA variants；核苷酸位点与 contig context 丢失；partial ORF 可能截断 |
+| Nucleotide contigs | 可重新 call ORFs；可捕获部分 nucleotide/variant context；保留邻域 | 短 contig 会截断；宿主/MGE 归属仍需 binning/plasmid/long reads |
+| Raw reads | 可减少 assembly loss，适合专用 read-level pipeline | 多重比对、短片段 specificity 与单位定义更困难 |
+
+本次 catalog 与 co-assembly 两条分支并行：protein 主分支用于 gene/read weighting；contig 分支用于检查输入模型与 context sensitivity。它们不是两个独立生物学重复。
+
+### 3. ARG presence 到 phenotype 还缺三座桥
+
+耐药表型至少取决于：完整且正确的 resistance allele、表达/调控与宿主背景、抗菌药物和实验条件。对 efflux pump、porin、regulator、target mutation 尤其如此。一个 sequence hit 既不能证明 expression，也不能证明 MIC 超过临床 breakpoint。
+
+### 4. 多药类别必须 fractional allocation
+
+一条 ARG 可以对应多个 drug classes。若有 $m_g$ 个 classes，class $k$ 的 gene mass 为 $1/m_g$，read mass 为 $c_{gs}/m_g$。主集合的 fractional gene equivalents 必须闭合到 36，另外保留 `GenesWithLabel` 表示 overlap。
+
+![Strict hits 的 identity 与 reference-length ratio 分布；CARD 的通过条件来自 model-specific rules，而非图上的统一矩形门槛。](../figures/38-primary-hit-quality.png){#fig-38-quality}
+
+## 准备工作 {#sec-setup}
+
+### 算力门槛
+
+| 项目 | 本次实跑 | 队列级建议 |
+|---|---:|---:|
+| CPU | 32 cores | 16–64 cores |
+| RAM | protein 1.43 GiB；contig 2.74 GiB | 预留 16–32 GB |
+| 磁盘 | CARD archive 4.62 MB；work 约数 GB | 至少 20 GB；保留 JSON 时增加空间 |
+| 耗时 | protein 0:37；contig 1:16；controls 各约 10 s | 与 ORF 数、alignment backend 和存储相关 |
+
+没有服务器时，可读取 `data/small/38-resistome-card-rgi-frozen/` 的 93,782-gene ledger、primary hit quality、drug-class/mechanism summaries 和双正控结果。网页上的少量序列测试适合核对输入，不适合替代队列级版本与 provenance。
+
+<details>
+<summary>点开：锁定 RGI/CARD、legacy DeepARG 与内联出版主题</summary>
+
+```bash
+mamba create -n metagenome-resistome-2026.07 \
+  --file env/resistome-linux-64.lock
+
+RGI_ENV="$HOME/miniconda3/envs/metagenome-resistome-2026.07"
+CARD_ROOT="/absolute/path/card-4.0.1"
+mkdir -p "${CARD_ROOT}/archive" "${CARD_ROOT}/rgi-db"
+
+curl -fL --retry 5 \
+  https://card.mcmaster.ca/download/0/broadstreet-v4.0.1.tar.bz2 \
+  -o "${CARD_ROOT}/archive/broadstreet-v4.0.1.tar.bz2"
+echo "d80520c51ef3bae1098cd00e0c3d1d013e5785f8d8df787dcc5f435927557df9  ${CARD_ROOT}/archive/broadstreet-v4.0.1.tar.bz2" | sha256sum -c -
+
+tar -xjf "${CARD_ROOT}/archive/broadstreet-v4.0.1.tar.bz2" -C "${CARD_ROOT}/rgi-db"
+env PATH="${RGI_ENV}/bin:/usr/bin:/bin" DATA_PATH="${CARD_ROOT}/rgi-db" \
+  rgi load --card_json "${CARD_ROOT}/rgi-db/card.json" --local
+```
+
+DeepARG 1.0.4 只在隔离环境中做 legacy sensitivity；它依赖 Python 2.7-era stack，不能与现代 RGI 环境合并：
+
+```bash
+mamba env create -f env/deeparg-legacy.yml
+```
+
+```{r}
+install.packages(c("ggplot2", "dplyr", "readr", "tidyr", "forcats", "scales", "patchwork"))
+library(ggplot2); library(dplyr); library(readr); library(tidyr); library(forcats)
+set.seed(20260738)
+
+pal_pub <- c(
+  Perfect = "#009E73", Strict = "#0072B2", Loose = "#E69F00",
+  `Catalog genes` = "#4D4D4D", `MOCK1 reads` = "#0072B2", `MOCK2 reads` = "#D55E00"
+)
+scale_color_pub <- function(...) scale_color_manual(values = pal_pub, ...)
+scale_fill_pub  <- function(...) scale_fill_manual(values = pal_pub, ...)
+theme_pub <- function(base_size = 12) {
+  theme_bw(base_size = base_size) + theme(
+    panel.grid.minor = element_blank(), panel.grid.major.x = element_blank(),
+    axis.text = element_text(color = "black"), legend.key = element_blank(),
+    strip.background = element_rect(fill = "#EEF3F5", color = NA), plot.title.position = "plot"
+  )
+}
+save_pub <- function(plot, file_base, width = 180, height = 120, units = "mm", dpi = 350) {
+  dir.create(dirname(file_base), recursive = TRUE, showWarnings = FALSE)
+  ggsave(paste0(file_base, ".pdf"), plot, width = width, height = height, units = units, device = cairo_pdf)
+  ggsave(paste0(file_base, ".png"), plot, width = width, height = height, units = units, dpi = dpi, bg = "white")
+  ggsave(paste0(file_base, ".tiff"), plot, width = width, height = height, units = units, dpi = dpi, compression = "lzw", bg = "white")
+  invisible(plot)
+}
+```
+
+</details>
+
+### 输入与数据库身份
+
+| Asset | Identity gate | Role |
+|---|---|---|
+| Catalog FAA/FNA | 93,782 records；SHA-256 locked | protein main + nucleotide lookup |
+| Co-assembly | 18,354 contigs；84,811,518 bp；SHA-256 `904f92…70a` | contig/model sensitivity |
+| *P. aeruginosa* ATCC 9027 | GCA_002563335.1；6.34 Mb | Gram-negative control |
+| *S. aureus* USA300 FPR3757 | GCA_000013465.1；2.92 Mb | Gram-positive control |
+| CARD | release 4.0.1；archive and `card.json` SHA-256 locked | ARO + detection models |
+
+## 可复制代码：RGI 主分支、contig 分支与分层汇总 {#sec-code}
+
+### 第 1 步：准备输入与数据库
+
+```bash
+ROOT="$PWD"
+WORK="work/article38"
+RGI_ENV="$HOME/miniconda3/envs/metagenome-resistome-2026.07"
+CARD_ROOT="/absolute/path/card-4.0.1"
+
+python3 scripts/prepare_article38_resistome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}" \
+  --database-root "${CARD_ROOT}" --env-prefix "${RGI_ENV}"
+```
+
+准备器核对两种 catalog FASTA、co-assembly、controls、CARD canonical archive 与 loaded `card.json`；CARD `_version` 必须为 `4.0.1`。
+
+### 第 2 步：protein catalog 主分析
+
+```bash
+env PATH="${RGI_ENV}/bin:/usr/bin:/bin" \
+  DATA_PATH="${CARD_ROOT}/rgi-db" \
+  rgi main \
+    -i "${WORK}/inputs/catalog.faa" \
+    -o "${WORK}/catalog/catalog" \
+    -t protein \
+    -a DIAMOND \
+    -n 32 \
+    --include_loose \
+    --clean
+```
+
+`--include_loose` 只为了生成 sensitivity ledger；主筛选仍为 `Cut_Off %in% c("Perfect", "Strict")`。本次不启用 `--include_nudge`，避免将近阈值 Loose 自动改写成 Strict。
+
+### 第 3 步：contig 与正控分支
+
+```bash
+python3 scripts/run_article38_resistome.py \
+  --work-dir "${WORK}" \
+  --database-root "${CARD_ROOT}" \
+  --env-prefix "${RGI_ENV}" \
+  --threads 32
+```
+
+contig 核心参数为 `-t contig --low_quality -g PYRODIGAL`；co-assembly 的 data type 为 `wgs`，完整 controls 为 `chromosome`。`--low_quality` 允许研究 draft contigs，却不能把 partial model 命中解释为完整 resistance cassette。
+
+### 第 4 步：补回零命中并构建主/敏感性 ledger
+
+```bash
+python3 scripts/summarize_article38_resistome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}"
+
+gzip -cd "${WORK}/summary/resistome-gene-calls.tsv.gz" | sed -n '1,6p'
+```
+
+```text
+GeneID  Completeness  EvidenceTier  PrimaryARG  BestHitARO  ModelType  DrugClasses
+megahit-co__c000001_1  Partial     No hit  no  -  -  -
+megahit-co__c000002_1  Incomplete  No hit  no  -  -  -
+megahit-co__c000003_1  Partial     Loose   no  ...  protein homolog model  ...
+```
+
+完整表有 93,782 行。36 个主 genes 在 MOCK1/MOCK2 分别承载 1,682/1,778 assigned reads，即约 0.060%/0.064% 的 catalog-assigned read mass；这是相对 read evidence，不是每毫升 ARG copies。
+
+### 第 5 步：读取固化表与验收
+
+```{r}
+frozen <- "data/small/38-resistome-card-rgi-frozen"
+tiers <- read_tsv(file.path(frozen, "evidence-tier-summary.tsv"), show_col_types = FALSE)
+drug  <- read_tsv(file.path(frozen, "drug-class-summary.tsv"), show_col_types = FALSE)
+quality <- read_tsv(file.path(frozen, "primary-hit-quality.tsv"), show_col_types = FALSE)
+
+stopifnot(sum(tiers$UniqueORFs[tiers$Dataset == "catalog" & tiers$EvidenceTier %in% c("Perfect", "Strict")]) == 36)
+stopifnot(abs(sum(drug$FractionalGeneEquivalent) - 36) < 1e-6)
+
+p_quality <- ggplot(quality, aes(as.numeric(IdentityPercent), as.numeric(ReferenceLengthPercent), color = EvidenceTier)) +
+  geom_point(size = 2.4, alpha = 0.8) + scale_color_pub() +
+  labs(x = "Best-hit amino-acid identity (%)", y = "Length relative to CARD reference (%)", color = NULL) + theme_pub()
+save_pub(p_quality, "figures/38-primary-hit-quality")
+```
+
+```bash
+python3 scripts/freeze_article38_resistome.py \
+  --project-root "${ROOT}" --work-dir "${WORK}" \
+  --output-dir data/small/38-resistome-card-rgi-frozen
+
+python3 scripts/validate_article38_resistome.py \
+  --project-root "${ROOT}" \
+  --frozen-dir data/small/38-resistome-card-rgi-frozen \
+  --output-dir results/38-resistome-card-rgi \
+  --figure-dir figures --chapter chapters/38-resistome.qmd
+```
+
+## 审计与升级 {#sec-audit}
+
+### 不再用统一 identity cutoff 代替 model rule
+
+36 个 catalog primary genes 全部为 Strict；其 amino-acid identities 和 reference-length ratios 跨越较宽范围。它们通过的是各自 CARD model 的 bit-score/variant contract。图中的 identity 只用于审计，不应反过来造一个全 families 通用门槛。
+
+### Loose 只回答“候选有多大”
+
+catalog 中 6,763 个 Loose genes 是主集合的 188 倍。报告它们的价值是说明 uncertainty envelope，而不是把 sensitivity 当 discovery yield。若研究目标是新 ARG discovery，Loose 还需结构域、保守位点、synteny、宿主背景和实验功能验证。
+
+### 正控验证 pipeline，不验证所有表型
+
+*P. aeruginosa* 正控有 4 Perfect + 28 Strict；*S. aureus* 正控有 7 Perfect + 14 Strict，并检出 `mecA` 等高相似度 hits。正控证明安装、数据库和输入模式能回收已知 sequence evidence；它不替代 AST，也不能证明每个命中的药物类别都在当前培养条件下表达。
+
+![双正控同时检出 Perfect 与 Strict，避免“真实数据没有 Perfect 就怀疑流程坏了”的误判。](../figures/38-positive-controls.png){#fig-38-controls}
+
+### 从 gene list 升级为守恒的 drug-class profile
+
+36 个 primary genes 主要落在 target alteration、efflux 与 inactivation 三类 mechanisms；drug classes 以 glycopeptide、disinfectant/antiseptic、fluoroquinolone 和 tetracycline 为主。多药 genes 采用 fractional allocation，因此 class totals 不会凭空超过 36。
+
+![Drug class 的 gene share 与 read-weight 不完全相同；多标签已经按比例分配。](../figures/38-drug-class-profile.png){#fig-38-class}
+
+### DeepARG 的合理位置
+
+DeepARG 可作为预先声明的 ML sensitivity branch，但必须记录模型/数据库 snapshot，并与 RGI 主集合画 overlap，而不能将 DeepARG score 与 CARD Strict 混成同一 confidence。原始 DeepARG 1.0.4 的 legacy dependencies 需隔离；若无法完整锁定训练数据库，结果只能用于探索。
+
+## 出版级美化 {#sec-publication}
+
+- Perfect、Strict、Loose 使用固定颜色和独立图例；纵轴跨数量级时标明 symlog/log。
+- identity/length 图不绘制伪造的统一 RGI threshold；图注写清真正 gate 是 CARD model。
+- drug classes 很长时横向排列，正文报告 top classes，补充表保留全部。
+- 所有图只用英文标签；PDF、350 dpi PNG、LZW TIFF 同时导出。
+
+## 常见坑 {#sec-pitfalls}
+
+::: {.callout-caution title="审稿人最常追问的七件事"}
+
+1. 把 RGI 输出的全部行都叫 ARG，不区分 Perfect/Strict/Loose。
+2. 用统一 identity cutoff 覆盖 CARD model-specific thresholds。
+3. 开启 nudge 却不报告，导致 Loose/Strict 边界不可复现。
+4. protein catalog 分支声称捕获 rRNA resistance variants 或完整 nucleotide context。
+5. 把 efflux pump、porin、regulator hit 直接写成临床耐药。
+6. 将同一多药 gene 完整复制到多个 drug classes，造成 abundance 膨胀。
+7. 没有正控、数据库 release、`card.json` SHA-256 或工具版本。
+
+:::
+
+## 这段 Methods 怎么写 {#sec-methods}
+
+### Methods template
+
+> Antimicrobial resistance determinants were identified with RGI v6.0.8 and CARD v4.0.1. Protein-catalogue searches used DIAMOND v2.2.4, whereas nucleotide contigs and control genomes were processed in low-quality contig mode with Pyrodigal v3.7.1. Perfect and Strict RGI calls were prespecified as the primary resistome; Loose calls were retained only for sensitivity analysis, and nudging was disabled. Multi-drug annotations were summarized by fractional allocation across drug classes. Gene abundance was calculated from audited raw read assignments to the same 93,782-protein catalogue. *Pseudomonas aeruginosa* ATCC 9027 and *Staphylococcus aureus* USA300 FPR3757 served as positive sequence controls. Software, CARD archive and `card.json` identities were locked by SHA-256; deterministic interfaces used seed 20260738.
+
+结果段可接：
+
+> Thirty-six catalogue proteins met the primary Perfect/Strict criterion, whereas 6,763 additional proteins were classified as Loose and were excluded from primary abundance estimates. Sequence evidence was not interpreted as antimicrobial susceptibility or clinical resistance.
+
+## 换成你自己的数据怎么做 {#sec-own-data}
+
+你需要 protein FASTA 或 contigs、stable IDs、与 gene IDs 对齐的 abundance，以及明确研究目标：surveillance、candidate discovery 还是 phenotype prediction。
+
+1. 固定 RGI、CARD release、alignment backend、input type、Loose 和 nudge policy。
+2. protein 与 contig 分支分别记录，不把它们当独立 replicates。
+3. Perfect+Strict 作为主集合；Loose 单独报告并做验证优先级排序。
+4. variant/rRNA/overexpression models 根据所需 sequence context 选择输入；不要超出输入能力。
+5. 需要宿主归属时结合 MAG、plasmid/MGE prediction、coverage linkage 或 long reads。
+6. 需要临床结论时加入 isolate-level AST/MIC、表达和 breakpoint 标准；宏基因组 ARG presence 不能替代这些数据。
+
+## 参考 {#sec-references}
+
+- CARD 2023 and RGI framework [@alcock2023card]
+- DeepARG [@arangoargoty2018deeparg]

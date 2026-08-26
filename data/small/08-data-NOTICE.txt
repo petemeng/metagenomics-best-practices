@@ -1,0 +1,124 @@
+Article 08 data, license, and provenance notice
+================================================
+
+1. Biological source and study license
+--------------------------------------
+
+All three platform comparisons in Article 08 refer to the same synthetic
+MOCK1 DNA sample:
+
+- Study: Meslier V, Quinquis B, Da Silva K, et al. Benchmarking second and
+  third-generation sequencing platforms for microbial metagenomics.
+  Scientific Data. 2022;9:694.
+- DOI: https://doi.org/10.1038/s41597-022-01762-z
+- License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+- ENA project: PRJEB52977.
+- ENA sample: SAMEA14435832.
+- Biological material: MOCK1, an uneven synthetic metagenome made from DNA
+  of 71 microbial strains.
+
+The platform benchmark table transcribes MOCK1 values reported in Tables 1-3
+of the paper and joins them to official ENA run totals. No result was measured
+from figure pixels. Platform-specific assemblers and unequal read budgets were
+used in the source study, so the assembly comparison is observational and is
+not interpreted as a platform-only causal effect.
+
+2. Checksum-identified public FASTQ streams
+-------------------------------------------
+
+The repository does not store raw FASTQ. The one-time provenance builder
+streamed only the first 5,000 complete records from each checksum-identified
+ENA file and committed per-read metrics plus 60-base display prefixes.
+
+Illumina HiSeq 3000, paired run ERR9765746:
+
+- R1:
+  https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR976/006/ERR9765746/ERR9765746_1.fastq.gz
+- ENA MD5: ed0e6e0ee846542531c742a45181cd6f
+- Compressed bytes: 1740647656
+- R2:
+  https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR976/006/ERR9765746/ERR9765746_2.fastq.gz
+- ENA MD5: 5b60ac93cb69dff77ae38cfa501afd06
+- Compressed bytes: 2104551765
+
+Oxford Nanopore Technologies MinION R9, single-read run ERR9765780:
+
+- FASTQ:
+  https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR976/000/ERR9765780/ERR9765780.fastq.gz
+- ENA MD5: 33eb90ac7437b0039180f03e7a697269
+- Compressed bytes: 3117261341
+
+PacBio CCS, single-read run ERR9765783:
+
+- FASTQ:
+  https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR976/003/ERR9765783/ERR9765783.fastq.gz
+- ENA MD5: 02ec4bc541b4e1ec5d0f58e4a519f2cb
+- Compressed bytes: 3982506052
+
+ENA metadata were checked on 2026-07-19. The full compressed download is
+approximately 10.8 GB, before FASTQ expansion. Full downloads therefore
+belong in data/raw or scratch storage and not in Git.
+
+3. Deterministic prefix and its limits
+--------------------------------------
+
+Selection rule:
+
+  first 5,000 complete FASTQ records in each checksum-identified ENA file
+
+Illumina R1 supplies the platform-level prefix metrics; R2 is streamed
+separately to prove that the first 5,000 normalized read identifiers and their
+order match R1. The ONT and PacBio streams each contribute 5,000 single reads.
+This produces 15,000 metric rows and four display records.
+
+The selection is deterministic but not random. It is suitable for checking
+FASTQ grammar, mate synchronization, quality decoding, and the existence of
+kilobase-scale reads. It is not a statistically representative subsample of
+each run, a full-run yield estimate, or a specification for a current
+sequencing product. Full-run means, mapping identity, and assembly outcomes
+come from the paper/ENA benchmark table, not from the 5,000-record prefixes.
+
+4. Metadata discrepancies and historical boundary
+--------------------------------------------------
+
+The published Table 4 prints the Illumina MOCK1 accession as ERR9765446.
+That identifier did not return a run record in the official ENA project
+metadata checked on 2026-07-19. The project metadata identify ERR9765746 for
+the HiSeq 3000 MOCK1 run, and the accession, URLs, MD5 values, read count, and
+base count used here all refer to ERR9765746. The difference is reported as a
+source-table accession typo; it is not silently corrected.
+
+The paper describes the PacBio experiment as Sequel II CCS, whereas the ENA
+run metadata instrument-model field is "Sequel". Article 08 reports both
+statements and does not manufacture a more specific archive value.
+
+The ONT benchmark used a historical MinION R9 workflow and reported 89.08%
+mean end-to-end mapped identity. That value is evidence about this 2022
+benchmark dataset, not a claim about current ONT chemistry or current Dorado
+models. Current ONT workflows retain POD5 raw signal and normally emit
+basecalled BAM; FASTQ is an optional reduced representation. Current PacBio
+HiFi workflows likewise use standardized BAM as the information-rich
+container. Vendor format documentation was checked on 2026-07-19 and is
+linked in the article.
+
+5. Committed-source fingerprints
+--------------------------------
+
+- 08-ena-fastq-sources.tsv
+  SHA-256 96638ae0d16ce5953760b596887c9f8f443c1dc33e0f82bef2e6ac040e69d962
+- 08-platform-benchmark.tsv
+  SHA-256 4f5db378ec40b0e7ca16579aa3aadec770bba4bdd097c3bd8fa9ee826e7e7bf1
+- 08-native-format-contract.tsv
+  SHA-256 26ddd05a1f56df7d13a5769090241b87ed264399b0a9044076ce0467fa351af8
+- 08-read-prefix-metrics.tsv
+  SHA-256 6c426e0c89a95b1c1cc7ec631629e3635a7fd83c61c90d4086801b28495b5a61
+- 08-fastq-anatomy.tsv
+  SHA-256 591c7a7387232da0aa48c0cba7a3e1bd8d8a8b9b92ef6a0ed1f58e427199b62b
+- 08-prefix-source-summary.json
+  SHA-256 f7bc59e303f26f723aacb2ff8a1d065411c1dcface225ce6d16969baefa66d2d
+- scripts/build_article08_prefix_metrics.py
+  SHA-256 316371f555d16d01d8240cea95509778f75b8b532ab994f308de999372b69be8
+- scripts/prepare_article08_data.R
+  SHA-256 aa4def2ea6ddbcbd9d5d37d3ba5662d445cdb5640d74d13f6dafc0d2d35460f7
+- scripts/render_article08_figures.R
+  SHA-256 c19d641161476a0edadf023d61ff889459503329b194869078236c52c03d058f
