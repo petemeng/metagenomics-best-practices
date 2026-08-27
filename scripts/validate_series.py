@@ -20,6 +20,8 @@ from tutorial_automation.manifest import load_manifest
 
 
 EXPECTED_COUNT = 77
+EXPECTED_WECHAT_TITLE_PREFIX = "宏基因组最佳实践"
+EXPECTED_WECHAT_TITLE_MAX_CHARS = 64
 EXECUTABLE_TOKEN_NUMBERS = set(range(1, 45))
 UPSTREAM_EVAL_FALSE = {
     6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -973,6 +975,51 @@ def main() -> int:
     if manifest.get("series", {}).get("total_articles") != EXPECTED_COUNT:
         errors.append("series.total_articles must equal 77")
 
+    wechat_contract = manifest.get("publication", {}).get("wechat", {})
+    if not isinstance(wechat_contract, dict):
+        errors.append("publication.wechat must be a mapping")
+        wechat_contract = {}
+    title_prefix = str(wechat_contract.get("title_prefix", "")).strip()
+    if title_prefix != EXPECTED_WECHAT_TITLE_PREFIX:
+        errors.append(
+            "publication.wechat.title_prefix must equal "
+            f"{EXPECTED_WECHAT_TITLE_PREFIX}"
+        )
+    try:
+        title_max_chars = int(wechat_contract.get("title_max_chars", 0))
+    except (TypeError, ValueError):
+        title_max_chars = 0
+    if title_max_chars != EXPECTED_WECHAT_TITLE_MAX_CHARS:
+        errors.append(
+            "publication.wechat.title_max_chars must equal "
+            f"{EXPECTED_WECHAT_TITLE_MAX_CHARS}"
+        )
+
+    wechat_titles: list[str] = []
+    for item in chapters:
+        number = int(item["number"])
+        topic = str(item.get("wechat_title", item.get("title", ""))).strip()
+        if not topic:
+            errors.append(f"article {number:02d} has an empty WeChat topic title")
+            continue
+        if topic.startswith(EXPECTED_WECHAT_TITLE_PREFIX):
+            errors.append(
+                f"article {number:02d} WeChat topic repeats the series prefix"
+            )
+        public_title = f"{EXPECTED_WECHAT_TITLE_PREFIX}｜{number}. {topic}"
+        wechat_titles.append(public_title)
+        if len(public_title) > EXPECTED_WECHAT_TITLE_MAX_CHARS:
+            errors.append(
+                f"article {number:02d} WeChat title has {len(public_title)} "
+                f"characters; maximum is {EXPECTED_WECHAT_TITLE_MAX_CHARS}"
+            )
+        if f"｜0{number}. " in public_title or f"｜第 {number} 篇" in public_title:
+            errors.append(f"article {number:02d} uses a legacy WeChat title form")
+    if len(wechat_titles) != EXPECTED_COUNT:
+        errors.append("WeChat title sequence must contain exactly 77 titles")
+    if len(set(wechat_titles)) != len(wechat_titles):
+        errors.append("WeChat public titles must be unique")
+
     files = [item.get("file") for item in chapters]
     if len(files) != len(set(files)):
         errors.append("series.chapters contains duplicate file paths")
@@ -1050,6 +1097,10 @@ def main() -> int:
         "structurally_validated_articles": expected_numbers,
         "executable_token_articles": sorted(EXECUTABLE_TOKEN_NUMBERS),
         "quarto_chapter_count": len(quarto_chapters),
+        "wechat_title_count": len(wechat_titles),
+        "wechat_title_max_chars_observed": max(
+            (len(title) for title in wechat_titles), default=0
+        ),
         "errors": errors,
         "warnings": warnings,
     }

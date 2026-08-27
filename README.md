@@ -723,6 +723,11 @@ python scripts/render_wechat_preview.py \
   --article-number 30
 ```
 
+公众号草稿标题由生成器统一派生为
+`宏基因组最佳实践｜N. 主题`。`N` 使用不补零的章节编号；QMD 与网页继续保留
+聚焦科学问题的主题标题。标题上限固定为 64 个字符，只有超长主题才在
+`tutorial.yaml` 中用 `wechat_title` 缩写，系列前缀和编号不缩写。
+
 审计 77 篇完成度：
 
 ```bash

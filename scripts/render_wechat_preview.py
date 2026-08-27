@@ -198,6 +198,49 @@ def chapter(manifest: dict, number: int) -> dict:
     raise ValueError(f"Chapter {number} is absent from tutorial.yaml")
 
 
+def wechat_draft_titles(manifest: dict) -> tuple[dict[int, str], int]:
+    """Build and validate the complete public WeChat title sequence."""
+    wechat = manifest.get("publication", {}).get("wechat", {})
+    if not isinstance(wechat, dict):
+        raise ValueError("publication.wechat must be a mapping")
+    prefix = str(wechat.get("title_prefix", "")).strip()
+    if prefix != "宏基因组最佳实践":
+        raise ValueError(
+            "publication.wechat.title_prefix must equal 宏基因组最佳实践"
+        )
+    max_chars = int(wechat.get("title_max_chars", 64))
+    if max_chars != 64:
+        raise ValueError("publication.wechat.title_max_chars must equal 64")
+
+    series = manifest.get("series", {})
+    chapters = series.get("chapters", [])
+    total = int(series.get("total_articles", 0))
+    numbers = [int(item.get("number", 0)) for item in chapters]
+    if numbers != list(range(1, total + 1)):
+        raise ValueError("series.chapters must contain consecutive public numbers")
+
+    titles: dict[int, str] = {}
+    for item in chapters:
+        number = int(item["number"])
+        topic = str(item.get("wechat_title", item.get("title", ""))).strip()
+        if not topic:
+            raise ValueError(f"Article {number} has an empty WeChat topic title")
+        if topic.startswith(prefix) or re.match(r"^(?:第\s*)?0*\d+[.、篇]", topic):
+            raise ValueError(
+                f"Article {number} WeChat topic must not contain a series prefix or number"
+            )
+        public_title = f"{prefix}｜{number}. {topic}"
+        if len(public_title) > max_chars:
+            raise ValueError(
+                f"Article {number} WeChat title has {len(public_title)} characters; "
+                f"maximum is {max_chars}"
+            )
+        titles[number] = public_title
+    if len(set(titles.values())) != total:
+        raise ValueError("WeChat public titles must be unique")
+    return titles, max_chars
+
+
 def qmd_frontmatter(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     if not text.startswith("---\n"):
@@ -606,6 +649,10 @@ def main() -> int:
     manifest = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
     article_number = int(args.article_number)
     article_contract = chapter(manifest, article_number)
+    try:
+        draft_titles, draft_title_max_chars = wechat_draft_titles(manifest)
+    except (TypeError, ValueError) as exc:
+        raise SystemExit(f"Invalid WeChat title contract: {exc}") from exc
     qmd_path = (root / article_contract["file"]).resolve()
     metadata = qmd_frontmatter(qmd_path)
     wechat = metadata.get("wechat")
@@ -639,6 +686,7 @@ def main() -> int:
         raise SystemExit(f"Rendered source page does not exist: {site_path}")
 
     title = article_contract["title"]
+    draft_title = draft_titles[article_number]
     repo_url = manifest["publication"]["repo"]["public_url"]
 
     document = lxml_html.parse(str(site_path))
@@ -801,6 +849,10 @@ def main() -> int:
     checks = {
         "qa_gate_passed": qa_report.get("status") == "passed",
         "has_title": title in rendered_text,
+        "draft_title_contract": (
+            draft_title.startswith(f"宏基因组最佳实践｜{article_number}. ")
+            and len(draft_title) <= draft_title_max_chars
+        ),
         "has_expected_images": (
             rendered_text.count("<img ") == expected_retained_images
         ),
@@ -813,6 +865,10 @@ def main() -> int:
     report = {
         "status": status,
         "article_number": article_number,
+        "topic_title": title,
+        "draft_title": draft_title,
+        "draft_title_chars": len(draft_title),
+        "draft_title_max_chars": draft_title_max_chars,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source_qmd": str(qmd_path.relative_to(root)),
         "source_html": str(site_path.relative_to(root)),
