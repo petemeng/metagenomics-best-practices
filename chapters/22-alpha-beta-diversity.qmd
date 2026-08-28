@@ -157,7 +157,7 @@ PCoA 中“看起来分开”不等于显著。PERMANOVA 还需要 exchangeabili
 
 整仓库可用 <code>env/renv.lock</code> 恢复锁定的 R 4.4.1 依赖；只运行本文也可显式安装下列包：
 
-~~~{r}
+```{r}
 #| eval: false
 install.packages(
   c(
@@ -166,11 +166,11 @@ install.packages(
   ),
   repos = "https://cloud.r-project.org"
 )
-~~~
+```
 
 ### 一次性下载与源文件锁定
 
-~~~{bash}
+```{bash}
 #| eval: false
 mkdir -p data/raw/article22
 
@@ -183,11 +183,11 @@ curl -fL -o data/raw/article22/hot-spring-mag-table.biom \
   https://ndownloader.figshare.com/files/61153444
 curl -fL -o data/raw/article22/hot-spring-recruitment.tsv \
   https://ndownloader.figshare.com/files/61153471
-~~~
+```
 
 下载后核对：
 
-~~~{text}
+```text
 EH7086 gene_families.rda
   bytes   55739524
   MD5     49caa4e88cbd51e7f5700cbcf4590e55
@@ -199,11 +199,11 @@ Figshare 61153429 sample metadata
   MD5     402095b04e2c5518cbec462f41528d4f
 Figshare 61153471 recruitment
   MD5     51288407e9927f23a25b210edcda7b47
-~~~
+```
 
 一次性制备命令：
 
-~~~{bash}
+```{bash}
 #| eval: false
 Rscript scripts/prepare_article22_diversity_data.R \
   --species-rds data/small/12-cmd-asnicarf-2017-relative-abundance.rds \
@@ -213,17 +213,17 @@ Rscript scripts/prepare_article22_diversity_data.R \
   --mag-recruitment data/raw/article22/hot-spring-recruitment.tsv \
   --output-dir data/small/22-diversity-inputs \
   --notice data/small/22-data-NOTICE.txt
-~~~
+```
 
 常规分析只校验 9 个冻结 payload：
 
-~~~{bash}
+```{bash}
 (cd data/small/22-diversity-inputs && sha256sum -c file-checksums.sha256)
-~~~
+```
 
 ### 内联依赖与作图函数
 
-~~~{r}
+```{r}
 library(Matrix)
 library(vegan)
 library(ape)
@@ -313,7 +313,7 @@ save_pub <- function(
   )
   invisible(plot)
 }
-~~~
+```
 
 </details>
 
@@ -321,7 +321,7 @@ save_pub <- function(
 
 ### 第 1 步：读入三种谱表并对齐 metadata
 
-~~~{r}
+```{r}
 input_dir <- "data/small/22-diversity-inputs"
 
 read_wide_profile <- function(path, annotation_columns) {
@@ -396,11 +396,11 @@ head(mag_metadata[, c(
   "sample", "hotspring", "temperature",
   "pH", "metagenome_SRR"
 )], 4)
-~~~
+```
 
 ### 第 2 步：过滤后再 closure
 
-~~~{r}
+```{r}
 close_rows <- function(x) {
   denominator <- rowSums(x)
   stopifnot(
@@ -473,13 +473,13 @@ stopifnot(
   )),
   max(denominator_audit$ClosedSumMaxDeviation) < 1e-12
 )
-~~~
+```
 
 不要把 species percentage 乘 <code>number_reads</code> 反推 pseudo-counts，也不要把 MAG catalog proportion 当作 read recruitment。两者都已经是模型或 coverage 派生的 composition。
 
 ### 第 3 步：统一计算 Hill q=0/1/2
 
-~~~{r}
+```{r}
 hill_values <- function(x) {
   richness <- rowSums(x > 0)
   q1 <- exp(-rowSums(ifelse(x > 0, x * log(x), 0)))
@@ -537,7 +537,7 @@ for (space in unique(alpha$FeatureSpace)) {
     all(wide$Value.1 >= wide$Value.2)
   )
 }
-~~~
+```
 
 主分析中位数为：
 
@@ -551,7 +551,7 @@ for (space in unique(alpha$FeatureSpace)) {
 
 ### 第 4 步：Bray、binary Jaccard 与 Aitchison 分开算
 
-~~~{r}
+```{r}
 aitchison_distance <- function(x, pseudocount) {
   logx <- log(x + pseudocount)
   clr <- logx - rowMeans(logx)
@@ -659,13 +659,13 @@ stopifnot(
   all(beta_audit$Pairs[beta_audit$Samples == 500] == 124750),
   min(beta_audit$Min) >= 0
 )
-~~~
+```
 
 这里的 276 或 124,750 个 distances 是 sample pairs，不是 276 或 124,750 个独立生物重复。因此 distance-vector rho 只用于 sensitivity，不附 p-value。
 
 ### 第 5 步：保留 raw negative eigenvalues，再画 PCoA
 
-~~~{r}
+```{r}
 pcoa_scores <- function(d, feature_space, dataset) {
   fit <- ape::pcoa(d, correction = "cailliez")
   coordinates <- if (!is.null(fit$vectors.cor)) {
@@ -739,13 +739,13 @@ unique(ordination[, c(
   "NegativeEigenvalueMass",
   "Correction"
 )])
-~~~
+```
 
 PCoA1 / PCoA2 对 corrected geometry 的解释率分别为 species 15.8% / 13.4%、gene families 26.4% / 15.4%、MAG 10.3% / 6.1%。这些百分比只描述各自距离矩阵，不能跨 panel 当作模型优劣。
 
 ### 第 6 步：过滤、零值与 recruitment sensitivity
 
-~~~{r}
+```{r}
 gene_bray10 <- vegan::vegdist(
   gene_matrices[["10%"]],
   method = "bray"
@@ -800,13 +800,13 @@ stopifnot(
   abs(stability$Rho[[2]] - 0.7991429344) < 1e-8,
   abs(mag_recruitment_rho - 0.1560190862) < 1e-8
 )
-~~~
+```
 
 10% 对 20% gene Bray 的 rho 为 0.997，但 50% 对 20% 降到 0.799；Aitchison pseudocount sensitivity 为 gene 0.982、species 0.997。高 rho 只表示这批样本 pair 的排序较稳定，不证明任一门槛“正确”。
 
 ### 第 7 步：把重复结构写进账本
 
-~~~{r}
+```{r}
 human_repeat_audit <- do.call(
   rbind,
   lapply(
@@ -849,7 +849,7 @@ stopifnot(
   nrow(spring_repeat_audit) == 56L,
   sum(spring_repeat_audit$Profiles) == 500L
 )
-~~~
+```
 
 15 位人体 subject 中，9 位只有 1 个 profile、3 位有 2 个、3 位有 3 个。温泉样本也按 56 个 sites 聚集。后续若检验 group effect，permutation 或模型结构必须保留这些层级。
 
@@ -857,7 +857,7 @@ stopifnot(
 
 以下代码直接使用前述对象；所有可见文字为英文。
 
-~~~{r}
+```{r}
 #| output: false
 pal_space <- c(
   "Species" = "#0072B2",
@@ -1001,9 +1001,9 @@ save_pub(
   width = 190,
   height = 112
 )
-~~~
+```
 
-~~~{r}
+```{r}
 #| output: false
 alpha_plot <- alpha
 alpha_plot$QLabel <- factor(
@@ -1067,9 +1067,9 @@ save_pub(
   width = 180,
   height = 105
 )
-~~~
+```
 
-~~~{r}
+```{r}
 #| output: false
 human_ord <- ordination[
   ordination$Dataset == "AsnicarF_2017",
@@ -1158,9 +1158,9 @@ save_pub(
   width = 210,
   height = 100
 )
-~~~
+```
 
-~~~{r}
+```{r}
 #| output: false
 gene_threshold_alpha <- do.call(
   rbind,
@@ -1307,7 +1307,7 @@ save_pub(
   width = 220,
   height = 110
 )
-~~~
+```
 
 ## 审计与升级：把“多样性指数”升级成 measurement contract {#sec-audit}
 
@@ -1419,7 +1419,8 @@ PCoA 是描述性坐标。组效应还需要受设计约束的 permutation、PER
 
 ### 最小适配模板
 
-~~~{r}
+```{r}
+#| eval: false
 # abundance.tsv: first column is Feature; remaining columns are samples
 your_table <- read.delim(
   "your_data/abundance.tsv",
@@ -1461,7 +1462,7 @@ your_aitchison_2 <- aitchison_distance(
   your_closed,
   pseudocount = 1e-5
 )
-~~~
+```
 
 如果输入是真正的 integer read counts，先单独处理 library-size / coverage 标准化问题；不要为了复用这段代码而先 TSS 后再声称做 count inference。如果输入是 MAG catalog 且没有 recruitment 或 unmapped-read ledger，只能把结果写成“within-catalog diversity”，不能外推到 whole-community richness。
 

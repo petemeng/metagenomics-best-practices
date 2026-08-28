@@ -70,7 +70,7 @@
   `pkg_resources` 故障及 HUMAnN 覆盖 Bowtie2/DIAMOND 入口的故障均保留并修复。
   第 11 篇当时的五库未下载边界仍保留；MetaPhlAn 与 HUMAnN 数据库随后分别由
   第 15、19 篇另立清单真实验证；CheckM2 与 GUNC 后续由第 42–44 篇以锁版
-  数据库真实验证，GTDB-Tk 仍保持待独立运行边界。
+  数据库真实验证，GTDB-Tk 与 dRep 则由第 45–49 篇另立锁版证据验证。
 - 第 12 篇固定 R 4.4.1 / Bioconductor 3.19 与 185-record `renv.lock`，
   精确核对 17 个核心包；一次性真实取回 curatedMetagenomicData 3.12.0 的
   ExperimentHub `EH7091`，冻结 298 features × 24 samples 的完整
@@ -222,18 +222,15 @@
   参数敏感性，不把目录大小写成基因丰富度。44 个冻结 payload checksum 与
   132/132 项离线检查全部通过，四张英文图已人工检查。
 - 全书已在固定 Quarto 环境中完成 77/77 页面本地渲染。
-- 第 01–23 篇历史最终 QA 已通过：4 个校验锁定下载、24 个步骤和 492 条断言
-  全部通过；manifest hash 为
-  `65576e190a1c22289816af906259d5377511bac54fa4f6fc91eb1d3b3cc9d29c`，
-  run key 为 `0ed2a29462129525`。
-- `tutorial.yaml` 当前列出 44/77 篇已验证文章；第 24–44 篇的专用验证器和直接
-  Quarto 渲染均已通过。新的全流程发布 QA 仍受共享 source whitelist 门禁阻断：
-  尚未放行 `experimenthub-public` 与 `github-source-archive`，因此不把局部通过
-  写成新的最终发布通过，也不把该权限配置问题归因于 VPN 抖动。
-- 二十三个既有本地公众号预览均通过，未调用公众号 API；其余 16 篇仍为
-  `draft: true`，不代表正文或工具链已经验证。
-- bioBakery、assembly/binning、CheckM2、GUNC 与 CheckM1 环境已保存锁版证据；
-  GTDB-Tk、dRep、病毒组、DRAM/METABOLIC、gapseq/CarveMe 与第 62 篇元素循环分析也已按章节建立隔离环境和数据库/产物锁；未完成的第 61 篇与第 63–77 篇仍不写成已验证。
+- 正式全流程 QA 已通过：16 个来源均完成下载与 checksum 核对，51 个执行步骤和
+  756 条断言全部通过；隔离 staging 中生成并核对了 77/77 个章节页面。
+- `tutorial.yaml` 当前列出 77/77 篇已验证文章；第 41–44 篇也已纳入正式执行步骤，
+  不再依赖发布目录中的历史产物。
+- 77 篇本地公众号审阅包均已生成并通过严格公开内容审计；生成器不调用公众号
+  发布或群发接口，账号侧草稿操作仍是单独、需明确授权的发布阶段。
+- bioBakery、assembly/binning、CheckM2、GUNC、CheckM1、GTDB-Tk、dRep、
+  病毒组、DRAM/METABOLIC、gapseq/CarveMe，以及第 61–77 篇所需的统计与整合
+  环境均保存锁版证据、固化产物或章节级验证记录。
 
 ## 第 01–44 篇真实数据和执行证据
 
@@ -713,15 +710,22 @@ python ../skills/tutorial-execution-qa/scripts/run_tutorial_qa.py \
 quarto render
 ```
 
-从已通过 QA 的网页生成本地公众号预览：
+从已通过 QA 的网页生成与 16S 系列同款的本地公众号预览：
 
 ```bash
-python scripts/render_wechat_preview.py \
+python scripts/build_wechat_review_bundle.py \
   --project-root . \
   --manifest tutorial.yaml \
   --qa-report qa_report.json \
-  --article-number 30
+  --article-number 1 \
+  --article-number 23
 ```
+
+不传 `--article-number` 时生成完整 77 篇审阅包。每篇目录包含
+`article.html`、`draft.json`、`cover.jpg` 和优化后的正文图片；生成器只做本地派生，
+不会上传图片、创建草稿、发布或群发。正文沿用 16S 系列的绿灰/米色排版、
+figure-only 封面和代码保留规则：删除通用安装与主题函数块，保留会改变分析决策的
+代码和全部有意义的结果图。
 
 公众号草稿标题由生成器统一派生为
 `宏基因组最佳实践｜N. 主题`。`N` 使用不补零的章节编号；QMD 与网页继续保留
@@ -790,7 +794,8 @@ python scripts/audit_chapter_completion.py \
 - `R/theme_pub.R`：整仓库共享作图函数
 - `data/small/README.md`：小数据来源与再生说明
 - `scripts/audit_chapter_completion.py`：77 篇完成状态与 QA 新鲜度审计
-- `scripts/render_wechat_preview.py`：QA 门禁后的本地公众号版派生器
+- `scripts/build_wechat_review_bundle.py`：与 16S 系列同款的本地公众号审阅包派生器
+- `scripts/render_wechat_preview.py`：兼容旧命令的入口，转交给上述生成器
 - `scripts/validate_article11_installation.py`：双环境、入口证据与数据库门禁验证器
 - `scripts/retrieve_article12_cmd.R`：第 12 篇一次性 ExperimentHub 真实取回与离线 cache replay
 - `scripts/validate_article12_r_cmd.R`：第 12 篇不联网的包、lock、资源、对象与图片验收器
@@ -911,9 +916,9 @@ python scripts/audit_chapter_completion.py \
 - `data/small/62-element-cycling-frozen/`：第 62 篇 37 项 checksum-locked 输入、结果、环境与再生脚本证据
 - `qa/article62/validation-summary.json`：第 62 篇 251/251 项离线验证摘要
 - `qa_report.json`：本地发布门禁报告
-- `rendered/wechat_bundle/01-intro/` 至
-  `rendered/wechat_bundle/23-pcoa-cap-permanova/`：
-  前二十三篇手机端本地预览
+- `rendered/wechat_review_01_77_16s_style/01/` 至
+  `rendered/wechat_review_01_77_16s_style/77/`：
+  与 16S 系列同款的 77 篇手机端本地审阅包
 
 ## 许可证
 

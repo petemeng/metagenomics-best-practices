@@ -6004,7 +6004,7 @@ steps:
       mkdir -p "${RUN_ROOT}/data/small/29-network"
       R_LIBS_USER="${MANIFEST_DIR}/.r-lib:${HOME}/R/library" \
       Rscript "${MANIFEST_DIR}/scripts/prepare_article29_network_data.R" \
-        --source-dir "${RUN_ROOT}/data/small/23-ordination-permanova" \
+        --source-dir "${MANIFEST_DIR}/data/small/23-ordination-permanova" \
         --output-dir "${RUN_ROOT}/data/small/29-network" \
         --notice "${RUN_ROOT}/data/small/29-data-NOTICE.txt"
     expected_outputs:
@@ -7945,6 +7945,293 @@ steps:
       - {id: bgc-membership-missing, type: metric_threshold, path: results/40-bgc-natural-products/validation-summary.json, key: coassembly_genes_missing_catalog_membership, comparator: "==", value: 0}
       - {id: bgc-checks-failed, type: metric_threshold, path: results/40-bgc-natural-products/validation-summary.json, key: checks_failed, comparator: "==", value: 0}
       - {id: bgc-fragmentation-figure, type: file_exists, path: figures/40-fragmentation-sensitivity.pdf}
+
+  - id: validate-read-mapping-depth
+    title: 验证第 41 篇 reads 回比与 JGI 深度矩阵合同
+    goal: >
+      核对完整 contig 坐标、paired-read fate、SAMtools 与 JGI depth 一致性、
+      两样本深度相关以及三格式发表图。
+    rationale: >
+      分箱依赖逐 contig 深度矩阵；若回比坐标、过滤标志或 paired-contig 证据漂移，
+      后续 binning 与 refinement 就不再对应同一数据对象。
+    inputs:
+      - data/small/41-read-mapping-depth-frozen
+      - chapters/41-read-mapping-depth.qmd
+      - scripts/validate_article41_mapping_depth.py
+    command: |
+      set -eu
+      mkdir -p "${RUN_ROOT}/results/41-read-mapping-depth" "${RUN_ROOT}/figures" "${RUN_ROOT}/.cache/article41-matplotlib"
+      R_LIBS_USER="${MANIFEST_DIR}/.r-lib:${HOME}/R/library" \
+      Rscript "${MANIFEST_DIR}/data/small/41-read-mapping-depth-frozen/scripts/plot_article41_mapping_depth.R" \
+        --input-dir "${MANIFEST_DIR}/data/small/41-read-mapping-depth-frozen" \
+        --output-dir "${RUN_ROOT}/figures"
+      MPLCONFIGDIR="${RUN_ROOT}/.cache/article41-matplotlib" PYTHONNOUSERSITE=1 PYTHONPATH= \
+      python3 "${MANIFEST_DIR}/scripts/validate_article41_mapping_depth.py" \
+        --project-root "${MANIFEST_DIR}" \
+        --frozen-dir "${MANIFEST_DIR}/data/small/41-read-mapping-depth-frozen" \
+        --output-dir "${RUN_ROOT}/results/41-read-mapping-depth" \
+        --figure-dir "${RUN_ROOT}/figures" \
+        --chapter "${MANIFEST_DIR}/chapters/41-read-mapping-depth.qmd"
+    expected_outputs:
+      - results/41-read-mapping-depth/validation-summary.json
+      - results/41-read-mapping-depth/validation-checks.tsv
+      - results/41-read-mapping-depth/validation.log
+      - figures/41-mapping-fate.pdf
+      - figures/41-mapping-fate.png
+      - figures/41-mapping-fate.tiff
+      - figures/41-depth-concordance.pdf
+      - figures/41-depth-concordance.png
+      - figures/41-depth-concordance.tiff
+      - figures/41-depth-breadth.pdf
+      - figures/41-depth-breadth.png
+      - figures/41-depth-breadth.tiff
+    acceptance_checks:
+      - 18,354 条大于等于 1 kb contigs 必须在宽表、长表与 JGI 原始矩阵中逐一对应
+      - MOCK1 与 MOCK2 的 read-pair fate 必须守恒，深度和 breadth 必须非负且有界
+      - Bowtie2、SAMtools 与 MetaBAT2 depth 版本和参数必须与冻结合同一致
+      - 三张图必须同时导出 PDF、PNG 与 350 dpi LZW TIFF
+    common_failures:
+      - 把不同 contig 过滤门槛生成的深度矩阵混用
+      - 只报告平均深度而不保留 breadth 与零深度 contig
+      - 忽略 paired-contig linkage 与 read fate 守恒
+    outputs:
+      - results/41-read-mapping-depth/validation-summary.json
+      - results/41-read-mapping-depth/validation-checks.tsv
+      - results/41-read-mapping-depth/validation.log
+      - figures/41-mapping-fate.pdf
+      - figures/41-depth-concordance.pdf
+      - figures/41-depth-breadth.pdf
+    method_basis:
+      type: external-benchmark
+      summary: Bowtie2 2.5.5、SAMtools 1.23.1 与 MetaBAT2/JGI depth 2.18 的冻结证据审计。
+    references:
+      - title: Fast and sensitive read alignment with Bowtie 2
+        type: method-paper
+        url: https://doi.org/10.1038/nmeth.1923
+    assertions:
+      - {id: mapping-depth-validation-status, type: text_match, path: results/41-read-mapping-depth/validation-summary.json, pattern: '"status": "passed"'}
+      - {id: mapping-depth-checks-failed, type: metric_threshold, path: results/41-read-mapping-depth/validation-summary.json, key: checks_failed, comparator: "==", value: 0}
+      - {id: mapping-depth-figure, type: file_exists, path: figures/41-mapping-fate.pdf}
+
+  - id: validate-binning-comparison
+    title: 验证第 42 篇五分支分箱比较合同
+    goal: >
+      核对 MetaBAT2、SemiBin2、VAMB、TaxVAMB 与 MaxBin2 的统一坐标、候选 bin、
+      reference-free 质控和四张比较图。
+    rationale: >
+      分箱器产出不能只按 bin 数量比较；必须在同一深度矩阵、同一 contig 集和同一
+      CheckM2/GUNC 门控下评估质量、纯度和恢复率。
+    inputs:
+      - data/small/42-binning-comparison-frozen
+      - chapters/42-binning.qmd
+      - scripts/article42_44_validation_utils.py
+      - scripts/validate_article42_binning.py
+    command: |
+      set -eu
+      mkdir -p "${RUN_ROOT}/results/42-binning-comparison" "${RUN_ROOT}/figures" "${RUN_ROOT}/.cache/article42-matplotlib"
+      R_LIBS_USER="${MANIFEST_DIR}/.r-lib:${HOME}/R/library" \
+      Rscript "${MANIFEST_DIR}/data/small/42-binning-comparison-frozen/scripts/plot_article42_binning.R" \
+        --input-dir "${MANIFEST_DIR}/data/small/42-binning-comparison-frozen" \
+        --output-dir "${RUN_ROOT}/figures"
+      MPLCONFIGDIR="${RUN_ROOT}/.cache/article42-matplotlib" PYTHONNOUSERSITE=1 PYTHONPATH= \
+      python3 "${MANIFEST_DIR}/scripts/validate_article42_binning.py" \
+        --project-root "${MANIFEST_DIR}" \
+        --frozen-dir "${MANIFEST_DIR}/data/small/42-binning-comparison-frozen" \
+        --output-dir "${RUN_ROOT}/results/42-binning-comparison" \
+        --figure-dir "${RUN_ROOT}/figures" \
+        --chapter "${MANIFEST_DIR}/chapters/42-binning.qmd"
+    expected_outputs:
+      - results/42-binning-comparison/validation-summary.json
+      - results/42-binning-comparison/validation-checks.tsv
+      - results/42-binning-comparison/validation.log
+      - figures/42-binner-quality-yield.pdf
+      - figures/42-binner-quality-yield.png
+      - figures/42-binner-quality-yield.tiff
+      - figures/42-recovery-purity.pdf
+      - figures/42-recovery-purity.png
+      - figures/42-recovery-purity.tiff
+      - figures/42-single-vs-multisample.pdf
+      - figures/42-single-vs-multisample.png
+      - figures/42-single-vs-multisample.tiff
+      - figures/42-taxonomy-coverage.pdf
+      - figures/42-taxonomy-coverage.png
+      - figures/42-taxonomy-coverage.tiff
+    acceptance_checks:
+      - 五个分箱分支必须共享同一 10,203-contig 可分箱坐标和深度矩阵
+      - 171 个候选 bins 必须通过统一 CheckM2/GUNC 参考无关门控
+      - mock truth 只能用于事后审计，不能参与方法选择
+      - 四张图必须同时导出 PDF、PNG 与 350 dpi LZW TIFF
+    common_failures:
+      - 给不同分箱器使用不同的 contig 或深度输入
+      - 用 truth 信息参与 reference-free 方法选择
+      - 只比较 bin 数量而忽略完整度与污染
+    outputs:
+      - results/42-binning-comparison/validation-summary.json
+      - results/42-binning-comparison/validation-checks.tsv
+      - results/42-binning-comparison/validation.log
+      - figures/42-binner-quality-yield.pdf
+      - figures/42-recovery-purity.pdf
+      - figures/42-single-vs-multisample.pdf
+      - figures/42-taxonomy-coverage.pdf
+    method_basis:
+      type: external-benchmark
+      summary: 五种分箱策略在统一 contig、depth 与 CheckM2/GUNC 合同下的冻结比较。
+    references:
+      - title: Critical Assessment of Metagenome Interpretation—the second round of challenges
+        type: benchmark-paper
+        url: https://doi.org/10.1038/s41592-022-01431-4
+    assertions:
+      - {id: binning-validation-status, type: text_match, path: results/42-binning-comparison/validation-summary.json, pattern: '"status": "passed"'}
+      - {id: binning-branches, type: metric_threshold, path: results/42-binning-comparison/validation-summary.json, key: branches, comparator: "==", value: 5}
+      - {id: binning-candidates, type: metric_threshold, path: results/42-binning-comparison/validation-summary.json, key: candidate_bins, comparator: "==", value: 171}
+      - {id: binning-checks-failed, type: metric_threshold, path: results/42-binning-comparison/validation-summary.json, key: checks_failed, comparator: "==", value: 0}
+
+  - id: validate-bin-refinement
+    title: 验证第 43 篇 bin refinement 与选择合同
+    goal: >
+      核对 DAS Tool 与 Binette 的 refinement provenance、独立 CheckM2/GUNC 复检、
+      非重叠选择以及四张发表图。
+    rationale: >
+      refinement 必须保存 source-bin 到 refined-bin 的可追溯关系，并用事先声明的
+      reference-free 规则选择结果，不能按 mock truth 挑最好看的方法。
+    inputs:
+      - data/small/43-bin-refinement-frozen
+      - chapters/43-bin-refinement.qmd
+      - scripts/article42_44_validation_utils.py
+      - scripts/validate_article43_refinement.py
+    command: |
+      set -eu
+      mkdir -p "${RUN_ROOT}/results/43-bin-refinement" "${RUN_ROOT}/figures" "${RUN_ROOT}/.cache/article43-matplotlib"
+      R_LIBS_USER="${MANIFEST_DIR}/.r-lib:${HOME}/R/library" \
+      Rscript "${MANIFEST_DIR}/data/small/43-bin-refinement-frozen/scripts/plot_article43_refinement.R" \
+        --input-dir "${MANIFEST_DIR}/data/small/43-bin-refinement-frozen" \
+        --output-dir "${RUN_ROOT}/figures"
+      MPLCONFIGDIR="${RUN_ROOT}/.cache/article43-matplotlib" PYTHONNOUSERSITE=1 PYTHONPATH= \
+      python3 "${MANIFEST_DIR}/scripts/validate_article43_refinement.py" \
+        --project-root "${MANIFEST_DIR}" \
+        --frozen-dir "${MANIFEST_DIR}/data/small/43-bin-refinement-frozen" \
+        --output-dir "${RUN_ROOT}/results/43-bin-refinement" \
+        --figure-dir "${RUN_ROOT}/figures" \
+        --chapter "${MANIFEST_DIR}/chapters/43-bin-refinement.qmd"
+    expected_outputs:
+      - results/43-bin-refinement/validation-summary.json
+      - results/43-bin-refinement/validation-checks.tsv
+      - results/43-bin-refinement/validation.log
+      - figures/43-refinement-yield.pdf
+      - figures/43-refinement-yield.png
+      - figures/43-refinement-yield.tiff
+      - figures/43-quality-landscape.pdf
+      - figures/43-quality-landscape.png
+      - figures/43-quality-landscape.tiff
+      - figures/43-refinement-provenance.pdf
+      - figures/43-refinement-provenance.png
+      - figures/43-refinement-provenance.tiff
+      - figures/43-method-selection.pdf
+      - figures/43-method-selection.png
+      - figures/43-method-selection.tiff
+    acceptance_checks:
+      - 53 个 refined bins 必须具有全局唯一 ID 与完整 source-bin provenance
+      - DAS Tool 与 Binette 输出必须分别复检 CheckM2/GUNC 并保持 contig 非重叠
+      - 选择规则必须在不知道 mock truth 的条件下选出 Binette 的 23 个 bins
+      - 四张图必须同时导出 PDF、PNG 与 350 dpi LZW TIFF
+    common_failures:
+      - 丢失 source bin 到 refined bin 的成员关系
+      - 用 truth recovery 反向选择 refinement 方法
+      - 合并后不重新运行污染与完整度质控
+    outputs:
+      - results/43-bin-refinement/validation-summary.json
+      - results/43-bin-refinement/validation-checks.tsv
+      - results/43-bin-refinement/validation.log
+      - figures/43-refinement-yield.pdf
+      - figures/43-quality-landscape.pdf
+      - figures/43-refinement-provenance.pdf
+      - figures/43-method-selection.pdf
+    method_basis:
+      type: external-benchmark
+      summary: DAS Tool、Binette 与独立 CheckM2/GUNC 复检形成的 truth-blind refinement 合同。
+    references:
+      - title: Recovery of genomes from metagenomes via a dereplication, aggregation and scoring strategy
+        type: method-paper
+        url: https://doi.org/10.1038/s41564-018-0171-1
+    assertions:
+      - {id: refinement-validation-status, type: text_match, path: results/43-bin-refinement/validation-summary.json, pattern: '"status": "passed"'}
+      - {id: refinement-bins, type: metric_threshold, path: results/43-bin-refinement/validation-summary.json, key: refined_bins, comparator: "==", value: 53}
+      - {id: refinement-selected, type: metric_threshold, path: results/43-bin-refinement/validation-summary.json, key: selected_bins, comparator: "==", value: 23}
+      - {id: refinement-checks-failed, type: metric_threshold, path: results/43-bin-refinement/validation-summary.json, key: checks_failed, comparator: "==", value: 0}
+
+  - id: validate-mag-qc-mimag-graph
+    title: 验证第 44 篇 MAG 质控、MIMAG 与组装图合同
+    goal: >
+      核对 CheckM2、GUNC、CheckM1、rRNA/tRNA、MIMAG 分级、FASTG 精确节点映射与
+      四张发表图。
+    rationale: >
+      MAG 质量不能只由完整度和污染率决定；高质量分级还需要 rRNA/tRNA 证据，
+      组装图只能用于边界审计，不能被误写成环状基因组证明。
+    inputs:
+      - data/small/44-mag-qc-mimag-graph-frozen
+      - chapters/44-mag-qc-checkm2-gunc-mimag.qmd
+      - scripts/article42_44_validation_utils.py
+      - scripts/validate_article44_mag_qc.py
+    command: |
+      set -eu
+      mkdir -p "${RUN_ROOT}/results/44-mag-qc-mimag-graph" "${RUN_ROOT}/figures" "${RUN_ROOT}/.cache/article44-matplotlib"
+      R_LIBS_USER="${MANIFEST_DIR}/.r-lib:${HOME}/R/library" \
+      Rscript "${MANIFEST_DIR}/data/small/44-mag-qc-mimag-graph-frozen/scripts/plot_article44_mag_qc.R" \
+        --input-dir "${MANIFEST_DIR}/data/small/44-mag-qc-mimag-graph-frozen" \
+        --output-dir "${RUN_ROOT}/figures"
+      MPLCONFIGDIR="${RUN_ROOT}/.cache/article44-matplotlib" PYTHONNOUSERSITE=1 PYTHONPATH= \
+      python3 "${MANIFEST_DIR}/scripts/validate_article44_mag_qc.py" \
+        --project-root "${MANIFEST_DIR}" \
+        --frozen-dir "${MANIFEST_DIR}/data/small/44-mag-qc-mimag-graph-frozen" \
+        --output-dir "${RUN_ROOT}/results/44-mag-qc-mimag-graph" \
+        --figure-dir "${RUN_ROOT}/figures" \
+        --chapter "${MANIFEST_DIR}/chapters/44-mag-qc-checkm2-gunc-mimag.qmd"
+    expected_outputs:
+      - results/44-mag-qc-mimag-graph/validation-summary.json
+      - results/44-mag-qc-mimag-graph/validation-checks.tsv
+      - results/44-mag-qc-mimag-graph/validation.log
+      - figures/44-quality-landscape.pdf
+      - figures/44-quality-landscape.png
+      - figures/44-quality-landscape.tiff
+      - figures/44-mimag-requirements.pdf
+      - figures/44-mimag-requirements.png
+      - figures/44-mimag-requirements.tiff
+      - figures/44-assembly-graph-audit.pdf
+      - figures/44-assembly-graph-audit.png
+      - figures/44-assembly-graph-audit.tiff
+      - figures/44-checkm-audit.pdf
+      - figures/44-checkm-audit.png
+      - figures/44-checkm-audit.tiff
+    acceptance_checks:
+      - 23 个 selected MAG 必须在 CheckM2、GUNC、CheckM1、domain 与 graph 表中逐一对应
+      - MIMAG 必须得到 4 个 high-quality 与 19 个 medium-quality MAG
+      - FASTG 节点必须通过 exact forward-sequence SHA-256 映射
+      - 不得把组装图边界证据写成 circular genome 证明
+      - 四张图必须同时导出 PDF、PNG 与 350 dpi LZW TIFF
+    common_failures:
+      - 只用 CheckM2 完整度和污染率声明高质量 MAG
+      - 忽略 GUNC、marker domain 或 rRNA/tRNA 证据
+      - 把 graph adjacency 当作闭环或完整染色体证明
+    outputs:
+      - results/44-mag-qc-mimag-graph/validation-summary.json
+      - results/44-mag-qc-mimag-graph/validation-checks.tsv
+      - results/44-mag-qc-mimag-graph/validation.log
+      - figures/44-quality-landscape.pdf
+      - figures/44-mimag-requirements.pdf
+      - figures/44-assembly-graph-audit.pdf
+      - figures/44-checkm-audit.pdf
+    method_basis:
+      type: community-consensus
+      summary: MIMAG 最低信息标准结合 CheckM2、GUNC、CheckM1 与 marker/graph 冻结证据。
+    references:
+      - title: Minimum information about a single amplified genome and a metagenome-assembled genome
+        type: standards-paper
+        url: https://doi.org/10.1038/nbt.3893
+    assertions:
+      - {id: mag-qc-validation-status, type: text_match, path: results/44-mag-qc-mimag-graph/validation-summary.json, pattern: '"status": "passed"'}
+      - {id: mag-qc-selected, type: metric_threshold, path: results/44-mag-qc-mimag-graph/validation-summary.json, key: selected_bins, comparator: "==", value: 23}
+      - {id: mag-qc-checks-failed, type: metric_threshold, path: results/44-mag-qc-mimag-graph/validation-summary.json, key: checks_failed, comparator: "==", value: 0}
+      - {id: mag-qc-graph-figure, type: file_exists, path: figures/44-assembly-graph-audit.pdf}
 
   - id: validate-series-contract
     title: 核对 77 篇目录与第 01–44 篇写作契约
@@ -13744,7 +14031,7 @@ publication:
     public_url: https://github.com/petemeng/metagenomics-best-practices
   wechat:
     mode: filesystem
-    draft_dir: rendered/wechat_bundle
+    draft_dir: rendered/wechat_review_01_77_16s_style
     title_prefix: 宏基因组最佳实践
     title_max_chars: 64
     tags:
