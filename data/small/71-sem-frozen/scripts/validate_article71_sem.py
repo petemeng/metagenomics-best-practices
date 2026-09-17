@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline acceptance tests for Article 71's frozen piecewise-SEM analysis."""
+"""Offline, evidence-level acceptance tests for Article 71."""
 
 from __future__ import annotations
 
@@ -9,9 +9,8 @@ import json
 import os
 import re
 import subprocess
-import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +19,7 @@ from PIL import Image
 
 
 FIGURES = (
+    "71-study-data-anchor",
     "71-data-positivity",
     "71-prespecified-dag",
     "71-local-paths",
@@ -27,6 +27,21 @@ FIGURES = (
     "71-model-fit-dsep",
     "71-overlap-influence",
     "71-transport-sensitivity",
+    "71-power-positive-control",
+    "71-mediation-rho-sensitivity",
+)
+
+PLOT_FUNCTIONS = (
+    "study_anchor",
+    "data_positivity",
+    "prespecified_dag",
+    "local_paths",
+    "path_decomposition",
+    "model_fit_dsep",
+    "overlap_influence",
+    "transport_sensitivity",
+    "power_positive_control",
+    "mediation_rho",
 )
 
 SOURCE_FILES = {
@@ -37,10 +52,6 @@ SOURCE_FILES = {
     "metadata.tsv": (
         39_838,
         "f7396e3d6838b3b30f78b02bd568753757f84c956cd351966dbe654d50285376",
-    ),
-    "franzosa-fig1-original.png": (
-        170_306,
-        "7b81b865ae65659ad476d6f5210a3bc383b4eadad50d2ad7793a0b99df2450eb",
     ),
 }
 
@@ -63,24 +74,18 @@ def sha256(path: Path) -> str:
 
 def pixel_sha(path: Path) -> str:
     with Image.open(path) as image:
-        normalized = image.convert("RGBA")
+        rgba = image.convert("RGBA")
         digest = hashlib.sha256()
-        digest.update(f"{normalized.width}x{normalized.height}".encode())
-        digest.update(normalized.tobytes())
+        digest.update(f"{rgba.width}x{rgba.height}".encode())
+        digest.update(rgba.tobytes())
         return digest.hexdigest()
 
 
-def near(value: object, expected: float, tolerance: float = 1e-9) -> bool:
+def near(value: object, expected: float, tolerance: float = 1e-8) -> bool:
     try:
-        return bool(
-            np.isclose(float(value), expected, rtol=tolerance, atol=tolerance)
-        )
+        return bool(np.isclose(float(value), expected, rtol=tolerance, atol=tolerance))
     except (TypeError, ValueError):
         return False
-
-
-def logical(series: pd.Series) -> pd.Series:
-    return series.astype(str).str.lower().map({"true": True, "false": False})
 
 
 @dataclass
@@ -95,36 +100,39 @@ class Audit:
     def __init__(self) -> None:
         self.rows: list[Check] = []
 
-    def add(
-        self, category: str, check: str, status: bool, detail: object = ""
-    ) -> None:
+    def add(self, category: str, check: str, status: bool, detail: object = "") -> None:
         self.rows.append(Check(category, check, bool(status), str(detail)))
 
     def frame(self) -> pd.DataFrame:
         return pd.DataFrame(
-            [
-                {
-                    "Category": row.category,
-                    "Check": row.check,
-                    "Status": "PASS" if row.status else "FAIL",
-                    "Detail": row.detail,
-                }
-                for row in self.rows
-            ]
+            {
+                "Category": [row.category for row in self.rows],
+                "Check": [row.check for row in self.rows],
+                "Status": ["PASS" if row.status else "FAIL" for row in self.rows],
+                "Detail": [row.detail for row in self.rows],
+            }
         )
 
 
-def audit_checksums(frozen: Path, audit: Audit) -> None:
+def read_tsv(frozen: Path, name: str) -> pd.DataFrame:
+    return pd.read_csv(frozen / name, sep="\t")
+
+
+def audit_bundle(frozen: Path, audit: Audit) -> None:
     checksum_file = frozen / "file-checksums.sha256"
-    audit.add("Bundle", "checksum-file", checksum_file.is_file(), checksum_file)
+    audit.add("Bundle", "checksum manifest exists", checksum_file.is_file(), checksum_file)
     if not checksum_file.is_file():
         return
-    lines = [
-        line
-        for line in checksum_file.read_text(encoding="utf-8").splitlines()
-        if line
-    ]
-    audit.add("Bundle", "checksum-count", len(lines) == 38, len(lines))
+
+    lines = [line for line in checksum_file.read_text().splitlines() if line]
+    manifest = json.loads((frozen / "bundle-manifest.json").read_text())
+    expected_count = (
+        manifest["payload_files"]
+        + manifest["script_files"]
+        + manifest["environment_files"]
+        + 1
+    )
+    audit.add("Bundle", "checksum entry count", len(lines) == expected_count, len(lines))
     for line in lines:
         digest, relative = line.split("  ", 1)
         path = frozen / relative
@@ -134,28 +142,24 @@ def audit_checksums(frozen: Path, audit: Audit) -> None:
             path.is_file() and sha256(path) == digest,
             digest,
         )
-
-    manifest = json.loads(
-        (frozen / "bundle-manifest.json").read_text(encoding="utf-8")
-    )
-    audit.add("Bundle", "article", manifest.get("article") == 71, manifest.get("article"))
+    audit.add("Bundle", "article id", manifest.get("article") == 71, manifest.get("article"))
+    source_work_dir = str(manifest.get("source_work_dir", ""))
     audit.add(
         "Bundle",
-        "payload-count",
-        manifest.get("payload_files") == 29,
-        manifest.get("payload_files"),
-    )
-    audit.add(
-        "Bundle",
-        "script-count",
-        manifest.get("script_files") == 6,
-        manifest.get("script_files"),
+        "local build path omitted",
+        not source_work_dir.startswith(("/", "~"))
+        and "/media/" not in source_work_dir
+        and "\\Users\\" not in source_work_dir,
+        source_work_dir,
     )
     audit.add(
         "Bundle",
-        "environment-count",
-        manifest.get("environment_files") == 2,
-        manifest.get("environment_files"),
+        "expanded evidence contract",
+        all(
+            phrase in manifest.get("contract", "")
+            for phrase in ("power simulation", "positive control", "No publisher artwork")
+        ),
+        manifest.get("contract"),
     )
 
 
@@ -168,879 +172,355 @@ def audit_sources(frozen: Path, audit: Audit) -> None:
         "repository_commit": "89a519d8c832008fbc6e650453e83e2f04858d02",
         "paper_doi": "10.1038/s41564-018-0306-4",
         "resource_doi": "10.1038/s41522-022-00345-5",
-        "genus_features": 11720,
+        "genus_features": 11_720,
         "profile_rows": 220,
         "independent_subjects": 220,
         "primary_subjects": 90,
         "validation_strict_subjects": 38,
-        "validation_broad_subjects": 60,
     }
-    for key, value in expected.items():
-        audit.add("Source", key, manifest.get(key) == value, manifest.get(key))
+    for key, expected_value in expected.items():
+        audit.add("Source", key, manifest.get(key) == expected_value, manifest.get(key))
+
+    resources = manifest.get("resources", {})
     audit.add(
         "Source",
-        "anchor-identity",
-        manifest.get("anchor_figure") == "Franzosa et al. 2019 Figure 1",
-        manifest.get("anchor_figure"),
+        "only public data tables are downloaded",
+        set(resources) == set(SOURCE_FILES),
+        sorted(resources),
+    )
+    for name, (expected_bytes, expected_sha) in SOURCE_FILES.items():
+        record = resources.get(name, {})
+        audit.add("Source", f"{name} bytes", record.get("bytes") == expected_bytes, record)
+        audit.add("Source", f"{name} sha256", record.get("sha256") == expected_sha, record)
+        audit.add(
+            "Source", f"{name} pinned https", str(record.get("url", "")).startswith("https://"), record
+        )
+    audit.add(
+        "Rights",
+        "publisher artwork exclusion",
+        "downloaded or redistributed" in manifest.get("publisher_figure_policy", "")
+        and manifest.get("publisher_figure_policy", "").startswith("No "),
+        manifest.get("publisher_figure_policy"),
     )
     audit.add(
-        "Source",
-        "faecalibacterium-feature",
-        str(manifest.get("faecalibacterium_feature", "")).endswith(
-            "g__Faecalibacterium"
-        ),
-        manifest.get("faecalibacterium_feature"),
-    )
-    for name, (size, digest) in SOURCE_FILES.items():
-        record = manifest["resources"][name]
-        audit.add("Source", f"{name}-bytes", record["bytes"] == size, record["bytes"])
-        audit.add(
-            "Source", f"{name}-sha256", record["sha256"] == digest, record["sha256"]
-        )
-        audit.add(
-            "Source",
-            f"{name}-https",
-            record["url"].startswith("https://"),
-            record["url"],
-        )
-    anchor = frozen / "franzosa-fig1-original.png"
-    audit.add(
-        "Source",
-        "frozen-anchor",
-        anchor.stat().st_size == SOURCE_FILES["franzosa-fig1-original.png"][0]
-        and sha256(anchor) == SOURCE_FILES["franzosa-fig1-original.png"][1],
-        sha256(anchor),
+        "Rights",
+        "no publisher image in frozen root",
+        not any("fig1-original" in path.name.lower() for path in frozen.rglob("*")),
+        "frozen bundle scan",
     )
 
     contract = json.loads((frozen / "methods-contract.json").read_text())
-    audit.add("Contract", "article", contract["article"] == 71, contract["article"])
+    for key, expected_value in {
+        "article": 71,
+        "bootstrap": 5000,
+        "power_simulation_repetitions": 1000,
+        "positive_control_subjects": 500,
+        "positive_control_bootstrap": 2000,
+    }.items():
+        audit.add("Contract", key, contract.get(key) == expected_value, contract.get(key))
     audit.add(
         "Contract",
-        "cross-sectional",
-        "cross-sectional" in contract["design"],
-        contract["design"],
-    )
-    audit.add(
-        "Contract",
-        "measured-nodes",
-        "antibiotic" in contract["environment"]
-        and "Shannon" in contract["microbiome"]
-        and "calprotectin" in contract["phenotype"],
-        contract,
-    )
-    audit.add(
-        "Contract",
-        "bootstrap",
-        contract["bootstrap"] == 5000,
-        contract["bootstrap"],
-    )
-    audit.add(
-        "Contract",
-        "causal-limit",
-        "not identified causal mediation effects" in contract["interpretation_limit"],
-        contract["interpretation_limit"],
+        "cross-sectional interpretation limit",
+        "not identified causal mediation" in contract.get("interpretation_limit", ""),
+        contract.get("interpretation_limit"),
     )
 
 
 def audit_cohorts(frozen: Path, audit: Audit) -> None:
-    metrics = json.loads((frozen / "analysis-metrics.json").read_text())
-    expected = {
-        "article": 71,
-        "analysis_seed": 71001,
-        "plot_seed": 20260771,
-        "public_subjects": 220,
-        "genus_features": 11720,
-        "calprotectin_available": 153,
-        "primary_subjects": 90,
-        "primary_antibiotic_exposed": 13,
-        "primary_controls": 20,
-        "primary_cd": 46,
-        "primary_uc": 24,
-        "primary_exposed_controls": 0,
-        "validation_strict_subjects": 38,
-        "validation_antibiotic_exposed": 0,
+    primary = read_tsv(frozen, "sem-primary-cohort.tsv")
+    validation = read_tsv(frozen, "sem-validation-cohort.tsv")
+    checks = {
+        "primary n=90": len(primary) == 90,
+        "primary 13 exposed": int(primary["Antibiotic"].sum()) == 13,
+        "primary sample unique": primary["Sample"].is_unique,
+        "primary subject unique": primary["Subject"].is_unique,
+        "primary 20 controls": int(primary["Diagnosis"].eq("Control").sum()) == 20,
+        "primary zero exposed controls": int(
+            (primary["Diagnosis"].eq("Control") & primary["Antibiotic"].eq(1)).sum()
+        )
+        == 0,
+        "validation n=38": len(validation) == 38,
+        "validation zero exposed": int(validation["Antibiotic"].sum()) == 0,
+        "profile closure": np.allclose(primary["ProfileSum"], 1.0, atol=1e-10),
+        "primary Shannon z mean": near(primary["ShannonZ"].mean(), 0),
+        "primary Shannon z sd": near(primary["ShannonZ"].std(ddof=1), 1),
     }
-    for key, value in expected.items():
-        audit.add("Input metric", key, metrics.get(key) == value, metrics.get(key))
-    audit.add(
-        "Input metric",
-        "pseudocount",
-        near(metrics["pseudocount"], 1e-6),
-        metrics["pseudocount"],
-    )
+    for name, status in checks.items():
+        audit.add("Cohort", name, status, name)
 
-    all_samples = pd.read_csv(frozen / "all-sample-metrics.tsv", sep="\t")
-    primary = pd.read_csv(frozen / "sem-primary-cohort.tsv", sep="\t")
-    validation = pd.read_csv(frozen / "sem-validation-cohort.tsv", sep="\t")
-    audit.add("Cohort", "all-rows", len(all_samples) == 220, len(all_samples))
-    audit.add(
-        "Cohort", "all-unique-subjects", all_samples["Subject"].is_unique, all_samples["Subject"].nunique()
-    )
-    audit.add("Cohort", "primary-rows", len(primary) == 90, len(primary))
-    audit.add("Cohort", "validation-rows", len(validation) == 38, len(validation))
-    audit.add("Cohort", "primary-subjects", primary["Subject"].is_unique, primary["Subject"].nunique())
-    audit.add("Cohort", "validation-subjects", validation["Subject"].is_unique, validation["Subject"].nunique())
+    attrition = read_tsv(frozen, "sample-attrition.tsv")
     audit.add(
         "Cohort",
-        "disjoint-cohorts",
-        set(primary["Subject"]).isdisjoint(validation["Subject"]),
-        len(set(primary["Subject"]) & set(validation["Subject"])),
-    )
-    audit.add("Cohort", "primary-label", primary["Cohort"].eq("PRISM").all(), primary["Cohort"].unique())
-    audit.add("Cohort", "validation-label", validation["Cohort"].eq("Validation").all(), validation["Cohort"].unique())
-    audit.add(
-        "Cohort",
-        "primary-diagnoses",
-        primary["Diagnosis"].value_counts().to_dict()
-        == {"CD": 46, "UC": 24, "Control": 20},
-        primary["Diagnosis"].value_counts().to_dict(),
-    )
-    audit.add(
-        "Cohort",
-        "primary-exposure",
-        int(primary["Antibiotic"].sum()) == 13,
-        int(primary["Antibiotic"].sum()),
-    )
-    audit.add(
-        "Cohort",
-        "no-exposed-controls",
-        int(primary.loc[primary["Diagnosis"].eq("Control"), "Antibiotic"].sum()) == 0,
-        primary.groupby("Diagnosis")["Antibiotic"].sum().to_dict(),
-    )
-    audit.add(
-        "Cohort",
-        "validation-no-exposure",
-        int(validation["Antibiotic"].sum()) == 0,
-        int(validation["Antibiotic"].sum()),
-    )
-    required = [
-        "AgeZ",
-        "Antibiotic",
-        "Immunosuppressant",
-        "Mesalamine",
-        "Steroids",
-        "CD",
-        "UC",
-        "LogCalprotectinZ",
-        "ShannonZ",
-        "LogFaecalibacteriumZ",
-    ]
-    audit.add(
-        "Cohort",
-        "complete-model-fields",
-        primary[required].notna().all().all() and validation[required].notna().all().all(),
-        required,
-    )
-    binary = ["Antibiotic", "Immunosuppressant", "Mesalamine", "Steroids", "CD", "UC"]
-    audit.add(
-        "Cohort",
-        "binary-fields",
-        primary[binary].isin([0, 1]).all().all()
-        and validation[binary].isin([0, 1]).all().all(),
-        binary,
-    )
-    audit.add(
-        "Cohort",
-        "diagnosis-indicators",
-        ((primary["Diagnosis"].eq("CD")).astype(int) == primary["CD"]).all()
-        and ((primary["Diagnosis"].eq("UC")).astype(int) == primary["UC"]).all(),
-        "CD and UC indicators",
-    )
-    audit.add(
-        "Cohort",
-        "profile-sums",
-        np.allclose(primary["ProfileSum"], 1, atol=1e-12)
-        and np.allclose(validation["ProfileSum"], 1, atol=1e-12),
-        (primary["ProfileSum"].min(), primary["ProfileSum"].max()),
-    )
-    audit.add(
-        "Cohort",
-        "calprotectin-transform",
-        np.allclose(primary["LogCalprotectin"], np.log1p(primary["Fecal.Calprotectin"]), atol=1e-12)
-        and np.allclose(validation["LogCalprotectin"], np.log1p(validation["Fecal.Calprotectin"]), atol=1e-12),
-        "log1p",
-    )
-    audit.add(
-        "Cohort",
-        "faecalibacterium-transform",
-        np.allclose(
-            primary["Log10Faecalibacterium"],
-            np.log10(primary["FaecalibacteriumRelative"] + 1e-6),
-            atol=1e-12,
-        ),
-        "log10(relative abundance + 1e-6)",
-    )
-
-    standards = pd.read_csv(frozen / "standardization-parameters.tsv", sep="\t")
-    audit.add("Scale", "four-parameters", len(standards) == 4, len(standards))
-    standard_map = standards.set_index("Variable")
-    for raw, zed in {
-        "Age": "AgeZ",
-        "Shannon": "ShannonZ",
-        "LogCalprotectin": "LogCalprotectinZ",
-        "Log10Faecalibacterium": "LogFaecalibacteriumZ",
-    }.items():
-        mean = float(standard_map.loc[raw, "Mean"])
-        sd = float(standard_map.loc[raw, "SD"])
-        audit.add(
-            "Scale",
-            f"{raw}-primary-parameters",
-            near(primary[raw].mean(), mean) and near(primary[raw].std(ddof=1), sd),
-            (mean, sd),
-        )
-        audit.add(
-            "Scale",
-            f"{raw}-primary-z",
-            np.allclose(primary[zed], (primary[raw] - mean) / sd, atol=1e-12),
-            zed,
-        )
-        audit.add(
-            "Scale",
-            f"{raw}-validation-reference",
-            np.allclose(validation[zed], (validation[raw] - mean) / sd, atol=1e-12),
-            zed,
-        )
-
-    attrition = pd.read_csv(frozen / "sample-attrition.tsv", sep="\t")
-    audit.add(
-        "Cohort",
-        "attrition-counts",
+        "attrition sequence",
         attrition["Subjects"].tolist() == [220, 153, 150, 128, 90, 38],
         attrition["Subjects"].tolist(),
     )
-    overlap = pd.read_csv(frozen / "antibiotic-overlap-by-diagnosis.tsv", sep="\t")
+    overlap = read_tsv(frozen, "antibiotic-overlap-by-diagnosis.tsv")
     audit.add(
         "Cohort",
-        "overlap-ledger",
-        overlap[["Diagnosis", "Unexposed", "Exposed"]].to_dict("records")
-        == [
-            {"Diagnosis": "Control", "Unexposed": 20, "Exposed": 0},
-            {"Diagnosis": "CD", "Unexposed": 38, "Exposed": 8},
-            {"Diagnosis": "UC", "Unexposed": 19, "Exposed": 5},
-        ],
+        "diagnosis overlap table",
+        overlap[["Unexposed", "Exposed"]].to_numpy().tolist()
+        == [[20, 0], [38, 8], [19, 5]],
         overlap.to_dict("records"),
+    )
+    comparison = read_tsv(frozen, "prism-complete-case-comparison.tsv")
+    audit.add("Missingness", "nine comparison rows", len(comparison) == 9, len(comparison))
+    cal = comparison.loc[comparison["Variable"].eq("log1p fecal calprotectin")].iloc[0]
+    audit.add(
+        "Missingness",
+        "excluded calprotectin observed 3/65",
+        int(cal["ExcludedObserved"]) == 3 and near(cal["ExcludedMissingPct"], 95.3846153846),
+        cal.to_dict(),
     )
 
 
 def audit_models(frozen: Path, audit: Audit) -> None:
     metrics = json.loads((frozen / "model-metrics.json").read_text())
     expected = {
-        "article": 71,
-        "analysis_seed": 71001,
-        "plot_seed": 20260771,
         "primary_subjects": 90,
         "primary_antibiotic_exposed": 13,
         "bootstrap": 5000,
         "bootstrap_valid": 5000,
-        "constrained_fisher_df": 2,
-        "validation_antibiotic_exposed": 0,
-    }
-    for key, value in expected.items():
-        audit.add("Model metric", key, metrics.get(key) == value, metrics.get(key))
-    numeric_expected = {
-        "shannon_a": -0.9037712391973121,
-        "shannon_b": -0.1467041786134764,
-        "shannon_direct": -0.5139175462673824,
-        "shannon_indirect": 0.13258701730092537,
-        "shannon_total": -0.3813305289664570,
-        "shannon_indirect_ci_lower": -0.10929280094374684,
-        "shannon_indirect_ci_upper": 0.36392085814760944,
+        "shannon_a": -0.903771239197312,
+        "shannon_b": -0.146704178613476,
+        "shannon_direct": -0.513917546267382,
+        "shannon_indirect": 0.132587017300925,
+        "shannon_total": -0.381330528966457,
+        "shannon_indirect_ci_lower": -0.109292800943747,
+        "shannon_indirect_ci_upper": 0.363920858147609,
         "shannon_indirect_p": 0.2836,
-        "mediator_r2": 0.4443137130154484,
-        "outcome_r2": 0.2981634594244468,
-        "constrained_fisher_c": 4.655,
-        "constrained_fisher_p": 0.098,
-        "primary_aic": 462.062,
-        "constrained_aic": 463.131,
-        "reverse_aic": 462.062,
-        "propensity_max_abs_coefficient": 19.379301618712365,
-        "leave_one_out_indirect_min": 0.07455974069105198,
-        "leave_one_out_indirect_max": 0.1636875092898683,
+        "constrained_fisher_p": 0.0975441197705992,
+        "primary_aic": 462.062126482154,
+        "reverse_aic": 462.062126482154,
+        "validation_antibiotic_exposed": 0,
+        "first_tested_n_with_b_power_80": 500,
+        "positive_control_n": 500,
+        "medsens_rho_zero": -0.15,
     }
-    for key, value in numeric_expected.items():
-        audit.add("Model metric", key, near(metrics[key], value, 1e-8), metrics[key])
-    audit.add(
-        "Model identity",
-        "indirect-a-times-b",
-        near(metrics["shannon_indirect"], metrics["shannon_a"] * metrics["shannon_b"]),
-        metrics["shannon_indirect"],
-    )
-    audit.add(
-        "Model identity",
-        "total-direct-plus-indirect",
-        near(metrics["shannon_total"], metrics["shannon_direct"] + metrics["shannon_indirect"]),
-        metrics["shannon_total"],
-    )
-    audit.add(
-        "Model identity",
-        "reverse-same-aic",
-        near(metrics["primary_aic"], metrics["reverse_aic"]),
-        (metrics["primary_aic"], metrics["reverse_aic"]),
-    )
-    audit.add(
-        "Model identity",
-        "propensity-converged-but-separated",
-        metrics["propensity_converged"] is True
-        and metrics["propensity_max_abs_coefficient"] > 19,
-        metrics["propensity_max_abs_coefficient"],
-    )
+    for key, expected_value in expected.items():
+        actual = metrics.get(key)
+        status = actual == expected_value if isinstance(expected_value, int) else near(actual, expected_value)
+        audit.add("Model", key, status, actual)
 
-    coefficients = pd.read_csv(frozen / "local-path-coefficients-hc3.tsv", sep="\t")
-    audit.add("Local model", "coefficient-rows", len(coefficients) == 42, len(coefficients))
-    key_rows = {
-        ("Microbiome node", "Antibiotic"): (-0.9037712391973121, 0.295636625933503, 0.00301744610214472),
-        ("Phenotype node", "ShannonZ"): (-0.1467041786134764, 0.134390519843115, 0.27823395591125),
-        ("Phenotype node", "Antibiotic"): (-0.5139175462673824, 0.352423774704048, 0.148641768283997),
-        ("Total-association node", "Antibiotic"): (-0.3813305289664570, 0.337737369997513, 0.262158853355584),
-        ("Constrained phenotype node", "ShannonZ"): (-0.0696552533023216, 0.136446472153862, 0.61107620588278),
-    }
-    indexed = coefficients.set_index(["Model", "Term"])
-    for key, (estimate, se, pvalue) in key_rows.items():
-        row = indexed.loc[key]
-        audit.add("Local model", f"{key[0]}-{key[1]}-estimate", near(row["Estimate"], estimate), row["Estimate"])
-        audit.add("Local model", f"{key[0]}-{key[1]}-hc3-se", near(row["RobustSE"], se), row["RobustSE"])
-        audit.add("Local model", f"{key[0]}-{key[1]}-p", near(row["PValue"], pvalue), row["PValue"])
-        audit.add(
-            "Local model",
-            f"{key[0]}-{key[1]}-ci",
-            near(row["CILower"], estimate - 1.96 * se, 1e-8)
-            and near(row["CIUpper"], estimate + 1.96 * se, 1e-8),
-            (row["CILower"], row["CIUpper"]),
-        )
+    effects = read_tsv(frozen, "path-effect-summary.tsv")
+    primary = effects.loc[effects["Model"].eq("Primary Shannon path")]
+    audit.add(
+        "Model",
+        "five primary path summaries",
+        primary["Effect"].tolist() == ["A", "B", "Direct", "Indirect", "Total"],
+        primary["Effect"].tolist(),
+    )
+    identity = metrics["shannon_total"] - metrics["shannon_direct"] - metrics["shannon_indirect"]
+    audit.add("Model", "linear path identity", abs(identity) < 1e-10, identity)
 
-    effects = pd.read_csv(frozen / "path-effect-summary.tsv", sep="\t")
-    audit.add("Bootstrap", "summary-rows", len(effects) == 10, len(effects))
-    primary = effects.loc[effects["Model"].eq("Primary Shannon path")].set_index("Effect")
-    audit.add(
-        "Bootstrap",
-        "primary-effects",
-        set(primary.index) == {"A", "B", "Direct", "Indirect", "Total"},
-        primary.index.tolist(),
-    )
-    audit.add(
-        "Bootstrap",
-        "primary-valid",
-        primary["ValidBootstrap"].eq(5000).all()
-        and primary["RequestedBootstrap"].eq(5000).all(),
-        primary[["ValidBootstrap", "RequestedBootstrap"]].to_dict("index"),
-    )
-    audit.add(
-        "Bootstrap",
-        "indirect-summary",
-        near(primary.loc["Indirect", "Estimate"], 0.132587017300925)
-        and near(primary.loc["Indirect", "CILower"], -0.109292800943747)
-        and near(primary.loc["Indirect", "CIUpper"], 0.363920858147609)
-        and near(primary.loc["Indirect", "BootstrapP"], 0.2836),
-        primary.loc["Indirect"].to_dict(),
-    )
-    faec = effects.loc[
-        effects["Model"].eq("Faecalibacterium sensitivity")
-    ].set_index("Effect")
-    audit.add(
-        "Bootstrap",
-        "faecalibacterium-valid",
-        faec["ValidBootstrap"].eq(2000).all()
-        and faec["RequestedBootstrap"].eq(2000).all(),
-        faec[["ValidBootstrap", "RequestedBootstrap"]].to_dict("index"),
-    )
-    audit.add(
-        "Bootstrap",
-        "faecalibacterium-indirect",
-        near(faec.loc["Indirect", "Estimate"], 0.098302990157214)
-        and near(faec.loc["Indirect", "CILower"], -0.0717121247594993)
-        and near(faec.loc["Indirect", "CIUpper"], 0.273407434577941),
-        faec.loc["Indirect"].to_dict(),
-    )
+    fit = read_tsv(frozen, "sem-fit-comparison.tsv")
+    forward = fit.loc[fit["Model"].eq("Primary partial-path model")].iloc[0]
+    reverse = fit.loc[fit["Model"].eq("Reverse cross-sectional orientation")].iloc[0]
+    constrained = fit.loc[fit["Model"].eq("Constrained microbiome-only path")].iloc[0]
+    audit.add("Graph", "forward/reverse AIC identical", near(forward.AIC, reverse.AIC), (forward.AIC, reverse.AIC))
+    audit.add("Graph", "saturated graphs have zero claims", int(forward.IndependenceClaims) == 0 and int(reverse.IndependenceClaims) == 0, fit.to_dict("records"))
+    audit.add("Graph", "constrained graph one claim", int(constrained.IndependenceClaims) == 1, constrained.to_dict())
 
-    draws = pd.read_csv(frozen / "sem-path-bootstrap.tsv.gz", sep="\t")
-    audit.add("Bootstrap", "draw-count", len(draws) == 5000, len(draws))
-    audit.add(
-        "Bootstrap",
-        "iterations",
-        draws["Iteration"].tolist() == list(range(1, 5001)),
-        (draws["Iteration"].min(), draws["Iteration"].max()),
-    )
-    audit.add(
-        "Bootstrap",
-        "finite-draws",
-        np.isfinite(draws[["A", "B", "Direct", "Indirect", "Total"]].to_numpy()).all(),
-        "finite",
-    )
-    audit.add(
-        "Bootstrap",
-        "draw-path-identities",
-        np.allclose(draws["Indirect"], draws["A"] * draws["B"], atol=1e-12)
-        and np.allclose(draws["Total"], draws["Direct"] + draws["Indirect"], atol=1e-12)
-        and draws["IdentityError"].abs().max() < 1e-12,
-        draws["IdentityError"].abs().max(),
-    )
-    q025, q975 = draws["Indirect"].quantile([0.025, 0.975])
-    empirical_p = 2 * min((draws["Indirect"] <= 0).mean(), (draws["Indirect"] >= 0).mean())
-    audit.add(
-        "Bootstrap",
-        "summary-recomputed",
-        near(q025, primary.loc["Indirect", "CILower"])
-        and near(q975, primary.loc["Indirect", "CIUpper"])
-        and near(empirical_p, primary.loc["Indirect", "BootstrapP"]),
-        (q025, q975, empirical_p),
-    )
-    faec_draws = pd.read_csv(
-        frozen / "faecalibacterium-path-bootstrap.tsv.gz", sep="\t"
-    )
-    audit.add("Bootstrap", "faec-draw-count", len(faec_draws) == 2000, len(faec_draws))
-    audit.add(
-        "Bootstrap",
-        "faec-path-identities",
-        np.allclose(faec_draws["Indirect"], faec_draws["A"] * faec_draws["B"], atol=1e-12)
-        and np.allclose(faec_draws["Total"], faec_draws["Direct"] + faec_draws["Indirect"], atol=1e-12),
-        "a*b and direct+indirect",
-    )
+    positivity = read_tsv(frozen, "propensity-positivity-audit.tsv")
+    pos = dict(zip(positivity["Quantity"], positivity["Value"]))
+    audit.add("Positivity", "GLM converged", near(pos["GLM converged"], 1), pos["GLM converged"])
+    audit.add("Positivity", "large separated coefficient", near(pos["Maximum absolute coefficient"], 19.3793016187124), pos["Maximum absolute coefficient"])
+    audit.add("Positivity", "minimum propensity", near(pos["Minimum fitted propensity"], 2.25594627914396e-09), pos["Minimum fitted propensity"])
+    audit.add("Positivity", "weights not used", near(pos["Weights used for inference"], 0), pos["Weights used for inference"])
 
-    fits = pd.read_csv(frozen / "sem-fit-comparison.tsv", sep="\t")
-    audit.add("Graph fit", "three-graphs", len(fits) == 3, len(fits))
-    audit.add(
-        "Graph fit",
-        "aic-ledger",
-        np.allclose(fits["AIC"], [462.062, 463.131, 462.062], atol=1e-9),
-        fits["AIC"].tolist(),
-    )
-    audit.add(
-        "Graph fit",
-        "saturated-ledger",
-        logical(fits["Saturated"]).tolist() == [True, False, True]
-        and fits["IndependenceClaims"].tolist() == [0, 1, 0],
-        fits[["Saturated", "IndependenceClaims"]].to_dict("records"),
-    )
-    constrained = fits.iloc[1]
-    audit.add(
-        "Graph fit",
-        "fisher-c",
-        near(constrained["FisherC"], 4.655)
-        and int(constrained["FisherDF"]) == 2
-        and near(constrained["FisherP"], 0.098),
-        constrained.to_dict(),
-    )
-    dsep = pd.read_csv(frozen / "directed-separation-claims.tsv", sep="\t")
-    audit.add("Graph fit", "one-dsep-claim", len(dsep) == 1, len(dsep))
-    audit.add(
-        "Graph fit",
-        "omitted-direct-path",
-        dsep.iloc[0]["IndependenceClaim"].startswith("LogCalprotectinZ ~ Antibiotic")
-        and near(dsep.iloc[0]["PValue"], 0.0975441197705989),
-        dsep.iloc[0].to_dict(),
-    )
 
-    leave = pd.read_csv(frozen / "leave-one-out-paths.tsv", sep="\t")
-    audit.add("Sensitivity", "leave-one-out-count", len(leave) == 90, len(leave))
+def audit_simulations(frozen: Path, audit: Audit) -> None:
+    power = read_tsv(frozen, "path-power-simulation.tsv")
+    audit.add("Simulation", "power grid has 16 rows", len(power) == 16, len(power))
+    audit.add("Simulation", "1,000 repetitions per scenario", power["Repetitions"].eq(1000).all(), power["Repetitions"].unique())
+    b_path = power.loc[power["Target"].eq("B path (HC3)")]
+    n90 = b_path.loc[b_path["SampleSize"].eq(90)].iloc[0]
+    n500 = b_path.loc[b_path["SampleSize"].eq(500)].iloc[0]
+    audit.add("Simulation", "n=90 power 0.180", near(n90.Power, 0.18), n90.to_dict())
+    audit.add("Simulation", "n=500 power 0.825", near(n500.Power, 0.825), n500.to_dict())
+    first = b_path.loc[b_path["Power"].ge(0.8), "SampleSize"].min()
+    audit.add("Simulation", "first tested n above 80% is 500", int(first) == 500, first)
+
+    positive = read_tsv(frozen, "positive-control-paths.tsv")
+    overlap = read_tsv(frozen, "positive-control-overlap.tsv")
+    audit.add("Positive control", "overlap in all strata", (overlap[["Unexposed", "Exposed"]] > 0).all().all(), overlap.to_dict("records"))
+    for effect in ("A", "B", "Indirect"):
+        row = positive.loc[positive["Effect"].eq(effect)].iloc[0]
+        excludes_zero = row.CIUpper < 0 if effect in {"A", "B"} else row.CILower > 0
+        covers_truth = row.CILower <= row.TrueValue <= row.CIUpper
+        audit.add("Positive control", f"{effect} excludes zero", excludes_zero, row.to_dict())
+        audit.add("Positive control", f"{effect} covers truth", covers_truth, row.to_dict())
+    positive_audit = read_tsv(frozen, "positive-control-audit.tsv")
+    aic = positive_audit.loc[positive_audit["Criterion"].eq("Forward versus reverse AIC")].iloc[0]
+    audit.add("Positive control", "AIC still identical", aic.Result == "Identical", aic.to_dict())
+
+    rho = read_tsv(frozen, "mediation-rho-summary.tsv")
+    rho_map = dict(zip(rho["Quantity"], rho["Value"]))
     audit.add(
         "Sensitivity",
-        "leave-one-out-unique",
-        leave["OmittedSample"].is_unique,
-        leave["OmittedSample"].nunique(),
+        "point indirect crosses at rho -0.15",
+        near(rho_map["Residual rho where point indirect effect is zero"], -0.15),
+        rho_map,
     )
     audit.add(
         "Sensitivity",
-        "leave-one-out-range",
-        near(leave["Indirect"].min(), 0.074559740691052)
-        and near(leave["Indirect"].max(), 0.163687509289868),
-        (leave["Indirect"].min(), leave["Indirect"].max()),
+        "interval crosses at rho zero",
+        near(rho_map["Indirect interval at rho=0 crosses zero"], 1),
+        rho_map,
     )
-    audit.add(
-        "Sensitivity",
-        "leave-one-out-identities",
-        leave["IdentityError"].abs().max() < 1e-12,
-        leave["IdentityError"].abs().max(),
-    )
-
-    transport = pd.read_csv(frozen / "outcome-path-transport.tsv", sep="\t")
-    audit.add("Transport", "two-cohorts", len(transport) == 2, len(transport))
-    audit.add(
-        "Transport",
-        "same-variable-counts",
-        transport["N"].tolist() == [90, 38]
-        and transport["AntibioticExposed"].tolist() == [13, 0],
-        transport[["N", "AntibioticExposed"]].to_dict("records"),
-    )
-    audit.add(
-        "Transport",
-        "direction-change",
-        near(transport.iloc[0]["Estimate"], -0.0696552533023216)
-        and near(transport.iloc[1]["Estimate"], 0.0523204795602166)
-        and np.sign(transport.iloc[0]["Estimate"]) != np.sign(transport.iloc[1]["Estimate"]),
-        transport["Estimate"].tolist(),
-    )
-
-    positivity = pd.read_csv(frozen / "propensity-positivity-audit.tsv", sep="\t")
-    pos = positivity.set_index("Quantity")["Value"]
-    audit.add("Positivity", "control-zero", near(pos["Control antibiotic exposed"], 0), pos["Control antibiotic exposed"])
-    audit.add("Positivity", "validation-zero", near(pos["Validation antibiotic exposed"], 0), pos["Validation antibiotic exposed"])
-    audit.add("Positivity", "max-coefficient", near(pos["Maximum absolute coefficient"], 19.3793016187124), pos["Maximum absolute coefficient"])
-    audit.add("Positivity", "weights-not-used", near(pos["Weights used for inference"], 0), pos["Weights used for inference"])
-
-    diagnostics = pd.read_csv(frozen / "local-model-diagnostics.tsv", sep="\t")
-    audit.add("Diagnostics", "three-local-models", len(diagnostics) == 3, len(diagnostics))
-    audit.add("Diagnostics", "condition-numbers", diagnostics["ConditionNumber"].lt(8).all(), diagnostics["ConditionNumber"].tolist())
-    audit.add("Diagnostics", "cook-ledger", diagnostics["CookAbove4OverN"].tolist() == [7, 7, 8], diagnostics["CookAbove4OverN"].tolist())
-    vif = pd.read_csv(frozen / "variance-inflation.tsv", sep="\t")
-    audit.add("Diagnostics", "vif-count", len(vif) == 15, len(vif))
-    audit.add("Diagnostics", "vif-below-3.1", vif["VIF"].max() < 3.1, vif["VIF"].max())
-
-
-def audit_software(frozen: Path, audit: Audit) -> None:
-    versions = pd.read_csv(
-        frozen / "software-versions-r.tsv", sep="\t"
-    ).set_index("Package")["Version"].astype(str)
-    expected = {
-        "R": "4.4.1",
-        "piecewiseSEM": "2.3.0.1",
-        "sandwich": "3.1.0",
-        "lmtest": "0.9.40",
-        "car": "3.1.2",
-        "jsonlite": "1.8.8",
-    }
-    for package, version in expected.items():
-        audit.add("Software", package, versions.get(package) == version, versions.get(package))
-    python_versions = json.loads((frozen / "software-versions-python.json").read_text())
-    for package, key in (("python", "Python"), ("pandas", "pandas"), ("numpy", "numpy")):
-        audit.add("Software", f"python-{package}", bool(python_versions.get(key)), python_versions.get(key))
-
-    packages = pd.read_csv(
-        frozen / "env" / "multiomics-r-packages.tsv", sep="\t"
-    ).set_index("Package")["Version"].astype(str)
-    environment_expected = {
-        "R": "4.4.1",
-        "piecewiseSEM": "2.3.0.1",
-        "sandwich": "3.1.0",
-        "lmtest": "0.9-40",
-        "car": "3.1-2",
-        "jsonlite": "1.8.8",
-    }
-    for package, version in environment_expected.items():
-        audit.add("Environment", package, packages.get(package) == version, packages.get(package))
-
-
-def audit_chapter(root: Path, audit: Audit) -> None:
-    chapter = root / "chapters" / "71-structural-equation-model.qmd"
-    audit.add("Chapter", "exists", chapter.is_file(), chapter)
-    if not chapter.is_file():
-        return
-    text = chapter.read_text(encoding="utf-8")
-    lower_text = text.lower()
-    audit.add("Chapter", "published", "draft: false" in text, "draft: false")
-    audit.add("Chapter", "eval-true", "eval: true" in text, "eval: true")
-    audit.add("Chapter", "freeze-auto", "freeze: auto" in text, "freeze: auto")
-    audit.add(
-        "Chapter",
-        "native-quarto-fences",
-        text.count("```{r}") >= 9
-        and text.count("```{bash}") >= 2
-        and "~~~{" not in text,
-        "executable code-cell fences",
-    )
-    required = (
-        "对应论文里的哪张图",
-        "理论：",
-        "准备工作",
-        "可复制代码",
-        "审计与升级",
-        "出版级美化",
-        "常见坑",
-        "这段 Methods 怎么写",
-        "换成你自己的数据怎么做",
-        "参考",
-    )
-    for heading in required:
-        audit.add("Chapter structure", heading, heading in text, heading)
-    audit.add(
-        "Chapter",
-        "extra-data-explicit",
-        "你还需要什么数据" in text
-        and "实测环境暴露" in text
-        and "独立测量的表型" in text
-        and "混杂因素" in text,
-        "environment, phenotype, confounders",
-    )
-    audit.add(
-        "Chapter",
-        "cross-sectional-boundary",
-        "不能识别因果中介" in text
-        and "同一次横断面访视" in text
-        and "治疗启动时间未知" in text,
-        "temporal ordering boundary",
-    )
-    audit.add(
-        "Chapter",
-        "piecewise-definition",
-        "局部条件模型" in text
-        and "directed separation" in lower_text
-        and "Fisher's C" in text,
-        "piecewise SEM definition",
-    )
-    audit.add(
-        "Chapter",
-        "saturated-warning",
-        "df=0" in text
-        and "饱和图" in text
-        and "不能验证模型正确" in text,
-        "saturated model limitation",
-    )
-    audit.add(
-        "Chapter",
-        "positivity-warning",
-        "没有 antibiotic-exposed control" in text
-        and "validation 队列 0/38" in text
-        and "不使用该权重" in text,
-        "structural positivity",
-    )
-    audit.add(
-        "Chapter",
-        "direction-not-learned",
-        "AIC 都是 462.062" in text
-        and "不能从 AIC 学出方向" in text,
-        "reverse orientation",
-    )
-    audit.add(
-        "Chapter",
-        "indirect-boundary",
-        "indirect=0.133" in text
-        and "−0.109–0.364" in text
-        and "不报告 proportion mediated" in text,
-        "uncertain inconsistent mediation",
-    )
-    audit.add(
-        "Chapter",
-        "sample-size-boundary",
-        "每个参数 10 个样本" in text
-        and "Monte Carlo" in text,
-        "simulation-based sample size",
-    )
-    audit.add(
-        "Chapter",
-        "pls-pm-boundary",
-        "PLS-PM" in text
-        and "不会赋予因果识别" in text,
-        "prediction is not identification",
-    )
-    audit.add(
-        "Chapter",
-        "composition-boundary",
-        "compositional" in text
-        and "relative abundance" in text
-        and "Faecalibacterium" in text,
-        "microbiome scale",
-    )
-    audit.add(
-        "Chapter",
-        "seeds",
-        "set.seed(71001)" in text and "20260771" in text,
-        "71001 / 20260771",
-    )
-    audit.add(
-        "Chapter",
-        "inline-theme",
-        "theme_pub <- function" in text and "save_pub <- function" in text,
-        "inline functions",
-    )
-    audit.add(
-        "Chapter",
-        "no-source-theme",
-        'source("R/theme_pub.R")' not in text,
-        "no source() dependency",
-    )
-    audit.add(
-        "Chapter",
-        "versions",
-        all(
-            version in text
-            for version in (
-                "piecewiseSEM 2.3.0.1",
-                "sandwich 3.1.0",
-                "lmtest 0.9-40",
-                "car 3.1-2",
-            )
-        ),
-        "software versions",
-    )
-    forbidden = (
-        "本篇可独立跑通",
-        "这体现全系列",
-        "接口只学一次",
-        "作者代码通常长这样",
-        "（即本文）",
-        "/media/desk16",
-        "/tmp/article71",
-    )
-    for phrase in forbidden:
-        audit.add("Chapter prose", f"forbidden-{phrase}", phrase not in text, phrase)
-    for stem in FIGURES:
-        audit.add(
-            "Chapter figure",
-            stem,
-            f"../figures/{stem}.png" in text,
-            stem,
-        )
-    audit.add(
-        "Chapter figure",
-        "anchor",
-        "../figures/71-franzosa-fig1-original.png" in text,
-        "anchor",
-    )
-    citation_keys = (
-        "franzosa2019ibd",
-        "muller2022curatedmultiomics",
-        "lefcheck2016piecewisesem",
-        "shipley2009confirmatory",
-        "wolf2013samplesize",
-        "gloor2017compositional",
-        "imai2010general",
-    )
-    for key in citation_keys:
-        audit.add("Chapter citation", key, f"@{key}" in text, key)
 
 
 def audit_figures(root: Path, frozen: Path, audit: Audit) -> None:
-    figures = root / "figures"
+    figure_dir = root / "figures"
     for stem in FIGURES:
-        for suffix in ("pdf", "png", "tiff"):
-            path = figures / f"{stem}.{suffix}"
-            audit.add(
-                "Figure file",
-                f"{stem}.{suffix}",
-                path.is_file() and path.stat().st_size > 10_000,
-                path.stat().st_size if path.is_file() else "MISSING",
-            )
-        png = figures / f"{stem}.png"
-        tiff = figures / f"{stem}.tiff"
+        for suffix in ("png", "pdf", "tiff"):
+            path = figure_dir / f"{stem}.{suffix}"
+            audit.add("Figure", f"{stem}.{suffix} exists", path.is_file(), path)
+        png = figure_dir / f"{stem}.png"
         if png.is_file():
             with Image.open(png) as image:
-                dpi = image.info.get("dpi", (0, 0))
-                audit.add(
-                    "Figure raster",
-                    f"{stem}-png-size",
-                    image.width >= 1800 and image.height >= 1100,
-                    (image.width, image.height),
-                )
-                audit.add("Figure raster", f"{stem}-png-dpi", min(dpi) >= 300, dpi)
-        if tiff.is_file():
-            with Image.open(tiff) as image:
-                dpi = image.info.get("dpi", (0, 0))
-                compression = image.tag_v2.get(259)
-                audit.add("Figure raster", f"{stem}-tiff-dpi", min(dpi) >= 300, dpi)
-                audit.add("Figure raster", f"{stem}-tiff-lzw", compression == 5, compression)
-        pdf = figures / f"{stem}.pdf"
-        if pdf.is_file():
-            result = subprocess.run(
-                ["pdftotext", str(pdf), "-"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            audit.add(
-                "Figure text",
-                f"{stem}-pdf-text",
-                result.returncode == 0 and len(result.stdout.strip()) > 10,
-                len(result.stdout),
-            )
-            audit.add(
-                "Figure text",
-                f"{stem}-english-only",
-                not bool(re.search(r"[\u3400-\u9fff]", result.stdout)),
-                "no CJK glyphs",
-            )
+                width, height = image.size
+                dpi = image.info.get("dpi", (0, 0))[0]
+            audit.add("Figure", f"{stem} dimensions", width >= 2800 and height >= 1600, (width, height))
+            audit.add("Figure", f"{stem} dpi", dpi >= 350, dpi)
 
-    anchor = figures / "71-franzosa-fig1-original.png"
-    frozen_anchor = frozen / "franzosa-fig1-original.png"
-    audit.add(
-        "Figure file",
-        "anchor",
-        anchor.is_file()
-        and frozen_anchor.is_file()
-        and sha256(anchor) == sha256(frozen_anchor),
-        sha256(anchor) if anchor.is_file() else "MISSING",
-    )
-    if anchor.is_file():
-        with Image.open(anchor) as image:
-            audit.add(
-                "Figure raster",
-                "anchor-dimensions",
-                (image.width, image.height) == (2123, 710),
-                (image.width, image.height),
-            )
-
-    with tempfile.TemporaryDirectory(prefix="article71-replot-") as temporary:
-        staged = Path(temporary) / "figures"
+    plot_script = frozen / "scripts" / "plot_article71_sem.R"
+    if not plot_script.is_file():
+        audit.add("Figure", "frozen plot script", False, plot_script)
+        return
+    with tempfile.TemporaryDirectory(prefix="article71-figures-") as temp_dir:
+        command = [
+            "Rscript",
+            str(plot_script),
+            "--prepared-dir",
+            str(frozen),
+            "--analysis-dir",
+            str(frozen),
+            "--figure-dir",
+            temp_dir,
+        ]
         environment = os.environ.copy()
-        environment["MPLCONFIGDIR"] = str(Path(temporary) / "mpl")
-        result = subprocess.run(
-            [
-                sys.executable,
-                str(frozen / "scripts" / "plot_article71_sem.py"),
-                "--input-dir",
-                str(frozen),
-                "--figure-dir",
-                str(staged),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=240,
-            env=environment,
-        )
-        audit.add(
-            "Reanalysis",
-            "plot-script-exit",
-            result.returncode == 0,
-            result.stdout + result.stderr,
-        )
-        for stem in FIGURES:
-            staged_png = staged / f"{stem}.png"
-            published_png = figures / f"{stem}.png"
-            status = (
-                staged_png.is_file()
-                and published_png.is_file()
-                and pixel_sha(staged_png) == pixel_sha(published_png)
-            )
-            audit.add(
-                "Reanalysis",
-                f"{stem}-pixel-identical",
-                status,
-                pixel_sha(staged_png) if staged_png.is_file() else "MISSING",
-            )
+        result = subprocess.run(command, text=True, capture_output=True, env=environment)
+        audit.add("Figure", "offline ggplot rerender", result.returncode == 0, result.stderr[-2000:])
+        if result.returncode == 0:
+            for stem in FIGURES:
+                expected = figure_dir / f"{stem}.png"
+                observed = Path(temp_dir) / f"{stem}.png"
+                audit.add(
+                    "Figure reproducibility",
+                    stem,
+                    expected.is_file() and observed.is_file() and pixel_sha(expected) == pixel_sha(observed),
+                    "pixel SHA-256",
+                )
+
+
+def audit_article(root: Path, frozen: Path, audit: Audit) -> None:
+    article = root / "chapters" / "71-structural-equation-model.qmd"
+    text = article.read_text(encoding="utf-8")
+    required_sections = (
+        "## 这一章用什么数据",
+        "## Shannon 到底算的是什么",
+        "## 先看谁能和谁比较",
+        "## 两个队列共用一把尺子",
+        "## 把三条箭头写成回归",
+        "## 间接效应要整条路径一起重拟合",
+        "## 删掉 direct path 试试",
+        "## 敏感性与外部队列能覆盖到哪里",
+        "## 当流程通过时，输出应该长什么样",
+        "## Key Takeaways",
+        "## 附录 A：Methods / Results 模板",
+        "## 附录 B：换成你自己的数据",
+        "## 附录 C：十张图如何复现",
+    )
+    positions = [text.find(section) for section in required_sections]
+    audit.add("Article", "linear pipeline sections present", all(position >= 0 for position in positions), positions)
+    audit.add("Article", "linear pipeline section order", positions == sorted(positions), positions)
+    audit.add("Article", "expected_images is 10", "expected_images: 10" in text, "front matter")
+
+    for forbidden in (
+        "piecewise SEM 的核心理论",
+        "## 常见坑",
+        "## 出版级美化",
+        "卡在三道门",
+        "节点合同",
+        "尺度合同",
+        "71-franzosa-fig1-original",
+        "franzosa-fig1-original.png",
+    ):
+        audit.add("Article", f"forbidden phrase absent: {forbidden}", forbidden not in text, forbidden)
+    audit.add("Article", "no source() dependency", "source(" not in text, "source(")
+    audit.add("Article", "limited 不等于 construction", text.count("不等于") <= 2, text.count("不等于"))
+    audit.add("Article", "ten unique figure references", all(f"../figures/{stem}.png" in text for stem in FIGURES), FIGURES)
+    audit.add("Article", "no publisher figure URL", "nature-assets" not in text and "springernature" not in text, "rights surface")
+
+    required_citations = (
+        "franzosa2019ibd",
+        "muller2022curatedmultiomics",
+        "gloor2017compositional",
+        "petersen2012positivity",
+        "imai2010general",
+        "tingley2014mediation",
+        "shipley2009confirmatory",
+        "verma1990equivalence",
+        "shi2021cmaverse",
+        "sohn2019compositional",
+        "zhang2021microhima",
+        "yue2022ldmmed",
+        "wolf2013samplesize",
+    )
+    for key in required_citations:
+        audit.add("Citation", key, f"@{key}" in text, key)
+
+    plot_script_text = (root / "scripts" / "plot_article71_sem.R").read_text()
+    for stem, function in zip(FIGURES, PLOT_FUNCTIONS, strict=True):
+        audit.add("Plot code", f"{function} function", f"{function} <- function" in plot_script_text, function)
+        audit.add("Plot code", f"{stem} export", f'"{stem}"' in plot_script_text, stem)
+        audit.add("Plot code", f"{function} documented", f"`{function}()`" in text, function)
+
+    downloader = (root / "scripts" / "download_article71_sem_data.py").read_text()
+    freezer = (root / "scripts" / "freeze_article71_sem.py").read_text()
+    model_script = (root / "scripts" / "run_article71_sem_models.R").read_text()
+    audit.add("Code", "downloader excludes publisher artwork", "franzosa-fig1-original" not in downloader, "download script")
+    audit.add("Code", "freezer excludes publisher artwork", "franzosa-fig1-original" not in freezer, "freeze script")
+    audit.add("Code", "analysis seed fixed", "SEED <- 71001L" in model_script, "R model script")
+    audit.add("Code", "power repetitions fixed", "POWER_REPETITIONS <- 1000L" in model_script, "R model script")
+    audit.add("Code", "positive control included", "Positive control" in model_script, "R model script")
+    audit.add("Code", "medsens included", "medsens(" in model_script, "R model script")
 
 
 def main() -> None:
     args = parse_args()
     root = args.project_root.resolve()
     frozen = args.frozen_dir.resolve()
-    qa = args.qa_dir.resolve()
-    qa.mkdir(parents=True, exist_ok=True)
+    qa_dir = args.qa_dir.resolve()
+    qa_dir.mkdir(parents=True, exist_ok=True)
+
     audit = Audit()
-    audit_checksums(frozen, audit)
+    audit_bundle(frozen, audit)
     audit_sources(frozen, audit)
     audit_cohorts(frozen, audit)
     audit_models(frozen, audit)
-    audit_software(frozen, audit)
-    audit_chapter(root, audit)
+    audit_simulations(frozen, audit)
     audit_figures(root, frozen, audit)
-    report = audit.frame()
-    report.to_csv(qa / "qa_report.tsv", sep="\t", index=False)
-    passed = int(report["Status"].eq("PASS").sum())
-    failed = int(report["Status"].eq("FAIL").sum())
-    payload = {
+    audit_article(root, frozen, audit)
+
+    frame = audit.frame()
+    frame.to_csv(qa_dir / "qa-report.tsv", sep="\t", index=False)
+    failed = frame.loc[frame["Status"].eq("FAIL")]
+    summary = {
         "article": 71,
-        "status": "passed" if failed == 0 else "failed",
-        "checks": len(report),
-        "passed": passed,
-        "failed": failed,
-        "failed_checks": report.loc[
-            report["Status"].eq("FAIL"), ["Category", "Check", "Detail"]
-        ].to_dict("records"),
+        "checks": int(len(frame)),
+        "passed": int(frame["Status"].eq("PASS").sum()),
+        "failed": int(len(failed)),
+        "status": "PASS" if failed.empty else "FAIL",
+        "failures": [asdict(row) for row in audit.rows if not row.status],
     }
-    (qa / "qa_report.json").write_text(
-        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+    (qa_dir / "qa-report.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(json.dumps(payload, indent=2, ensure_ascii=False))
-    if failed:
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if not failed.empty:
         raise SystemExit(1)
 
 

@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
 import time
 import urllib.request
 from pathlib import Path
@@ -17,11 +16,6 @@ BASE_URL = (
     "https://raw.githubusercontent.com/borenstein-lab/"
     f"microbiome-metabolome-curated-data/{COMMIT}/"
     "data/processed_data/FRANZOSA_IBD_2019"
-)
-ANCHOR_URL = (
-    "https://media.springernature.com/full/springer-static/image/"
-    "art%3A10.1038%2Fs41564-018-0306-4/MediaObjects/"
-    "41564_2018_306_Fig1_HTML.png"
 )
 RESOURCES = (
     {
@@ -36,12 +30,6 @@ RESOURCES = (
         "sha256": "f7396e3d6838b3b30f78b02bd568753757f84c956cd351966dbe654d50285376",
         "url": f"{BASE_URL}/metadata.tsv",
     },
-    {
-        "name": "franzosa-fig1-original.png",
-        "bytes": 170_306,
-        "sha256": "7b81b865ae65659ad476d6f5210a3bc383b4eadad50d2ad7793a0b99df2450eb",
-        "url": ANCHOR_URL,
-    },
 )
 
 
@@ -54,11 +42,6 @@ def parse_args() -> argparse.Namespace:
         "--seed-resource-dir",
         type=Path,
         help="Optional directory containing verified genera.tsv and metadata.tsv",
-    )
-    parser.add_argument(
-        "--seed-anchor",
-        type=Path,
-        help="Optional verified copy of the official Figure 1 PNG",
     )
     parser.add_argument("--verify-only", action="store_true")
     return parser.parse_args()
@@ -119,19 +102,15 @@ def seed_if_available(
     target: Path,
     resource: dict[str, object],
     resource_dir: Path | None,
-    anchor: Path | None,
 ) -> None:
     if target.is_file():
         return
-    if target.name == "franzosa-fig1-original.png" and anchor is not None:
-        candidate = anchor
-    elif resource_dir is not None:
-        candidate = resource_dir / target.name
-    else:
+    if resource_dir is None:
         return
+    candidate = resource_dir / target.name
     if candidate.is_file():
         verify(candidate, resource)
-        shutil.copy2(candidate, target)
+        target.write_bytes(candidate.read_bytes())
 
 
 def main() -> None:
@@ -143,13 +122,10 @@ def main() -> None:
         if args.seed_resource_dir is not None
         else None
     )
-    seed_anchor = (
-        args.seed_anchor.resolve() if args.seed_anchor is not None else None
-    )
     records: list[dict[str, object]] = []
     for resource in RESOURCES:
         target = cache / str(resource["name"])
-        seed_if_available(target, resource, seed_dir, seed_anchor)
+        seed_if_available(target, resource, seed_dir)
         if not target.is_file():
             if args.verify_only:
                 raise FileNotFoundError(target)
@@ -163,10 +139,14 @@ def main() -> None:
         "repository_commit": COMMIT,
         "paper_doi": "10.1038/s41564-018-0306-4",
         "resource_doi": "10.1038/s41522-022-00345-5",
-        "anchor_figure": "Franzosa et al. 2019 Figure 1",
-        "license": (
-            "CC BY 4.0 for the curated resource article; source data and "
-            "Nature figure terms remain applicable"
+        "publisher_figure_policy": (
+            "No Nature Microbiology artwork is downloaded or redistributed. "
+            "The tutorial uses an original schematic and cites the study."
+        ),
+        "repository_license": "MIT (repository code and documentation)",
+        "data_provenance": (
+            "Processed tables distributed by the pinned public repository; "
+            "the original study and repository terms remain applicable."
         ),
         "resources": {record["name"]: record for record in records},
     }

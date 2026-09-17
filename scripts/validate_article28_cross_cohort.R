@@ -1325,8 +1325,8 @@ for (token in c(
   "Random-effects", "ComBat", "MetaPhlAn 3", "CHOCOPhlAn 201901",
   "e430cb0afefaed0b1c33333350758fac74c1d165cfa484ef7984c15ed747f43f",
   "不属于本仓库 CC BY/MIT 授权内容",
-  "## 审计与升级", "## 出版级美化", "## 常见坑",
-  "## 这段 Methods 怎么写", "## 换成你自己的数据怎么做", "## 参考"
+  "#sec-audit", "图中应该保留哪些信息", ".callout-caution",
+  "#sec-methods", "#sec-own-data", "## 参考"
 )) {
   add_check(
     "Chapter", paste0("chapter-", gsub("[^a-z0-9]+", "-", tolower(token))),

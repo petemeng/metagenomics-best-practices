@@ -70,8 +70,15 @@ def audit_chapter(chapter: Path, frozen: Path, audit: Audit) -> None:
         "no-meta-prose": not any(token in text for token in ("本篇可独立", "本文可独立", "全系列约定", "接口只学一次", "作者代码通常长这样", "（即本文）", "无头服务器")),
     }
     sections = (
-        "这一步对应论文里的哪张图", "理论：", "准备工作", "可复制代码", "审计与升级",
-        "出版级美化", "常见坑", "这段 Methods 怎么写", "换成你自己的数据怎么做", "参考",
+        "先确定这一点",
+        "#sec-theory",
+        "#sec-code",
+        "#sec-audit",
+        ".callout-caution",
+        "#sec-methods",
+        "#sec-own-data",
+        "参考文献",
+        "图中应该保留哪些信息",
     )
     for section in sections:
         checks[f"section-{section}"] = re.search(rf"(?m)^##\s+{re.escape(section)}", text) is not None

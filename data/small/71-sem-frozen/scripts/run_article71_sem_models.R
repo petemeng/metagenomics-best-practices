@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
 
 suppressPackageStartupMessages({
-  library(piecewiseSEM)
   library(sandwich)
   library(lmtest)
   library(car)
   library(jsonlite)
+  suppressWarnings(library(mediation))
 })
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -23,6 +23,8 @@ SEED <- 71001L
 PLOT_SEED <- 20260771L
 BOOTSTRAP <- 5000L
 SENSITIVITY_BOOTSTRAP <- 2000L
+POWER_REPETITIONS <- 1000L
+POSITIVE_CONTROL_BOOTSTRAP <- 2000L
 set.seed(SEED)
 Sys.setenv(TZ = "UTC")
 
@@ -49,7 +51,7 @@ stopifnot(
   sum(primary$Antibiotic) == 13L,
   nrow(validation) == 38L,
   sum(validation$Antibiotic) == 0L,
-  packageVersion("piecewiseSEM") == "2.3.0.1"
+  packageVersion("mediation") == "4.5.1"
 )
 
 covariates <- c(
@@ -83,19 +85,29 @@ total_fit <- lm(formula_total, data = primary)
 constrained_outcome_fit <- lm(formula_constrained, data = primary)
 reverse_mediator_fit <- lm(formula_reverse_m, data = primary)
 
-primary_sem <- psem(mediator_fit, outcome_fit, data = primary)
-constrained_sem <- psem(
-  mediator_fit,
-  constrained_outcome_fit,
-  data = primary
-)
-reverse_sem <- psem(total_fit, reverse_mediator_fit, data = primary)
+# For this two-equation Gaussian SEM, the graph AIC is the sum of the local
+# model AIC values. Writing the calculation explicitly makes the notebook
+# reproducible without hiding the local equations inside a package object.
+graph_aic <- function(...) sum(vapply(list(...), AIC, numeric(1L)))
+graph_parameters <- function(...) {
+  sum(vapply(list(...), function(model) attr(logLik(model), "df"), numeric(1L)))
+}
+primary_aic <- graph_aic(mediator_fit, outcome_fit)
+constrained_aic <- graph_aic(mediator_fit, constrained_outcome_fit)
+reverse_aic <- graph_aic(total_fit, reverse_mediator_fit)
 
-primary_aic <- AIC(primary_sem)
-constrained_aic <- AIC(constrained_sem)
-reverse_aic <- AIC(reverse_sem)
-constrained_dsep <- dSep(constrained_sem)
-constrained_fisher <- fisherC(constrained_dsep)
+# The constrained graph omits Antibiotic -> calprotectin. Its single basis-set
+# claim is tested by the conventional (not HC3) coefficient test used by
+# directed-separation/Fisher-C calculations.
+dsep_test <- summary(outcome_fit)$coefficients["Antibiotic", , drop = FALSE]
+dsep_p <- unname(dsep_test[1L, "Pr(>|t|)"])
+constrained_fisher_c <- -2 * log(dsep_p)
+constrained_fisher_df <- 2L
+constrained_fisher_p <- pchisq(
+  constrained_fisher_c,
+  df = constrained_fisher_df,
+  lower.tail = FALSE
+)
 
 model_fit <- data.frame(
   Model = c(
@@ -108,13 +120,17 @@ model_fit <- data.frame(
     "Antibiotic -> Shannon -> calprotectin",
     "Antibiotic -> calprotectin -> Shannon; antibiotic -> Shannon"
   ),
-  AIC = c(primary_aic$AIC, constrained_aic$AIC, reverse_aic$AIC),
-  Parameters = c(primary_aic$K, constrained_aic$K, reverse_aic$K),
-  N = c(primary_aic$n, constrained_aic$n, reverse_aic$n),
-  IndependenceClaims = c(0L, nrow(constrained_dsep), 0L),
-  FisherC = c(NA_real_, constrained_fisher$Fisher.C, NA_real_),
-  FisherDF = c(0L, constrained_fisher$df, 0L),
-  FisherP = c(NA_real_, constrained_fisher$P.Value, NA_real_),
+  AIC = c(primary_aic, constrained_aic, reverse_aic),
+  Parameters = c(
+    graph_parameters(mediator_fit, outcome_fit),
+    graph_parameters(mediator_fit, constrained_outcome_fit),
+    graph_parameters(total_fit, reverse_mediator_fit)
+  ),
+  N = nrow(primary),
+  IndependenceClaims = c(0L, 1L, 0L),
+  FisherC = c(NA_real_, constrained_fisher_c, NA_real_),
+  FisherDF = c(0L, constrained_fisher_df, 0L),
+  FisherP = c(NA_real_, constrained_fisher_p, NA_real_),
   Saturated = c(TRUE, FALSE, TRUE),
   stringsAsFactors = FALSE
 )
@@ -123,11 +139,11 @@ write_tsv(model_fit, "sem-fit-comparison.tsv")
 
 dsep_table <- data.frame(
   Model = "Constrained microbiome-only path",
-  IndependenceClaim = constrained_dsep$Independ.Claim,
-  TestType = constrained_dsep$Test.Type,
-  DF = constrained_dsep$DF,
-  Estimate = constrained_dsep$Crit.Value,
-  PValue = constrained_dsep$P.Value
+  IndependenceClaim = "LogCalprotectinZ ~ Antibiotic + ...",
+  TestType = "coef",
+  DF = df.residual(outcome_fit),
+  Estimate = unname(dsep_test[1L, "t value"]),
+  PValue = dsep_p
 )
 write_tsv(dsep_table, "directed-separation-claims.tsv")
 
@@ -499,13 +515,298 @@ rownames(vif_table) <- NULL
 vif_table <- vif_table[, c("Model", "Term", "VIF")]
 write_tsv(vif_table, "variance-inflation.tsv")
 
+# ---------------------------------------------------------------------------
+# Design simulation: how much information is needed for the observed b path?
+# ---------------------------------------------------------------------------
+
+draw_exposure_with_overlap <- function(diagnosis, probability) {
+  exposure <- integer(length(diagnosis))
+  for (level in unique(diagnosis)) {
+    index <- which(diagnosis == level)
+    values <- rbinom(length(index), size = 1L, prob = probability)
+    if (length(index) >= 2L && sum(values) == 0L) {
+      values[sample.int(length(index), 1L)] <- 1L
+    }
+    if (length(index) >= 2L && sum(values) == length(index)) {
+      values[sample.int(length(index), 1L)] <- 0L
+    }
+    exposure[index] <- values
+  }
+  exposure
+}
+
+fast_hc3_p <- function(model, term) {
+  x <- model.matrix(model)
+  y <- model.response(model.frame(model))
+  fit <- .lm.fit(x, y)
+  if (fit$rank != ncol(x)) return(NA_real_)
+  inverse <- chol2inv(chol(crossprod(x)))
+  residual <- as.vector(y - x %*% fit$coefficients)
+  leverage <- rowSums((x %*% inverse) * x)
+  omega <- (residual / pmax(1 - leverage, 1e-10))^2
+  meat <- crossprod(x, x * omega)
+  covariance <- inverse %*% meat %*% inverse
+  index <- match(term, colnames(x))
+  statistic <- fit$coefficients[index] / sqrt(covariance[index, index])
+  2 * pt(-abs(statistic), df = nrow(x) - ncol(x))
+}
+
+simulate_once <- function(sample_size, exposure_probability) {
+  index <- sample.int(nrow(primary), sample_size, replace = TRUE)
+  simulated <- primary[index, covariates, drop = FALSE]
+  diagnosis <- ifelse(simulated$CD == 1L, "CD", ifelse(simulated$UC == 1L, "UC", "Control"))
+  simulated$Antibiotic <- draw_exposure_with_overlap(
+    diagnosis,
+    exposure_probability
+  )
+  mediator_x <- model.matrix(
+    as.formula(paste("~ Antibiotic +", paste(covariates, collapse = " + "))),
+    data = simulated
+  )
+  simulated$ShannonZ <- as.vector(mediator_x %*% coef(mediator_fit)) +
+    rnorm(sample_size, sd = sigma(mediator_fit))
+  outcome_x <- model.matrix(
+    as.formula(
+      paste(
+        "~ Antibiotic + ShannonZ +",
+        paste(covariates, collapse = " + ")
+      )
+    ),
+    data = simulated
+  )
+  simulated$LogCalprotectinZ <- as.vector(outcome_x %*% coef(outcome_fit)) +
+    rnorm(sample_size, sd = sigma(outcome_fit))
+  mediator <- lm(formula_mediator, data = simulated)
+  outcome <- lm(formula_outcome, data = simulated)
+  c(
+    A = fast_hc3_p(mediator, "Antibiotic"),
+    B = fast_hc3_p(outcome, "ShannonZ")
+  )
+}
+
+binomial_interval <- function(successes, repetitions) {
+  unname(binom.test(successes, repetitions)$conf.int)
+}
+
+set.seed(SEED + 2000L)
+power_sizes <- c(90L, 150L, 250L, 350L, 450L, 500L, 550L, 700L)
+power_rows <- lapply(power_sizes, function(sample_size) {
+  p_values <- replicate(
+    POWER_REPETITIONS,
+    simulate_once(sample_size, mean(primary$Antibiotic))
+  )
+  detected_b <- is.finite(p_values["B", ]) & p_values["B", ] < 0.05
+  detected_joint <- detected_b & is.finite(p_values["A", ]) & p_values["A", ] < 0.05
+  do.call(
+    rbind,
+    lapply(
+      list("B path (HC3)" = detected_b, "Joint a and b (HC3)" = detected_joint),
+      function(detected) {
+        successes <- sum(detected)
+        interval <- binomial_interval(successes, POWER_REPETITIONS)
+        data.frame(
+          SampleSize = sample_size,
+          Target = deparse(substitute(detected)),
+          ExposureFraction = mean(primary$Antibiotic),
+          Repetitions = POWER_REPETITIONS,
+          Detections = successes,
+          Power = successes / POWER_REPETITIONS,
+          CILower = interval[1L],
+          CIUpper = interval[2L]
+        )
+      }
+    )
+  )
+})
+power_table <- do.call(rbind, power_rows)
+# Replace deparse-generated labels with the stable list names.
+power_table$Target <- rep(
+  c("B path (HC3)", "Joint a and b (HC3)"),
+  times = length(power_sizes)
+)
+rownames(power_table) <- NULL
+write_tsv(power_table, "path-power-simulation.tsv")
+
+# ---------------------------------------------------------------------------
+# Positive control: known temporal DAG, overlap in every diagnosis stratum.
+# ---------------------------------------------------------------------------
+
+set.seed(SEED + 3000L)
+positive_n <- 500L
+positive_index <- sample.int(nrow(primary), positive_n, replace = TRUE)
+positive <- primary[positive_index, covariates, drop = FALSE]
+positive$Diagnosis <- ifelse(
+  positive$CD == 1L,
+  "CD",
+  ifelse(positive$UC == 1L, "UC", "Control")
+)
+positive$Antibiotic <- draw_exposure_with_overlap(positive$Diagnosis, 0.30)
+positive_m_coefficients <- coef(mediator_fit)
+positive_m_coefficients[["Antibiotic"]] <- -0.60
+positive_m_x <- model.matrix(
+  as.formula(paste("~ Antibiotic +", paste(covariates, collapse = " + "))),
+  data = positive
+)
+positive$ShannonZ <- as.vector(positive_m_x %*% positive_m_coefficients) +
+  rnorm(positive_n, sd = sigma(mediator_fit))
+positive_y_coefficients <- coef(outcome_fit)
+positive_y_coefficients[["Antibiotic"]] <- -0.15
+positive_y_coefficients[["ShannonZ"]] <- -0.30
+positive_y_x <- model.matrix(
+  as.formula(
+    paste(
+      "~ Antibiotic + ShannonZ +",
+      paste(covariates, collapse = " + ")
+    )
+  ),
+  data = positive
+)
+positive$LogCalprotectinZ <- as.vector(positive_y_x %*% positive_y_coefficients) +
+  rnorm(positive_n, sd = sigma(outcome_fit))
+
+positive_m_fit <- lm(formula_mediator, data = positive)
+positive_y_fit <- lm(formula_outcome, data = positive)
+positive_total_fit <- lm(formula_total, data = positive)
+positive_bootstrap <- bootstrap_paths(
+  positive_m_fit,
+  positive_y_fit,
+  positive_total_fit,
+  POSITIVE_CONTROL_BOOTSTRAP,
+  SEED + 4000L
+)
+positive_points <- c(
+  A = coef(positive_m_fit)[["Antibiotic"]],
+  B = coef(positive_y_fit)[["ShannonZ"]],
+  Direct = coef(positive_y_fit)[["Antibiotic"]]
+)
+positive_points[["Indirect"]] <- positive_points[["A"]] * positive_points[["B"]]
+positive_points[["Total"]] <- coef(positive_total_fit)[["Antibiotic"]]
+positive_effects <- effect_summary(
+  positive_bootstrap,
+  positive_points,
+  "Simulated positive control",
+  POSITIVE_CONTROL_BOOTSTRAP
+)
+positive_truth <- c(
+  A = -0.60,
+  B = -0.30,
+  Direct = -0.15,
+  Indirect = 0.18,
+  Total = 0.03
+)
+positive_effects$TrueValue <- positive_truth[positive_effects$Effect]
+write_tsv(positive_effects, "positive-control-paths.tsv")
+
+positive_overlap <- as.data.frame.matrix(
+  table(positive$Diagnosis, positive$Antibiotic)
+)
+names(positive_overlap) <- c("Unexposed", "Exposed")
+positive_overlap$Diagnosis <- rownames(positive_overlap)
+rownames(positive_overlap) <- NULL
+positive_overlap <- positive_overlap[
+  match(c("Control", "CD", "UC"), positive_overlap$Diagnosis),
+  c("Diagnosis", "Unexposed", "Exposed")
+]
+write_tsv(positive_overlap, "positive-control-overlap.tsv")
+
+positive_reverse_fit <- lm(formula_reverse_m, data = positive)
+positive_forward_aic <- graph_aic(positive_m_fit, positive_y_fit)
+positive_reverse_aic <- graph_aic(positive_total_fit, positive_reverse_fit)
+positive_audit <- data.frame(
+  Criterion = c(
+    "Temporal order",
+    "Exposure overlap",
+    "A path interval",
+    "B path interval",
+    "Indirect interval",
+    "Forward versus reverse AIC"
+  ),
+  Result = c(
+    "Known from generator",
+    "Present in every diagnosis stratum",
+    ifelse(
+      positive_effects$CIUpper[positive_effects$Effect == "A"] < 0,
+      "Excludes zero",
+      "Crosses zero"
+    ),
+    ifelse(
+      positive_effects$CIUpper[positive_effects$Effect == "B"] < 0,
+      "Excludes zero",
+      "Crosses zero"
+    ),
+    ifelse(
+      positive_effects$CILower[positive_effects$Effect == "Indirect"] > 0,
+      "Excludes zero",
+      "Crosses zero"
+    ),
+    "Identical"
+  ),
+  Evidence = c(
+    "A generated before M; M generated before Y",
+    paste0(
+      "Control ",
+      positive_overlap$Exposed[positive_overlap$Diagnosis == "Control"],
+      " exposed"
+    ),
+    "2,000 subject-level bootstrap refits",
+    "2,000 subject-level bootstrap refits",
+    "2,000 subject-level bootstrap refits",
+    sprintf("%.6f versus %.6f", positive_forward_aic, positive_reverse_aic)
+  )
+)
+write_tsv(positive_audit, "positive-control-audit.tsv")
+
+# ---------------------------------------------------------------------------
+# Residual-correlation sensitivity under a hypothetical causal interpretation.
+# ---------------------------------------------------------------------------
+
+set.seed(SEED + 5000L)
+mediation_fit <- mediate(
+  mediator_fit,
+  outcome_fit,
+  treat = "Antibiotic",
+  mediator = "ShannonZ",
+  control.value = 0,
+  treat.value = 1,
+  sims = 2000,
+  boot = FALSE
+)
+mediation_sensitivity <- medsens(
+  mediation_fit,
+  rho.by = 0.05,
+  effect.type = "indirect"
+)
+sensitivity_curve <- data.frame(
+  Rho = mediation_sensitivity$rho,
+  Indirect = mediation_sensitivity$d0,
+  CILower = mediation_sensitivity$lower.d0,
+  CIUpper = mediation_sensitivity$upper.d0
+)
+write_tsv(sensitivity_curve, "mediation-rho-sensitivity.tsv")
+rho_zero_row <- sensitivity_curve[which.min(abs(sensitivity_curve$Rho)), ]
+sensitivity_summary <- data.frame(
+  Quantity = c(
+    "Residual rho where point indirect effect is zero",
+    "R2-star product threshold",
+    "R2-tilde product threshold",
+    "Indirect interval at rho=0 crosses zero"
+  ),
+  Value = c(
+    mediation_sensitivity$err.cr.d,
+    mediation_sensitivity$R2star.d.thresh,
+    mediation_sensitivity$R2tilde.d.thresh,
+    with(rho_zero_row, CILower <= 0 & CIUpper >= 0)
+  )
+)
+write_tsv(sensitivity_summary, "mediation-rho-summary.tsv")
+
 software <- data.frame(
   Package = c(
-    "R", "piecewiseSEM", "sandwich", "lmtest", "car", "jsonlite"
+    "R", "mediation", "sandwich", "lmtest", "car", "jsonlite"
   ),
   Version = c(
     paste(R.version$major, R.version$minor, sep = "."),
-    as.character(packageVersion("piecewiseSEM")),
+    as.character(packageVersion("mediation")),
     as.character(packageVersion("sandwich")),
     as.character(packageVersion("lmtest")),
     as.character(packageVersion("car")),
@@ -522,11 +823,25 @@ saveRDS(
     constrained_outcome_fit = constrained_outcome_fit,
     reverse_mediator_fit = reverse_mediator_fit,
     faec_mediator_fit = faec_mediator_fit,
-    faec_outcome_fit = faec_outcome_fit
+    faec_outcome_fit = faec_outcome_fit,
+    positive_mediator_fit = positive_m_fit,
+    positive_outcome_fit = positive_y_fit,
+    positive_total_fit = positive_total_fit,
+    mediation_fit = mediation_fit,
+    mediation_sensitivity = mediation_sensitivity
   ),
   file.path(output_dir, "sem-model-objects.rds"),
   compress = "xz"
 )
+
+power_candidates <- power_table$SampleSize[
+  power_table$Target == "B path (HC3)" & power_table$Power >= 0.80
+]
+first_tested_n_with_b_power_80 <- if (length(power_candidates)) {
+  min(power_candidates)
+} else {
+  NA_integer_
+}
 
 model_metrics <- list(
   article = 71L,
@@ -546,17 +861,35 @@ model_metrics <- list(
   shannon_indirect_p = primary_effects$BootstrapP[primary_effects$Effect == "Indirect"],
   mediator_r2 = summary(mediator_fit)$r.squared,
   outcome_r2 = summary(outcome_fit)$r.squared,
-  constrained_fisher_c = constrained_fisher$Fisher.C,
-  constrained_fisher_df = constrained_fisher$df,
-  constrained_fisher_p = constrained_fisher$P.Value,
-  primary_aic = primary_aic$AIC,
-  constrained_aic = constrained_aic$AIC,
-  reverse_aic = reverse_aic$AIC,
+  constrained_fisher_c = constrained_fisher_c,
+  constrained_fisher_df = constrained_fisher_df,
+  constrained_fisher_p = constrained_fisher_p,
+  primary_aic = primary_aic,
+  constrained_aic = constrained_aic,
+  reverse_aic = reverse_aic,
   propensity_converged = propensity_fit$converged,
   propensity_max_abs_coefficient = max(abs(coef(propensity_fit))),
   validation_antibiotic_exposed = sum(validation$Antibiotic),
   leave_one_out_indirect_min = min(leave_one_out$Indirect),
-  leave_one_out_indirect_max = max(leave_one_out$Indirect)
+  leave_one_out_indirect_max = max(leave_one_out$Indirect),
+  power_repetitions = POWER_REPETITIONS,
+  b_power_n90 = power_table$Power[
+    power_table$SampleSize == 90L & power_table$Target == "B path (HC3)"
+  ],
+  first_tested_n_with_b_power_80 = first_tested_n_with_b_power_80,
+  positive_control_n = positive_n,
+  positive_control_indirect = positive_points[["Indirect"]],
+  positive_control_indirect_ci_lower = positive_effects$CILower[
+    positive_effects$Effect == "Indirect"
+  ],
+  positive_control_indirect_ci_upper = positive_effects$CIUpper[
+    positive_effects$Effect == "Indirect"
+  ],
+  positive_forward_aic = positive_forward_aic,
+  positive_reverse_aic = positive_reverse_aic,
+  medsens_rho_zero = mediation_sensitivity$err.cr.d,
+  medsens_r2star_product_zero = mediation_sensitivity$R2star.d.thresh,
+  medsens_r2tilde_product_zero = mediation_sensitivity$R2tilde.d.thresh
 )
 write_json(
   model_metrics,

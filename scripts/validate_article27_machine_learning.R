@@ -754,8 +754,8 @@ chapter_text <- paste(chapter_lines, collapse = "\n")
 required_chapter_tokens <- c(
   "draft: false", "eval: true", "freeze: auto", "expected_images: 5",
   "## 这一步对应论文里的哪张图", "## 理论：", "## 准备工作",
-  "## 可复制代码", "## 审计与升级", "## 出版级美化",
-  "## 常见坑", "## 这段 Methods 怎么写", "## 换成你自己的数据怎么做",
+  "## 可复制代码", "#sec-audit", "图中应该保留哪些信息",
+  ".callout-caution", "#sec-methods", "#sec-own-data",
   "## 参考", "nested cross-validation", "Random forest", "XGBoost",
   "AUROC", "AUPRC", "Brier", "permutation importance", "data leakage",
   "114", "661", "MetaPhlAn 3", "CHOCOPhlAn 201901", "set.seed(20260727)",

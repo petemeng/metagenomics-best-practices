@@ -17,7 +17,6 @@ WORK_FILES = (
     "directed-separation-claims.tsv",
     "exposure-by-cohort-diagnosis.tsv",
     "faecalibacterium-path-bootstrap.tsv.gz",
-    "franzosa-fig1-original.png",
     "leave-one-out-paths.tsv",
     "local-model-diagnostics.tsv",
     "local-path-coefficients-hc3.tsv",
@@ -26,6 +25,13 @@ WORK_FILES = (
     "node-contract.tsv",
     "outcome-path-transport.tsv",
     "path-effect-summary.tsv",
+    "path-power-simulation.tsv",
+    "positive-control-audit.tsv",
+    "positive-control-overlap.tsv",
+    "positive-control-paths.tsv",
+    "mediation-rho-sensitivity.tsv",
+    "mediation-rho-summary.tsv",
+    "prism-complete-case-comparison.tsv",
     "propensity-positivity-audit.tsv",
     "r-session-info.txt",
     "sample-attrition.tsv",
@@ -46,7 +52,7 @@ SCRIPT_FILES = (
     "download_article71_sem_data.py",
     "prepare_article71_sem.py",
     "run_article71_sem_models.R",
-    "plot_article71_sem.py",
+    "plot_article71_sem.R",
     "freeze_article71_sem.py",
     "validate_article71_sem.py",
 )
@@ -106,11 +112,14 @@ def main() -> None:
         "payload_files": len(WORK_FILES),
         "script_files": len(SCRIPT_FILES),
         "environment_files": len(ENV_FILES),
-        "source_work_dir": str(work),
+        "source_work_dir": "build-local work directory (path intentionally omitted)",
         "contract": (
             "The pinned Franzosa genus profiles, complete-case cohorts, local "
             "path models, 5,000 bootstrap refits, positivity diagnostics, and "
-            "transport checks are frozen for offline rendering and audit."
+            "transport checks are frozen for offline rendering and audit. The "
+            "bundle also contains complete-case comparisons, a deterministic "
+            "power simulation, a positive control, and residual-correlation "
+            "sensitivity results. No publisher artwork is distributed."
         ),
     }
     (staging / "bundle-manifest.json").write_text(

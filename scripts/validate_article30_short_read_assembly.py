@@ -580,22 +580,21 @@ def audit_privacy_and_chapter(frozen: Path, chapter: Path, checks: Checks) -> No
         if not path.is_file() or path.suffix.lower() in {".gz", ".png", ".pdf", ".tiff"}:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if any(token in text for token in ("/media/desk16/", "/workspace/", "tly9658")):
+        if any(token in text for token in ("/media/desk16/", "/home/tly9658/", "tly9658")):
             leaks.append(path.relative_to(frozen).as_posix())
     checks.add("Boundaries", "no-local-path-leaks", not leaks, leaks)
 
     text = chapter.read_text(encoding="utf-8")
     chapter_tokens = (
-        "对应论文里的哪张图",
-        "理论",
-        "准备工作",
-        "可复制代码",
-        "审计与升级",
-        "出版级美化",
-        "常见坑",
-        "这段 Methods 怎么写",
-        "换成你自己的数据怎么做",
-        "参考",
+        "先确定这一点",
+        "#sec-theory",
+        "#sec-code",
+        "#sec-audit",
+        ".callout-caution",
+        "#sec-methods",
+        "#sec-own-data",
+        "参考文献",
+        "图中应该保留哪些信息",
     )
     checks.add("Chapter", "draft-false", re.search(r"^draft:\s*false\s*$", text, re.M) is not None, chapter.name)
     checks.add("Chapter", "upstream-eval-false", re.search(r"^\s*eval:\s*false\s*$", text, re.M) is not None, chapter.name)

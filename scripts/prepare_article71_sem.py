@@ -7,7 +7,6 @@ import argparse
 import hashlib
 import json
 import platform
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -55,6 +54,95 @@ def z_from_reference(
     if not np.isfinite(sd) or sd <= 0:
         raise ValueError("Reference standard deviation must be positive")
     return (values - mean) / sd, mean, sd
+
+
+def standardized_difference(
+    included: pd.Series,
+    excluded: pd.Series,
+    binary: bool,
+) -> float:
+    """Signed standardized difference using observed values only."""
+    left = included.dropna().astype(float)
+    right = excluded.dropna().astype(float)
+    if left.empty or right.empty:
+        return float("nan")
+    if binary:
+        p_left = float(left.mean())
+        p_right = float(right.mean())
+        denominator = np.sqrt(
+            (p_left * (1 - p_left) + p_right * (1 - p_right)) / 2
+        )
+    else:
+        denominator = np.sqrt(
+            (float(left.var(ddof=1)) + float(right.var(ddof=1))) / 2
+        )
+    if not np.isfinite(denominator) or denominator == 0:
+        return float("nan")
+    return (float(left.mean()) - float(right.mean())) / denominator
+
+
+def complete_case_comparison(
+    cohort: pd.DataFrame,
+    primary_mask: pd.Series,
+) -> pd.DataFrame:
+    """Compare included and excluded PRISM participants without p-value hunting."""
+    prism = cohort.loc[cohort["Cohort"].eq("PRISM")].copy()
+    prism["Included"] = primary_mask.loc[prism.index]
+    included = prism.loc[prism["Included"]]
+    excluded = prism.loc[~prism["Included"]]
+    specifications = (
+        ("Age, years", "Age", False),
+        ("log1p fecal calprotectin", "LogCalprotectin", False),
+        ("Genus-profile Shannon", "Shannon", False),
+        ("Antibiotic exposed", "Antibiotic", True),
+        ("Crohn disease", "CD", True),
+        ("Ulcerative colitis", "UC", True),
+        ("Immunosuppressant", "Immunosuppressant", True),
+        ("Mesalamine", "Mesalamine", True),
+        ("Steroids", "Steroids", True),
+    )
+    rows: list[dict[str, object]] = []
+    for label, column, binary in specifications:
+        left = included[column]
+        right = excluded[column]
+        left_observed = left.dropna().astype(float)
+        right_observed = right.dropna().astype(float)
+        if binary:
+            left_summary = (
+                f"{int(left_observed.sum())}/{len(left_observed)} "
+                f"({100 * left_observed.mean():.1f}%)"
+            )
+            right_summary = (
+                f"{int(right_observed.sum())}/{len(right_observed)} "
+                f"({100 * right_observed.mean():.1f}%)"
+            )
+            variable_type = "Binary"
+        else:
+            left_summary = (
+                f"{left_observed.mean():.2f} ({left_observed.std(ddof=1):.2f})"
+            )
+            right_summary = (
+                f"{right_observed.mean():.2f} ({right_observed.std(ddof=1):.2f})"
+            )
+            variable_type = "Continuous"
+        rows.append(
+            {
+                "Variable": label,
+                "Type": variable_type,
+                "IncludedN": len(included),
+                "ExcludedN": len(excluded),
+                "IncludedObserved": len(left_observed),
+                "ExcludedObserved": len(right_observed),
+                "IncludedMissingPct": 100 * float(left.isna().mean()),
+                "ExcludedMissingPct": 100 * float(right.isna().mean()),
+                "IncludedSummary": left_summary,
+                "ExcludedSummary": right_summary,
+                "StandardizedDifference": standardized_difference(
+                    left, right, binary
+                ),
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def main() -> None:
@@ -254,6 +342,10 @@ def main() -> None:
         columns=["StageOrder", "Stage", "Subjects"],
     )
     write_tsv(attrition, output / "sample-attrition.tsv")
+    write_tsv(
+        complete_case_comparison(cohort, primary_mask),
+        output / "prism-complete-case-comparison.tsv",
+    )
 
     exposure = (
         cohort.groupby(["Cohort", "Diagnosis"], observed=True)
@@ -319,10 +411,6 @@ def main() -> None:
     )
     write_tsv(feature_contract, output / "node-contract.tsv")
 
-    shutil.copy2(
-        cache / "franzosa-fig1-original.png",
-        output / "franzosa-fig1-original.png",
-    )
     source_manifest = dict(manifest)
     source_manifest.update(
         {
@@ -360,6 +448,11 @@ def main() -> None:
             "antibiotic -> calprotectin; covariates -> both endogenous nodes"
         ),
         "bootstrap": 5000,
+        "power_simulation_repetitions": 1000,
+        "power_simulation_grid": [90, 150, 250, 350, 450, 500, 550, 700],
+        "positive_control_subjects": 500,
+        "positive_control_bootstrap": 2000,
+        "residual_correlation_sensitivity": "mediation::medsens, rho step 0.05",
         "analysis_seed": ANALYSIS_SEED,
         "plot_seed": PLOT_SEED,
         "interpretation_limit": (

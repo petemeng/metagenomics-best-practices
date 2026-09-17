@@ -314,16 +314,15 @@ def audit_chapter(root: Path, audit: Audit) -> None:
     audit.add("Chapter", "not-draft", "draft: true" not in front, front)
     audit.add("Chapter", "eval-false", "eval: false" in front, front)
     headings = (
-        "## 这一步对应论文里的哪张图",
-        "## 理论：工作流锁住的是分析契约",
-        "## 准备工作",
-        "## 可复制代码",
-        "## 审计与升级",
-        "## 出版级美化",
-        "## 常见坑",
-        "## 这段 Methods 怎么写",
-        "## 换成你自己的数据怎么做",
-        "## 参考",
+        "先确定这一点",
+        "#sec-theory",
+        "#sec-code",
+        "#sec-audit",
+        ".callout-caution",
+        "#sec-methods",
+        "#sec-own-data",
+        "参考文献",
+        "图中应该保留哪些信息",
     )
     positions = []
     for heading in headings:

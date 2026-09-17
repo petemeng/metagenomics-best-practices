@@ -1450,9 +1450,9 @@ chapter_tokens <- c(
   "Zi", "Pi", "不等于生态 keystone",
   "a67e5d64b526d35d0d4e77645c1c1494fcd83b842177fe01458fae5c78b4a4ee",
   "## 这一步对应论文里的哪张图", "## 理论：",
-  "## 准备工作", "## 可复制代码", "## 审计与升级",
-  "## 出版级美化", "## 常见坑", "## 这段 Methods 怎么写",
-  "## 换成你自己的数据怎么做", "## 参考"
+  "## 准备工作", "## 可复制代码", "#sec-audit",
+  "图中应该保留哪些信息", ".callout-caution", "#sec-methods",
+  "#sec-own-data", "## 参考"
 )
 for (token in chapter_tokens) {
   add_check(
