@@ -1,6 +1,6 @@
 ---
-title: "第 04 篇 · 宏基因组到底要测多深：决策框架与饱和曲线"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "宏基因组到底要测多深：决策框架与饱和曲线"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -36,140 +36,61 @@ wechat:
     04-crc-library-depth.png: "Reported library-size distributions across eight colorectal cancer metagenomic cohorts"
     04-nonpareil-saturation.png: "Observed abundance-weighted coverage curve for a Lake Lanier metagenome"
     04-endpoint-depth-anchors.png: "Context-specific sequencing-depth anchors for taxonomy and antimicrobial resistance endpoints"
+reader-mode: analysis
 ---
 
 > **学习目标：**把“每个样本测多少”改写成一个可验证的决策：明确 reads 的分母、主要终点、样本复杂度、宿主 DNA 比例和停止规则，再用代表性样本的真实下采样曲线定深度。  
 > **真实数据：**Wirbel 等公开的 8 个 CRC 队列、768 个样本的 `Library_Size`；Nonpareil 包中 Lake Lanier 宏基因组的真实 `.npo` 冗余曲线；Gweon 等深测序研究报告的 taxonomy 与 AMR 终点锚点。  
 > **预计资源：**本文小表重绘在普通笔记本上通常低于 1 分钟、内存低于 1 GB。对自己的 FASTQ 做完整 pilot 时，磁盘至少要容纳原始数据、各下采样层级与一次完整输出；组装、MAG 或 strain 终点应在 HPC/云端先用 3–5 个代表性样本实测 wall time、峰值内存和临时盘。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+用代表性样本检查目标结果是否趋于稳定；物种谱、低丰度基因和 MAG 回收不能共用一个深度标准。
+
+:::
+
+## 测序深度应该由哪个结果决定？ {#sec-target}
 
 测序深度不是一个脱离研究终点的 Methods 数字。它会同时出现在样本 QC 图、稀释/饱和曲线和方法敏感性分析里。
 
 Wirbel 等的 CRC 跨队列公开 metadata 提供了一个现实起点：同一分析集的 reported library size 从 1.93 million 到 90.92 million，整体中位数约 24.02 million [@wirbel2019crc]。这些值适合审计队列间深度差异，却不能自动视为统一阶段的“去宿主后微生物 reads”。
 
-![八个 CRC 队列中 metadata-reported library size 的分布；虚线是全部 768 个样本的中位数。](../figures/04-crc-library-depth.png){#fig-crc-library-depth}
 
 Lake Lanier 的公开 Nonpareil 示例则展示了真正的数据内饱和信号。该 `.npo` 文件包含 13,551,190 条 reads，平均长度 86.158 bp；按 Nonpareil 的 overlap correction 转换后，1.17 Gbp 的观测终点对应约 68% abundance-weighted average coverage [@oh2011lakelanier; @rodriguezr2014nonpareil]。
 
-![Lake Lanier 宏基因组的观测 Nonpareil coverage 曲线；阴影是 1,024 次子采样冗余分布的四分位区间经同一公式转换后的范围。](../figures/04-nonpareil-saturation.png){#fig-nonpareil-saturation}
 
 但“coverage 上升”仍不等于所有分析终点同步饱和。Gweon 等对 pig caeca、river sediment 和 effluent 做约 200 million、150-bp paired-end reads 的深测序：广义 taxonomic composition 在 1 million 的层级已与最深层级相差低于 1%，而 AMR gene-family richness 约需 80 million，effluent 中的 AMR allelic richness 到 200 million 仍未平台 [@gweon2019depth]。
 
-![同一深测序研究中三个终点的报告锚点；横轴沿用原文的 million reads 记法，不能跨平台、样本类型和 reads/read-pairs 定义直接套用。](../figures/04-endpoint-depth-anchors.png){#fig-endpoint-depth}
 
 ::: {.callout-important title="先问“什么达到稳定”，再问“测多少”"}
 图 @fig-endpoint-depth 的 1M、80M 和 200M 来自同一项环境/动物 AMR 研究，却已经相差两个数量级。它们证明的是**终点依赖性**，不是“人体肠道应测 1M”或“所有 resistome 应测 80M”的报价单。
 :::
 
-## 理论：深度是“可用信息量”，不是下机 reads 的单一数字 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 同一个 FASTQ 至少有四种深度分母
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/04/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-测序服务报告的数字可能是 read pairs，也可能是单端 reads；分析日志又可能报告质控后 reads、非宿主 reads 或成功比对到目标的 reads。先固定四层分母：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/04/download.R)。
 
-1. **Raw reads / read pairs**：下机总量，必须说明 paired-end 时计“pairs”还是“两端之和”；
-2. **QC-passed reads**：去接头、低质量和过短序列后的数量；
-3. **Non-host microbial reads**：去宿主后仍可进入微生物分析的数量；
-4. **Endpoint-supporting reads**：被目标 profiler、基因库、MAG 或 strain 位点真正利用的数量。
+```{r}
+#| label: reader-input-download-04
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/04/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-可用信息量可以写成审计恒等式：
+## 先确认系统环境与版本来源 {#sec-setup}
 
-$$
-N_\text{microbial}
-=
-N_\text{raw}
-\times f_\text{QC}
-\times f_\text{non-host},
-$$
-
-$$
-N_\text{target}
-=
-N_\text{microbial}
-\times f_\text{assigned}
-\times f_\text{target}.
-$$
-
-这些比例不是固定常数。宿主比例 5% 与 95% 的两个样本即使下机量相同，留给微生物的 reads 也会相差近 20 倍；参考数据库覆盖不足时，`f_assigned` 还会因环境和数据库版本改变。
-
-### 2. Coverage、richness 与“看见稀有对象”不是同一个量
-
-Nonpareil 通过 reads 之间的冗余估计 DNA sequence space 的 abundance-weighted average coverage，不依赖分类数据库 [@rodriguezr2014nonpareil; @rodriguezr2018nonpareil3]。这里的 abundance weighting 很关键：
-
-- 高丰度群体贡献大量 DNA，先被覆盖；
-- 大量极低丰度物种可以仍未被观测；
-- 68% average coverage 不表示 68% 的物种、基因家族或 MAG 已被发现；
-- reference-based taxonomy 饱和也不表示未收录物种、strain SNV 或 AMR allele 饱和。
-
-因此，至少要分别画：
-
-- database-independent sequence coverage 曲线；
-- 主要分类/功能终点的稳定性曲线；
-- 若做组装，contig、mapped fraction、目标基因组 breadth/depth 和 MAG recovery 曲线。
-
-### 3. 目标基因组的相对丰度会把 MAG 深度迅速推高
-
-在理想均匀抽样、无宿主、无损失、无重复的下界近似中，若目标基因组大小为 $G$、相对 DNA 丰度为 $a$、希望平均深度为 $D$、单条 read 长度为 $L$，所需单端 reads 约为：
-
-$$
-N_\text{reads}
-\approx
-\frac{D G}{aL}.
-$$
-
-以 5 Mb 基因组、150 bp reads、目标 10× 为例：
-
-- 相对丰度 1%：约 33 million reads；
-- 相对丰度 0.1%：约 333 million reads；
-- 相对丰度 0.01%：约 3.3 billion reads。
-
-这是理想下界，不含宿主、质控损失、覆盖不均、重复序列、近缘菌株共存和组装图冲突。它解释了为什么“物种组成已经稳定”与“能否回收低丰度 MAG”可以同时得到相反答案。
-
-### 4. 样本数与单样本深度争夺同一预算
-
-固定总测序预算 $B$ 时，粗略关系是：
-
-$$
-B \approx n_\text{samples} \times d_\text{per-sample}.
-$$
-
-增加独立受试者主要扩展人群异质性和统计精度；增加单样本深度主要提高低丰度序列与复杂对象的可见性。若主要终点是常见物种的队列内差异，过度加深少量样本可能不如增加独立受试者；若目标是稀有 resistome、strain 或 MAG，过浅地摊薄到更多样本又可能让每个样本都没有可用 target coverage。
-
-设计时应同时报告两条曲线：
-
-- **效力曲线**：独立样本数变化时，目标统计效应的可检测范围；
-- **饱和曲线**：单样本深度变化时，目标数据产物的增益。
-
-### 5. 饱和必须用预先写好的停止规则判定
-
-“曲线看起来平了”不可审计。可把最深样本按固定层级下采样，在每一层运行完全相同的 pipeline，并预先定义稳定性：
-
-$$
-\Delta_k
-=
-\frac{|M_k-M_{k-1}|}
-{\max(|M_k|,\epsilon)},
-$$
-
-其中 $M_k$ 可以是 Shannon index、与最深层级的 Bray–Curtis dissimilarity、AMR richness、目标 genome breadth 或 MAG 数量。一个可复核的停止规则可以是：
-
-> 在连续两个深度层级中，主要终点相对变化均低于 5%，且关键 QC、阴性对照与次要终点没有恶化。
-
-阈值 5% 只是示例，正式研究应根据最小有意义差异、测量误差与错误代价预注册。离散的 MAG 数量或稀有 allele richness 往往不适合只用相对变化，还应报告多次固定种子的下采样变异。
-
-<details>
-<summary><strong>深入：为什么 Nonpareil 只用一端或 merged reads</strong></summary>
-
-Nonpareil coverage 模型假设序列事件近似独立。paired-end 的两个 mates 来自同一 DNA 片段，并不独立；Nonpareil 3 因而建议使用 single reads、paired-end 中的一端，或已合并的 read [@rodriguezr2018nonpareil3]。若把 R1 和 R2 当作两条独立随机序列直接混入，冗余结构和测序 effort 的解释都会改变。
-
-此外，Nonpareil 自身的随机子采样要固定 `-r`。多次鲁棒性评估可以预先列出多个种子，但不能依赖“当前时间”。
-</details>
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：安装依赖、校验真实输入并定义作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 本文重绘只依赖轻量 R 包：
 
@@ -358,9 +279,22 @@ save_pub <- function(
 ```
 </details>
 
-## 可复制代码：从真实分布到预注册停止规则 {#sec-code}
+## 读取 768 个 CRC 样本的 reported library size {#sec-code}
 
-### 1. 读取 768 个 CRC 样本的 reported library size
+### 样本数与单样本深度争夺同一预算
+
+固定总测序预算 $B$ 时，粗略关系是：
+
+$$
+B \approx n_\text{samples} \times d_\text{per-sample}.
+$$
+
+增加独立受试者主要扩展人群异质性和统计精度；增加单样本深度主要提高低丰度序列与复杂对象的可见性。若主要终点是常见物种的队列内差异，过度加深少量样本可能不如增加独立受试者；若目标是稀有 resistome、strain 或 MAG，过浅地摊薄到更多样本又可能让每个样本都没有可用 target coverage。
+
+设计时应同时报告两条曲线：
+
+- **效力曲线**：独立样本数变化时，目标统计效应的可检测范围；
+- **饱和曲线**：单样本深度变化时，目标数据产物的增益。
 
 ```{r}
 library_size <- read.delim(
@@ -442,7 +376,28 @@ depth_audit <- data.frame(
 kable(depth_audit)
 ```
 
-### 2. 读取真实 Lake Lanier coverage 曲线
+::: {.callout-caution title="只报下机量，不报 non-host yield"}
+高宿主样本的 raw depth 很漂亮，微生物端却可能几乎没有信息。逐样本报告 raw、QC-passed、host-mapped、non-host、classified/mapped 和 target-supporting counts，并预先定义淘汰阈值。
+:::
+
+![八个 CRC 队列中 metadata-reported library size 的分布；虚线是全部 768 个样本的中位数。](../figures/04-crc-library-depth.png){#fig-crc-library-depth}
+
+## 读取真实 Lake Lanier coverage 曲线
+
+### Coverage、richness 与“看见稀有对象”不是同一个量
+
+Nonpareil 通过 reads 之间的冗余估计 DNA sequence space 的 abundance-weighted average coverage，不依赖分类数据库 [@rodriguezr2014nonpareil; @rodriguezr2018nonpareil3]。这里的 abundance weighting 很关键：
+
+- 高丰度群体贡献大量 DNA，先被覆盖；
+- 大量极低丰度物种可以仍未被观测；
+- 68% average coverage 不表示 68% 的物种、基因家族或 MAG 已被发现；
+- reference-based taxonomy 饱和也不表示未收录物种、strain SNV 或 AMR allele 饱和。
+
+因此，至少要分别画：
+
+- database-independent sequence coverage 曲线；
+- 主要分类/功能终点的稳定性曲线；
+- 若做组装，contig、mapped fraction、目标基因组 breadth/depth 和 MAG recovery 曲线。
 
 ```{r}
 coverage_curve <- read.delim(
@@ -497,7 +452,9 @@ kable(
 
 曲线终点是**已经观测到的数据范围**：1.17 Gbp、约 68% average coverage。本文没有把拟合曲线延伸到 95%，因为外推对模型形状、数据质量和实现版本更敏感；自己的研究若使用 `Nonpareil.predict()`，必须同时报告版本、kernel、`k`、read 输入约定、拟合质量与预测区间。
 
-### 3. 对照同一研究中的三个 endpoint anchors
+![Lake Lanier 宏基因组的观测 Nonpareil coverage 曲线；阴影是 1,024 次子采样冗余分布的四分位区间经同一公式转换后的范围。](../figures/04-nonpareil-saturation.png){#fig-nonpareil-saturation}
+
+## 对照同一研究中的三个 endpoint anchors
 
 ```{r}
 depth_evidence <- read.delim(
@@ -527,7 +484,9 @@ kable(depth_evidence)
 - 1M 在人源高宿主样本中仍留下相同微生物 reads；
 - 另一个数据库 release 或阈值会产生相同结果。
 
-### 4. 先算目标对象的理想下界
+![同一深测序研究中三个终点的报告锚点；横轴沿用原文的 million reads 记法，不能跨平台、样本类型和 reads/read-pairs 定义直接套用。](../figures/04-endpoint-depth-anchors.png){#fig-endpoint-depth}
+
+## 先算目标对象的理想下界
 
 ```{r}
 reads_for_target <- function(
@@ -567,7 +526,40 @@ kable(ideal_lower_bound, digits = 1)
 
 这个下界只用于判断数量级。如果希望把它换成 raw read pairs 的采购量，还要除以 `f_QC × f_non-host × f_assigned`，并按 paired-end 的计数约定换算。对近缘菌株共存或高重复区，平均 10× 也不保证连续组装。
 
-### 5. 用固定层级与固定种子做 pilot
+::: {.callout-caution title="把 read pairs、single reads 和 bases 混在一起"}
+`20M PE150` 可能表示 20M pairs（约 6 Gbp），也可能表示两端合计 20M reads（约 3 Gbp）。Methods 同时写 read pairs、single reads、read length 和 total bases，才能跨平台比较。
+:::
+
+## 用固定层级与固定种子做 pilot
+
+### 同一个 FASTQ 至少有四种深度分母 {#sec-theory}
+
+测序服务报告的数字可能是 read pairs，也可能是单端 reads；分析日志又可能报告质控后 reads、非宿主 reads 或成功比对到目标的 reads。先固定四层分母：
+
+1. **Raw reads / read pairs**：下机总量，必须说明 paired-end 时计“pairs”还是“两端之和”；
+2. **QC-passed reads**：去接头、低质量和过短序列后的数量；
+3. **Non-host microbial reads**：去宿主后仍可进入微生物分析的数量；
+4. **Endpoint-supporting reads**：被目标 profiler、基因库、MAG 或 strain 位点真正利用的数量。
+
+可用信息量可以写成审计恒等式：
+
+$$
+N_\text{microbial}
+=
+N_\text{raw}
+\times f_\text{QC}
+\times f_\text{non-host},
+$$
+
+$$
+N_\text{target}
+=
+N_\text{microbial}
+\times f_\text{assigned}
+\times f_\text{target}.
+$$
+
+这些比例不是固定常数。宿主比例 5% 与 95% 的两个样本即使下机量相同，留给微生物的 reads 也会相差近 20 倍；参考数据库覆盖不足时，`f_assigned` 还会因环境和数据库版本改变。
 
 对 paired-end FASTQ，先确认 R1/R2 顺序完全一致。`seqtk sample` 在相同记录数、顺序和种子下可同步抽取两个 mates；抽样后仍要逐条核对 read ID：
 
@@ -610,7 +602,70 @@ nonpareil \
 
 不同版本的命令行选项可能变化，正式执行前用 `nonpareil -V` 和 `nonpareil -h` 固化实际版本与参数。`-R` 是内存上限，不是建议的统一资源值。
 
-### 6. 把 endpoint stability 写成机器可判定的表
+### 从固定 reads 配额升级为“每个终点的有效分母” {#sec-audit}
+
+报告 `20M reads/sample` 时，至少再给出：
+
+- read pairs 还是 single reads；
+- raw、QC-passed、non-host 还是 classified/mapped；
+- 每个样本的中位数、IQR、最小值和淘汰阈值；
+- 宿主比例、未分类比例与目标比对比例；
+- 是否因 lane 补测或合并导致批次差异。
+
+CRC 的真实分布说明，跨队列整合时只有一列 `Library_Size` 仍不够。应回到每个研究的 preprocessing lineage，确定字段定义与工具版本；无法统一时，把深度作为队列内 QC 和敏感性因素，而不是假装为跨队列同一测量。
+
+::: {.callout-caution title="只在一个高质量样本上做 pilot"}
+最容易饱和的样本会低估需求。pilot 至少覆盖预期的低/高生物量、高/低宿主比例和低/高复杂度；正式深度由最难但仍在目标总体内的样本决定，或明确分层采购。
+:::
+
+::: {.callout-caution title="把池化曲线当作单样本可用性"}
+把所有样本 reads pool 后的曲线回答“整个项目发现多少对象”，不回答任一受试者是否有足够 coverage。需要个体层级推断时，先逐样本画曲线，再汇总 median、IQR 和最坏情形。
+:::
+
+## 把 endpoint stability 写成机器可判定的表
+
+### 目标基因组的相对丰度会把 MAG 深度迅速推高
+
+在理想均匀抽样、无宿主、无损失、无重复的下界近似中，若目标基因组大小为 $G$、相对 DNA 丰度为 $a$、希望平均深度为 $D$、单条 read 长度为 $L$，所需单端 reads 约为：
+
+$$
+N_\text{reads}
+\approx
+\frac{D G}{aL}.
+$$
+
+以 5 Mb 基因组、150 bp reads、目标 10× 为例：
+
+- 相对丰度 1%：约 33 million reads；
+- 相对丰度 0.1%：约 333 million reads；
+- 相对丰度 0.01%：约 3.3 billion reads。
+
+这是理想下界，不含宿主、质控损失、覆盖不均、重复序列、近缘菌株共存和组装图冲突。它解释了为什么“物种组成已经稳定”与“能否回收低丰度 MAG”可以同时得到相反答案。
+
+### 饱和必须用预先写好的停止规则判定
+
+“曲线看起来平了”不可审计。可把最深样本按固定层级下采样，在每一层运行完全相同的 pipeline，并预先定义稳定性：
+
+$$
+\Delta_k
+=
+\frac{|M_k-M_{k-1}|}
+{\max(|M_k|,\epsilon)},
+$$
+
+其中 $M_k$ 可以是 Shannon index、与最深层级的 Bray–Curtis dissimilarity、AMR richness、目标 genome breadth 或 MAG 数量。一个可复核的停止规则可以是：
+
+> 在连续两个深度层级中，主要终点相对变化均低于 5%，且关键 QC、阴性对照与次要终点没有恶化。
+
+阈值 5% 只是示例，正式研究应根据最小有意义差异、测量误差与错误代价预注册。离散的 MAG 数量或稀有 allele richness 往往不适合只用相对变化，还应报告多次固定种子的下采样变异。
+
+<details>
+<summary><strong>深入：为什么 Nonpareil 只用一端或 merged reads</strong></summary>
+
+Nonpareil coverage 模型假设序列事件近似独立。paired-end 的两个 mates 来自同一 DNA 片段，并不独立；Nonpareil 3 因而建议使用 single reads、paired-end 中的一端，或已合并的 read [@rodriguezr2018nonpareil3]。若把 R1 和 R2 当作两条独立随机序列直接混入，冗余结构和测序 effort 的解释都会改变。
+
+此外，Nonpareil 自身的随机子采样要固定 `-r`。多次鲁棒性评估可以预先列出多个种子，但不能依赖“当前时间”。
+</details>
 
 自己的每个下采样层级至少输出：
 
@@ -638,20 +693,6 @@ stable_for_two_steps <- function(values, tolerance = 0.05) {
 ```
 
 正式判定应在所有代表性样本上执行，而不是只挑一条最漂亮的曲线。若稀有终点在不同固定种子下波动明显，应增加深度、改变终点，或把结论限制在可稳定观测的对象上。
-
-## 审计与升级 {#sec-audit}
-
-### 从固定 reads 配额升级为“每个终点的有效分母”
-
-报告 `20M reads/sample` 时，至少再给出：
-
-- read pairs 还是 single reads；
-- raw、QC-passed、non-host 还是 classified/mapped；
-- 每个样本的中位数、IQR、最小值和淘汰阈值；
-- 宿主比例、未分类比例与目标比对比例；
-- 是否因 lane 补测或合并导致批次差异。
-
-CRC 的真实分布说明，跨队列整合时只有一列 `Library_Size` 仍不够。应回到每个研究的 preprocessing lineage，确定字段定义与工具版本；无法统一时，把深度作为队列内 QC 和敏感性因素，而不是假装为跨队列同一测量。
 
 ### 从单一 saturation curve 升级为 endpoint panel
 
@@ -682,7 +723,7 @@ pilot_seeds
 
 把这 5 个种子写进方案，报告每个深度层级的 median、IQR 和最坏样本。不要反复抽样直到得到想要的平台。
 
-### 忠实复现之后，再按今天的标准审计
+### 忠实复现之后，再按今天的标准检查
 
 Gweon 等的结果应忠实表述为其样本、数据库、比对标准和最深层级下的观察 [@gweon2019depth]。今天复用时还应补充：
 
@@ -697,9 +738,82 @@ Gweon 等的结果应忠实表述为其样本、数据库、比对标准和最�
 更多 reads 不能修复 DNA 提取偏好、kit contamination、index hopping、病例—对照批次混杂、数据库缺失或错误宿主参考。若新增 reads 只重复同一偏倚，曲线可以很平，结论仍然错误。
 :::
 
-## 出版级美化 {#sec-polish}
+::: {.callout-caution title="用 taxonomy 平台替代所有终点的平台"}
+常见物种组成稳定，不代表 AMR alleles、strain SNV、病毒、质粒、BGC 或 MAG 已稳定。每个主要终点都需要自己的增益曲线。
+:::
 
-### 1. CRC 队列 reported library-size 分布
+::: {.callout-caution title="看到平线就继续外推"}
+模型外推越远，越依赖曲线形状与数据质量。报告观测范围和预测范围的边界；若最高层仍陡峭，优先增加 pilot 深度，而不是把远距离预测写成保证。
+:::
+
+## 交代有效测序量和停止规则 {#sec-methods}
+
+### 本文真实重绘的英文模板
+
+> Reported library sizes were extracted from the Wirbel et al. colorectal cancer metadata (Zenodo record 3517209, version 1.0; MD5 `da18b10fdabae6308329e80b73991f84`) for 768 case-control metagenomes from eight cohorts. The Lake Lanier saturation example used the unmodified `LakeLanier.npo` file distributed with Nonpareil tag v3.5.5 (file header: Nonpareil v2.40, alignment kernel, 50% read overlap; SHA-256 `8db00c35eadb64c36eaccad35007c9e7a5d553efb0d5c12b6f859ab1097f52f4`). Read redundancy was transformed to abundance-weighted average coverage using the overlap correction described for Nonpareil. Only the observed range (13,551,190 reads; 1.17 Gbp) was displayed; no projection beyond the observed data was used.
+
+### 换成正式 pilot 的英文模板
+
+> Sequencing depth was defined at four stages: raw read pairs, quality-controlled read pairs, non-host read pairs, and endpoint-supporting reads. Representative pilot samples spanning the anticipated biomass, host-DNA fraction, and community-complexity range were subsampled to 5%, 10%, 20%, 40%, 60%, 80%, and 100% using prespecified seeds (`20260719`, `20260729`, `20260808`, `20260818`, and `20260828`). Each subset was processed with the same quality-control, host-removal, profiling, assembly, and database releases as the final workflow. Depth was considered adequate when the preregistered primary endpoint changed by less than 5% across two successive depth levels in every representative sample, while secondary endpoints and negative-control metrics remained within their prespecified limits. Nonpareil version `[VERSION]` was run on one mate per paired-end library using the `[KERNEL]` kernel, `k=[K]`, and fixed random seeds.
+
+正式稿再补：
+
+- sequencer、read length、lane 与是否补测；
+- 每样本 raw/QC/non-host 的 median、IQR、range；
+- host reference build 与去宿主参数；
+- profiler/assembler/mapper 版本；
+- taxonomy、AMR、MAG 等数据库 release；
+- pilot 样本选择规则、下采样种子与停止阈值；
+- 未达阈值样本的预注册处置方式。
+
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
+
+### 先写一张 sequencing-depth contract
+
+| Field | 必填内容 |
+|---|---|
+| Primary endpoint | 例如 species Bray–Curtis、AMR family richness、target MAG breadth |
+| Unit | read pairs、single reads、bases；raw/QC/non-host/assigned |
+| Representative samples | 低/高生物量、宿主比例、复杂度与关键分层 |
+| Fractions | 预先固定的下采样层级 |
+| Seeds | 一个确定性主分析种子 + 预注册鲁棒性种子 |
+| Pipeline lock | 工具、参数、reference/database release |
+| Stability metric | 相邻层级变化、相对最深层误差或 breadth/depth |
+| Stop rule | 连续层级、容忍度、必须通过的样本比例 |
+| Failure action | 补测、改终点、分层分析或判为不可用 |
+
+### 用 3–5 个代表性样本跑全流程 pilot
+
+不要只跑 profiler。如果投稿目标包括 HUMAnN、resistome、MAG 或 strain，就让每个下采样层级经过最终同款 pipeline。记录：
+
+- wall time、CPU time、峰值 RAM、临时盘；
+- raw/QC/non-host/assigned counts；
+- contamination 与 negative-control 指标；
+- 每个主要/次要终点的数值；
+- 工具、数据库、容器和脚本 commit。
+
+### 同时比较两种预算方案
+
+例如预算允许 1.2 billion read pairs，可比较：
+
+- 60 人 × 20M pairs；
+- 40 人 × 30M pairs；
+- 24 人 × 50M pairs。
+
+把第 03 篇的统计效力结果与本文的 endpoint saturation 放在同一张决策表里：只有同时满足最小独立样本数与最小有效深度的方案才可行。
+
+### 对分层失败诚实设边界
+
+如果低生物量或高宿主样本在可承受预算内仍不稳定，不要把它们和高质量样本混在同一检测限下。可选择：
+
+- 预注册更严格的 non-host reads 阈值；
+- 为该分层单独加深或更换宿主耗竭方案；
+- 把主要终点降到可稳定测量的 evidence layer；
+- 把“未检出”写成“低于本研究检测能力”，而不是“生物学不存在”。
+
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### CRC 队列 reported library-size 分布
 
 ```{r}
 library_plot_data <- library_size
@@ -787,7 +901,7 @@ save_pub(
 p_crc_library
 ```
 
-### 2. Lake Lanier 的观测 abundance-weighted coverage
+### Lake Lanier 的观测 abundance-weighted coverage
 
 ```{r}
 coverage_plot_data <- coverage_curve[
@@ -873,7 +987,7 @@ save_pub(
 p_nonpareil
 ```
 
-### 3. 同一研究中的 endpoint-specific depth anchors
+### 同一研究中的 endpoint-specific depth anchors
 
 ```{r}
 endpoint_order <- depth_evidence$Endpoint
@@ -1038,98 +1152,7 @@ p_endpoint
 
 它们不应合并成一个“推荐深度”数字。
 
-## 常见坑：审稿人会追问什么 {#sec-pitfalls}
-
-::: {.callout-caution title="把 read pairs、single reads 和 bases 混在一起"}
-`20M PE150` 可能表示 20M pairs（约 6 Gbp），也可能表示两端合计 20M reads（约 3 Gbp）。Methods 同时写 read pairs、single reads、read length 和 total bases，才能跨平台比较。
-:::
-
-::: {.callout-caution title="只报下机量，不报 non-host yield"}
-高宿主样本的 raw depth 很漂亮，微生物端却可能几乎没有信息。逐样本报告 raw、QC-passed、host-mapped、non-host、classified/mapped 和 target-supporting counts，并预先定义淘汰阈值。
-:::
-
-::: {.callout-caution title="用 taxonomy 平台替代所有终点的平台"}
-常见物种组成稳定，不代表 AMR alleles、strain SNV、病毒、质粒、BGC 或 MAG 已稳定。每个主要终点都需要自己的增益曲线。
-:::
-
-::: {.callout-caution title="只在一个高质量样本上做 pilot"}
-最容易饱和的样本会低估需求。pilot 至少覆盖预期的低/高生物量、高/低宿主比例和低/高复杂度；正式深度由最难但仍在目标总体内的样本决定，或明确分层采购。
-:::
-
-::: {.callout-caution title="把池化曲线当作单样本可用性"}
-把所有样本 reads pool 后的曲线回答“整个项目发现多少对象”，不回答任一受试者是否有足够 coverage。需要个体层级推断时，先逐样本画曲线，再汇总 median、IQR 和最坏情形。
-:::
-
-::: {.callout-caution title="看到平线就继续外推"}
-模型外推越远，越依赖曲线形状与数据质量。报告观测范围和预测范围的边界；若最高层仍陡峭，优先增加 pilot 深度，而不是把远距离预测写成保证。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-### 本文真实重绘的英文模板
-
-> Reported library sizes were extracted from the Wirbel et al. colorectal cancer metadata (Zenodo record 3517209, version 1.0; MD5 `da18b10fdabae6308329e80b73991f84`) for 768 case-control metagenomes from eight cohorts. The Lake Lanier saturation example used the unmodified `LakeLanier.npo` file distributed with Nonpareil tag v3.5.5 (file header: Nonpareil v2.40, alignment kernel, 50% read overlap; SHA-256 `8db00c35eadb64c36eaccad35007c9e7a5d553efb0d5c12b6f859ab1097f52f4`). Read redundancy was transformed to abundance-weighted average coverage using the overlap correction described for Nonpareil. Only the observed range (13,551,190 reads; 1.17 Gbp) was displayed; no projection beyond the observed data was used.
-
-### 换成正式 pilot 的英文模板
-
-> Sequencing depth was defined at four stages: raw read pairs, quality-controlled read pairs, non-host read pairs, and endpoint-supporting reads. Representative pilot samples spanning the anticipated biomass, host-DNA fraction, and community-complexity range were subsampled to 5%, 10%, 20%, 40%, 60%, 80%, and 100% using prespecified seeds (`20260719`, `20260729`, `20260808`, `20260818`, and `20260828`). Each subset was processed with the same quality-control, host-removal, profiling, assembly, and database releases as the final workflow. Depth was considered adequate when the preregistered primary endpoint changed by less than 5% across two successive depth levels in every representative sample, while secondary endpoints and negative-control metrics remained within their prespecified limits. Nonpareil version `[VERSION]` was run on one mate per paired-end library using the `[KERNEL]` kernel, `k=[K]`, and fixed random seeds.
-
-正式稿再补：
-
-- sequencer、read length、lane 与是否补测；
-- 每样本 raw/QC/non-host 的 median、IQR、range；
-- host reference build 与去宿主参数；
-- profiler/assembler/mapper 版本；
-- taxonomy、AMR、MAG 等数据库 release；
-- pilot 样本选择规则、下采样种子与停止阈值；
-- 未达阈值样本的预注册处置方式。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 1. 先写一张 sequencing-depth contract
-
-| Field | 必填内容 |
-|---|---|
-| Primary endpoint | 例如 species Bray–Curtis、AMR family richness、target MAG breadth |
-| Unit | read pairs、single reads、bases；raw/QC/non-host/assigned |
-| Representative samples | 低/高生物量、宿主比例、复杂度与关键分层 |
-| Fractions | 预先固定的下采样层级 |
-| Seeds | 一个确定性主分析种子 + 预注册鲁棒性种子 |
-| Pipeline lock | 工具、参数、reference/database release |
-| Stability metric | 相邻层级变化、相对最深层误差或 breadth/depth |
-| Stop rule | 连续层级、容忍度、必须通过的样本比例 |
-| Failure action | 补测、改终点、分层分析或判为不可用 |
-
-### 2. 用 3–5 个代表性样本跑全流程 pilot
-
-不要只跑 profiler。如果投稿目标包括 HUMAnN、resistome、MAG 或 strain，就让每个下采样层级经过最终同款 pipeline。记录：
-
-- wall time、CPU time、峰值 RAM、临时盘；
-- raw/QC/non-host/assigned counts；
-- contamination 与 negative-control 指标；
-- 每个主要/次要终点的数值；
-- 工具、数据库、容器和脚本 commit。
-
-### 3. 同时比较两种预算方案
-
-例如预算允许 1.2 billion read pairs，可比较：
-
-- 60 人 × 20M pairs；
-- 40 人 × 30M pairs；
-- 24 人 × 50M pairs。
-
-把第 03 篇的统计效力结果与本文的 endpoint saturation 放在同一张决策表里：只有同时满足最小独立样本数与最小有效深度的方案才可行。
-
-### 4. 对分层失败诚实设边界
-
-如果低生物量或高宿主样本在可承受预算内仍不稳定，不要把它们和高质量样本混在同一检测限下。可选择：
-
-- 预注册更严格的 non-host reads 阈值；
-- 为该分层单独加深或更换宿主耗竭方案；
-- 把主要终点降到可稳定测量的 evidence layer；
-- 把“未检出”写成“低于本研究检测能力”，而不是“生物学不存在”。
-
-## 小结
+## 回到最初的问题
 
 宏基因组没有通用的每样本 reads 数。可靠的深度决策需要同时满足四个条件：
 
@@ -1140,7 +1163,7 @@ p_endpoint
 
 CRC metadata 的 47-fold library-size 范围、Lake Lanier 在 1.17 Gbp 时约 68% 的 abundance-weighted coverage，以及同一研究中 taxonomy 1M 与 AMR ≥80M 的差异，共同说明：**深度不是一个采购惯例，而是围绕目标证据层设计的实验参数。**
 
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Wirbel J, Pyl PT, Kartal E, et al. Meta-analysis of fecal metagenomes reveals global microbial signatures that are specific for colorectal cancer. *Nature Medicine*. 2019. [doi:10.1038/s41591-019-0406-6](https://doi.org/10.1038/s41591-019-0406-6)
 - Oh S, Caro-Quintero A, Tsementzi D, et al. Metagenomic insights into the evolution, function, and complexity of the planktonic microbial community of Lake Lanier. *Applied and Environmental Microbiology*. 2011. [doi:10.1128/AEM.00107-11](https://doi.org/10.1128/AEM.00107-11)

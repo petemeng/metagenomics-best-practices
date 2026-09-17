@@ -1,6 +1,6 @@
 ---
-title: "第 08 篇 · 认识数据与平台：FASTQ、短读与长读对全流程的影响"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "认识数据与平台：FASTQ、短读与长读对全流程的影响"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -36,15 +36,20 @@ wechat:
     08-read-geometry.png: "Mean read length and mapped identity for Illumina HiSeq 3000, historical ONT MinION R9, and PacBio Sequel II CCS on the same MOCK1 DNA"
     08-span-survival.png: "Fraction of reads spanning increasing length thresholds in deterministic 5000-read prefixes from three sequencing runs"
     08-assembly-impact.png: "Reported assembly N50 and recovered complete genomes for three platform-specific workflows on MOCK1"
+reader-mode: analysis
 ---
 
 > **学习目标：**能逐行检查 FASTQ，正确解码 Phred+33，区分 reads、read pairs、bases、read length 与 insert size；能把短读、Nanopore 与 PacBio HiFi 看成不同的“分子观测结构”，而不是只比较单价；能为 read profiling、组装、MAG、菌株和移动元件终点选择数据路线，并保留各平台原生容器。  
 > **真实数据：**Meslier 等把同一份由 71 个 microbial strains DNA 构成的 MOCK1 分别交给 Illumina HiSeq 3000、ONT MinION R9 与 PacBio Sequel II CCS [@meslier2022platforms]。全量 read、mapping 与 assembly 指标来自论文 Tables 1–3 和 ENA project `PRJEB52977`；FASTQ 语法与长度分布审计来自三个 run 各自前 5,000 条完整 records。这个确定性文件前缀不是随机抽样，也不是当前平台规格。  
 > **预计资源：**读取固化的 15,000 行指标、重画三张图通常需 1 个 CPU、内存低于 1 GB、磁盘约 20 MB、1–2 分钟。若下载四个完整 ENA FASTQ，压缩文件合计约 10.8 GB，建议预留 25–40 GB scratch、2–4 核和 30–120 分钟用于网络与完整性/QC；组装所需资源远高于本章。没有服务器时先运行固化小表和 streaming QC，完整 FASTQ 放到 HPC、机构对象存储或合规云端，不要提交进 Git。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 同一份 MOCK1，把“长度”和“准确度”拆成两条轴
+把读长、准确度与可跨越的序列范围分开看；历史平台的比较结果不能直接代表所有新型号。
+
+:::
+
+## 同一份样本，短读和长读分别保留了什么？ {#sec-target}
 
 Meslier 等构建了三套复杂 synthetic DNA mocks；其中 MOCK1 含 71 个 strains，并被所有七种测序技术覆盖。这里选取一组常见短读与两种长读路线：
 
@@ -65,7 +70,28 @@ Illumina 的 `41,195,050 reads` 是单条 reads 计数，不是 read pairs；pai
 
 这张图不支持“ONT 现在只有 89% identity”。它只记录 2022 论文中的 R9 experiment。Pore、kit、basecaller 和 model 持续变化，当前项目必须报告实际 chemistry 与 basecalling model，不能把历史 benchmark 当成采购规格。
 
-### FASTQ 前缀只回答“这些 reads 能跨多长”
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/08/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 4.5 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/08/download.R)。
+
+```{r}
+#| label: reader-input-download-08
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/08/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## FASTQ 前缀只回答“这些 reads 能跨多长”
 
 从每个 checksum-identified ENA 文件流式读取前 5,000 条完整 records 后，Illumina R1 的 median length 为 150 bp；ONT R9 为 4,033.5 bp；PacBio CCS 为 9,204 bp。至少 5 kb 的比例分别为 0%、37.18% 和 88.50%；至少 10 kb 的比例为 0%、3.66% 和 42.20%。
 
@@ -73,7 +99,7 @@ Illumina 的 `41,195,050 reads` 是单条 reads 计数，不是 read pairs；pai
 
 “read 能跨过 5 kb”不等于“能无歧义组装一个 5-kb repeat”。还要看 repeat 两侧是否有唯一序列、目标物种 coverage、read accuracy、strain mixture 与 assembler graph。长度只是必要条件之一。
 
-### 平台差异会传到 assembly，但 benchmark 不是单因素实验
+## 平台差异会传到 assembly，但 benchmark 不是单因素实验
 
 论文在 platform-specific workflow 下报告：
 
@@ -89,130 +115,10 @@ Illumina 的 `41,195,050 reads` 是单条 reads 计数，不是 read pairs；pai
 输入 read budgets、read accuracy、size selection、assembler、polishing 与参数都随平台变化。图能证明“读取结构与配套 workflow 会改变 assembly outcome”，不能证明换平台本身必然产生同样倍数的 N50 或完整基因组。
 :::
 
-## 理论：FASTQ 是四行记录，平台选择是证据设计 {#sec-theory}
+## 先确认系统环境与版本来源 {#sec-setup}
 
-### 1. 一个 FASTQ record 必须满足四行语法
-
-FASTQ 把 sequence 与每个碱基的 quality score 放在同一条 record 中 [@cock2010fastq]：
-
-```text
-@read_identifier optional description
-ACGT...
-+
-quality characters...
-```
-
-最小结构约束是：
-
-1. header 以 `@` 开始；
-2. sequence 占一行；
-3. separator 以 `+` 开始；
-4. quality 字符数必须与 sequence 长度完全相等。
-
-“文件能解压”不代表 FASTQ 完整。截断文件可能在最后一个 record 中少一到三行；错误拼接可能让 R1/R2 行数相同但 read IDs 或顺序已经错位。正式质控要分别验证 compression、四行 grammar、record count、sequence/quality length 和 paired synchronization。
-
-### 2. Phred score 是错误概率的对数，不是比对 identity
-
-在 Phred+33 编码中，quality character 的 ASCII code 减 33 得到 $Q$：
-
-$$
-Q=-10\log_{10}(P_{\mathrm{error}}),
-\qquad
-P_{\mathrm{error}}=10^{-Q/10}.
-$$
-
-因此：
-
-| Q | 单碱基模型错误概率 | 模型准确率 |
-|---:|---:|---:|
-| 10 | 0.1 | 90% |
-| 20 | 0.01 | 99% |
-| 30 | 0.001 | 99.9% |
-| 40 | 0.0001 | 99.99% |
-
-一条 read 的平均 Q 不能直接取字符 Q 的算术平均后再解释成错误概率。更稳妥的汇总是先把每个位点 $Q_j$ 还原为 $p_j=10^{-Q_j/10}$，求平均错误概率，再转换回：
-
-$$
-Q_{\mathrm{mean\ error}}
-=
--10\log_{10}\left(
-\frac{1}{L}\sum_{j=1}^{L}10^{-Q_j/10}
-\right).
-$$
-
-FASTQ quality 是 basecaller 的置信模型；mapped identity 是 read 与选定 reference、在选定 aligner 和过滤条件下的观测一致率。参考不完整、真实 strain divergence、alignment clipping 和 indel policy 都会改变 identity。两者不能互换。
-
-### 3. reads、pairs、bases、cycles 和 insert size 是五个量
-
-对 paired-end 数据：
-
-- **read**：R1 或 R2 中的一条序列；
-- **read pair**：共享同一原始 fragment 的 R1 + R2；
-- **read length**：单条 read 的碱基数；
-- **insert size / fragment length**：建库片段从一端到另一端的长度；
-- **sequenced bases**：所有 reads 长度之和。
-
-若平均 read length 为 $L$、有 $N_{\mathrm{pair}}$ 个完整 pairs，总 sequenced bases 约为：
-
-$$
-B \approx 2N_{\mathrm{pair}}L.
-$$
-
-但 paired-end 的物理 span 更接近 insert size，而不是 $2L$。本数据 Illumina mean insert size 为 433.47 bp，read length 约 149 bp；两端可提供方向与距离约束，中间部分不一定被直接测序。
-
-对 single long reads，没有 R1/R2 pairing；一个 read 本身就是连续 span。把 long-read 文件硬复制成 `_1.fastq.gz` 和 `_2.fastq.gz` 不会创造 paired information。
-
-### 4. Repeat、strain 和 mobile element 决定“长”能带来什么
-
-短 reads 在下列结构中容易产生 assembly graph ambiguity：
-
-- 长于 read/insert span 的 repeats；
-- 多拷贝 rRNA operons；
-- 相近 strains 共享的核心区域；
-- plasmid、phage 与 chromosome 间共享片段；
-- biosynthetic gene cluster 或 AMR cassette 的重复单元。
-
-长 read 若能从一个 unique flank 连续跨过 repeat 到另一个 unique flank，就能提供 graph path。长读 metagenome assembler 因此专门处理 uneven abundance 与 intra-species heterogeneity；metaFlye 是代表性方法之一 [@kolmogorov2020metaflye]。但 low-abundance genome coverage 不足、DNA 已剪碎或 strains 极其相近时，读长优势仍可能无法兑现。
-
-### 5. “长读”至少要分 ONT 与 PacBio HiFi 两条路线
-
-**ONT**
-
-- 直接观测单分子通过 nanopore 的电流信号；
-- 可获得很长 reads，读长高度依赖 high-molecular-weight DNA 和 size distribution；
-- 原始信号保存在 POD5；
-- Dorado 当前默认输出 basecalled BAM，`--emit-fastq` 才输出 FASTQ；
-- chemistry、pore、kit、basecaller version 和 model name 是 Methods 必填项。
-
-**PacBio HiFi**
-
-- polymerase 多次绕行 circularized SMRTbell template；
-- 多次 subreads 合成一条 circular consensus sequence；
-- 同时追求 kilobase-scale length 与高 consensus accuracy [@wenger2019hifi]；
-- information-rich delivery 通常是 unaligned HiFi BAM，FASTQ 是可选交换层；
-- chemistry、SMRT Link/CCS version、passes/QV policy、size selection 与 barcode processing 必须记录。
-
-把 ONT 和 HiFi 都写成“第三代长读，平均 10 kb”会丢掉错误结构、原生信号、共识形成方式和工具链差异。长读分析还需使用与数据类型匹配的 mapper、assembler、polisher 与 QC [@amarasinghe2020longreads]。
-
-### 6. FASTQ 是最低共同表示，不是完整档案
-
-| Platform | Information-rich upstream object | FASTQ 的角色 | FASTQ 外容易丢失 |
-|---|---|---|---|
-| Illumina | BCL/CBCL + run metadata | 主要可移植 reads 交换格式 | flow-cell、demultiplex、lane/index context |
-| ONT | POD5 + basecalled BAM | 可选的 sequence/quality export | raw signal、model/read-group、moves、modified-base tags |
-| PacBio | subreads BAM + HiFi BAM | 可选的 sequence/quality export | PacBio tags、read group、passes/barcode context |
-
-只保留 FASTQ 会让 sequence 与 per-base quality 仍可用，却可能失去重新 basecall、调用 modified bases、核对 consensus provenance 或按 read group 追踪批次的能力。数据保留策略应是：
-
-1. 原生容器只读归档；
-2. BAM/FASTQ 作为分析输入；
-3. checksum、软件与 model manifest；
-4. 派生文件可重建，不覆盖原件。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：固定输入、安装依赖、校验指纹与作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 轻量复算环境
 
@@ -426,9 +332,7 @@ format_compact <- function(x) {
 
 </details>
 
-## 可复制代码：从四行语法到平台级审计 {#sec-code}
-
-### 1. 先验证 bytes，再读取对象
+## 先验证 bytes，再读取对象 {#sec-code}
 
 ```{r}
 #| label: audit-input-hashes
@@ -533,7 +437,41 @@ sources[, c(
   )
 ```
 
-### 2. 把第一条真实 record 拆开看
+### 先修正 accession lineage，不篡改论文 {#sec-audit}
+
+Meslier paper Table 4 把 Illumina MOCK1 accession 印为 `ERR9765446`；截至 2026-07-19，该 identifier 在官方 ENA project metadata 中没有对应 run。ENA 将同一 MOCK1 的 HiSeq 3000 paired run 标为 `ERR9765746`，并给出四个 FASTQ URL、MD5、reads 和 bases。
+
+处理方式不是静默替换，而是同时保留：
+
+- `PublishedTableAccession = ERR9765446`；
+- `OfficialENAAccession = ERR9765746`；
+- 查询日期；
+- official URL、MD5、bytes；
+- 差异说明为 source-table accession typo。
+
+只有这样，读者才能解释为什么复制论文 accession 下载失败，也能从当前官方记录复现。
+
+## 把第一条真实 record 拆开看
+
+### 一个 FASTQ record 必须满足四行语法 {#sec-theory}
+
+FASTQ 把 sequence 与每个碱基的 quality score 放在同一条 record 中 [@cock2010fastq]：
+
+```text
+@read_identifier optional description
+ACGT...
++
+quality characters...
+```
+
+最小结构约束是：
+
+1. header 以 `@` 开始；
+2. sequence 占一行；
+3. separator 以 `+` 开始；
+4. quality 字符数必须与 sequence 长度完全相等。
+
+“文件能解压”不代表 FASTQ 完整。截断文件可能在最后一个 record 中少一到三行；错误拼接可能让 R1/R2 行数相同但 read IDs 或顺序已经错位。正式质控要分别验证 compression、四行 grammar、record count、sequence/quality length 和 paired synchronization。
 
 ```{r}
 #| label: fastq-anatomy
@@ -621,7 +559,11 @@ write_tsv(
 )
 ```
 
-### 3. Paired-end 要同时审计 ID、数量和顺序
+::: {.callout-caution title="只保留 FASTQ，删除 POD5/BAM"}
+这样会失去重新 basecall、modified-base、read-group 或 consensus provenance。存储预算应在送样前包含原生容器，而不是分析结束后才发现无法升级。
+:::
+
+## Paired-end 要同时检查 ID、数量和顺序
 
 第一条 R1/R2 header 只在末尾 `/1` 与 `/2` 不同：
 
@@ -691,7 +633,22 @@ awk -F '\t' '
 
 `seqkit stats` 显示相同行数仍不够：如果 R1 少了一条、R2 又在别处多了一条，总数可相同，后续 pairing 却整体错位。逐位 ID audit 才能发现。
 
-### 4. 完整下载必须跟官方 MD5 绑定
+## 完整下载必须跟官方 MD5 绑定
+
+### FASTQ 是最低共同表示，不是完整档案
+
+| Platform | Information-rich upstream object | FASTQ 的角色 | FASTQ 外容易丢失 |
+|---|---|---|---|
+| Illumina | BCL/CBCL + run metadata | 主要可移植 reads 交换格式 | flow-cell、demultiplex、lane/index context |
+| ONT | POD5 + basecalled BAM | 可选的 sequence/quality export | raw signal、model/read-group、moves、modified-base tags |
+| PacBio | subreads BAM + HiFi BAM | 可选的 sequence/quality export | PacBio tags、read group、passes/barcode context |
+
+只保留 FASTQ 会让 sequence 与 per-base quality 仍可用，却可能失去重新 basecall、调用 modified bases、核对 consensus provenance 或按 read group 追踪批次的能力。数据保留策略应是：
+
+1. 原生容器只读归档；
+2. BAM/FASTQ 作为分析输入；
+3. checksum、软件与 model manifest；
+4. 派生文件可重建，不覆盖原件。
 
 四个文件总计约 10.8 GB。以下命令不在网页渲染时运行：
 
@@ -729,7 +686,11 @@ seqkit stats -a -T ./*.fastq.gz \
 
 下载重试后必须重新跑 MD5 和 `gzip -t`；“文件大小看起来差不多”不是完整性证据。ENA MD5 适合核对下载 bytes，项目内部派生文件再使用 SHA-256。
 
-### 5. 从每条 read 计算长度、GC 与 error-probability mean Q
+::: {.callout-caution title="只跑 gzip -t 就宣布 FASTQ 合格"}
+`gzip -t` 只验证压缩流；四行 grammar、sequence/quality 等长、字符范围、record count 和 mate synchronization 仍要单独检查。
+:::
+
+## 从每条 read 计算长度、GC 与 error-probability mean Q
 
 streaming builder 对每条 read 计算：
 
@@ -781,7 +742,35 @@ expected_errors = sum(error_probabilities)
 
 `expected_errors` 是 basecaller probabilities 的和，不是把 read 对 reference 比对后数出的实际 mismatch 数。
 
-### 6. 汇总确定性 prefix，并显式保留选择偏差
+::: {.callout-caution title="把 reads 当成 read pairs"}
+ENA/SRA 的 `read_count` 常按单条 reads 计数。paired run 的 pairs 通常约为 reads/2，但只能在 R1/R2 counts 相等且 IDs 同步后成立。Methods 要写 `20.6 million read pairs` 或 `41.2 million reads`，不要混用。
+:::
+
+::: {.callout-caution title="只看平均 read length"}
+两个 run 的均值可以相同，却有完全不同的 short-read tail、N50、P95 和能跨过 5/10/20 kb 的比例。组装设计至少报告 length distribution、read N50、total bases 和 Q distribution。
+:::
+
+## 汇总确定性 prefix，并显式保留选择偏差
+
+### reads、pairs、bases、cycles 和 insert size 是五个量
+
+对 paired-end 数据：
+
+- **read**：R1 或 R2 中的一条序列；
+- **read pair**：共享同一原始 fragment 的 R1 + R2；
+- **read length**：单条 read 的碱基数；
+- **insert size / fragment length**：建库片段从一端到另一端的长度；
+- **sequenced bases**：所有 reads 长度之和。
+
+若平均 read length 为 $L$、有 $N_{\mathrm{pair}}$ 个完整 pairs，总 sequenced bases 约为：
+
+$$
+B \approx 2N_{\mathrm{pair}}L.
+$$
+
+但 paired-end 的物理 span 更接近 insert size，而不是 $2L$。本数据 Illumina mean insert size 为 433.47 bp，read length 约 149 bp；两端可提供方向与距离约束，中间部分不一定被直接测序。
+
+对 single long reads，没有 R1/R2 pairing；一个 read 本身就是连续 span。把 long-read 文件硬复制成 `_1.fastq.gz` 和 `_2.fastq.gz` 不会创造 paired information。
 
 ```{r}
 #| label: summarize-read-prefixes
@@ -929,7 +918,11 @@ write_tsv(
 )
 ```
 
-### 7. 把论文全量指标与 prefix 指标分表保存
+::: {.callout-caution title="N50 高就等于 MAG 质量高"}
+N50 只描述 contiguity，不检查 contamination、chimerism、consensus errors、completeness 或 taxonomic consistency。MAG 仍需独立质量、嵌合与 MIMAG 审计。
+:::
+
+## 把论文全量指标与 prefix 指标分表保存
 
 ```{r}
 #| label: audit-full-benchmark
@@ -1004,7 +997,70 @@ benchmark_audit[, c(
   )
 ```
 
-### 8. 重绘长度—准确度图
+### 论文的 Sequel II 与 ENA 的 Sequel 字段并列报告
+
+论文 Methods/Table 将实验写作 PacBio Sequel II CCS；ENA `instrument_model` 字段写作 `Sequel`。在缺少更细 archive field 时，不把 ENA 值擅自扩成 Sequel II，也不因 archive 粒度较粗而否认论文描述。
+
+项目自己的 run 应保存 instrument run report、SMRT Link/CCS version、chemistry、movie/read group、HiFi QV definition 和 barcode workflow，让这种歧义不再发生。
+
+### 长读定量也受 high-molecular-weight extraction 选择
+
+同一混合 DNA 不等于不同平台获得完全相同的分子样本。size selection 会偏向长且完整的 molecules；某些 taxa 的 DNA 更易剪切或提取不足。若 primary endpoint 包括 relative abundance，不能只看 assembly contiguity，还要用 mock expected composition 检查 taxon-specific recovery、GC/length bias 与 dropout。
+
+复杂 clinical/environmental samples 更应在同一 homogenized extract 或配对 aliquots 中比较平台，记录 input mass、DIN、fragment distribution 与 size-selection cutoff。
+
+## 重绘长度—准确度图
+
+### Phred score 是错误概率的对数，不是比对 identity
+
+在 Phred+33 编码中，quality character 的 ASCII code 减 33 得到 $Q$：
+
+$$
+Q=-10\log_{10}(P_{\mathrm{error}}),
+\qquad
+P_{\mathrm{error}}=10^{-Q/10}.
+$$
+
+因此：
+
+| Q | 单碱基模型错误概率 | 模型准确率 |
+|---:|---:|---:|
+| 10 | 0.1 | 90% |
+| 20 | 0.01 | 99% |
+| 30 | 0.001 | 99.9% |
+| 40 | 0.0001 | 99.99% |
+
+一条 read 的平均 Q 不能直接取字符 Q 的算术平均后再解释成错误概率。更稳妥的汇总是先把每个位点 $Q_j$ 还原为 $p_j=10^{-Q_j/10}$，求平均错误概率，再转换回：
+
+$$
+Q_{\mathrm{mean\ error}}
+=
+-10\log_{10}\left(
+\frac{1}{L}\sum_{j=1}^{L}10^{-Q_j/10}
+\right).
+$$
+
+FASTQ quality 是 basecaller 的置信模型；mapped identity 是 read 与选定 reference、在选定 aligner 和过滤条件下的观测一致率。参考不完整、真实 strain divergence、alignment clipping 和 indel policy 都会改变 identity。两者不能互换。
+
+### “长读”至少要分 ONT 与 PacBio HiFi 两条路线
+
+**ONT**
+
+- 直接观测单分子通过 nanopore 的电流信号；
+- 可获得很长 reads，读长高度依赖 high-molecular-weight DNA 和 size distribution；
+- 原始信号保存在 POD5；
+- Dorado 当前默认输出 basecalled BAM，`--emit-fastq` 才输出 FASTQ；
+- chemistry、pore、kit、basecaller version 和 model name 是 Methods 必填项。
+
+**PacBio HiFi**
+
+- polymerase 多次绕行 circularized SMRTbell template；
+- 多次 subreads 合成一条 circular consensus sequence；
+- 同时追求 kilobase-scale length 与高 consensus accuracy [@wenger2019hifi]；
+- information-rich delivery 通常是 unaligned HiFi BAM，FASTQ 是可选交换层；
+- chemistry、SMRT Link/CCS version、passes/QV policy、size selection 与 barcode processing 必须记录。
+
+把 ONT 和 HiFi 都写成“第三代长读，平均 10 kb”会丢掉错误结构、原生信号、共识形成方式和工具链差异。长读分析还需使用与数据类型匹配的 mapper、assembler、polisher 与 QC [@amarasinghe2020longreads]。
 
 ```{r}
 #| label: plot-read-geometry
@@ -1143,7 +1199,35 @@ save_pub(
 )
 ```
 
-### 9. 重绘 span survival
+### 把历史 ONT R9 放回历史语境
+
+论文的 ONT 数据来自 MinION R9，mean mapped identity 为 89.08%，substitutions 3.37%、indels 7.55%。这些值不能被写成“Nanopore 固有错误率”，更不能替代当前 run 的 `sequencing_summary`、Dorado model、duplex/simplex 和 alignment QC。
+
+升级后的报告至少包含：
+
+```text
+device / flow cell / pore
+library preparation kit
+Dorado version
+exact model name
+simplex or duplex
+minimum Q policy
+POD5 retained: yes/no
+basecalled BAM retained: yes/no
+modified-base model, if used
+```
+
+跨代比较时，应该写 `ONT MinION R9 in Meslier 2022`，而不是只写 `ONT`。
+
+::: {.callout-caution title="把平均 Q 与平均 identity 画成同一种准确率"}
+Quality 是 basecaller probability；identity 是对特定 reference 的 alignment outcome。必须分列报告，并说明聚合和过滤方法。
+:::
+
+::: {.callout-caution title="把历史 R9 结果写成当前 ONT 性能"}
+必须保留 pore/flow cell、kit、Dorado version 与 model。没有这些字段，`Nanopore` 不是可复现的方法描述。
+:::
+
+## 重绘 span survival
 
 ```{r}
 #| label: plot-span-survival
@@ -1240,7 +1324,31 @@ save_pub(
 )
 ```
 
-### 10. 重绘 assembly outcome，并写机器可读摘要
+### 原生文件保留是可升级性的前提
+
+当前官方格式说明支持以下边界：
+
+| Platform | 当前保存优先级 | 为什么 |
+|---|---|---|
+| Illumina | BCL/CBCL 若可得 + SampleSheet + FASTQ | 可重做 demultiplexing 并追踪 lane/index |
+| ONT | POD5 + basecalled BAM + summary + optional FASTQ | 可重新 basecall、保留 model/read tags 与 signal |
+| PacBio | subreads BAM + HiFi BAM + reports + optional FASTQ | 保留 consensus/read-group/barcode provenance |
+
+供应商只交 FASTQ 时，应在 Methods 写“native signal/container unavailable”，不要暗示 modified-base reanalysis 或 re-basecalling 仍可完成。
+
+## 重绘 assembly outcome，并写机器可读摘要
+
+### Repeat、strain 和 mobile element 决定“长”能带来什么
+
+短 reads 在下列结构中容易产生 assembly graph ambiguity：
+
+- 长于 read/insert span 的 repeats；
+- 多拷贝 rRNA operons；
+- 相近 strains 共享的核心区域；
+- plasmid、phage 与 chromosome 间共享片段；
+- biosynthetic gene cluster 或 AMR cassette 的重复单元。
+
+长 read 若能从一个 unique flank 连续跨过 repeat 到另一个 unique flank，就能提供 graph path。长读 metagenome assembler 因此专门处理 uneven abundance 与 intra-species heterogeneity；metaFlye 是代表性方法之一 [@kolmogorov2020metaflye]。但 low-abundance genome coverage 不足、DNA 已剪碎或 strains 极其相近时，读长优势仍可能无法兑现。
 
 ```{r}
 #| label: plot-assembly-impact
@@ -1474,49 +1582,7 @@ jsonlite::write_json(
 )
 ```
 
-## 审计与升级：忠实复现之后，今天还要补什么 {#sec-audit}
-
-### 1. 先修正 accession lineage，不篡改论文
-
-Meslier paper Table 4 把 Illumina MOCK1 accession 印为 `ERR9765446`；截至 2026-07-19，该 identifier 在官方 ENA project metadata 中没有对应 run。ENA 将同一 MOCK1 的 HiSeq 3000 paired run 标为 `ERR9765746`，并给出四个 FASTQ URL、MD5、reads 和 bases。
-
-处理方式不是静默替换，而是同时保留：
-
-- `PublishedTableAccession = ERR9765446`；
-- `OfficialENAAccession = ERR9765746`；
-- 查询日期；
-- official URL、MD5、bytes；
-- 差异说明为 source-table accession typo。
-
-只有这样，读者才能解释为什么复制论文 accession 下载失败，也能从当前官方记录复现。
-
-### 2. 把历史 ONT R9 放回历史语境
-
-论文的 ONT 数据来自 MinION R9，mean mapped identity 为 89.08%，substitutions 3.37%、indels 7.55%。这些值不能被写成“Nanopore 固有错误率”，更不能替代当前 run 的 `sequencing_summary`、Dorado model、duplex/simplex 和 alignment QC。
-
-升级后的报告至少包含：
-
-```text
-device / flow cell / pore
-library preparation kit
-Dorado version
-exact model name
-simplex or duplex
-minimum Q policy
-POD5 retained: yes/no
-basecalled BAM retained: yes/no
-modified-base model, if used
-```
-
-跨代比较时，应该写 `ONT MinION R9 in Meslier 2022`，而不是只写 `ONT`。
-
-### 3. 论文的 Sequel II 与 ENA 的 Sequel 字段并列报告
-
-论文 Methods/Table 将实验写作 PacBio Sequel II CCS；ENA `instrument_model` 字段写作 `Sequel`。在缺少更细 archive field 时，不把 ENA 值擅自扩成 Sequel II，也不因 archive 粒度较粗而否认论文描述。
-
-项目自己的 run 应保存 instrument run report、SMRT Link/CCS version、chemistry、movie/read group、HiFi QV definition 和 barcode workflow，让这种歧义不再发生。
-
-### 4. 不把 FASTQ Q 当作 reference identity
+### 不把 FASTQ Q 当作 reference identity
 
 prefix 中 PacBio `MedianErrorProbabilityMeanQ` 约为 38.59，论文 full-run mapped identity 为 99.72%；这两个值来源、单位与聚合方法都不同。直接做 $1-10^{-38.59/10}$ 并与 99.72% 对比，会同时混入 quality calibration、read selection、reference divergence 与 alignment policy。
 
@@ -1529,7 +1595,7 @@ prefix 中 PacBio `MedianErrorProbabilityMeanQ` 约为 38.59，论文 full-run m
 - unmapped/unaligned reads 的原因；
 - mock truth recovery 或 independent reference-free QC。
 
-### 5. Assembly comparison 被多个 workflow 因素混杂
+### Assembly comparison 被多个 workflow 因素混杂
 
 论文 short-read input 是 10 million read pairs；ONT 与 PacBio 分别使用约 0.696 和 0.524 million reads。不同 assembler 适配不同 error model。N50 和 recovered full genomes 同时受以下因素影响：
 
@@ -1544,25 +1610,7 @@ prefix 中 PacBio `MedianErrorProbabilityMeanQ` 约为 38.59，论文 full-run m
 
 更接近单因素比较的 benchmark 应对齐总 bases或目标 genome coverage，统一 truth set 与评价器，分别做 full data 和 matched-budget sensitivity；仍不能把 library preparation bias 消除掉。
 
-### 6. 长读定量也受 high-molecular-weight extraction 选择
-
-同一混合 DNA 不等于不同平台获得完全相同的分子样本。size selection 会偏向长且完整的 molecules；某些 taxa 的 DNA 更易剪切或提取不足。若 primary endpoint 包括 relative abundance，不能只看 assembly contiguity，还要用 mock expected composition 检查 taxon-specific recovery、GC/length bias 与 dropout。
-
-复杂 clinical/environmental samples 更应在同一 homogenized extract 或配对 aliquots 中比较平台，记录 input mass、DIN、fragment distribution 与 size-selection cutoff。
-
-### 7. 原生文件保留是可升级性的前提
-
-当前官方格式说明支持以下边界：
-
-| Platform | 当前保存优先级 | 为什么 |
-|---|---|---|
-| Illumina | BCL/CBCL 若可得 + SampleSheet + FASTQ | 可重做 demultiplexing 并追踪 lane/index |
-| ONT | POD5 + basecalled BAM + summary + optional FASTQ | 可重新 basecall、保留 model/read tags 与 signal |
-| PacBio | subreads BAM + HiFi BAM + reports + optional FASTQ | 保留 consensus/read-group/barcode provenance |
-
-供应商只交 FASTQ 时，应在 Methods 写“native signal/container unavailable”，不要暗示 modified-base reanalysis 或 re-basecalling 仍可完成。
-
-### 8. 按研究终点决定平台，而不是按口号决定
+### 按研究终点决定平台，而不是按口号决定
 
 | Primary endpoint | 数据路线起点 | 主要理由 | 必须承认的边界 |
 |---|---|---|---|
@@ -1574,57 +1622,11 @@ prefix 中 PacBio `MedianErrorProbabilityMeanQ` 约为 38.59，论文 full-run m
 
 “全队列都做最高规格长读”不是自动最佳。常见稳健设计是：代表性 discovery subset 做 long-read assembly，建立 study-specific genomes/gene catalog，再让全部样本用一致 short-read profiling；桥接样本同时上两平台，用来估计 platform effect。
 
-## 出版级美化：让三张图分别回答三个问题 {#sec-polish}
-
-### 1. Read geometry 图只放长度与 mapped identity
-
-横轴使用 log scale，否则 149 bp 会被 10 kb 压在原点；ONT 标注必须带 `R9 (historical)`。误差横线只表示 paper-reported read-length SD，不把 identity 的未报告误差条画出来。
-
-### 2. Span survival 图把选择规则写进 subtitle
-
-曲线 subtitle 明确写 `Deterministic 5,000-read prefixes`，图注再说明 non-random。这样一张容易传播的图离开正文后仍保留证据边界。
-
-### 3. Assembly 图把混杂因素写进图内
-
-subtitle 直接保留 `platform-specific assemblers and unequal read budgets`，避免读者只截图柱高。两个 facet 使用 free y scale，因为 N50 与 genome count 单位不同；facet title 与 data labels 全为英文。
-
-三张图都以 PDF、350-dpi PNG 和 LZW TIFF 导出。PDF 用于矢量排版，PNG 用于网页和公众号预览，TIFF 用于要求位图的期刊投稿。图内标题、坐标、图例、分组与数字标注均使用英文。
-
-## 常见坑：审稿人会追问什么 {#sec-pitfalls}
-
-::: {.callout-caution title="把 reads 当成 read pairs"}
-ENA/SRA 的 `read_count` 常按单条 reads 计数。paired run 的 pairs 通常约为 reads/2，但只能在 R1/R2 counts 相等且 IDs 同步后成立。Methods 要写 `20.6 million read pairs` 或 `41.2 million reads`，不要混用。
-:::
-
-::: {.callout-caution title="只跑 gzip -t 就宣布 FASTQ 合格"}
-`gzip -t` 只验证压缩流；四行 grammar、sequence/quality 等长、字符范围、record count 和 mate synchronization 仍要单独检查。
-:::
-
-::: {.callout-caution title="把平均 Q 与平均 identity 画成同一种准确率"}
-Quality 是 basecaller probability；identity 是对特定 reference 的 alignment outcome。必须分列报告，并说明聚合和过滤方法。
-:::
-
-::: {.callout-caution title="只看平均 read length"}
-两个 run 的均值可以相同，却有完全不同的 short-read tail、N50、P95 和能跨过 5/10/20 kb 的比例。组装设计至少报告 length distribution、read N50、total bases 和 Q distribution。
-:::
-
-::: {.callout-caution title="把历史 R9 结果写成当前 ONT 性能"}
-必须保留 pore/flow cell、kit、Dorado version 与 model。没有这些字段，`Nanopore` 不是可复现的方法描述。
-:::
-
-::: {.callout-caution title="只保留 FASTQ，删除 POD5/BAM"}
-这样会失去重新 basecall、modified-base、read-group 或 consensus provenance。存储预算应在送样前包含原生容器，而不是分析结束后才发现无法升级。
-:::
-
-::: {.callout-caution title="N50 高就等于 MAG 质量高"}
-N50 只描述 contiguity，不检查 contamination、chimerism、consensus errors、completeness 或 taxonomic consistency。MAG 仍需独立质量、嵌合与 MIMAG 审计。
-:::
-
 ::: {.callout-caution title="把 mock assembly 排名直接外推到真实群落"}
 真实样本的 abundance range、novelty、strain diversity、host DNA 和 extraction fragmentation 都不同。Mock 是管线校准，不是所有生态位的胜负榜。
 :::
 
-## 这段 Methods 怎么写 {#sec-methods}
+## 记录平台、读长分布和数据处理 {#sec-methods}
 
 ### 可套用的英文模板
 
@@ -1638,9 +1640,9 @@ Methods 还应补一句 accession discrepancy：
 
 > The Illumina MOCK1 accession printed as ERR9765446 in the source paper table was not present in the official ENA project metadata checked on 19 July 2026; ERR9765746, including its paired FASTQ URLs, MD5 values, read count, and base count, was therefore used and the discrepancy was retained in the provenance record.
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
-### 1. 先建一份 run manifest
+### 先建一份 run manifest
 
 最低字段：
 
@@ -1664,7 +1666,7 @@ Methods 还应补一句 accession discrepancy：
 
 一行对应一个 library × run，而不是一行对应患者。若同一 library 跨 lane 或重跑，应保留多行，再由 manifest 指定合并规则。
 
-### 2. 先跑文件门，再做 biological QC
+### 先跑文件门，再做 biological QC
 
 推荐输出：
 
@@ -1682,7 +1684,7 @@ results/fastq/
 
 只有 checksum、compression、grammar、pairing 全部通过，才进入 adapter/quality trimming、host removal 和 profiling。失败文件先重下载或让测序方重交，不能用 `head -n -1` 等方式悄悄删掉尾部。
 
-### 3. 按平台保留原件和分析副本
+### 按平台保留原件和分析副本
 
 ```text
 data/
@@ -1703,7 +1705,7 @@ data/
 
 所有转换写到新目录；原生文件设为只读。FASTQ 转 BAM、BAM 转 FASTQ 或重新 basecall 都要记录命令、version 和 input/output checksum。
 
-### 4. 用 endpoint matrix 做平台决策
+### 用 endpoint matrix 做平台决策
 
 给每个候选方案预先打分：
 
@@ -1721,7 +1723,7 @@ data/
 
 先定权重，再看报价。若先看喜欢的平台再调权重，decision matrix 只是在为既定选择背书。
 
-### 5. 用桥接样本分离 biological 与 platform effects
+### 用桥接样本分离 biological 与 platform effects
 
 混合平台队列至少选择一批代表性样本同时上两条路线，覆盖：
 
@@ -1734,7 +1736,7 @@ data/
 
 桥接分析分别比较 taxon/pathway abundance、unclassified fraction、length/quality、assembly graph、MAG recovery 与 strain calls。没有 bridge，platform 常与 phenotype 或 batch 混杂，后续统计很难补救。
 
-### 6. 把选择转成预先写好的停止与失败规则
+### 把选择转成预先写好的停止与失败规则
 
 示例：
 
@@ -1744,7 +1746,23 @@ data/
 - hybrid：long-read assembly 与 short-read polishing/profile 的 sample IDs、extract lineage 与 checksum 必须一一对应；
 - 所有平台：blank、mock、host/privacy 与 contamination gates 独立执行，不因 reads 更长而豁免。
 
-## 小结
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### Read geometry 图只放长度与 mapped identity
+
+横轴使用 log scale，否则 149 bp 会被 10 kb 压在原点；ONT 标注必须带 `R9 (historical)`。误差横线只表示 paper-reported read-length SD，不把 identity 的未报告误差条画出来。
+
+### Span survival 图把选择规则写进 subtitle
+
+曲线 subtitle 明确写 `Deterministic 5,000-read prefixes`，图注再说明 non-random。这样一张容易传播的图离开正文后仍保留证据边界。
+
+### Assembly 图把混杂因素写进图内
+
+subtitle 直接保留 `platform-specific assemblers and unequal read budgets`，避免读者只截图柱高。两个 facet 使用 free y scale，因为 N50 与 genome count 单位不同；facet title 与 data labels 全为英文。
+
+三张图都以 PDF、350-dpi PNG 和 LZW TIFF 导出。PDF 用于矢量排版，PNG 用于网页和公众号预览，TIFF 用于要求位图的期刊投稿。图内标题、坐标、图例、分组与数字标注均使用英文。
+
+## 回到最初的问题
 
 1. FASTQ record 是 header、sequence、separator、quality 四行；compression 通过不等于 grammar 与 pairing 通过。
 2. Phred score 表示 basecaller error probability，mapped identity 表示相对某个 reference 的 alignment outcome，两者不能互换。
@@ -1755,7 +1773,7 @@ data/
 7. Illumina 应保留 run/index context，ONT 应保留 POD5 与 basecalled BAM，PacBio 应保留 subreads/HiFi BAM；FASTQ 是交换层，不是完整档案。
 8. 平台选择要从 primary endpoint、HMW DNA、low-abundance coverage、队列规模和预算反推，并用跨平台 bridge samples 校准。
 
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Meslier V, Quinquis B, Da Silva K, et al. Benchmarking second and third-generation sequencing platforms for microbial metagenomics. *Scientific Data*. 2022;9:694. [doi:10.1038/s41597-022-01762-z](https://doi.org/10.1038/s41597-022-01762-z)
 - Cock PJA, Fields CJ, Goto N, Heuer ML, Rice PM. The Sanger FASTQ file format for sequences with quality scores, and the Solexa/Illumina FASTQ variants. *Nucleic Acids Research*. 2010;38:1767–1771. [doi:10.1093/nar/gkp1137](https://doi.org/10.1093/nar/gkp1137)

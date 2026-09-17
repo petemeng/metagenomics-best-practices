@@ -1,6 +1,6 @@
 ---
-title: "第 17 篇 · 数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: false
   freeze: auto
@@ -38,15 +38,20 @@ wechat:
     17-confidence-tradeoff.png: "Three-panel confidence sweep showing reference-aware mock recovery, non-truth mock burden, and unsupported human-control calls"
     17-database-stability.png: "Mock classification yield and pairwise Bracken abundance disagreement across databases and confidence values"
     17-hit-group-control.png: "Minimum hit-group sensitivity for mock recovery, non-truth mock burden, and unsupported human-control calls"
+reader-mode: upstream
 ---
 
 > **学习目标：**把“数据库更大”“数据库内容更多”“confidence 更高”和“minimum hit groups 更多”拆成四个独立问题；用真实阳性真值和有明确边界的方法对照评估召回—非预期调用折中；识别无法进入 Bracken 的高阈值分支；最后把数据库 release、阈值与验证结果写进 Methods。  
 > **真实数据：**阳性基准为 71-strain MOCK1 DNA 的 Illumina run `ERR9765746`，使用第 13 篇 fastp 后保留的 99,991 个同步 pairs [@meslier2022platforms]。方法对照为公开人类 WGS `ERR194147` 的确定性前 20,000 个同步 pairs [@constantinides2023hostile]；它不是 extraction blank，也不能给出实验性假阳性率。  
 > **预计资源：**三份固定 archive 合计 22.24 GiB，三个解包数据库合计 31.59 GiB，建议预留至少 70 GB 磁盘、8 核和 24 GB RAM；本次 Standard-16 单分支实测峰值为 15,585 MiB RSS。没有服务器时，可直接读取仓库内的 checksum-locked frozen reports 与聚合审计重画结果；要完整复跑三库矩阵，则应使用 HPC 或合规云，不要在 16 GB 笔记本上并行加载多个索引。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 锚定 Figure 2 与 Figure 4，而不是先找“最佳阈值”
+阈值的影响取决于数据库内容；用已知组成对照比较召回和非预期调用，不把 confidence 当概率。
+
+:::
+
+## 提高 confidence，哪些检出会一起消失？ {#sec-target}
 
 Wright 等的 Figure 2 先问 mock/simulated truth 有多少 taxa 与 reads 被各数据库覆盖，Figure 4 再把数据库和 confidence 放进同一张性能矩阵 [@wright2023defaults]。这个顺序很关键：参考库根本没有的物种不能算分类器“本应检出却漏掉”；不同日期的数据库也不能拿来归因于 content 或 size。
 
@@ -63,7 +68,28 @@ Wright 等的 Figure 2 先问 mock/simulated truth 有多少 taxa 与 reads 被�
 数据库比较必须锁 release date、archive bytes、publisher checksum、解包文件 checksum 和实际 reference crosswalk。否则看到的差异可能来自数据库更新、taxonomy 更新、内容变化、cap 变化或文件损坏，无法归因。
 :::
 
-### 结果一：三个库覆盖了相同的 63 个当前物种
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/17/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 1.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/17/download.R)。
+
+```{r}
+#| label: reader-input-download-17
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/17/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## 三个库覆盖了相同的 63 个当前物种
 
 ![MOCK1 的 71 个 expected assemblies 先按实际 sequence-to-taxonomy map 分成 exact assembly、alternate same-species reference 和 no same-species reference。右图用源表未重归一的 expected genome percentage 表示三类质量；虚线是源表合计 100.012%。](../figures/17-reference-coverage.png){#fig-17-reference-coverage}
 
@@ -77,7 +103,7 @@ Wright 等的 Figure 2 先问 mock/simulated truth 有多少 taxa 与 reads 被�
 
 这一步排除了一个常见误读：后续三库召回差异不是“PlusPF 多放了真菌和原生生物，所以多覆盖了本次细菌真值”，也不是 Standard-16 多收了 expected assemblies。三库的 benchmark denominator 相同；变化发生在 capped minimizer table 与查询 evidence。
 
-### 结果二：同一个 confidence 在 8 GB 与 16 GB cap 上不是同一种强度
+## 同一个 confidence 在 8 GB 与 16 GB cap 上不是同一种强度
 
 ![主矩阵固定 minimum hit groups 为 2。A 为数据库实际含参考的 expected species 召回；B 为阳性 MOCK 中落入 non-truth species clade 的 paired fragments；C 为人类方法对照中既不属于 Homo sapiens clade、也不直接落在人类 lineage ancestor 上的 unsupported classifications，纵轴使用 symlog 以同时显示 0–0.5/10k 与千级结果。](../figures/17-confidence-tradeoff.png){#fig-17-confidence-tradeoff}
 
@@ -97,7 +123,7 @@ Standard-16 在 `0.20` 仍恢复 50/63 个 reference-present species（79.37%）
 后文用 Standard-16、confidence 0.10、hit groups 2 作为操作性比较点，因为它同时保留 55/63 的 reference-aware recovery、可估计的 Bracken composition 和 0.5/10k 的 human-control unsupported burden。但它仍有 173.8/10k non-truth MOCK fragments，不能据此声称“最优”，更不能迁移成病原检测、土壤或低生物量样本的通用阈值。
 :::
 
-### 结果三：数据库改变的不只是 classified fraction
+## 数据库改变的不只是 classified fraction
 
 ![A 展示同一 MOCK 在三库中的 classified paired-fragment fraction。B 对两份非空 Bracken species compositions 计算 total variation；confidence 0.20 或 0.50 出现空分支时不再估计距离，留空而不是填 0。](../figures/17-database-stability.png){#fig-17-database-stability}
 
@@ -105,7 +131,7 @@ Standard-16 在 `0.20` 仍恢复 50/63 个 reference-present species（79.37%）
 
 confidence 0.20 时只有 Standard-16 仍有 Bracken composition，confidence 0.50 时三库都为空。这里的空白是“距离不可估计”，不是两个空组成彼此完全一致；任何用 0 填补的折线都会人为制造稳定性。
 
-### 结果四：本次 hit-group 轴几乎是平的
+## 本次 hit-group 轴几乎是平的
 
 ![只在 Standard-16、confidence 0.10 下把 minimum hit groups 从 1 改到 4。三个纵轴从有意义的零点开始，避免把极小的数值变化视觉放大。](../figures/17-hit-group-control.png){#fig-17-hit-group-control}
 
@@ -113,121 +139,10 @@ hit groups 1–4 的 reference-aware recovery 始终为 55/63（87.30%）；MOCK
 
 36 个 Kraken2 branches 的计时账本合计 349.75 秒，单分支最长 14.13 秒；Standard-16 峰值 15,585 MiB，Standard-8 与 PlusPF-8 峰值约 7,946 与 7,936 MiB。36 个 Bracken branches 合计 9.35 秒、峰值 24.19 MiB。以上是本地热存储上的 99,991/20,000-pair 参数审计，只能作为资源下限，不能外推到完整生产队列。
 
-## 理论：四个旋钮控制的是不同边界 {#sec-theory}
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 1. 数据库既是参考集合，也是测量模型
-
-Kraken2 数据库至少有四层身份：
-
-1. **taxonomy snapshot**：taxid、父子关系和名字随时间变化；
-2. **reference library**：哪些 assembly/sequence 被纳入；
-3. **minimizer table**：参考序列经 `k`、`l`、masking 和 LCA 规则变成哪些查询键；
-4. **capacity policy**：`--max-db-size` 会对 reference library 的 minimizers 下采样以适应内存预算。
-
-因此，“Standard”不是一个永久不变的分析条件，“8 GB”也不是“只放了较少物种”的同义词。固定 release 的 Standard-8 与 Standard-16 可以保留同一 reference library，却因保留的 minimizer 密度不同而产生完全不同的高-confidence 行为。PlusPF-8 又在近似相同容量中加入真菌和原生生物；新增内容会竞争有限 hash budget，不能先验假定它在所有细菌 mock 上都优于 Standard-8。
-
-Kraken2 的 compact hash table 是概率数据结构；官方手册明确提醒查询可能返回错误 LCA，confidence scoring 可降低这类边界错误 [@wood2019kraken2]。但数据库污染、错误注释、近缘物种共享序列和 benchmark reference 缺失不是同一种误差，不能用一个 confidence 数字统称解决。
-
-### 2. 先求 truth ∩ reference，再计算 reference-aware recall
-
-设 mock 的 expected species 集为 $T$，某数据库实际包含 same-species reference 的集合为 $R_d$，在参数 $\theta$ 下被 species clade 检出的集合为 $D_{d,\theta}$。本篇报告：
-
-$$
-\mathrm{ReferenceAwareRecall}_{d,\theta}
-= \frac{|D_{d,\theta} \cap T \cap R_d|}{|T \cap R_d|}.
-$$
-
-与此同时单独保留：
-
-$$
-\mathrm{MissingReferenceMass}_d
-= \sum_{i \in T \setminus R_d} p_i,
-$$
-
-其中 $p_i$ 是 Supplementary Table S3 的 expected genome percentage。源表 71 行的印刷数值合计为 **100.01215654459679%**；这里原样保留，不为了得到整齐的 100% 静默重归一。
-
-reference crosswalk 逐 assembly 分三类：
-
-| Reference status | Operational definition | Interpretation |
-|---|---|---|
-| Exact expected assembly | 至少一个当前 assembly sequence accession 出现在 `seqid2taxid.map` | expected assembly represented |
-| Alternate same-species reference | expected sequence accession 未命中，但数据库有同一 NCBI species reference | species 可检出，strain/assembly 不完全匹配 |
-| No same-species reference | 数据库没有该 current species ancestor | species-level 漏检首先是 database limitation |
-
-“exact”在这里是 sequence-accession 交集合同，不等价于每个 contig 都完整命中，也不提供 strain identity 结论。
-
-### 3. `--confidence` 不是概率
-
-Kraken2 对候选标签 $i$ 的 confidence score 为：
-
-$$
-C_i = \frac{Q_i}{Q},
-$$
-
-其中 $Q_i$ 是 LCA 位于 $i$ 的 clade 内的 queried k-mers，$Q$ 是 read 中不含 ambiguous nucleotide、因而实际被查询的 k-mers；数据库中没有命中的 k-mers 仍进入 $Q$ [@wood2019kraken2]。若当前标签不达阈值，标签沿 taxonomy tree 向上退；若连 root 都不达阈值，该 fragment 变为 unclassified。
-
-所以 confidence 提高可能同时发生三件事：
-
-- species call 退到 genus/family；
-- classified fragment 退成 unclassified；
-- Bracken 在目标 rank 上找不到超过 `-t` 的 entry。
-
-它不是 posterior probability、p-value、FDR，也不是“0.10 表示 90% 正确”。在 minimizer 被强烈下采样的 capped database 中，大量 no-hit k-mers 留在分母，适合 full database 的阈值可能把 8 GB 索引压到几乎无 species evidence。
-
-### 4. `--minimum-hit-groups` 不是 confidence 的另一种写法
-
-hit group 是一段共享同一 minimizer 的相邻 k-mers。`--minimum-hit-groups 2` 要求至少两个 hit groups 才产生 call；它主要避免一小段局部序列或单个 minimizer run 支撑整条 read。confidence 则衡量某个 taxonomy clade 获得的 evidence fraction。
-
-```text
-minimum hit groups
-    └── evidence 是否足以产生 call
-
-confidence
-    └── 产生 call 后，标签能下沉到多细的 rank
-```
-
-两者同时改变时，无法知道召回变化来自“没有 call”还是“call 向上退”。本篇主矩阵固定 hit groups 为 2；补充矩阵只在 Standard-16、confidence 0.10 下改变 hit groups 1–4。
-
-### 5. “假阳性”必须先指定判定域
-
-阳性 mock 中，species clade 不属于 truth species 的 fragments 记为 **non-truth mock calls**。它可能来自近缘序列共享、taxonomy 映射、数据库错误、实验杂质或分类错误；只有已知 mock truth 让它具备 benchmark 含义。
-
-人类 WGS 方法对照先分成 *Homo sapiens* clade、直接落在人类 lineage ancestors 上的分类，以及线系外分类；只有第三类记为 **unsupported-control calls**。ancestor-level call 是 confidence 提高后沿 taxonomy 向上退的合法结果，不能从 `classified` 中减掉 *Homo sapiens* clade 后全部算作非人调用。这个指标能测试“几乎全人源序列输入时，这个参数组合留下多少线系外分类”，但不能称为实验性 false-positive rate，因为：
-
-- 它不是 extraction blank 或无模板对照；
-- 原始公开 run 可能含真实非人序列、污染或测序伪影；
-- human reference 也不是个体基因组的完美全集；
-- 这 20,000 pairs 是方法压力测试，不代表你的样本基质。
-
-::: {.callout-warning title="零对照调用也不等于临床特异度为 100%"}
-临床或病原体声明需要同批次 extraction blanks、positive controls、独立比对、覆盖广度、序列特异性和预先定义的报告规则。Kraken taxon row 只是候选 evidence，不是确证结果。
-:::
-
-### 6. Bracken 是 classifier × database × rank × threshold 的条件结果
-
-Bracken 使用当前数据库、目标 read length 和 Kraken report，把高层级 evidence 重估到目标 rank [@lu2017bracken]。本篇固定 `rank=S`、`threshold=10`，MOCK 用 150 bp distribution，人类 101 bp reads 用最近的 100 bp distribution。
-
-若 confidence 后 species rows 都不超过 10，Bracken 会返回 `Error: no reads found`。这不是“丰度全为零后可以继续归一化”，而是 **该参数组合下没有可估计的 species composition**。正确做法是保留 header-only table、真实 exit status 和明确 outcome；不能回退到低 confidence 的 Bracken 表，也不能把空表插补成均匀组成。
-
-### 7. 阈值选择是多目标约束，不是单列最大化
-
-可把选择写成：
-
-$$
-\theta^* = \arg\max_{\theta \in \Theta}
-\mathrm{Recall}_{\theta}
-\quad \text{subject to} \quad
-\mathrm{ControlBurden}_{\theta} \le B,
-\quad
-\mathrm{CompositionAvailable}_{\theta}=1.
-$$
-
-$B$ 必须由研究问题、blank、检出成本和错误后果预先决定。探索阶段也可画 Pareto frontier，而不是给 recall、precision、classified fraction、taxon count 随意加权。不同数据库的 frontier 不同，因此没有可跨 release、样本类型和测序长度迁移的“Kraken2 最佳 confidence”。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：算力、固定环境、分层下载、真实输入与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 算力与存储门槛
 
@@ -357,9 +272,20 @@ save_pub <- function(plot, file_base, width = 180, height = 105,
 
 </details>
 
-## 可复制代码 {#sec-code}
+## 一次性运行完整矩阵 {#sec-code}
 
-### 1. 一次性运行完整矩阵
+### 数据库既是参考集合，也是测量模型 {#sec-theory}
+
+Kraken2 数据库至少有四层身份：
+
+1. **taxonomy snapshot**：taxid、父子关系和名字随时间变化；
+2. **reference library**：哪些 assembly/sequence 被纳入；
+3. **minimizer table**：参考序列经 `k`、`l`、masking 和 LCA 规则变成哪些查询键；
+4. **capacity policy**：`--max-db-size` 会对 reference library 的 minimizers 下采样以适应内存预算。
+
+因此，“Standard”不是一个永久不变的分析条件，“8 GB”也不是“只放了较少物种”的同义词。固定 release 的 Standard-8 与 Standard-16 可以保留同一 reference library，却因保留的 minimizer 密度不同而产生完全不同的高-confidence 行为。PlusPF-8 又在近似相同容量中加入真菌和原生生物；新增内容会竞争有限 hash budget，不能先验假定它在所有细菌 mock 上都优于 Standard-8。
+
+Kraken2 的 compact hash table 是概率数据结构；官方手册明确提醒查询可能返回错误 LCA，confidence scoring 可降低这类边界错误 [@wood2019kraken2]。但数据库污染、错误注释、近缘物种共享序列和 benchmark reference 缺失不是同一种误差，不能用一个 confidence 数字统称解决。
 
 ```bash
 export PROJECT_ROOT="$PWD"
@@ -378,7 +304,11 @@ bash scripts/run_article17_kraken2_database_confidence.sh \
 
 完成标志写入 `data/small/17-kraken-database-confidence-frozen/run-summary.json`；公开 payload 的逐文件 SHA-256 列于 `data/small/17-kraken-database-confidence-frozen/file-checksums.sha256`。数据许可、真值转录、人类对照和空 Bracken outcome 的解释边界集中记录在 `data/small/17-data-NOTICE.txt`。
 
-### 2. 看懂主矩阵的一个分支
+::: {.callout-caution title="坑 1：把不同日期的数据库差异归因于 size"}
+同名 Standard 在不同月份会改变 reference、taxonomy 和 hash。若 release 不同，不能写“16 GB 比 8 GB 多检出多少”而忽略时间更新。
+:::
+
+## 看懂主矩阵的一个分支
 
 ```bash
 DB="${DB_ROOT}/standard-16-20260626"
@@ -409,7 +339,51 @@ OUTPUT=data/raw/article17/work/per-fragment/standard16-mock-c010-h2.output
 
 对人类 101 bp 方法对照只把 `-r` 改成数据库提供的最近 grid `100`。不要把 paired-end 两端相加后写成 200 或 300；`-r` 是单条 read length。
 
-### 3. 展开 30 个主分支
+### 先忠实复现论文问题，再升级成可归因设计 {#sec-audit}
+
+Wright 等在多种 simulated/mock samples 上系统扫描 confidence，并比较八个数据库，核心结论是 tool–parameter–database 的选择取决于研究问题、目标指标和算力，而不是存在一个全局最佳默认值 [@wright2023defaults]。本篇保留这个问题框架，但用三项升级减少归因混乱：
+
+1. 三个预构建库锁在同一发布日期；
+2. 先对 71 个 expected assemblies 做 sequence/taxonomy crosswalk；
+3. 用 positive truth 与 human-rich method control 同时约束阈值。
+
+::: {.callout-caution title="坑 8：Bracken read length 写成 insert size"}
+paired 2 × 150 bp 不等于 `-r 300`。使用单端 read length 对应的 database distribution，并在 trimming 后长度跨多个 grid 时做敏感性。
+:::
+
+## 展开 30 个主分支
+
+### `--confidence` 不是概率
+
+Kraken2 对候选标签 $i$ 的 confidence score 为：
+
+$$
+C_i = \frac{Q_i}{Q},
+$$
+
+其中 $Q_i$ 是 LCA 位于 $i$ 的 clade 内的 queried k-mers，$Q$ 是 read 中不含 ambiguous nucleotide、因而实际被查询的 k-mers；数据库中没有命中的 k-mers 仍进入 $Q$ [@wood2019kraken2]。若当前标签不达阈值，标签沿 taxonomy tree 向上退；若连 root 都不达阈值，该 fragment 变为 unclassified。
+
+所以 confidence 提高可能同时发生三件事：
+
+- species call 退到 genus/family；
+- classified fragment 退成 unclassified；
+- Bracken 在目标 rank 上找不到超过 `-t` 的 entry。
+
+它不是 posterior probability、p-value、FDR，也不是“0.10 表示 90% 正确”。在 minimizer 被强烈下采样的 capped database 中，大量 no-hit k-mers 留在分母，适合 full database 的阈值可能把 8 GB 索引压到几乎无 species evidence。
+
+### `--minimum-hit-groups` 不是 confidence 的另一种写法
+
+hit group 是一段共享同一 minimizer 的相邻 k-mers。`--minimum-hit-groups 2` 要求至少两个 hit groups 才产生 call；它主要避免一小段局部序列或单个 minimizer run 支撑整条 read。confidence 则衡量某个 taxonomy clade 获得的 evidence fraction。
+
+```text
+minimum hit groups
+    └── evidence 是否足以产生 call
+
+confidence
+    └── 产生 call 后，标签能下沉到多细的 rank
+```
+
+两者同时改变时，无法知道召回变化来自“没有 call”还是“call 向上退”。本篇主矩阵固定 hit groups 为 2；补充矩阵只在 Standard-16、confidence 0.10 下改变 hit groups 1–4。
 
 下面给出单个 branch 的完整计算核心。它把数据库目录、输入和 Bracken read-length grid 都显式映射；上面的正式 runner 还在此基础上增加临时文件原子转正、资源账本与 checksum sentinel。
 
@@ -512,7 +486,11 @@ done
 
 主矩阵始终固定 hit groups = 2，不能在某个 database 上悄悄换默认值。这个最小函数把所有结果写入 ignored scratch；只有正式 runner 验证完成的 standard reports、Bracken tables 与聚合审计才进入 frozen bundle。
 
-### 4. 只改变 minimum hit groups
+::: {.callout-caution title="坑 2：把 confidence 当概率或 FDR"}
+`0.10` 是 $C/Q$ 的工程阈值，不表示 90% 正确，也不控制跨 taxon 多重检验。Methods 应写参数，不应写“90% confidence”。
+:::
+
+## 只改变 minimum hit groups
 
 ```bash
 for hit_groups in 1 2 3 4; do
@@ -525,7 +503,11 @@ done
 
 `h2` 已在主矩阵中存在，因此这里只新增 `h1/h3/h4 × 2 controls = 6` 次分类；总计 36 个 unique Kraken runs，而不是 38 个。
 
-### 5. 对账每个 standard report
+::: {.callout-caution title="坑 4：把 reference 缺失算成算法漏检"}
+benchmark 必须先做 truth × database crosswalk。same-genus wrong-species 也不能算 species recall。
+:::
+
+## 对账每个 standard report
 
 ```bash
 awk -F '\t' '
@@ -550,7 +532,41 @@ N_{\mathrm{classified}} + N_{\mathrm{unclassified}}
 = N_{\mathrm{output\ rows}} = N_{\mathrm{input\ pairs}}.
 $$
 
-### 6. 正确处理 Bracken 的空分支
+### 仍然不能从本次实验得到什么
+
+- 只有一个 microbial mock，不能代表 stool、soil、virome、mycobiome 或病原检测场景；
+- 100k clean pairs 适合参数审计，不代表生产深度下的低丰度检出限；
+- human-rich control 不是同批次 extraction blank；
+- expected genome percentage 不是 cell fraction、absolute load 或活菌丰度；
+- species clade evidence 不能替代 strain validation；
+- PlusPF-8 的结果只说明“额外内容在 8 GB cap 下如何竞争”，不评价 full PlusPF 或 `core_nt`。
+
+::: {.callout-caution title="坑 3：只最大化 classified fraction"}
+更多 classified fragments 可能伴随更多 non-truth taxa。反过来，极高 confidence 可能让结果看似“很干净”，其实 species-level evidence 和 Bracken composition 已经消失。
+:::
+
+## 正确处理 Bracken 的空分支
+
+### “假阳性”必须先指定判定域
+
+阳性 mock 中，species clade 不属于 truth species 的 fragments 记为 **non-truth mock calls**。它可能来自近缘序列共享、taxonomy 映射、数据库错误、实验杂质或分类错误；只有已知 mock truth 让它具备 benchmark 含义。
+
+人类 WGS 方法对照先分成 *Homo sapiens* clade、直接落在人类 lineage ancestors 上的分类，以及线系外分类；只有第三类记为 **unsupported-control calls**。ancestor-level call 是 confidence 提高后沿 taxonomy 向上退的合法结果，不能从 `classified` 中减掉 *Homo sapiens* clade 后全部算作非人调用。这个指标能测试“几乎全人源序列输入时，这个参数组合留下多少线系外分类”，但不能称为实验性 false-positive rate，因为：
+
+- 它不是 extraction blank 或无模板对照；
+- 原始公开 run 可能含真实非人序列、污染或测序伪影；
+- human reference 也不是个体基因组的完美全集；
+- 这 20,000 pairs 是方法压力测试，不代表你的样本基质。
+
+::: {.callout-warning title="零对照调用也不等于临床特异度为 100%"}
+临床或病原体声明需要同批次 extraction blanks、positive controls、独立比对、覆盖广度、序列特异性和预先定义的报告规则。Kraken taxon row 只是候选 evidence，不是确证结果。
+:::
+
+### Bracken 是 classifier × database × rank × threshold 的条件结果
+
+Bracken 使用当前数据库、目标 read length 和 Kraken report，把高层级 evidence 重估到目标 rank [@lu2017bracken]。本篇固定 `rank=S`、`threshold=10`，MOCK 用 150 bp distribution，人类 101 bp reads 用最近的 100 bp distribution。
+
+若 confidence 后 species rows 都不超过 10，Bracken 会返回 `Error: no reads found`。这不是“丰度全为零后可以继续归一化”，而是 **该参数组合下没有可估计的 species composition**。正确做法是保留 header-only table、真实 exit status 和明确 outcome；不能回退到低 confidence 的 Bracken 表，也不能把空表插补成均匀组成。
 
 ```bash
 set +e
@@ -575,7 +591,15 @@ fi
 
 只有精确匹配这个已知 outcome 才被接受；数据库缺文件、格式错误或其他 Bracken 异常仍立即停止。空分支没有伪造的 `-w` report，也不参与 abundance distance。
 
-### 7. 常规离线 QA 与重画四张图
+::: {.callout-caution title="坑 5：空 Bracken 表自动回退"}
+高 confidence 下没有 species 超过 `-t 10` 是一个真实 outcome。静默改用 `-t 0`、低 confidence 表或上一分支结果会制造不可追踪的数据泄漏。
+:::
+
+::: {.callout-caution title="坑 6：把人类 WGS 当 extraction blank"}
+它只约束 human-rich input 下的 unsupported-control burden；不能据此声称污染率、无菌性、临床特异度或所有 non-human calls 都错误。
+:::
+
+## 常规离线 QA 与重画四张图
 
 ```bash
 "${KRAKEN_ENV_PREFIX}/bin/python" \
@@ -589,7 +613,67 @@ fi
 
 这个入口不读取 FASTQ、不读取三个大型 index、不联网。它验证 frozen checksums、软件锁、设计矩阵、真值行数、对照边界和图像格式，再从聚合表重画 PDF、PNG 与 350 dpi LZW TIFF。
 
-### 8. 从冻结表提取自己的决策表
+### 今天更稳的生产方案
+
+1. **预注册目标 rank 与损失函数。** 群落组成、低丰度 pathogen screen 和污染监控不应共用同一个最优标准。
+2. **用同批次 controls 定阈值。** 至少包括 extraction blank、positive mock；低生物量研究再加入空白矩阵和 spike-in。
+3. **先锁数据库，再看分组标签。** 不要在病例/对照差异最大时才决定 database 或 confidence。
+4. **保存完整 classified/unclassified ledger。** 只保留相对丰度会隐藏高阈值造成的信息坍缩。
+5. **高风险 taxon 做独立确认。** 提取候选 reads 后进行 alignment、竞争参考、coverage breadth/depth、distinct minimizer 与低复杂度审计；必要时使用靶向 PCR、培养或其他正交实验。
+6. **报告敏感性。** 主结果至少给相邻 confidence、一个数据库替代方案和 controls 中的变化方向。
+
+::: {.callout-tip title="把 Kraken2 当筛查器，而不是最终裁判"}
+群落研究可把固定参数的 Bracken count matrix 用于统一下游；病原体或稀有 taxon 研究则更适合“较宽松筛查 → 候选 read 独立确认 → 预定义报告阈值”的两阶段流程。
+:::
+
+::: {.callout-caution title="坑 7：先看病例差异，再调阈值"}
+用 outcome labels 选择 database/confidence 会把分析选择变成隐性多重比较。阈值应由 mock、blanks、技术目标和预注册规则决定。
+:::
+
+## 从保存表提取自己的决策表
+
+### 先求 truth ∩ reference，再计算 reference-aware recall
+
+设 mock 的 expected species 集为 $T$，某数据库实际包含 same-species reference 的集合为 $R_d$，在参数 $\theta$ 下被 species clade 检出的集合为 $D_{d,\theta}$。本篇报告：
+
+$$
+\mathrm{ReferenceAwareRecall}_{d,\theta}
+= \frac{|D_{d,\theta} \cap T \cap R_d|}{|T \cap R_d|}.
+$$
+
+与此同时单独保留：
+
+$$
+\mathrm{MissingReferenceMass}_d
+= \sum_{i \in T \setminus R_d} p_i,
+$$
+
+其中 $p_i$ 是 Supplementary Table S3 的 expected genome percentage。源表 71 行的印刷数值合计为 **100.01215654459679%**；这里原样保留，不为了得到整齐的 100% 静默重归一。
+
+reference crosswalk 逐 assembly 分三类：
+
+| Reference status | Operational definition | Interpretation |
+|---|---|---|
+| Exact expected assembly | 至少一个当前 assembly sequence accession 出现在 `seqid2taxid.map` | expected assembly represented |
+| Alternate same-species reference | expected sequence accession 未命中，但数据库有同一 NCBI species reference | species 可检出，strain/assembly 不完全匹配 |
+| No same-species reference | 数据库没有该 current species ancestor | species-level 漏检首先是 database limitation |
+
+“exact”在这里是 sequence-accession 交集合同，不等价于每个 contig 都完整命中，也不提供 strain identity 结论。
+
+### 阈值选择是多目标约束，不是单列最大化
+
+可把选择写成：
+
+$$
+\theta^* = \arg\max_{\theta \in \Theta}
+\mathrm{Recall}_{\theta}
+\quad \text{subject to} \quad
+\mathrm{ControlBurden}_{\theta} \le B,
+\quad
+\mathrm{CompositionAvailable}_{\theta}=1.
+$$
+
+$B$ 必须由研究问题、blank、检出成本和错误后果预先决定。探索阶段也可画 Pareto frontier，而不是给 recall、precision、classified fraction、taxon count 随意加权。不同数据库的 frontier 不同，因此没有可跨 release、样本类型和测序长度迁移的“Kraken2 最佳 confidence”。
 
 ```r
 library(readr)
@@ -621,39 +705,52 @@ decision <- truth |>
 print(decision, n = Inf)
 ```
 
-## 审计与升级 {#sec-audit}
+## 报告数据库覆盖与阈值敏感性 {#sec-methods}
 
-### 先忠实复现论文问题，再升级成可归因设计
+> Taxonomic classification was performed with Kraken2 v2.17.1 using release-specific prebuilt databases from 26 June 2026. We compared Standard-8 (`k2_standard_08_GB_20260626`; 5,946,578,575 bytes; MD5 `7685f43cce057c2ca18511c925399b72`), Standard-16 (`k2_standard_16_GB_20260626`; 11,995,707,291 bytes; MD5 `f130daa49fd0befa688330b288a623de`), and PlusPF-8 (`k2_pluspf_08_GB_20260626`; 5,933,654,083 bytes; MD5 `79a153b99f045bc2ae95e6d57c17a02d`). Publisher checksums for all unpacked database files were verified before analysis. Paired-end fragments were classified with eight threads, `--minimum-hit-groups 2`, and confidence thresholds of 0, 0.05, 0.10, 0.20, and 0.50. A secondary sensitivity analysis varied minimum hit groups from 1 to 4 while holding Standard-16 and confidence 0.10 fixed. Species abundance was re-estimated with Bracken package v3.1p1 (wrapper-reported CLI v3.0.1), rank S and threshold 10, using the 150-bp distribution for the MOCK1 reads and the 100-bp distribution for the 101-bp human-control reads. Positive-control performance was evaluated on 99,991 quality-filtered read pairs from the 71-assembly MOCK1 sample ERR9765746. Expected assemblies were intersected with each database's sequence-to-taxonomy map before reference-aware species recall was calculated. Unsupported calls were also summarized for a deterministic 20,000-pair subset of human WGS run ERR194147 after excluding fragments assigned within the *Homo sapiens* clade or directly to an ancestor on the human taxonomic lineage; this input was treated as a human-rich method control rather than an extraction blank or an experimental false-positive standard. Parameter selection considered reference-aware recall, non-truth mock burden, unsupported-control burden, classified fraction, and availability of a Bracken species estimate. No confidence or hit-group threshold was interpreted as universally optimal.
 
-Wright 等在多种 simulated/mock samples 上系统扫描 confidence，并比较八个数据库，核心结论是 tool–parameter–database 的选择取决于研究问题、目标指标和算力，而不是存在一个全局最佳默认值 [@wright2023defaults]。本篇保留这个问题框架，但用三项升级减少归因混乱：
+投稿前把模板中的数据库名称替换成你真实使用的 release；若使用自建库，还要补 reference sources、assembly levels、masking、`k/l/s`、build command、taxonomy date、library hash 和最终 `hash.k2d` checksum。若用 `--memory-mapping`、不同 `-t` 或不同 read-length distribution，也必须逐项写明。
 
-1. 三个预构建库锁在同一发布日期；
-2. 先对 71 个 expected assemblies 做 sequence/taxonomy crosswalk；
-3. 用 positive truth 与 human-rich method control 同时约束阈值。
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
-### 仍然不能从本次实验得到什么
+### 最小输入清单
 
-- 只有一个 microbial mock，不能代表 stool、soil、virome、mycobiome 或病原检测场景；
-- 100k clean pairs 适合参数审计，不代表生产深度下的低丰度检出限；
-- human-rich control 不是同批次 extraction blank；
-- expected genome percentage 不是 cell fraction、absolute load 或活菌丰度；
-- species clade evidence 不能替代 strain validation；
-- PlusPF-8 的结果只说明“额外内容在 8 GB cap 下如何竞争”，不评价 full PlusPF 或 `core_nt`。
+| Input | Minimum requirement | If absent |
+|---|---|---|
+| Biological FASTQ | synchronized, post-QC/post-host-filter pairs | cannot profile |
+| Positive mock | known taxa; ideally quantitative composition | no empirical recall/abundance accuracy |
+| Extraction blank | same kit, batch and sequencing process | no experimental contamination boundary |
+| Database manifest | immutable release, URL, checksum, content | result cannot be reproduced |
+| Metadata | batch, kit, lane, read length, host fraction | cannot audit technical structure |
 
-### 今天更稳的生产方案
+### 先定义目标，再选矩阵
 
-1. **预注册目标 rank 与损失函数。** 群落组成、低丰度 pathogen screen 和污染监控不应共用同一个最优标准。
-2. **用同批次 controls 定阈值。** 至少包括 extraction blank、positive mock；低生物量研究再加入空白矩阵和 spike-in。
-3. **先锁数据库，再看分组标签。** 不要在病例/对照差异最大时才决定 database 或 confidence。
-4. **保存完整 classified/unclassified ledger。** 只保留相对丰度会隐藏高阈值造成的信息坍缩。
-5. **高风险 taxon 做独立确认。** 提取候选 reads 后进行 alignment、竞争参考、coverage breadth/depth、distinct minimizer 与低复杂度审计；必要时使用靶向 PCR、培养或其他正交实验。
-6. **报告敏感性。** 主结果至少给相邻 confidence、一个数据库替代方案和 controls 中的变化方向。
+- **一般群落组成：**比较一个可负担主库、相邻 confidence 和固定 Bracken rank；强调 composition stability。
+- **低生物量样本：**增加 extraction blank、空白矩阵、batch-aware prevalence/burden audit；阈值不能替代 contaminant model。
+- **病原体筛查：**数据库要覆盖目标与近缘 species/host；预定义 minimum evidence、coverage breadth 和独立确认规则。
+- **真菌/原生生物问题：**比较 Standard 与 PlusPF/full custom library，同时确认目标 species 是否真的进入 reference；不要仅凭“PlusPF”名称推断覆盖。
 
-::: {.callout-tip title="把 Kraken2 当筛查器，而不是最终裁判"}
-群落研究可把固定参数的 Bracken count matrix 用于统一下游；病原体或稀有 taxon 研究则更适合“较宽松筛查 → 候选 read 独立确认 → 预定义报告阈值”的两阶段流程。
-:::
+### 推荐执行顺序
 
-## 出版级美化 {#sec-polish}
+```text
+lock FASTQ lineage and database release
+    ↓
+truth/reference crosswalk
+    ↓
+database × confidence matrix on mock + blanks
+    ↓
+choose an operating point without biological group labels
+    ↓
+freeze parameters and profile the full cohort
+    ↓
+confirm high-consequence taxa independently
+    ↓
+report the primary result plus sensitivity branches
+```
+
+若没有 quantitative mock，可以比较 taxon recovery 与 controls burden，但不要声称 abundance accuracy；若没有 extraction blank，可以报告计算方法对照，却不能把它包装成实验污染率。生产队列的参数一旦锁定，所有样本必须使用同一数据库文件、confidence、hit groups、Bracken rank/read length/threshold 与归一化规则。
+
+## 图中应该保留哪些信息？ {#sec-polish}
 
 ### 四张图各回答一个问题
 
@@ -703,86 +800,11 @@ save_pub(p, "figures/17-reference-aware-recall", width = 120, height = 90)
 
 正文图使用英文标签、DejaVu Sans、白底和颜色之外的 panel/title redundancy。PDF 作为矢量 master，PNG 供网页与公众号，TIFF 以 350 dpi LZW 供期刊提交；不要从公众号截图反向充当论文图。
 
-## 常见坑 {#sec-pitfalls}
+## 回到最初的问题
 
-::: {.callout-caution title="坑 1：把不同日期的数据库差异归因于 size"}
-同名 Standard 在不同月份会改变 reference、taxonomy 和 hash。若 release 不同，不能写“16 GB 比 8 GB 多检出多少”而忽略时间更新。
-:::
+同一批 reads 换数据库或 confidence，物种召回、非真值调用和 Bracken 丰度会同时改变。本次 36 个真实分支说明：阈值只能作为数据集特异的操作点，不能当成概率或通用答案。
 
-::: {.callout-caution title="坑 2：把 confidence 当概率或 FDR"}
-`0.10` 是 $C/Q$ 的工程阈值，不表示 90% 正确，也不控制跨 taxon 多重检验。Methods 应写参数，不应写“90% confidence”。
-:::
-
-::: {.callout-caution title="坑 3：只最大化 classified fraction"}
-更多 classified fragments 可能伴随更多 non-truth taxa。反过来，极高 confidence 可能让结果看似“很干净”，其实 species-level evidence 和 Bracken composition 已经消失。
-:::
-
-::: {.callout-caution title="坑 4：把 reference 缺失算成算法漏检"}
-benchmark 必须先做 truth × database crosswalk。same-genus wrong-species 也不能算 species recall。
-:::
-
-::: {.callout-caution title="坑 5：空 Bracken 表自动回退"}
-高 confidence 下没有 species 超过 `-t 10` 是一个真实 outcome。静默改用 `-t 0`、低 confidence 表或上一分支结果会制造不可追踪的数据泄漏。
-:::
-
-::: {.callout-caution title="坑 6：把人类 WGS 当 extraction blank"}
-它只约束 human-rich input 下的 unsupported-control burden；不能据此声称污染率、无菌性、临床特异度或所有 non-human calls 都错误。
-:::
-
-::: {.callout-caution title="坑 7：先看病例差异，再调阈值"}
-用 outcome labels 选择 database/confidence 会把分析选择变成隐性多重比较。阈值应由 mock、blanks、技术目标和预注册规则决定。
-:::
-
-::: {.callout-caution title="坑 8：Bracken read length 写成 insert size"}
-paired 2 × 150 bp 不等于 `-r 300`。使用单端 read length 对应的 database distribution，并在 trimming 后长度跨多个 grid 时做敏感性。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-> Taxonomic classification was performed with Kraken2 v2.17.1 using release-specific prebuilt databases from 26 June 2026. We compared Standard-8 (`k2_standard_08_GB_20260626`; 5,946,578,575 bytes; MD5 `7685f43cce057c2ca18511c925399b72`), Standard-16 (`k2_standard_16_GB_20260626`; 11,995,707,291 bytes; MD5 `f130daa49fd0befa688330b288a623de`), and PlusPF-8 (`k2_pluspf_08_GB_20260626`; 5,933,654,083 bytes; MD5 `79a153b99f045bc2ae95e6d57c17a02d`). Publisher checksums for all unpacked database files were verified before analysis. Paired-end fragments were classified with eight threads, `--minimum-hit-groups 2`, and confidence thresholds of 0, 0.05, 0.10, 0.20, and 0.50. A secondary sensitivity analysis varied minimum hit groups from 1 to 4 while holding Standard-16 and confidence 0.10 fixed. Species abundance was re-estimated with Bracken package v3.1p1 (wrapper-reported CLI v3.0.1), rank S and threshold 10, using the 150-bp distribution for the MOCK1 reads and the 100-bp distribution for the 101-bp human-control reads. Positive-control performance was evaluated on 99,991 quality-filtered read pairs from the 71-assembly MOCK1 sample ERR9765746. Expected assemblies were intersected with each database's sequence-to-taxonomy map before reference-aware species recall was calculated. Unsupported calls were also summarized for a deterministic 20,000-pair subset of human WGS run ERR194147 after excluding fragments assigned within the *Homo sapiens* clade or directly to an ancestor on the human taxonomic lineage; this input was treated as a human-rich method control rather than an extraction blank or an experimental false-positive standard. Parameter selection considered reference-aware recall, non-truth mock burden, unsupported-control burden, classified fraction, and availability of a Bracken species estimate. No confidence or hit-group threshold was interpreted as universally optimal.
-
-投稿前把模板中的数据库名称替换成你真实使用的 release；若使用自建库，还要补 reference sources、assembly levels、masking、`k/l/s`、build command、taxonomy date、library hash 和最终 `hash.k2d` checksum。若用 `--memory-mapping`、不同 `-t` 或不同 read-length distribution，也必须逐项写明。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 最小输入清单
-
-| Input | Minimum requirement | If absent |
-|---|---|---|
-| Biological FASTQ | synchronized, post-QC/post-host-filter pairs | cannot profile |
-| Positive mock | known taxa; ideally quantitative composition | no empirical recall/abundance accuracy |
-| Extraction blank | same kit, batch and sequencing process | no experimental contamination boundary |
-| Database manifest | immutable release, URL, checksum, content | result cannot be reproduced |
-| Metadata | batch, kit, lane, read length, host fraction | cannot audit technical structure |
-
-### 先定义目标，再选矩阵
-
-- **一般群落组成：**比较一个可负担主库、相邻 confidence 和固定 Bracken rank；强调 composition stability。
-- **低生物量样本：**增加 extraction blank、空白矩阵、batch-aware prevalence/burden audit；阈值不能替代 contaminant model。
-- **病原体筛查：**数据库要覆盖目标与近缘 species/host；预定义 minimum evidence、coverage breadth 和独立确认规则。
-- **真菌/原生生物问题：**比较 Standard 与 PlusPF/full custom library，同时确认目标 species 是否真的进入 reference；不要仅凭“PlusPF”名称推断覆盖。
-
-### 推荐执行顺序
-
-```text
-lock FASTQ lineage and database release
-    ↓
-truth/reference crosswalk
-    ↓
-database × confidence matrix on mock + blanks
-    ↓
-choose an operating point without biological group labels
-    ↓
-freeze parameters and profile the full cohort
-    ↓
-confirm high-consequence taxa independently
-    ↓
-report the primary result plus sensitivity branches
-```
-
-若没有 quantitative mock，可以比较 taxon recovery 与 controls burden，但不要声称 abundance accuracy；若没有 extraction blank，可以报告计算方法对照，却不能把它包装成实验污染率。生产队列的参数一旦锁定，所有样本必须使用同一数据库文件、confidence、hit groups、Bracken rank/read length/threshold 与归一化规则。
-
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Kraken2 方法与 compact hash / confidence 定义：[@wood2019kraken2]
 - Bracken species abundance re-estimation：[@lu2017bracken]

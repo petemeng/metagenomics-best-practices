@@ -1,7 +1,7 @@
 ---
-title: "第 73 篇 · 公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog"
+title: "公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog"
 description: "以 Tara Oceans 的 MGnify/ENA accession lineage 为实例，区分研究、样本、run、analysis、MAG、catalogue representative 与 GTDB species cluster，并给出环境宏基因组公共资源的可审计复用流程"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+author: "Peter"
 date: last-modified
 draft: false
 bibliography: ../references.bib
@@ -12,7 +12,7 @@ format:
     code-fold: true
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -35,6 +35,7 @@ wechat:
     - {label: "GTDB-Tk R232", value: "60.81 GB compressed"}
   code_heading: "从 accession lineage 到可复用资源包"
   expected_images: 9
+reader-mode: analysis
 ---
 
 > **先给结论：**MGnify、ENA、GEM、环境 MAG catalog 与 GTDB 不是五个可互换的“宏基因组数据库”。ENA 保存原始序列及 archive identity；MGnify 提供可检索元数据和版本化标准分析；GEM 是固定论文快照；biome-specific catalog 保存去冗余代表基因组；GTDB 提供 release-bound taxonomy。真正可复现的检索必须同时锁定 **accession、统计单位、快照日期、pipeline/database release 与下载文件 checksum**。
@@ -46,7 +47,13 @@ wechat:
 3. catalogue representative count 表示该 catalogue 内的聚类代表数，既不是丰度，也不能跨 catalog 直接相加；
 4. taxonomy 必须带 GTDB release；重分类时并排保留 original label 与 retaxonomized label。
 
-## 这一步对应论文里的哪张图：GEM Figure 1 把资源覆盖与恢复质量分开 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+先区分原始归档、标准化分析、基因组目录和分类骨架；明确独立单位与版本后再合并数据。
+
+:::
+
+## 公共资源里，应该先下载哪一张表？ {#sec-target}
 
 Nayfach 等构建 GEM（Genomes from Earth's Microbiomes）时，从 10,450 个公开 metagenomes 形成一个固定的跨生态系统 MAG 快照 [@nayfach2021gem]。Figure 1 同时展示 metagenome/MAG 的生态系统分布、地理覆盖、completeness/contamination 与 novelty，但没有把每个圆点解释成独立、均匀抽样的生态观测。
 
@@ -54,40 +61,28 @@ Nayfach 等构建 GEM（Genomes from Earth's Microbiomes）时，从 10,450 个�
 
 本章从官方 `genome_metadata.tsv` 重新读取到 52,515 行 MAG、18,028 个 paper-era species OTUs 与 7,304 个实际贡献至少一个 MAG 的 source metagenome IDs。后一个数字小于论文报告的 10,450 个输入 metagenomes，并不矛盾：输入过 pipeline 的 metagenome 不保证最终贡献 MAG。分母必须跟着问题走。
 
-## 理论：公共资源的五层对象不能混成一张“样本表” {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. Archive 层保存身份，analysis 层保存一次版本化计算
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/73/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 13.6 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-一个最小 lineage 可以写成：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/73/download.R)。
 
-$$
-\text{study}\rightarrow\text{sample}\rightarrow\text{experiment}\rightarrow
-\text{run}\rightarrow\text{analysis}\rightarrow\text{derived file}.
-$$
+```{r}
+#| label: reader-input-download-73
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/73/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-study 是项目容器；sample/BioSample 描述被取样的材料；experiment 描述 library strategy；run 是一次测序数据交付；MGYA analysis 是某条 MGnify pipeline 对 run/assembly 的一次计算。一个样本可以有多个 library、run 或 analysis。统计独立性来自采样设计，不来自 accession 字符串是否唯一。
-
-![五层资源图：ENA archive、MGnify standardized analysis、fixed MAG snapshot、biome-specific catalogue 与 GTDB taxonomy backbone 分别回答不同问题。](../figures/73-resource-layer-map.png){#fig-73-layers}
-
-MGnify 适合发现公开研究、统一浏览元数据和复用指定 pipeline output；ENA 仍是 raw reads 与 archive lineage 的权威入口。MGnify 的 API、分析 pipeline 与 reference database 各有版本，`API v2` 不等于 “pipeline v2”，也不等于某个 taxonomy release [@richardson2023mgnify]。
-
-### 2. MAG row、species OTU 与 catalogue representative 是三个单位
-
-一行 MAG 是一次 genome reconstruction；多个 MAG 可来自同一 metagenome，也可属于同一 species-level cluster。catalogue representative 则是在**给定输入集合、质量过滤、ANI/AF 阈值和代表选择规则**下选出的 cluster representative。改变输入、阈值或版本，代表数就会改变。
-
-因此，MGnify Soil v1 的 19,472 个 representatives 与 Marine v2 的 13,223 个 representatives 不能相加成“32,695 个全球物种”：两个 catalogue 没有在共同全集上全局去冗余，边界与版本也不同 [@gurbich2023mgnifygenomes]。
-
-### 3. GTDB cluster 是 taxonomy backbone，不是生态丰度
-
-GTDB 以 genome phylogeny、ANI 与 reference-specific species radius 维护 release-bound genome taxonomy [@parks2022gtdb; @parks2025gtdbr10]。R11-RS232 的官方 release 文件记录 901,341 genomes 和 199,923 species clusters；这些数字描述 taxonomy reference space，不代表环境中观察到的物种丰度，也不等于某个 MAG catalog 的代表数。
-
-同一个 MAG 在两个 release 中可能换名、换 species assignment 或由 placeholder name 变成正式名称。正文结果表至少保留：`genome_id`、`original_taxonomy`、`original_release`、`retaxonomy`、`retaxonomy_release` 与 classification diagnostics。
-
-### 4. “公开”不等于“无条件可混用”
-
-数据公开只解决访问问题，不自动解决 library type、size fraction、DNA extraction、sequencing platform、assembly pipeline、geographic imbalance、temporal clustering、许可与数据使用条款。GEM MAG 可按其数据使用说明复用，但底层 JGI metagenomes 仍受对应 archive/policy 约束。每个 derived resource 都要回到原始 accession 与使用条款。
-
-## 准备工作：先锁快照，再按问题决定下载规模 {#sec-preparation}
+## 先锁定输入、版本和算力边界 {#sec-preparation}
 
 ### 真实来源、版本与算力
 
@@ -103,7 +98,7 @@ GTDB 以 genome phylogeny、ANI 与 reference-specific species radius 维护 rel
 
 本章冻结表的验收与作图约需 **2 CPU、4 GB RAM、不到 1 分钟**。若只做 metadata discovery，不需要下载 FASTQ、52,515 个 GEM FASTA 或完整 GTDB-Tk package。真正用 GTDB-Tk R232 重分类时，官方压缩包为 **60.81 GB**；还要预留解压空间、索引空间与足够 RAM。共享 HPC/云盘应把数据库放到版本化只读目录，避免每位使用者重复下载。
 
-<details>
+<details class="wechat-omit">
 <summary><strong>下载官方快照、生成审计表，并内联统一作图函数</strong></summary>
 
 ```{bash}
@@ -166,7 +161,7 @@ md5sum gtdbtk_r232_data.tar.gz
 
 </details>
 
-### 先验收 checksum 与对象合同
+### 先结果核对 checksum 与对象约定
 
 ```{bash}
 #| eval: false
@@ -219,9 +214,22 @@ knitr::kable(
 )
 ```
 
-## 可复制代码：从 Tara accession lineage 到环境 MAG 资源包 {#sec-code}
+## 先画 accession crosswalk，不要先下载 FASTQ {#sec-code}
 
-### 第 1 步：先画 accession crosswalk，不要先下载 FASTQ
+### Archive 层保存身份，analysis 层保存一次版本化计算 {#sec-theory}
+
+一个最小 lineage 可以写成：
+
+$$
+\text{study}\rightarrow\text{sample}\rightarrow\text{experiment}\rightarrow
+\text{run}\rightarrow\text{analysis}\rightarrow\text{derived file}.
+$$
+
+study 是项目容器；sample/BioSample 描述被取样的材料；experiment 描述 library strategy；run 是一次测序数据交付；MGYA analysis 是某条 MGnify pipeline 对 run/assembly 的一次计算。一个样本可以有多个 library、run 或 analysis。统计独立性来自采样设计，不来自 accession 字符串是否唯一。
+
+![五层资源图：ENA archive、MGnify standardized analysis、fixed MAG snapshot、biome-specific catalogue 与 GTDB taxonomy backbone 分别回答不同问题。](../figures/73-resource-layer-map.png){#fig-73-layers}
+
+MGnify 适合发现公开研究、统一浏览元数据和复用指定 pipeline output；ENA 仍是 raw reads 与 archive lineage 的权威入口。MGnify 的 API、分析 pipeline 与 reference database 各有版本，`API v2` 不等于 “pipeline v2”，也不等于某个 taxonomy release [@richardson2023mgnify]。
 
 ```{r}
 knitr::kable(
@@ -234,7 +242,11 @@ knitr::kable(
 
 这一行关系立即阻止两个伪重复错误：第一，`nrow(analysis_table)=249` 不能报告为 249 个 independent samples；第二，同一 sample 的多个 run 不可未经聚合就进入普通两独立样本检验。若研究问题以 sampling event 为单位，还要继续解析 station、depth、size fraction 与 collection time，必要时把 sample nested within station/event。
 
-### 第 2 步：用样本级 protocol 建 shotgun-DNA eligibility
+::: {.callout-caution title="把 249 个 MGYA analyses 当 249 个患者/样本"}
+analysis accession 是计算产物单位。先回到 BioSample 和 sampling event，检查一个样本是否有多个 run、fraction 或 pipeline analysis；统计模型的 $n$ 写 biological units。
+:::
+
+## 用样本级 protocol 建 shotgun-DNA eligibility
 
 MGnify study title 描述的是 shotgun DNA prokaryotes，但 API v2 的 related samples 中有 89 个 `NUC-DNA` 与 47 个 `NUC-RNA`。标题适合发现研究，不适合作为 row-level inclusion criterion。
 
@@ -268,7 +280,15 @@ knitr::kable(
 
 ![Tara sampling frame：DNA 与 RNA 按 latitude/depth 展示。图形用于暴露设计结构，不把重叠点解释成独立空间重复。](../figures/73-tara-sampling-frame.png){#fig-73-tara-frame}
 
-### 第 3 步：metadata completeness 用 missingness 表，不用默认值
+### Study title 只用于 discovery，eligibility 落到每一行
+
+本章的 47 个 RNA-labelled samples 是一个真实反例。自动检索可用 study-level keywords 召回候选；纳入必须检查 library strategy、nucleic acid、amplicon/shotgun、paired/single-end、size fraction、host depletion 与目标 biome。无法判定的行标记 `uncertain`，不能默认为符合。
+
+::: {.callout-caution title="看到 study title 写 DNA 就纳入全部 related samples"}
+本章真实快照中 136 个 samples 包含 47 个 RNA-labelled samples。必须按 row-level protocol/library metadata 建 eligibility。
+:::
+
+## metadata completeness 用 missingness 表，不用默认值
 
 ```{r}
 completeness <- read.delim(
@@ -285,7 +305,19 @@ knitr::kable(
 
 ![Metadata completeness。0% 表示此 API snapshot 未提供 temperature/salinity，不表示真实环境数值为零。](../figures/73-tara-metadata-completeness.png){#fig-73-metadata}
 
-### 第 4 步：复用 MGnify output 时同时锁 analysis 与 pipeline lineage
+### 忠实保留 resource-native identifier，再建立自己的 cohort key {#sec-audit}
+
+原始 accession 永远保留；另建 `biological_unit_id`、`technical_unit_id` 与 `analysis_id`。Tara 例中可以把 BioSample 作为初始 sample key，再用 station、event、depth、size fraction 和 date 审核是否需要更高或更低层级。不要覆盖 accession，也不要用行号充当永久 ID。
+
+### Pipeline-version harmonization 先于 batch correction
+
+如果 feature definition 已因数据库或算法变化而不同，ComBat、中心化或相对丰度转换都不能把“不相同的特征空间”修成同一 measurement。优先选择：统一重跑 raw reads；或锁定同一 pipeline/database 的 derived outputs；无法做到时，只在明确共享的 taxonomic/functional level 上聚合，并把 processing lineage 纳入 sensitivity analysis。
+
+### 环境 metadata 要做单位与语义检查
+
+temperature、salinity、depth、pH、oxygen、coordinates 都要保留原单位、转换单位、测量层次与来源。`0`、`not collected`、`not provided`、`below detection` 是不同状态。ENVO term 有助于语义统一，但 portal lineage 本身也可能错误；例如当前 catalogue API 的 `Human Skin` biome lineage 指向 oral system，自动聚合前应回查 resource page，而不是静默纠正。
+
+## 复用 MGnify output 时同时锁 analysis 与 pipeline lineage
 
 ```{r}
 lineage <- read.delim(
@@ -308,7 +340,7 @@ knitr::kable(downloads, caption = "Study-level summary downloads exposed by the 
 
 `MGYA...` accession 要与 exact download filename、checksum、pipeline version 和 reference database version 一起保存。把 V2/V3 summary 拼在一起前必须核对 feature space、taxonomy/function database 与 normalization 是否相同；“都是 MGnify 输出”不构成可比性证明。
 
-### 第 5 步：用 GEM metadata 回答覆盖问题，不为画图下载 FASTA
+## 用 GEM metadata 回答覆盖问题，不为画图下载 FASTA
 
 ```{r}
 gem_biome <- read.delim(
@@ -360,13 +392,33 @@ knitr::kable(
 
 ![12,000 条确定性下采样的 georeferenced MAG rows。密集区表示公开资源与 recovery effort 集中，不是按面积或环境体积校正后的 abundance。](../figures/73-gem-geographic-coverage.png){#fig-73-gem-map}
 
-### 第 6 步：MAG 质量必须保留原字段与当代审计
+## MAG 质量必须保留原字段与当代检查
+
+### MAG row、species OTU 与 catalogue representative 是三个单位
+
+一行 MAG 是一次 genome reconstruction；多个 MAG 可来自同一 metagenome，也可属于同一 species-level cluster。catalogue representative 则是在**给定输入集合、质量过滤、ANI/AF 阈值和代表选择规则**下选出的 cluster representative。改变输入、阈值或版本，代表数就会改变。
+
+因此，MGnify Soil v1 的 19,472 个 representatives 与 Marine v2 的 13,223 个 representatives 不能相加成“32,695 个全球物种”：两个 catalogue 没有在共同全集上全局去冗余，边界与版本也不同 [@gurbich2023mgnifygenomes]。
 
 GEM 的 frozen metadata 中，52,515 个 MAG 全部满足该项目的 medium-or-better 筛选；其中 `mimag_quality` 标记为 HQ 9,143、MQ 43,372。`quality_score = completeness - 5 × contamination` 只是一个历史排序量，不是完整 MIMAG 合规证明。MIMAG high-quality draft 还涉及完整 rRNA operons、tRNAs 等项目，且今天还应补充 chimerism、strain heterogeneity 与 contamination localization [@bowers2017mimag]。
 
 ![GEM quality audit：虚线展示 completeness 与 contamination 门槛；颜色沿用 frozen MIMAG label。图中 sampled rows 只服务可读性，总数来自完整 metadata。](../figures/73-gem-quality-audit.png){#fig-73-gem-quality}
 
-### 第 7 步：先选 biome catalogue，再选择 taxonomy 文件或完整 reference
+::: {.callout-caution title="用 catalog 中 MAG 行数当环境 abundance"}
+MAG recovery 同时依赖 biomass、sequencing depth、community complexity、assembly、binning 和 QC。丰度要从 sample-resolved reads 回贴或 profile table 估计。
+:::
+
+## 先选 biome catalogue，再选择 taxonomy 文件或完整 reference
+
+### GTDB cluster 是 taxonomy backbone，不是生态丰度
+
+GTDB 以 genome phylogeny、ANI 与 reference-specific species radius 维护 release-bound genome taxonomy [@parks2022gtdb; @parks2025gtdbr10]。R11-RS232 的官方 release 文件记录 901,341 genomes 和 199,923 species clusters；这些数字描述 taxonomy reference space，不代表环境中观察到的物种丰度，也不等于某个 MAG catalog 的代表数。
+
+同一个 MAG 在两个 release 中可能换名、换 species assignment 或由 placeholder name 变成正式名称。正文结果表至少保留：`genome_id`、`original_taxonomy`、`original_release`、`retaxonomy`、`retaxonomy_release` 与 classification diagnostics。
+
+### “公开”不等于“无条件可混用”
+
+数据公开只解决访问问题，不自动解决 library type、size fraction、DNA extraction、sequencing platform、assembly pipeline、geographic imbalance、temporal clustering、许可与数据使用条款。GEM MAG 可按其数据使用说明复用，但底层 JGI metagenomes 仍受对应 archive/policy 约束。每个 derived resource 都要回到原始 accession 与使用条款。
 
 ```{r}
 catalogues <- read.delim(
@@ -407,84 +459,44 @@ knitr::kable(
 
 只把已有 GTDB labels join 到表格时，R232 bacteria/archaea taxonomy TSV 总计约 10.20 MB compressed；运行 GTDB-Tk 才需要 60.81 GB 的完整 reference package。下载规模应由问题决定，而不是“数据库越全越专业”。
 
-## 从“搜到数据”到可比较队列：审计与升级 {#sec-audit}
-
-### 1. 忠实保留 resource-native identifier，再建立自己的 cohort key
-
-原始 accession 永远保留；另建 `biological_unit_id`、`technical_unit_id` 与 `analysis_id`。Tara 例中可以把 BioSample 作为初始 sample key，再用 station、event、depth、size fraction 和 date 审核是否需要更高或更低层级。不要覆盖 accession，也不要用行号充当永久 ID。
-
-### 2. Study title 只用于 discovery，eligibility 落到每一行
-
-本章的 47 个 RNA-labelled samples 是一个真实反例。自动检索可用 study-level keywords 召回候选；纳入必须检查 library strategy、nucleic acid、amplicon/shotgun、paired/single-end、size fraction、host depletion 与目标 biome。无法判定的行标记 `uncertain`，不能默认为符合。
-
-### 3. Pipeline-version harmonization 先于 batch correction
-
-如果 feature definition 已因数据库或算法变化而不同，ComBat、中心化或相对丰度转换都不能把“不相同的特征空间”修成同一 measurement。优先选择：统一重跑 raw reads；或锁定同一 pipeline/database 的 derived outputs；无法做到时，只在明确共享的 taxonomic/functional level 上聚合，并把 processing lineage 纳入 sensitivity analysis。
-
-### 4. Catalogue 的 absence 是“未恢复/未入库”，不是环境缺失
+### Catalogue 的 absence 是“未恢复/未入库”，不是环境缺失
 
 查询 MAG 不命中，可能因为目标环境覆盖不足、测序深度不足、assembly/binning 失败、quality threshold、dereplication、strain microdiversity 或 taxonomy release 改变。报告“not recovered in catalogue version X under criterion Y”，不要报告“该微生物不存在”。
 
-### 5. Taxonomy 升级必须生成 mapping ledger
+### Taxonomy 升级必须生成 mapping ledger
 
 升级 GTDB release 时固定 query genome checksum，记录旧名、新名、classification method、ANI、AF、closest reference 与 status。结果图可显示新版名字，补充表必须让读者追到原论文 label。若一个旧 cluster split 成多个新 cluster，不能用字符串替换掩盖 one-to-many mapping。
 
-### 6. 环境 metadata 要做单位与语义审计
-
-temperature、salinity、depth、pH、oxygen、coordinates 都要保留原单位、转换单位、测量层次与来源。`0`、`not collected`、`not provided`、`below detection` 是不同状态。ENVO term 有助于语义统一，但 portal lineage 本身也可能错误；例如当前 catalogue API 的 `Human Skin` biome lineage 指向 oral system，自动聚合前应回查 resource page，而不是静默纠正。
-
-## 出版级美化：一张图只表达一种资源单位 {#sec-publication}
-
-资源图最容易用面积、点数与 bar height 制造“更多就是更丰富”的错觉。推荐四条：
-
-1. accession 图用 flow/stack 明示 study、sample、run、analysis，不把不同层级画成同一种点；
-2. catalog bar 必须写 `Representative clusters`，不写含混的 `Species`；
-3. 地图 caption 写清每个点是 sample、metagenome 还是 MAG，并说明是否确定性下采样；
-4. release comparison 显示 release/date，taxonomy name 或 cluster count 不脱离版本。
-
-本章所有重绘图的轴、图例与注释均为英文，主色保持色盲友好；PDF 作为矢量稿，PNG/TIFF 以 360 dpi 导出，TIFF 使用 LZW。原论文 Figure 1 保留原图与原 panel lettering，不对 publisher image 做语义改画。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="把 249 个 MGYA analyses 当 249 个患者/样本"}
-analysis accession 是计算产物单位。先回到 BioSample 和 sampling event，检查一个样本是否有多个 run、fraction 或 pipeline analysis；统计模型的 $n$ 写 biological units。
-:::
-
-::: {.callout-caution title="看到 study title 写 DNA 就纳入全部 related samples"}
-本章真实快照中 136 个 samples 包含 47 个 RNA-labelled samples。必须按 row-level protocol/library metadata 建 eligibility。
-:::
-
-::: {.callout-warning title="把缺失 temperature/salinity 填成 0"}
-0 是实测数值，missing 是信息状态。回到原项目 metadata 补齐；若无法补齐，保留 NA 并评估 missingness mechanism。
-:::
-
 ::: {.callout-caution title="把多个 catalogue 的 representative counts 相加成全球物种数"}
 catalogues 的输入集合、版本与去冗余空间不同，可能重叠。除非把所有 genomes 放在共同 ANI/AF 合同中重新 dereplicate，否则只能分别报告。
-:::
-
-::: {.callout-caution title="用 catalog 中 MAG 行数当环境 abundance"}
-MAG recovery 同时依赖 biomass、sequencing depth、community complexity、assembly、binning 和 QC。丰度要从 sample-resolved reads 回贴或 profile table 估计。
-:::
-
-::: {.callout-warning title="永远下载 latest，却不记录 release"}
-API、pipeline、catalogue 与 GTDB 都会更新。保存 snapshot date、URL、file checksum、tool/database release；复现时优先读取冻结 manifest。
 :::
 
 ::: {.callout-caution title="只按 taxonomy string 合并"}
 同名异义、placeholder rename 与 split/merge 会造成错误 join。优先按 stable genome/sample accession，taxonomy 作为 release-bound annotation。
 :::
 
+::: {.callout-warning title="把缺失 temperature/salinity 填成 0"}
+0 是实测数值，missing 是信息状态。回到原项目 metadata 补齐；若无法补齐，保留 NA 并评估 missingness mechanism。
+:::
+
+
+
+::: {.callout-warning title="永远下载 latest，却不记录 release"}
+API、pipeline、catalogue 与 GTDB 都会更新。保存 snapshot date、URL、file checksum、tool/database release；复现时优先读取冻结 manifest。
+:::
+
+
 ::: {.callout-important title="公开可下载不等于所有用途都无约束"}
 逐项检查 resource license/data-use statement，并回到 raw-data archive 的 consent/policy。尤其是 human-associated 与 JGI-linked source data，不要让 derived catalogue 的开放入口掩盖底层条件。
 :::
 
-## 这段 Methods 怎么写 {#sec-methods}
+## 记录资源标识和适用范围 {#sec-methods}
 
 > Public metagenomic resources were queried on 23 August 2026. Tara Oceans study MGYS00000410 was retrieved through MGnify API v2 and linked to ENA project PRJEB1787/ERP001736. Biological samples were defined by BioSample accessions, whereas sequencing runs (ERR) and MGnify analyses (MGYA) were retained as technical and analysis units, respectively. Shotgun-DNA eligibility was determined from sample-level NUC-DNA protocol labels rather than the study title. The frozen snapshot contained 136 related samples (89 DNA and 47 RNA) and 249 runs/analyses. GEM genome_metadata.tsv (SHA-256 fd0ad382e4ec9dbc07915333b6c2e4b53257f6d3a9f47aad7da1d2cad6e83e37) was used for catalogue-level summaries. MGnify Genomes Marine v2.0 (pipeline v2.3.0) and GTDB R11-RS232 (released 15 April 2026) were used as biome-specific catalogue and taxonomy references. Catalogue representatives were not interpreted as sample abundance. Taxonomic names are release-bound; labels were retained with their database release. Deterministic visualization samples used seeds 73001 and 20260773.
 
 Methods 还应补上：纳入/排除规则、biological unit、重复 run 的处理、下载文件名与 checksum、raw read 是否统一重跑、assembly/binning/QC 版本、GTDB-Tk 版本与数据库路径、环境变量单位、缺失处理以及 data-use/license 检查日期。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 先写一个 resource contract
 
@@ -521,11 +533,26 @@ knitr::kable(
 - 只要已有 GTDB label：下载 taxonomy/metadata TSV；
 - 要给自己的 MAG 重新分类：再部署 release-matched GTDB-Tk reference。
 
-### 最后做三张审计表
+### 最后做三张检查表
 
 第一张是 accession lineage，回答每一行从哪里来；第二张是 comparability matrix，回答 library、pipeline、database 与 metadata 是否可比；第三张是 mapping ledger，记录 catalog/taxonomy 版本升级的一对一、一对多和未匹配。只有三张表都闭合，公共资源才从“搜到”变成可投稿的分析输入。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-publication}
+
+资源图最容易用面积、点数与 bar height 制造“更多就是更丰富”的错觉。推荐四条：
+
+1. accession 图用 flow/stack 明示 study、sample、run、analysis，不把不同层级画成同一种点；
+2. catalog bar 必须写 `Representative clusters`，不写含混的 `Species`；
+3. 地图 caption 写清每个点是 sample、metagenome 还是 MAG，并说明是否确定性下采样；
+4. release comparison 显示 release/date，taxonomy name 或 cluster count 不脱离版本。
+
+本章所有重绘图的轴、图例与注释均为英文，主色保持色盲友好；PDF 作为矢量稿，PNG/TIFF 以 360 dpi 导出，TIFF 使用 LZW。原论文 Figure 1 保留原图与原 panel lettering，不对 publisher image 做语义改画。
+
+## 回到最初的问题
+
+公共资源不是一个可以直接 merge 的大表。先分清 archive、standardized analysis、MAG catalogue 与 taxonomy backbone，再决定下载什么、哪一行才是独立单位。
+
+## 参考文献 {#sec-references}
 
 - Tara Oceans 全球海洋微生物组结构与功能 [@sunagawa2015ocean]
 - MGnify 数据资源与标准分析服务 [@richardson2023mgnify]

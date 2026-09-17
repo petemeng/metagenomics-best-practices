@@ -1,6 +1,6 @@
 ---
-title: "第 14 篇 · 去宿主、复杂度评估与重复 reads 的识别和处理"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "去宿主、复杂度评估与重复 reads 的识别和处理"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: false
   freeze: auto
@@ -36,15 +36,20 @@ wechat:
     14-host-removal-recall-retention.png: "Two control-specific bars showing 99.750 percent human-pair removal and 100.000 percent microbial-pair retention"
     14-complexity-sensitivity.png: "Read-pair retention across transition-complexity thresholds of 20, 30, and 40 percent for human and microbial controls"
     14-duplicate-decision.png: "Exact paired-sequence and fastp duplicate signals together with an evidence ladder that does not infer PCR, optical, or UMI origin"
+reader-mode: upstream
 ---
 
 > **学习目标：**把去宿主、低复杂度和重复 reads 拆成三条独立证据链；用完整且锁版本的人类参考执行 paired-end 去宿主；同时用真实人源阳性控制和真实微生物保留控制验收；只把复杂度过滤与去重作为敏感性分支，避免在没有定位或 UMI 证据时改变丰度结构。  
 > **真实数据：**人源阳性控制为 Hostile 论文列出的 NA12878 Illumina paired-end run `ERR194147`，ENA project `PRJEB3381`、sample `SAMEA1573618` [@constantinides2023hostile]；微生物保留控制为 71-strain MOCK1 run `ERR9765746`，project `PRJEB52977`、sample `SAMEA14435832` [@meslier2022platforms]。两组各使用官方 R1/R2 文件最前面的 20,000 个完整同步 pairs。  
 > **预计资源：**建议 8 核、8 GB RAM、至少 12 GB scratch。`human-t2t-hla.tar` 为 3,934,284,979 bytes（3.66 GiB），六个 Bowtie2 文件解包后共 4.24 GiB。本文 20,000-pair 控制中，Hostile 峰值内存为 1.05–1.16 GiB、用时 0.94–1.51 秒；真实全量样本仍应按官方建议为 Bowtie2 去宿主预留约 4 GB RAM，并先在目标存储上实测 I/O。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 锚定 Hostile Table 1，但把双控制变成同一次验收
+检查人源残留的同时检查微生物误删；重复序列可能来自真实高丰度成员，不自动等于 PCR 重复。
+
+:::
+
+## 去宿主与去重复，为什么不能一起默认全删？ {#sec-target}
 
 Hostile 论文的 Table 1 同时报告两个方向：真实人类 reads 的残留率，以及模拟 bacterial/mycobacterial reads 的保留率。论文对 NA12878 10×、2 × 100 bp 全量数据报告 human retention 为 0.132%，并以 985 个 FDA-ARGOS 完整细菌基因组的模拟 reads 评估 microbial retention [@constantinides2023hostile]。
 
@@ -55,7 +60,28 @@ Hostile 论文的 Table 1 同时报告两个方向：真实人类 reads 的残�
 3. paired policy 是否让输入、保留和删除三本账完全守恒；
 4. 复杂度与重复信号是否被独立记录，而没有混入主流程。
 
-### 结果一：删除人源和保留微生物必须同时成立
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/14/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 1.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/14/download.R)。
+
+```{r}
+#| label: reader-input-download-14
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/14/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## 删除人源和保留微生物必须同时成立
 
 ![ERR194147 的 20,000 个 pairs 中删除 19,950 个，human-pair removal 为 99.750%；ERR9765746 的 20,000 个 pairs 全部保留，microbial-pair retention 为 100.000%。两根柱子的分子含义不同，因此纵轴明确写为 control-specific success。](../figures/14-host-removal-recall-retention.png){#fig-host-removal-controls}
 
@@ -72,7 +98,7 @@ Hostile JSON 的原始单位是 **reads**：human control 为 `40,000 = 100 + 39
 `99.750% removed` 是方法阳性控制结果，不是公开数据许可，也不是患者样本匿名性证明。对真实人源样本，剩余 reads 仍应处于受控访问环境，并按伦理、法规和项目治理要求追加隐私审计；不能因为文件名写着 `nonhost` 就直接上传公共库。
 :::
 
-### 结果二：低复杂度阈值只进入敏感性分析
+## 低复杂度阈值只进入敏感性分析
 
 ![fastp transition-complexity 阈值从 20% 增到 40% 时，人源控制分别移除 32、45、75 pairs；MOCK1 分别移除 3、3、4 pairs。主流程没有启用 low-complexity filtering。](../figures/14-complexity-sensitivity.png){#fig-complexity-sensitivity}
 
@@ -89,7 +115,7 @@ Hostile JSON 的原始单位是 **reads**：human control 为 `40,000 = 100 + 39
 
 这些损失在两个控制前缀上都很小，但“小”不等于“所有研究都应该删”。对低丰度病毒、短 insert、重复区域、低复杂度蛋白或 assembly 终点，几条 reads 也可能改变检出与拼接。主流程因此保持 `low_complexity_filter = false`。
 
-### 结果三：相同序列不等于已识别 PCR duplicate
+## 相同序列不等于已识别 PCR duplicate
 
 ![人源控制的 sequence-exact paired duplicate signal 为 16.565%，MOCK1 为 1.530%；fastp estimate 在这两个前缀上与精确 pair hash 一致。右侧限定了可以支持与不能支持的推断。](../figures/14-duplicate-decision.png){#fig-duplicate-decision}
 
@@ -100,130 +126,10 @@ Hostile JSON 的原始单位是 **reads**：human control 为 `40,000 = 100 + 39
 
 `fastp --dedup` 敏感性分支分别保留 16,687 与 19,694 pairs，与精确 paired-sequence hash 的 unique count 一致。但这仍只说明“两端序列组合相同”，不能说明它来自 PCR、光学成像重复或同一原始分子。主流程保持 `deduplication = false`。
 
-## 理论：三种清理对象需要三种证据 {#sec-theory}
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 1. 去宿主是参考比对与成对处置问题
-
-对 paired-end reads，本文采用：
-
-$$
-\mathrm{retain\ pair}
-\iff
-\mathrm{R1\ unmapped}\ \land\ \mathrm{R2\ unmapped}
-$$
-
-Hostile 2.0.2 的 paired Bowtie2 流中，Samtools `-f 12` 要求 read 与 mate 的 unmapped flags 都存在。任何一端命中人类参考，整对都不进入微生物输出。这样做有两个理由：
-
-- mate 本身可能包含宿主信息，即使另一端没有可靠比对；
-- 保留 orphan 会让下游把 paired library 当成两端完整，破坏 insert、mapping 与 assembly 假设。
-
-`--rename` 把输出 read headers 改成递增整数，`--reorder` 固定输出顺序。改名降低 header 泄露与文件体积，但不替代序列层面的去宿主。
-
-### 2. 参考完整性属于隐私与特异性合同
-
-本文固定的 `human-t2t-hla` 由：
-
-- T2T-CHM13 v2.0；
-- IPD-IMGT/HLA v3.51；
-- Hostile release 2023-07；
-- Hostile 2.0.2 官方 Bowtie2 archive
-
-组成。官方 archive SHA-256 为：
-
-```text
-5b584f5c28abeec5dba78bd37b53fa476dd42af57051d2fb7d2f2098e3a2df13
-```
-
-参考不完整时，一部分真实人类序列可能因缺失区域或高度多态区域而漏过；仅使用一个未说明版本的 primary assembly，既不利于结果复现，也可能放大隐私风险 [@guccione2025reference]。另一方面，人类参考与微生物序列存在同源区，过宽松的 host filter 又可能误删微生物 reads。因此必须同时验收 human recall 和 microbial retention。
-
-### 3. 低复杂度不是低质量的同义词
-
-fastp 的 transition complexity 定义为相邻碱基发生变化的比例：
-
-$$
-C_{\mathrm{transition}}
-=
-\frac{
-\sum_{i=1}^{L-1}
-\mathbb{1}(b_i \neq b_{i+1})
-}{
-L-1
-}
-\times 100\%
-$$
-
-例如：
-
-```text
-AAAAAAAAAA  ->  0% transition complexity
-ACACACACAC  ->  100% transition complexity
-```
-
-它回答的是碱基变化模式，不是 Phred quality，也不是 Shannon entropy，更不是 taxonomic identity。homopolymer、短周期序列、真实低复杂度生物区域、残余接头与测序错误都可能改变这个指标，原因需要另查。
-
-paired filtering 下，只要一个 mate 低于阈值，整对被移除。工具报告仍以 reads 计数，所以要同时检查：
-
-$$
-N_{\mathrm{input\ reads}}
-=
-N_{\mathrm{passed\ reads}}
-+
-N_{\mathrm{low\ complexity\ reads}}
-$$
-
-以及输出 R1/R2 的 pair 同步。
-
-### 4. “duplicate”至少有四种含义
-
-| Evidence | 能观察到什么 | 不能自动推出什么 |
-|---|---|---|
-| Exact paired sequence | R1+R2 序列组合相同 | PCR origin、optical origin |
-| Mapping coordinates | 两端比对起止与方向相同 | 没有 UMI 时的原始分子身份 |
-| Illumina tile/x/y | 空间距离符合 optical duplicate 规则 | PCR duplicate |
-| UMI family | 同一 UMI/位置支持同一分子家族 | UMI 本身无错误、无碰撞 |
-
-`samtools markdup` 需要 coordinate-sorted alignments；要识别 optical duplicates，还要保留可解析的 instrument/tile/x/y read names。若前一步已经 `--rename`，这类坐标证据就不存在。UMI 文库则要先 extract、group、校正 UMI error，再决定 consensus 或 dedup [@smith2017umitools]。
-
-### 5. 宏基因组的真实丰度会制造重复序列
-
-在 shotgun community 中，以下来源都可能生成相同 reads：
-
-- 高丰度 organism 被真实重复抽样；
-- rRNA、transposon、phage、plasmid 或其他多拷贝区域；
-- 多个近缘 strains 共享保守序列；
-- 文库 PCR amplification；
-- optical duplicate；
-- UMI collision 或 UMI sequencing error。
-
-sequence-level dedup 会优先减少高丰度 taxa 与高拷贝功能，改变相对丰度和 coverage。若研究终点是 assembly、variant calling 或复制数，影响还会继续传递。没有更强证据时，正确动作是**记录、分层、做敏感性分析**。
-
-### 6. 处理顺序决定还能回答什么
-
-建议顺序为：
-
-```text
-Conservative read QC
-    ↓
-Paired host removal
-    ↓
-Non-host pair ledger and privacy boundary
-    ↓
-Complexity / duplicate diagnostics
-    ↓
-Primary analysis without automatic dedup
-    └── sensitivity branches when justified
-```
-
-若 UMI 位于 read 或 index 中，应在任何会删除或改写 UMI 信息的步骤之前提取。若计划用 optical coordinates，必须在 `--rename` 之前完成 coordinate-aware 标记，并把含原始 headers 的中间文件留在受控环境。
-
-### 7. 公开人类 benchmark 仍是人类基因组数据
-
-`ERR194147` 的公开可下载性只支持把它用作已引用的方法控制。这里不发布其 FASTQ、不保留原始 read IDs、不推断表型或个体遗传信息；冻结 bundle 只含聚合统计、哈希、参数、版本和已规范化路径。真实患者或研究参与者的 raw/non-host FASTQ 是否可共享，必须依据 consent、伦理批件、数据使用协议与当地法规判断 [@tomofuji2023privacy]。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：算力、固定环境、双控制谱系、索引身份与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 算力与存储门槛
 
@@ -396,9 +302,7 @@ save_pub <- function(
 
 </details>
 
-## 可复制代码 {#sec-code}
-
-### 1. 一次性建立两个同步 FASTQ 控制前缀
+## 一次性建立两个同步 FASTQ 控制前缀 {#sec-code}
 
 ```bash
 set -euo pipefail
@@ -425,7 +329,44 @@ ERR9765746:
 d8ccb5bd01cd5ab8205f08d56fda62cc9ab4d2e779faa6b250bceaa67c242033
 ```
 
-### 2. 下载、校验并解包官方 Bowtie2 索引
+### 先区分论文全量 benchmark 与确定性前缀控制 {#sec-audit}
+
+| Dimension | Hostile paper | 当前控制 |
+|---|---|---|
+| Human data | NA12878 10× 2 × 100 bp full benchmark | `ERR194147` first 20,000 pairs |
+| Human retained | 0.132% | 0.250% |
+| Microbial data | simulated FDA-ARGOS genomes | real 71-strain MOCK1 prefix |
+| Software | early Hostile release used in paper | Hostile 2.0.2 |
+| Purpose | method performance study | locked workflow acceptance |
+
+前缀结果不估计全量 run 的残留率，也不否定论文全量结果。FASTQ 排序可保留 lane/tile 技术结构；固定前缀适合回归测试，真实项目必须逐样本全量运行。
+
+::: {.callout-caution title="坑 8：UMI 文库按普通 FASTQ 去重"}
+UMI 要先提取、group 并校正 sequencing error。普通 sequence dedup 会混淆 UMI collision、PCR family 和真实相同片段。
+:::
+
+::: {.callout-caution title="坑 9：把 prefix 结果当全量比例"}
+固定前缀适合软件验收，不是随机抽样。论文数字、全量项目数字和本文前缀数字必须分开报告。
+:::
+
+## 下载、校验并解包官方 Bowtie2 索引
+
+### 参考完整性属于隐私与特异性约定
+
+本文固定的 `human-t2t-hla` 由：
+
+- T2T-CHM13 v2.0；
+- IPD-IMGT/HLA v3.51；
+- Hostile release 2023-07；
+- Hostile 2.0.2 官方 Bowtie2 archive
+
+组成。官方 archive SHA-256 为：
+
+```text
+5b584f5c28abeec5dba78bd37b53fa476dd42af57051d2fb7d2f2098e3a2df13
+```
+
+参考不完整时，一部分真实人类序列可能因缺失区域或高度多态区域而漏过；仅使用一个未说明版本的 primary assembly，既不利于结果复现，也可能放大隐私风险 [@guccione2025reference]。另一方面，人类参考与微生物序列存在同源区，过宽松的 host filter 又可能误删微生物 reads。因此必须同时验收 human recall 和 microbial retention。
 
 ```bash
 set -euo pipefail
@@ -476,7 +417,11 @@ export HOSTILE_CACHE_DIR="${INDEX_ROOT}"
 
 无论采用哪一种入口，都应在使用前记录官方 archive hash 和解包后六个文件的 hash。数据库不进入 Git。
 
-### 3. 用 paired policy 运行 Hostile
+::: {.callout-caution title="坑 4：索引只写 hg38"}
+assembly 名不足以确定 alt/HLA、patch、masking 和 build。记录组件、release、archive hash 与解包文件 hash。
+:::
+
+## 用 paired policy 运行 Hostile
 
 ```bash
 set -euo pipefail
@@ -514,7 +459,40 @@ mkdir -p "${WORK_DIR}/hostile/human" "${WORK_DIR}/hostile/mock"
 
 `--airplane` 强制离线使用已经校验的缓存索引，防止运行时悄悄换 reference。没有给 `--aligner-args`，因此使用 Bowtie2 默认 sensitive preset；Hostile 在 Linux 下把 `--reorder` 传给 Bowtie2。
 
-### 4. 先核对去宿主 reads 账本，再转换为 pairs
+### 残留率达标不等于隐私风险归零
+
+人源阳性控制仍保留 50 pairs。真实样本应把以下内容写进数据治理：
+
+1. 原始与 non-host FASTQ 的访问级别；
+2. reference release 与去宿主日志；
+3. residual-host second-pass 或独立 classifier 的策略；
+4. 公开发布前的隐私风险评估；
+5. 原始 headers、BAM、temporary files 与云端日志的清理期限。
+
+人体宏基因组 reads 可用于重建个体信息；仅删掉“多数”人源 reads 不能自动满足匿名化 [@tomofuji2023privacy]。
+
+::: {.callout-caution title="坑 3：把 `nonhost.fastq` 当成匿名数据"}
+去宿主不是完美分类。残留 human-like reads、headers、临时 BAM 与日志都可能进入隐私边界，公开前需要独立治理。
+:::
+
+## 先核对去宿主 reads 记录表，再转换为 pairs
+
+### 去宿主是参考比对与成对处置问题 {#sec-theory}
+
+对 paired-end reads，本文采用：
+
+$$
+\mathrm{retain\ pair}
+\iff
+\mathrm{R1\ unmapped}\ \land\ \mathrm{R2\ unmapped}
+$$
+
+Hostile 2.0.2 的 paired Bowtie2 流中，Samtools `-f 12` 要求 read 与 mate 的 unmapped flags 都存在。任何一端命中人类参考，整对都不进入微生物输出。这样做有两个理由：
+
+- mate 本身可能包含宿主信息，即使另一端没有可靠比对；
+- 保留 orphan 会让下游把 paired library 当成两端完整，破坏 insert、mapping 与 assembly 假设。
+
+`--rename` 把输出 read headers 改成递增整数，`--reorder` 固定输出顺序。改名降低 header 泄露与文件体积，但不替代序列层面的去宿主。
 
 ```bash
 jq -e '
@@ -581,7 +559,56 @@ def audit_pair(read1_path, read2_path):
     }
 ```
 
-### 5. 把低复杂度设为三个显式敏感性分支
+### 默认参考不是所有生物学问题的最优参考
+
+未 mask 的 `human-t2t-hla` 给出清晰保守基线。若研究重点是与人类同源性较高的目标细菌、Mycobacterium、病毒或 phage，可评估 Hostile 的 masked indexes；但 masked reference 会改变 human removal 与 microbial retention，两项都要重新验收。不能只因为目标 reads 保留更多，就忽略新增 host leakage。
+
+### 先去宿主，再讨论人源控制中的重复率
+
+人源控制的 exact duplicate signal 为 16.565%，明显高于 MOCK1 的 1.530%。这个差异来自不同 run、文库、深度和固定前缀，不能解释成“人类 reads 更容易 PCR duplication”。它在这里只证明 duplicate 计算器能识别两种不同 redundancy burden；微生物丰度决策应以目标样本、文库设计和下游终点为依据。
+
+::: {.callout-caution title="坑 2：R1、R2 独立去宿主"}
+一端命中 host、另一端未命中时保留后者，会留下潜在宿主 mate 并制造 orphan。paired policy 应整对保留或整对删除。
+:::
+
+## 把低复杂度设为三个显式敏感性分支
+
+### 低复杂度不是低质量的同义词
+
+fastp 的 transition complexity 定义为相邻碱基发生变化的比例：
+
+$$
+C_{\mathrm{transition}}
+=
+\frac{
+\sum_{i=1}^{L-1}
+\mathbb{1}(b_i \neq b_{i+1})
+}{
+L-1
+}
+\times 100\%
+$$
+
+例如：
+
+```text
+AAAAAAAAAA  ->  0% transition complexity
+ACACACACAC  ->  100% transition complexity
+```
+
+它回答的是碱基变化模式，不是 Phred quality，也不是 Shannon entropy，更不是 taxonomic identity。homopolymer、短周期序列、真实低复杂度生物区域、残余接头与测序错误都可能改变这个指标，原因需要另查。
+
+paired filtering 下，只要一个 mate 低于阈值，整对被移除。工具报告仍以 reads 计数，所以要同时检查：
+
+$$
+N_{\mathrm{input\ reads}}
+=
+N_{\mathrm{passed\ reads}}
++
+N_{\mathrm{low\ complexity\ reads}}
+$$
+
+以及输出 R1/R2 的 pair 同步。
 
 先构造没有 quality、length、adapter、poly-G 或 dedup 操作的 baseline；每个分支只改变 complexity policy：
 
@@ -632,7 +659,53 @@ def pair_passes(sequence1, sequence2, threshold):
 
 主分析不要复用这些 filtered FASTQ；先比较 taxonomic profile、functional profile、assembly 和低丰度检出是否稳定，再决定项目级 policy。
 
-### 6. 精确计算 paired-sequence redundancy
+### 复杂度阈值应连接下游终点
+
+当前 MOCK1 在 20%、30%、40% 下只损失 3、3、4 pairs。升级前仍应在代表性真实样本比较：
+
+```text
+No complexity filter
+    vs
+20% / 30% / 40%
+    ├── non-host paired retention
+    ├── taxonomic Bray–Curtis distance
+    ├── pathway abundance distance
+    ├── low-abundance detection
+    ├── assembly N50 and mapped fraction
+    └── viral / plasmid recovery
+```
+
+只有当技术伪影明确减少、主要终点稳定且低丰度信号不被选择性削弱，才考虑把阈值放进主合同。
+
+::: {.callout-caution title="坑 5：把低复杂度、低质量和接头混成一类"}
+三个信号的算法、原因和修复不同。一次只改变一个 policy，并保留独立损失账本。
+:::
+
+## 精确计算 paired-sequence redundancy
+
+### “duplicate”至少有四种含义
+
+| Evidence | 能观察到什么 | 不能自动推出什么 |
+|---|---|---|
+| Exact paired sequence | R1+R2 序列组合相同 | PCR origin、optical origin |
+| Mapping coordinates | 两端比对起止与方向相同 | 没有 UMI 时的原始分子身份 |
+| Illumina tile/x/y | 空间距离符合 optical duplicate 规则 | PCR duplicate |
+| UMI family | 同一 UMI/位置支持同一分子家族 | UMI 本身无错误、无碰撞 |
+
+`samtools markdup` 需要 coordinate-sorted alignments；要识别 optical duplicates，还要保留可解析的 instrument/tile/x/y read names。若前一步已经 `--rename`，这类坐标证据就不存在。UMI 文库则要先 extract、group、校正 UMI error，再决定 consensus 或 dedup [@smith2017umitools]。
+
+### 宏基因组的真实丰度会制造重复序列
+
+在 shotgun community 中，以下来源都可能生成相同 reads：
+
+- 高丰度 organism 被真实重复抽样；
+- rRNA、transposon、phage、plasmid 或其他多拷贝区域；
+- 多个近缘 strains 共享保守序列；
+- 文库 PCR amplification；
+- optical duplicate；
+- UMI collision 或 UMI sequencing error。
+
+sequence-level dedup 会优先减少高丰度 taxa 与高拷贝功能，改变相对丰度和 coverage。若研究终点是 assembly、variant calling 或复制数，影响还会继续传递。没有更强证据时，正确动作是**记录、分层、做敏感性分析**。
 
 ```python
 import hashlib
@@ -679,7 +752,26 @@ fastp dedup branch只作为反事实：
 
 `dup_calc_accuracy=1` 对 20,000-pair 控制已足够并把内存固定在约 1 GB 量级；全量数据若提高 accuracy，内存会增加。这个分支的输出不是主分析输入。
 
-### 7. 一条命令执行完整一次性流程
+## 一条命令执行完整一次性流程
+
+### 处理顺序决定还能回答什么
+
+建议顺序为：
+
+```text
+Conservative read QC
+    ↓
+Paired host removal
+    ↓
+Non-host pair ledger and privacy boundary
+    ↓
+Complexity / duplicate diagnostics
+    ↓
+Primary analysis without automatic dedup
+    └── sensitivity branches when justified
+```
+
+若 UMI 位于 read 或 index 中，应在任何会删除或改写 UMI 信息的步骤之前提取。若计划用 optical coordinates，必须在 `--rename` 之前完成 coordinate-aware 标记，并把含原始 headers 的中间文件留在受控环境。
 
 ```bash
 bash scripts/run_article14_host_removal.sh \
@@ -693,7 +785,27 @@ bash scripts/run_article14_host_removal.sh \
 
 脚本拒绝覆盖非空 frozen 或 work directory，避免两次运行的日志、JSON 与 FASTQ 混合。raw、non-host、complexity 与 dedup FASTQ 都留在 ignored scratch；frozen bundle 只保留报告、聚合表、资源日志、命令、版本和 hashes。
 
-### 8. 日常离线验证冻结证据
+### 重复处理要按文库证据分流
+
+| Library/evidence | Recommended action |
+|---|---|
+| Ordinary shotgun FASTQ only | report duplication; keep primary reads |
+| Coordinate-preserving mapped library | audit coordinate duplicates; compare abundance/coverage before and after |
+| Optical coordinates present | use documented pixel-distance policy; do not rename first |
+| Validated UMI library | extract/group/error-correct UMI, then consensus or dedup |
+| PCR-free library | investigate unexpected high signal; do not automatically delete |
+
+`samtools markdup` 更适合 coordinate-aware audit，不应拿来给未比对 FASTQ 的 sequence equality 强行贴 PCR 标签。UMI-tools 的 grouping 与 error model也不能被普通 `--dedup` 替代 [@smith2017umitools]。
+
+::: {.callout-caution title="坑 6：看到 duplication rate 就启用 `--dedup`"}
+sequence-identical reads 可能来自真实高丰度或多拷贝区域。先比较 abundance、coverage、assembly 和 variant 终点。
+:::
+
+## 日常离线验证保存证据
+
+### 公开人类 benchmark 仍是人类基因组数据
+
+`ERR194147` 的公开可下载性只支持把它用作已引用的方法控制。这里不发布其 FASTQ、不保留原始 read IDs、不推断表型或个体遗传信息；冻结 bundle 只含聚合统计、哈希、参数、版本和已规范化路径。真实患者或研究参与者的 raw/non-host FASTQ 是否可共享，必须依据 consent、伦理批件、数据使用协议与当地法规判断 [@tomofuji2023privacy]。
 
 ```bash
 mkdir -p results/14-host-removal-complexity-duplicates figures
@@ -730,141 +842,23 @@ checksum_failures:    0
 qa_network_access: false
 ```
 
-## 审计与升级 {#sec-audit}
-
-### 先区分论文全量 benchmark 与确定性前缀控制
-
-| Dimension | Hostile paper | 当前控制 |
-|---|---|---|
-| Human data | NA12878 10× 2 × 100 bp full benchmark | `ERR194147` first 20,000 pairs |
-| Human retained | 0.132% | 0.250% |
-| Microbial data | simulated FDA-ARGOS genomes | real 71-strain MOCK1 prefix |
-| Software | early Hostile release used in paper | Hostile 2.0.2 |
-| Purpose | method performance study | locked workflow acceptance |
-
-前缀结果不估计全量 run 的残留率，也不否定论文全量结果。FASTQ 排序可保留 lane/tile 技术结构；固定前缀适合回归测试，真实项目必须逐样本全量运行。
-
-### 残留率达标不等于隐私风险归零
-
-人源阳性控制仍保留 50 pairs。真实样本应把以下内容写进数据治理：
-
-1. 原始与 non-host FASTQ 的访问级别；
-2. reference release 与去宿主日志；
-3. residual-host second-pass 或独立 classifier 的策略；
-4. 公开发布前的隐私风险评估；
-5. 原始 headers、BAM、temporary files 与云端日志的清理期限。
-
-人体宏基因组 reads 可用于重建个体信息；仅删掉“多数”人源 reads 不能自动满足匿名化 [@tomofuji2023privacy]。
-
-### 默认参考不是所有生物学问题的最优参考
-
-未 mask 的 `human-t2t-hla` 给出清晰保守基线。若研究重点是与人类同源性较高的目标细菌、Mycobacterium、病毒或 phage，可评估 Hostile 的 masked indexes；但 masked reference 会改变 human removal 与 microbial retention，两项都要重新验收。不能只因为目标 reads 保留更多，就忽略新增 host leakage。
-
-### 复杂度阈值应连接下游终点
-
-当前 MOCK1 在 20%、30%、40% 下只损失 3、3、4 pairs。升级前仍应在代表性真实样本比较：
-
-```text
-No complexity filter
-    vs
-20% / 30% / 40%
-    ├── non-host paired retention
-    ├── taxonomic Bray–Curtis distance
-    ├── pathway abundance distance
-    ├── low-abundance detection
-    ├── assembly N50 and mapped fraction
-    └── viral / plasmid recovery
-```
-
-只有当技术伪影明确减少、主要终点稳定且低丰度信号不被选择性削弱，才考虑把阈值放进主合同。
-
-### 重复处理要按文库证据分流
-
-| Library/evidence | Recommended action |
-|---|---|
-| Ordinary shotgun FASTQ only | report duplication; keep primary reads |
-| Coordinate-preserving mapped library | audit coordinate duplicates; compare abundance/coverage before and after |
-| Optical coordinates present | use documented pixel-distance policy; do not rename first |
-| Validated UMI library | extract/group/error-correct UMI, then consensus or dedup |
-| PCR-free library | investigate unexpected high signal; do not automatically delete |
-
-`samtools markdup` 更适合 coordinate-aware audit，不应拿来给未比对 FASTQ 的 sequence equality 强行贴 PCR 标签。UMI-tools 的 grouping 与 error model也不能被普通 `--dedup` 替代 [@smith2017umitools]。
-
-### 先去宿主，再讨论人源控制中的重复率
-
-人源控制的 exact duplicate signal 为 16.565%，明显高于 MOCK1 的 1.530%。这个差异来自不同 run、文库、深度和固定前缀，不能解释成“人类 reads 更容易 PCR duplication”。它在这里只证明 duplicate 计算器能识别两种不同 redundancy burden；微生物丰度决策应以目标样本、文库设计和下游终点为依据。
-
-## 出版级美化 {#sec-polish}
-
-### 两根柱子不能偷换同一个分子
-
-第一张图的左柱是 human **removed** fraction，右柱是 microbial **retained** fraction。若纵轴只写 `Retention (%)` 或 `Removal (%)`，就会让一根柱子的含义错误。使用 `Control-specific success (%)`，并在柱内标出互补失败比例。
-
-### 高保留率也要给绝对损失
-
-复杂度图以百分比画趋势，同时在每个点标 `−32`、`−3` 等 removed pairs。只画 99.6%–100.0% 会把小损失藏掉；只画 loss count 又难比较不同深度样本。真实队列应同时给 fraction、count 与 input denominator。
-
-### duplicate 图必须把“观察”与“起因”分开
-
-左侧画 exact hash 和 fastp estimate，右侧列证据边界。图题不使用 `PCR duplicate rate`，因为这里没有 PCR-origin 证据。图注应写清 sequence equality、paired denominator、是否有 UMI、是否保留 instrument coordinates。
-
-### 导出格式
-
-| Format | Use |
-|---|---|
-| PDF | vector text and journal layout |
-| PNG | website, WeChat, rapid review |
-| 350 dpi LZW TIFF | raster submission systems |
-
-三张图内文字均为英文，配色同时依赖文字和形状，不靠红绿差异单独传递结论。
-
-## 常见坑 {#sec-pitfalls}
-
 ::: {.callout-caution title="坑 1：只验证 host removal，不验证 microbial retention"}
 一个过度宽松的比对器也能把 human control 删得很干净。必须用真实或高质量模拟的 microbial control 测误删。
-:::
-
-::: {.callout-caution title="坑 2：R1、R2 独立去宿主"}
-一端命中 host、另一端未命中时保留后者，会留下潜在宿主 mate 并制造 orphan。paired policy 应整对保留或整对删除。
-:::
-
-::: {.callout-caution title="坑 3：把 `nonhost.fastq` 当成匿名数据"}
-去宿主不是完美分类。残留 human-like reads、headers、临时 BAM 与日志都可能进入隐私边界，公开前需要独立治理。
-:::
-
-::: {.callout-caution title="坑 4：索引只写 hg38"}
-assembly 名不足以确定 alt/HLA、patch、masking 和 build。记录组件、release、archive hash 与解包文件 hash。
-:::
-
-::: {.callout-caution title="坑 5：把低复杂度、低质量和接头混成一类"}
-三个信号的算法、原因和修复不同。一次只改变一个 policy，并保留独立损失账本。
-:::
-
-::: {.callout-caution title="坑 6：看到 duplication rate 就启用 `--dedup`"}
-sequence-identical reads 可能来自真实高丰度或多拷贝区域。先比较 abundance、coverage、assembly 和 variant 终点。
 :::
 
 ::: {.callout-caution title="坑 7：改名后再声称识别 optical duplicates"}
 `--rename` 会移除 instrument/tile/x/y。没有原始坐标，不能使用 optical-distance 证据。
 :::
 
-::: {.callout-caution title="坑 8：UMI 文库按普通 FASTQ 去重"}
-UMI 要先提取、group 并校正 sequencing error。普通 sequence dedup 会混淆 UMI collision、PCR family 和真实相同片段。
-:::
-
-::: {.callout-caution title="坑 9：把 prefix 结果当全量比例"}
-固定前缀适合软件验收，不是随机抽样。论文数字、全量项目数字和本文前缀数字必须分开报告。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 分别报告宿主、低复杂度和重复信号 {#sec-methods}
 
 > Paired-end reads were screened against the Hostile `human-t2t-hla` Bowtie2 index (release 2023-07; T2T-CHM13v2.0 plus IPD-IMGT/HLA v3.51; archive SHA-256 `5b584f5c28abeec5dba78bd37b53fa476dd42af57051d2fb7d2f2098e3a2df13`) using Hostile v2.0.2, Bowtie2 v2.5.4, and Samtools v1.21. Read pairs were retained only when both mates were unmapped to the human reference. Output records were deterministically reordered and renamed. Workflow performance was verified with a real human positive control (ENA ERR194147; deterministic first 20,000 pairs) and a real 71-strain microbial retention control (ENA ERR9765746; deterministic first 20,000 pairs). The observed human-pair removal and microbial-pair retention rates were 99.750% and 100.000%, respectively. Low-complexity filtering was disabled in the primary workflow; paired sensitivity analyses were performed with fastp v1.3.6 at transition-complexity thresholds of 20%, 30%, and 40%. Deduplication was also disabled in the primary workflow. Sequence-exact paired redundancy was quantified by SHA-256 hashing of concatenated R1/R2 sequences, without inferring PCR or optical duplicate origin. Raw, non-host, and sensitivity-branch FASTQ files remained in controlled scratch storage; only aggregate, path-normalized, checksum-locked evidence was retained for routine quality assurance.
 
 若真实项目使用 masked reference、二次 privacy screen、UMI 或 optical duplicate policy，应把相应 index hash、工具版本、距离/UMI 参数和 before/after 终点继续写入 Methods。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
-### 输入合同
+### 输入约定
 
 每个样本至少准备：
 
@@ -918,7 +912,7 @@ done < samples.tsv
 
 不要在共享 shell history、公开日志或图中写患者标识。每个 sample 的 JSON 先转换为 aggregate QC table，再进入项目级异常检测。
 
-### 项目级验收表
+### 项目级结果核对表
 
 | Metric | Why it matters |
 |---|---|
@@ -942,7 +936,35 @@ done < samples.tsv
 - **UMI library：**保留 UMI 原始位置与 extraction 日志，使用 UMI-aware grouping/consensus。
 - **临床或受控数据：**把 raw、temporary、non-host、reports 与公开汇总分别定义访问级别和保留期限。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### 两根柱子不能偷换同一个分子
+
+第一张图的左柱是 human **removed** fraction，右柱是 microbial **retained** fraction。若纵轴只写 `Retention (%)` 或 `Removal (%)`，就会让一根柱子的含义错误。使用 `Control-specific success (%)`，并在柱内标出互补失败比例。
+
+### 高保留率也要给绝对损失
+
+复杂度图以百分比画趋势，同时在每个点标 `−32`、`−3` 等 removed pairs。只画 99.6%–100.0% 会把小损失藏掉；只画 loss count 又难比较不同深度样本。真实队列应同时给 fraction、count 与 input denominator。
+
+### duplicate 图必须把“观察”与“起因”分开
+
+左侧画 exact hash 和 fastp estimate，右侧列证据边界。图题不使用 `PCR duplicate rate`，因为这里没有 PCR-origin 证据。图注应写清 sequence equality、paired denominator、是否有 UMI、是否保留 instrument coordinates。
+
+### 导出格式
+
+| Format | Use |
+|---|---|
+| PDF | vector text and journal layout |
+| PNG | website, WeChat, rapid review |
+| 350 dpi LZW TIFF | raster submission systems |
+
+三张图内文字均为英文，配色同时依赖文字和形状，不靠红绿差异单独传递结论。
+
+## 回到最初的问题
+
+去宿主既要删得干净，也要证明没有误删微生物；低复杂度与重复信号必须另立账本，不能顺手全删。
+
+## 参考文献 {#sec-references}
 
 - Hostile 方法、真实人类 benchmark 与 human/microbial 双向准确性：[@constantinides2023hostile]
 - `ERR194147` 官方 run record：[ENA ERR194147](https://www.ebi.ac.uk/ena/browser/view/ERR194147)

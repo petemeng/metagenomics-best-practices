@@ -1,6 +1,6 @@
 ---
-title: "第 18 篇 · 谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: false
   freeze: auto
@@ -38,15 +38,20 @@ wechat:
     18-recovery-nontruth.png: "Six profiler branches compared for reference-aware recovery, non-truth feature count and non-truth native mass"
     18-composition-agreement.png: "Spearman and total-variation matrices plus abundance bars for the highest-mass species in the strict common domain"
     18-resource-footprint.png: "Wall time, peak memory and installed database footprint for four profiler pipelines"
+reader-mode: upstream
 ---
 
 > **学习目标：**识别 MetaPhlAn SGB、Kraken/Bracken NCBI species 与 mOTU 不是同一种 feature；先求每个数据库真正覆盖的真值集合，再用共同的一对一物种域比较检出和组成；最后按研究问题、样本生态、假阳性成本与资源预算选择工具，而不是背一张“排行榜”。  
 > **真实数据：**71-strain MOCK1 DNA 的 Illumina run `ERR9765746`，使用 fastp 后保留的 99,991 个同步 pairs [@meslier2022platforms]。三套输入的压缩 FASTQ SHA-256 与 normalized pair-ID hash 完全相同。真值来自 Supplementary Table S3 的 71 个 assembly，经固定 NCBI snapshot 解析为 69 个 current species；原表比例合计 100.0121565%，不静默改成整齐的 100%。  
 > **预计资源：**只复跑 mOTUs 建议 8 核、12 GB RAM、20 GB 可用磁盘，实测主流程 133.1 秒、峰值 8.4 GiB；同时重建三套数据库与全部谱，建议至少 8 核、40 GB RAM、140 GB 可用磁盘。没有大内存服务器时，直接读取 checksum-locked profile、crosswalk 与聚合表即可重画结果；大型 FASTQ、BAM 和数据库索引不需要进入个人电脑。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 锚定 benchmarking 的 performance panel，但先补上 feature-space panel
+先对齐工具能够识别的共同物种集合；相关系数高，仍可能同时存在丰度偏差和漏检。
+
+:::
+
+## 不同工具给出不同物种，先比较哪一部分？ {#sec-target}
 
 分类器 benchmark 常把 recall、precision、F1 或 abundance error 放在一张图里；Wright 等进一步展示了数据库和参数选择足以改变 Kraken2 的结论 [@wright2023defaults]。但 MetaPhlAn、Kraken/Bracken 与 mOTUs 的横评还有更早的一层：三者测量对象不同。
 
@@ -58,7 +63,28 @@ wechat:
 
 如果直接按 species name 做 outer join，`Pseudomonas_E alloputida`、`Pseudomonas putida`、SGB 与 `mOTUv4.0_*` 会被误当成互不相干或一一对应的标签。正确顺序是：**数据库参考覆盖 → feature split/merge → 原生检出 → 共同域组成**。
 
-### 结果一：69 个真值物种最后只剩 52 个严格共同一对一物种
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/18/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/18/download.R)。
+
+```{r}
+#| label: reader-input-download-18
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/18/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## 69 个真值物种最后只剩 52 个严格共同一对一物种
 
 ![每一列都从同一 69 个 current NCBI truth species 出发。左图按数据库内部 taxid 或 exact assembly accession 判定 feature relation；右图按 Supplementary Table S3 的原始 expected genome percentage 加权。名称相似不单独建立 reference presence。](../figures/18-feature-space-crosswalk.png){#fig-18-feature-space-crosswalk}
 
@@ -76,7 +102,7 @@ MetaPhlAn vJan26 metadata能把 69 个 current truth species 都连到至少一�
 `Chlorobium phaeovibrioides` 和 *Akkermansia muciniphila* 可在 mOTUs taxonomy 中找到同名候选，但 expected assembly accession 没有进入当前 genome catalog。它们被保留为 name-only annotation，不扩大 mOTUs 的严格 reference denominator。模糊名称匹配更不能证明同一物种或同一株。
 :::
 
-### 结果二：默认参数改变的是召回—非真值折中，不是同一把尺子的高低
+## 默认参数改变的是召回—非真值折中，不是同一把尺子的高低
 
 ![所有分支保留原生输出，再以各自 resolved profile 的 0.01% 作为共同 post-profile detection threshold。A 的分母是各数据库实际覆盖的 truth species；B 和 C 只把没有任何 truth association 的 feature 计为 non-truth。三种 native mass 的物理意义仍不同。](../figures/18-recovery-nontruth.png){#fig-18-recovery-nontruth}
 
@@ -97,7 +123,7 @@ mOTUs 的 `g` 是一个非常直观的敏感性旋钮：只要求 1 个 marker g
 
 MetaPhlAn 默认恢复 31/69，且没有 strict non-truth SGB。它的 marker specificity 换来了较少的检出；“feature 少”既不自动等于漏检严重，也不自动等于结果更真，必须结合研究 endpoint 与独立验证判断。
 
-### 结果三：共同域中，相关高不代表绝对误差小
+## 共同域中，相关高不代表绝对误差小
 
 ![只保留 52 个 strict one-to-one common species，并在该域内分别闭合到 1。A、B 比较三个 native/default branches 与 truth；C 展示 expected mass 最高的 8 个共同物种。](../figures/18-composition-agreement.png){#fig-18-composition-agreement}
 
@@ -119,7 +145,7 @@ $$
 
 取值 0–1。比如 MetaPhlAn 与 mOTUs 的 rho 很高，但 TV 仍为 0.24；两者对 *Thermotoga petrophila*、*Methanocaldococcus jannaschii* 等高丰度物种的质量分配并不相同。报告相关系数时应同时给出 composition distance、漏检数和比较域大小。
 
-### 结果四：速度差异很大，但数据库设计也不同
+## 速度差异很大，但数据库设计也不同
 
 ![相同服务器与同一 99,991-pair 输入上的一次性实测。串行 stage wall time 相加，峰值 RSS 取各 stage 最大值。MetaPhlAn 与 mOTUs 使用 full marker databases；Kraken 两分支是 8/16 GB capped Standard indexes，不能把时间差完全归因于算法。](../figures/18-resource-footprint.png){#fig-18-resource-footprint}
 
@@ -132,78 +158,10 @@ $$
 
 Kraken/Bracken 在这批短 reads 上明显更快。MetaPhlAn 的数据库与峰值内存最大；mOTUs 的 wall time 主要来自一次 `map_tax`，同一 BAM/MGC 再计算 `g=1/3/6` 各只需约 10 秒。以上测试没有随机化 cold/warm filesystem cache，也没有把 full Kraken database 与 capped index 等同，因此只能作为当前服务器上的作业预算，不能写成跨硬件的算法复杂度结论。
 
-## 理论：为什么三个工具必然给出不同结果 {#sec-theory}
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 1. 一个“物种名”背后至少有四种边界
-
-把 profiler 输出变成论文表格前，要同时回答：
-
-1. **reference boundary**：当前 database 是否包含 expected assembly 或 same-species reference？
-2. **taxonomy boundary**：使用 NCBI taxonomy、GTDB 哪一版，还是 profiler 自己的 clade catalog？
-3. **feature boundary**：一个 NCBI species 是否 split 成多个 SGB/mOTUs，或多个 species merge 到一个 feature？
-4. **evidence boundary**：全基因组 minimizer、clade-specific marker 与 universal marker gene evidence 的检出条件是什么？
-
-MetaPhlAn 4 把已表征与未表征 genome bins 纳入 SGB 空间 [@blancomiguez2023metaphlan4]。Kraken2 对查询 minimizer 的 LCA 进行分类，Bracken 再根据 database-specific k-mer distribution 与 read length 把高层级 evidence 重估到目标 rank [@wood2019kraken2; @lu2017bracken]。mOTUs 则以 universal single-copy marker gene clusters 定义 mOTU，并通过至少 `g` 个 marker genes 的 evidence 调节检出 [@ruscheweyh2022motus]。
-
-因此三者不是对同一个 feature table 使用三种统计方法，而是三套不同的测量模型。
-
-### 2. Reference-aware recovery 先把数据库缺失从算法漏检中拆开
-
-令 $T$ 为 69 个 truth species，$R_j$ 为 profiler/database $j$ 有严格参考证据的 truth species，$D_j$ 为超过统一 post-profile threshold 的检出集合。报告：
-
-$$
-\mathrm{ReferenceAwareRecovery}_j
-=\frac{|D_j \cap T \cap R_j|}{|T \cap R_j|}.
-$$
-
-这里三套分母分别是 69、63 与 64。若强行都除以 69，会把 Kraken/mOTUs 的 reference absence 算成 classifier false negative；若只除以各自检出的 feature 数，又会人为抬高 recall。
-
-Strict reference evidence 的优先级为：
-
-```text
-MetaPhlAn: NCBI species taxid in database taxonomy → SGB relation
-Kraken:    expected sequence accession / same-species NCBI reference
-mOTUs:     exact GCA/GCF accession encoded in genome catalog → mOTU
-
-exact cross-release taxonomy name → annotation only
-fuzzy name similarity             → never establishes reference presence
-```
-
-### 3. 共同丰度域必须排除 split、merge 与 absent
-
-令 $C$ 是三套 feature mapping 都为 one-to-one 的 truth species 交集。本次 $|C|=52$。对每个 profiler，把属于 $C$ 的 native feature 聚合到 species，再在 $C$ 内闭合：
-
-$$
-\tilde p_{ij}=\frac{a_{ij}}{\sum_{k\in C}a_{kj}}, \qquad i\in C.
-$$
-
-这一步只为回答“在三者都能无歧义测量的物种中，组成有多一致”。它不能回答全样本有多少 reads 被分类，也不能替代对 excluded species 的漏检审计。共同域覆盖的 expected mass 必须与 rho、TV 一起报告，否则读者不知道结论只适用于真值的哪一部分。
-
-### 4. 三套“未解析量”没有共同分母
-
-| Quantity | Observed | Correct interpretation |
-|---|---:|---|
-| MetaPhlAn `estimated_reads_mapped_to_known_clades` | 261,721 | terminal-clade abundance/length estimator；可大于 199,929 profiling reads |
-| Kraken native classified fragments | 86,373/99,991 | paired fragments with a Kraken classification under Standard-8 c0 |
-| mOTUs marker-aligned reads | 1,122/199,982 | individual reads aligned to marker genes |
-| mOTUs aligned inserts | 673 | paired/single insert evidence entering MGC calculation |
-| mOTUs g3 unassigned | 1/81 scaled counts | unassigned mass within marker-derived output, not all input reads |
-
-所以不能把 `1 - unassigned/81 = 98.8%` 写成 mOTUs read classification rate。实际只有 0.5611% 的 input reads 对齐到 marker database；marker profiler 本来就只需要一小部分高特异性 loci 来估计组成。MetaPhlAn 的 estimated mapped reads 同样不是逐 read 守恒账本。
-
-### 5. `g`、confidence 与 Bracken threshold 控制不同环节
-
-- mOTUs `g`：一个 mOTU 至少要多少个不同 marker genes 支持；`g=1` 偏 recall，`g=6` 偏 precision。
-- Kraken `--confidence`：候选 clade 获得的 queried k-mer evidence fraction；提高后标签可向祖先退或变为 unclassified。
-- Kraken `--minimum-hit-groups`：至少需要多少段相邻 minimizer evidence 才产生 call。
-- Bracken `-t`：目标 rank 的最低 read evidence；它决定 feature 是否进入 abundance model。
-
-这些旋钮不能折算成一个共同“严格度”。横评必须保留 native/default branch，再单列 sensitivity branches。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：算力、固定环境、数据库下载、真实输入与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 算力与存储门槛
 
@@ -258,7 +216,7 @@ zcat "${install_root}/db_mOTU/mOTUsv4.1.gtdb.taxonomy.80mv.tsv.gz" | head
 
 两个 taxonomy 文件实际都声明 **GTDB R226**。若外层说明文字仍写 R220，应以随 archive 发布的文件内容为准，并在 Methods 记录这种差异。
 
-### 核对同一输入与三套冻结谱
+### 核对同一输入与三套保存谱
 
 ```bash
 sed -n '1,160p' data/small/18-data-NOTICE.txt
@@ -325,9 +283,29 @@ save_pub <- function(plot, stem, width, height) {
 
 </details>
 
-## 可复制代码 {#sec-code}
+## 先保存 profiler design，不让默认与升级分支混在一起 {#sec-code}
 
-### 1. 先冻结 profiler design，不让默认与升级分支混在一起
+### 一个“物种名”背后至少有四种边界 {#sec-theory}
+
+把 profiler 输出变成论文表格前，要同时回答：
+
+1. **reference boundary**：当前 database 是否包含 expected assembly 或 same-species reference？
+2. **taxonomy boundary**：使用 NCBI taxonomy、GTDB 哪一版，还是 profiler 自己的 clade catalog？
+3. **feature boundary**：一个 NCBI species 是否 split 成多个 SGB/mOTUs，或多个 species merge 到一个 feature？
+4. **evidence boundary**：全基因组 minimizer、clade-specific marker 与 universal marker gene evidence 的检出条件是什么？
+
+MetaPhlAn 4 把已表征与未表征 genome bins 纳入 SGB 空间 [@blancomiguez2023metaphlan4]。Kraken2 对查询 minimizer 的 LCA 进行分类，Bracken 再根据 database-specific k-mer distribution 与 read length 把高层级 evidence 重估到目标 rank [@wood2019kraken2; @lu2017bracken]。mOTUs 则以 universal single-copy marker gene clusters 定义 mOTU，并通过至少 `g` 个 marker genes 的 evidence 调节检出 [@ruscheweyh2022motus]。
+
+因此三者不是对同一个 feature table 使用三种统计方法，而是三套不同的测量模型。
+
+### `g`、confidence 与 Bracken threshold 控制不同环节
+
+- mOTUs `g`：一个 mOTU 至少要多少个不同 marker genes 支持；`g=1` 偏 recall，`g=6` 偏 precision。
+- Kraken `--confidence`：候选 clade 获得的 queried k-mer evidence fraction；提高后标签可向祖先退或变为 unclassified。
+- Kraken `--minimum-hit-groups`：至少需要多少段相邻 minimizer evidence 才产生 call。
+- Bracken `-t`：目标 rank 的最低 read evidence；它决定 feature 是否进入 abundance model。
+
+这些旋钮不能折算成一个共同“严格度”。横评必须保留 native/default branch，再单列 sensitivity branches。
 
 ```bash
 column -t -s $'\t' \
@@ -336,7 +314,42 @@ column -t -s $'\t' \
 
 主结果保留三个 default/native branches：MetaPhlAn default、Kraken/Bracken Standard-8 `confidence=0`、mOTUs `g=3`。Standard-16 `confidence=0.10`、mOTUs `g=1/6` 只回答参数敏感性，不替换原生结果。
 
-### 2. mOTUs 只映射一次
+### 忠实保留默认结果，再增加预先声明的敏感性分支 {#sec-audit}
+
+benchmark 若只调到自己喜欢的参数，会把 tuning advantage 冒充工具优势。推荐表格至少分成：
+
+| Layer | Required report |
+|---|---|
+| Native/default | vendor/default or study-prespecified parameters |
+| Database sensitivity | release、content、cap/full status |
+| Evidence sensitivity | MetaPhlAn threshold；Kraken confidence/hit groups；mOTUs `g` |
+| Harmonized comparison | crosswalk version、one-to-one domain、closure、threshold |
+
+第 17 篇的 Kraken `c0.10` 是基于人类方法对照选出的操作点，不是 Kraken 原生默认值；因此这里保留 `c0` 与 `c0.10` 两行。mOTUs 同理保留 `g=3` default，并单列 `g=1/6`。
+
+## mOTUs 只映射一次
+
+### Reference-aware recovery 先把数据库缺失从算法漏检中拆开
+
+令 $T$ 为 69 个 truth species，$R_j$ 为 profiler/database $j$ 有严格参考证据的 truth species，$D_j$ 为超过统一 post-profile threshold 的检出集合。报告：
+
+$$
+\mathrm{ReferenceAwareRecovery}_j
+=\frac{|D_j \cap T \cap R_j|}{|T \cap R_j|}.
+$$
+
+这里三套分母分别是 69、63 与 64。若强行都除以 69，会把 Kraken/mOTUs 的 reference absence 算成 classifier false negative；若只除以各自检出的 feature 数，又会人为抬高 recall。
+
+Strict reference evidence 的优先级为：
+
+```text
+MetaPhlAn: NCBI species taxid in database taxonomy → SGB relation
+Kraken:    expected sequence accession / same-species NCBI reference
+mOTUs:     exact GCA/GCF accession encoded in genome catalog → mOTU
+
+exact cross-release taxonomy name → annotation only
+fuzzy name similarity             → never establishes reference presence
+```
 
 ```bash
 set -euo pipefail
@@ -379,7 +392,38 @@ done
 
 `map_tax` 实测对齐 580 条 R1 与 542 条 R2，共 1,122/199,982 reads；`calc_mgc` 得到 673 个 aligned inserts，27 个是 multimappers，其中 10 个丢弃、17 个进入计算。该 profiling、crosswalk、聚合和重画链路不含随机过程；同时固定 `PYTHONHASHSEED=0`，并保留完整日志与退出状态。
 
-### 3. 完整的一次性 builder：版本、数据库、资源、crosswalk 一起固化
+### 当前 mOTUs archive 内有两组可复现但不能静默修正的计数差异
+
+数据库版本文件写：
+
+```text
+motus: 124295
+assigned_motus: 124299
+unassigned_motus: 1
+genomes: 3897967
+```
+
+运行时 loader 报告 124,300 mOTUs，等于 `assigned_motus + unassigned_motus`；`genomes.tsv.gz` 实际有 3,897,966 个数据行，比版本文件的 `genomes` 少 1。archive 的 publisher MD5、整包 SHA-256 和 7 个内部发布 MD5 全部通过，所以这不是本地损坏证据。正确做法是同时报告 **header count 与 observed count**，并锁 archive checksum；不要为得到一致数字而改文件。
+
+::: {.callout-caution title="坑 2：三套 recall 都除以 69"}
+数据库没有参考的物种不属于相同可检出域。报告 overall truth recovery 可以，但必须另给 reference-aware recovery，并把 absent expected mass 单列。
+:::
+
+::: {.callout-caution title="坑 3：把 unassigned 当成 input reads 的补集"}
+mOTUs g3 的 1/81 是 marker-derived scaled count；MetaPhlAn estimated reads 也是模型量。只有 Kraken per-fragment ledger 在当前设置下可直接与 99,991 pairs 守恒。
+:::
+
+## 完整的一次性 builder：版本、数据库、资源、crosswalk 一起保存
+
+### 共同丰度域必须排除 split、merge 与 absent
+
+令 $C$ 是三套 feature mapping 都为 one-to-one 的 truth species 交集。本次 $|C|=52$。对每个 profiler，把属于 $C$ 的 native feature 聚合到 species，再在 $C$ 内闭合：
+
+$$
+\tilde p_{ij}=\frac{a_{ij}}{\sum_{k\in C}a_{kj}}, \qquad i\in C.
+$$
+
+这一步只为回答“在三者都能无歧义测量的物种中，组成有多一致”。它不能回答全样本有多少 reads 被分类，也不能替代对 excluded species 的漏检审计。共同域覆盖的 expected mass 必须与 rho、TV 一起报告，否则读者不知道结论只适用于真值的哪一部分。
 
 MetaPhlAn crosswalk 需要 vJan26 的 compressed metadata pickle；它只在初始化时读取一次。下面的 builder 会验证 mOTUs archive 与内部 MD5，把 BAM/MGC 留在 scratch，只提交小型 profile、crosswalk、资源和 checksum manifest。
 
@@ -417,7 +461,50 @@ crosswalk |>
   )
 ```
 
-### 4. 原生结果与 harmonized result 分表
+### GTDB 版本要读交付文件，不从工具论文年份猜
+
+mOTUs database 4.1 的两个 taxonomy tables 均声明 GTDB R226。GTDB 更新可能带来 genus rename、species split/merge 与 representative genome 变化；本次已见：
+
+- `Pseudomonas putida` expected assembly 对应 `Pseudomonas_E alloputida`；
+- `Pseudomonas fluorescens` 对应 `Pseudomonas_E petroselini`；
+- *Salinispora tropica* 在 GTDB 路径中落入 *Micromonospora tropica*；
+- 两个 *Methanococcus maripaludis* assemblies 落入不同 mOTUs。
+
+这些不是简单 `gsub("_", " ")` 能解决的名字格式问题。
+
+### Genome percentage 不是 cell fraction 或 read fraction
+
+真值表给的是 expected genome percentage。实际 reads 还受 genome length、GC、提取、建库与测序偏差影响；marker profilers又只观察特定基因区域。若要评价 absolute cell abundance，应加入细胞数/拷贝数可追溯的 spike-in 或 flow cytometry，不应把 composition correlation 冒充绝对定量准确度。
+
+::: {.callout-warning title="审稿人最容易攻击的结论"}
+“Kraken 检出最多，所以最好”“mOTUs 没有假阳性，所以最准确”“MetaPhlAn feature 最少，所以最保守”都缺少必要条件。至少同时报告 reference denominator、non-truth burden、共同域质量、abundance distance、参数分支与独立控制。
+:::
+
+::: {.callout-caution title="坑 1：按 species name 直接 join"}
+NCBI/GTDB rename、SGB/mOTU split/merge 和 unresolved label 会产生假缺失与假一致。先保存稳定 ID、taxonomy release 和 database crosswalk；name 只用于展示。
+:::
+
+::: {.callout-caution title="坑 4：为公平而强行统一参数"}
+`confidence=0.10`、`g=3` 和 MetaPhlAn marker threshold 没有共同统计含义。公平来自公开 native settings、同一输入、明确 endpoint 与 sensitivity analysis，不来自创造一个看似相同的数字。
+:::
+
+::: {.callout-caution title="坑 7：看到 `mOTUv4.0_` 就说用了旧数据库"}
+database 4.1 仍沿用 `mOTUv4.0_*` feature IDs。版本证据来自 profile header、version file、archive DOI 与 checksum，不来自 feature prefix。
+:::
+
+## 原生结果与 harmonized result 分表
+
+### 三套“未解析量”没有共同分母
+
+| Quantity | Observed | Correct interpretation |
+|---|---:|---|
+| MetaPhlAn `estimated_reads_mapped_to_known_clades` | 261,721 | terminal-clade abundance/length estimator；可大于 199,929 profiling reads |
+| Kraken native classified fragments | 86,373/99,991 | paired fragments with a Kraken classification under Standard-8 c0 |
+| mOTUs marker-aligned reads | 1,122/199,982 | individual reads aligned to marker genes |
+| mOTUs aligned inserts | 673 | paired/single insert evidence entering MGC calculation |
+| mOTUs g3 unassigned | 1/81 scaled counts | unassigned mass within marker-derived output, not all input reads |
+
+所以不能把 `1 - unassigned/81 = 98.8%` 写成 mOTUs read classification rate。实际只有 0.5611% 的 input reads 对齐到 marker database；marker profiler 本来就只需要一小部分高特异性 loci 来估计组成。MetaPhlAn 的 estimated mapped reads 同样不是逐 read 守恒账本。
 
 ```r
 native <- read_tsv(
@@ -453,7 +540,26 @@ harmonized |>
 
 `NativeMassTotal` 只能在同一 profiler 内解释。`harmonized-profile.tsv` 才能跨工具相减，但它已经明确改变了比较域并重新闭合；论文 Methods 必须写出这一步。
 
-### 5. 日常离线 QA 与三格式重画
+### 单样本工业 mock 不能代表人体、土壤、病毒与低生物量场景
+
+MOCK1 包含细菌与古菌的高质量 isolate genomes，适合审计 species/reference mapping，却缺少至少四类困难：
+
+- 真实群落的大量未知物种与 strain microdiversity；
+- 极近缘病原体和水平转移区域；
+- 真菌、原生生物与病毒；
+- extraction blank、低 biomass 与批次污染。
+
+MetaPhlAn 4 的 unknown SGB 与 mOTUs 的 environment-derived genomes 在真实环境样本中可能增加覆盖 [@blancomiguez2023metaphlan4; @ruscheweyh2022motus]；Kraken full/PlusPF/custom databases 也可能改变召回。这里的数字只给出当前 MOCK1 × 当前 release × 当前参数的性能切片。
+
+::: {.callout-caution title="坑 5：只给 rho"}
+大量共同零值、少数高丰度物种和 rank preservation 都可能制造高相关。至少同时给 TV/Aitchison sensitivity、漏检、non-truth、共同域大小和 expected mass。
+:::
+
+::: {.callout-caution title="坑 6：把一次资源测试写成软件固有速度"}
+数据库大小、cap/full、filesystem cache、线程、压缩输入、CPU 与存储都会影响时间。记录 command、database bytes、threads、RSS 和 cache boundary。
+:::
+
+## 日常离线 QA 与三格式重画
 
 ```bash
 "${MOTUS_ENV_PREFIX}/bin/python" \
@@ -467,65 +573,60 @@ harmonized |>
 
 这个入口不读 FASTQ、不解压 MetaPhlAn pickle、不读 mOTUs 大数据库，也不联网。它验证 28 个 frozen payload 的 SHA-256，重新计算 crosswalk、profile、agreement 与 resource 守恒，再导出 PDF、PNG 和 350 dpi LZW TIFF。
 
-## 审计与升级：从“工具排名”升级为测量模型审计 {#sec-audit}
+## 说明共同可检出范围与比较指标 {#sec-methods}
 
-### 1. 忠实保留默认结果，再增加预先声明的敏感性分支
+> Taxonomic profiles were generated from the same 99,991 synchronized, quality-filtered read pairs of the ERR9765746 71-strain MOCK1 community. MetaPhlAn v4.2.5 was run against mpa_vJan26_CHOCOPhlAnSGB_202605 using eight threads. Kraken2 v2.17.1 was evaluated with the Standard-8 database released on 26 June 2026 at confidence 0 and a minimum of two hit groups; species abundances were re-estimated with Bracken package v3.1p1 using the 150-bp distribution and a minimum threshold of 10 reads. A control-aware sensitivity branch used the same-date Standard-16 database and Kraken2 confidence 0.10. mOTUs v4.1.0 was run against marker-gene database v4.1 (Zenodo record 20322482; database date 26 January 2026; taxonomy tables: GTDB R226) with a minimum alignment length of 75 bp and eight mapping threads. One alignment and one marker-gene-cluster table were reused to calculate INSERT_SCALED profiles requiring 1, 3, or 6 marker genes; g=3 was the default branch. Expected community composition comprised 71 assemblies resolving to 69 current NCBI species. Reference-aware recovery used profiler-specific database denominators. Cross-profiler abundance comparisons were restricted to 52 truth species with one-to-one NCBI species–SGB–mOTU mappings, representing 70.738% of the expected genome mass, and each profile was closed within this common domain. Detection used a prespecified post-profile threshold of 0.01% of resolved native abundance. Agreement was summarized by Spearman's rho and total-variation distance. Software environments, database archives, profiles, crosswalks, resource logs, and frozen outputs were checksum-locked; large FASTQ, indexes, BAM, and per-read outputs were retained outside version control.
 
-benchmark 若只调到自己喜欢的参数，会把 tuning advantage 冒充工具优势。推荐表格至少分成：
+Methods 还应在补充材料给出：
 
-| Layer | Required report |
-|---|---|
-| Native/default | vendor/default or study-prespecified parameters |
-| Database sensitivity | release、content、cap/full status |
-| Evidence sensitivity | MetaPhlAn threshold；Kraken confidence/hit groups；mOTUs `g` |
-| Harmonized comparison | crosswalk version、one-to-one domain、closure、threshold |
+- 两个 FASTQ SHA-256 与 normalized pair-ID hash；
+- MetaPhlAn、Kraken 与 mOTUs database release/checksum；
+- `g`、confidence、hit groups、Bracken rank/read length/threshold；
+- strict crosswalk 与 excluded species 表；
+- native/default 与 sensitivity branches 的完整结果；
+- wall time、maximum RSS、threads、database bytes 和运行硬件。
 
-第 17 篇的 Kraken `c0.10` 是基于人类方法对照选出的操作点，不是 Kraken 原生默认值；因此这里保留 `c0` 与 `c0.10` 两行。mOTUs 同理保留 `g=3` default，并单列 `g=1/6`。
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
-### 2. 当前 mOTUs archive 内有两组可复现但不能静默修正的计数差异
+### 最少需要什么
 
-数据库版本文件写：
+1. 每个样本同一份去宿主、质控后的 paired FASTQ；
+2. 三套 profiler 的 software version、database release 与 checksum；
+3. 样本 metadata、blank、positive mock 和批次信息；
+4. 保留 native feature IDs 的未过滤 profile；
+5. 若做性能声明，还需要可追溯 truth；没有 truth 时只能报告 concordance，不能报告 accuracy。
+
+### 把单样本 benchmark 升级为队列级比较
+
+对每个 sample 保留三套 native tables，先做数据库 crosswalk，再产生三个层级：
 
 ```text
-motus: 124295
-assigned_motus: 124299
-unassigned_motus: 1
-genomes: 3897967
+native tables
+├── discovery: each profiler's full native feature space
+├── harmonized: strict one-to-one common species only
+└── discordance audit: absent / split / merge / name-only features
 ```
 
-运行时 loader 报告 124,300 mOTUs，等于 `assigned_motus + unassigned_motus`；`genomes.tsv.gz` 实际有 3,897,966 个数据行，比版本文件的 `genomes` 少 1。archive 的 publisher MD5、整包 SHA-256 和 7 个内部发布 MD5 全部通过，所以这不是本地损坏证据。正确做法是同时报告 **header count 与 observed count**，并锁 archive checksum；不要为得到一致数字而改文件。
+队列级结果不要只比较每样本 feature count。至少评估：
 
-### 3. GTDB 版本要读交付文件，不从工具论文年份猜
+- prevalence 与 abundance threshold sensitivity；
+- blank/control burden 与批次效应；
+- alpha/beta diversity conclusion stability；
+- disease association 的 effect direction、FDR 与 leave-one-cohort-out stability；
+- 关键 taxa 的独立 read alignment、coverage breadth 或 qPCR/ddPCR 验证。
 
-mOTUs database 4.1 的两个 taxonomy tables 均声明 GTDB R226。GTDB 更新可能带来 genus rename、species split/merge 与 representative genome 变化；本次已见：
+### 如何选择主工具
 
-- `Pseudomonas putida` expected assembly 对应 `Pseudomonas_E alloputida`；
-- `Pseudomonas fluorescens` 对应 `Pseudomonas_E petroselini`；
-- *Salinispora tropica* 在 GTDB 路径中落入 *Micromonospora tropica*；
-- 两个 *Methanococcus maripaludis* assemblies 落入不同 mOTUs。
+| Primary goal | Sensible starting point | Required safeguard |
+|---|---|---|
+| 大型人体队列、标准化 species/SGB composition | MetaPhlAn 或 mOTUs | database coverage 与 unknown-feature boundary |
+| 广谱病原候选、非细菌内容、自定义参考 | Kraken2 + carefully built database | blanks、coverage、confirmatory alignment、contamination audit |
+| 环境样本、未知微生物较多 | 至少比较两种 reference strategies | unknown reference coverage、assembly/MAG complement |
+| 关键生物标志物投稿 | 一个主 profiler + 一个独立敏感性 profiler | prespecified consensus/discordance rule |
 
-这些不是简单 `gsub("_", " ")` 能解决的名字格式问题。
+工具选择应在看疾病标签和显著性之前预先声明。若两个 profiler 对关键结论分歧，优先解释 reference/feature/evidence 边界，并回到 reads 与 coverage；不要挑出最显著的那套结果当主分析。
 
-### 4. 单样本工业 mock 不能代表人体、土壤、病毒与低生物量场景
-
-MOCK1 包含细菌与古菌的高质量 isolate genomes，适合审计 species/reference mapping，却缺少至少四类困难：
-
-- 真实群落的大量未知物种与 strain microdiversity；
-- 极近缘病原体和水平转移区域；
-- 真菌、原生生物与病毒；
-- extraction blank、低 biomass 与批次污染。
-
-MetaPhlAn 4 的 unknown SGB 与 mOTUs 的 environment-derived genomes 在真实环境样本中可能增加覆盖 [@blancomiguez2023metaphlan4; @ruscheweyh2022motus]；Kraken full/PlusPF/custom databases 也可能改变召回。这里的数字只给出当前 MOCK1 × 当前 release × 当前参数的性能切片。
-
-### 5. Genome percentage 不是 cell fraction 或 read fraction
-
-真值表给的是 expected genome percentage。实际 reads 还受 genome length、GC、提取、建库与测序偏差影响；marker profilers又只观察特定基因区域。若要评价 absolute cell abundance，应加入细胞数/拷贝数可追溯的 spike-in 或 flow cytometry，不应把 composition correlation 冒充绝对定量准确度。
-
-::: {.callout-warning title="审稿人最容易攻击的结论"}
-“Kraken 检出最多，所以最好”“mOTUs 没有假阳性，所以最准确”“MetaPhlAn feature 最少，所以最保守”都缺少必要条件。至少同时报告 reference denominator、non-truth burden、共同域质量、abundance distance、参数分支与独立控制。
-:::
-
-## 出版级美化 {#sec-polish}
+## 图中应该保留哪些信息？ {#sec-polish}
 
 图内只保留英文，并让颜色编码 tool family：MetaPhlAn 蓝、Kraken 橙、mOTUs 绿、truth 深灰。不要在一张图上用截断 y 轴放大 1–2 个物种的差异；检出图从 0 起点，distance matrix 写出数值，resource plot 标明 full/capped database 边界。
 
@@ -567,90 +668,11 @@ p <- ggplot(
 save_pub(p, "figures/my-profiler-recovery", width = 7.2, height = 4.8)
 ```
 
-## 常见坑 {#sec-pitfalls}
+## 回到最初的问题
 
-::: {.callout-caution title="坑 1：按 species name 直接 join"}
-NCBI/GTDB rename、SGB/mOTU split/merge 和 unresolved label 会产生假缺失与假一致。先保存稳定 ID、taxonomy release 和 database crosswalk；name 只用于展示。
-:::
+同一批 MOCK1 reads 交给 MetaPhlAn、Kraken2/Bracken 与 mOTUs，为什么物种数和丰度会不同？先对齐数据库可检出域、SGB/mOTU/NCBI species，再比较召回、非真值负担、组成距离与资源。
 
-::: {.callout-caution title="坑 2：三套 recall 都除以 69"}
-数据库没有参考的物种不属于相同可检出域。报告 overall truth recovery 可以，但必须另给 reference-aware recovery，并把 absent expected mass 单列。
-:::
-
-::: {.callout-caution title="坑 3：把 unassigned 当成 input reads 的补集"}
-mOTUs g3 的 1/81 是 marker-derived scaled count；MetaPhlAn estimated reads 也是模型量。只有 Kraken per-fragment ledger 在当前设置下可直接与 99,991 pairs 守恒。
-:::
-
-::: {.callout-caution title="坑 4：为公平而强行统一参数"}
-`confidence=0.10`、`g=3` 和 MetaPhlAn marker threshold 没有共同统计含义。公平来自公开 native settings、同一输入、明确 endpoint 与 sensitivity analysis，不来自创造一个看似相同的数字。
-:::
-
-::: {.callout-caution title="坑 5：只给 rho"}
-大量共同零值、少数高丰度物种和 rank preservation 都可能制造高相关。至少同时给 TV/Aitchison sensitivity、漏检、non-truth、共同域大小和 expected mass。
-:::
-
-::: {.callout-caution title="坑 6：把一次资源测试写成软件固有速度"}
-数据库大小、cap/full、filesystem cache、线程、压缩输入、CPU 与存储都会影响时间。记录 command、database bytes、threads、RSS 和 cache boundary。
-:::
-
-::: {.callout-caution title="坑 7：看到 `mOTUv4.0_` 就说用了旧数据库"}
-database 4.1 仍沿用 `mOTUv4.0_*` feature IDs。版本证据来自 profile header、version file、archive DOI 与 checksum，不来自 feature prefix。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-> Taxonomic profiles were generated from the same 99,991 synchronized, quality-filtered read pairs of the ERR9765746 71-strain MOCK1 community. MetaPhlAn v4.2.5 was run against mpa_vJan26_CHOCOPhlAnSGB_202605 using eight threads. Kraken2 v2.17.1 was evaluated with the Standard-8 database released on 26 June 2026 at confidence 0 and a minimum of two hit groups; species abundances were re-estimated with Bracken package v3.1p1 using the 150-bp distribution and a minimum threshold of 10 reads. A control-aware sensitivity branch used the same-date Standard-16 database and Kraken2 confidence 0.10. mOTUs v4.1.0 was run against marker-gene database v4.1 (Zenodo record 20322482; database date 26 January 2026; taxonomy tables: GTDB R226) with a minimum alignment length of 75 bp and eight mapping threads. One alignment and one marker-gene-cluster table were reused to calculate INSERT_SCALED profiles requiring 1, 3, or 6 marker genes; g=3 was the default branch. Expected community composition comprised 71 assemblies resolving to 69 current NCBI species. Reference-aware recovery used profiler-specific database denominators. Cross-profiler abundance comparisons were restricted to 52 truth species with one-to-one NCBI species–SGB–mOTU mappings, representing 70.738% of the expected genome mass, and each profile was closed within this common domain. Detection used a prespecified post-profile threshold of 0.01% of resolved native abundance. Agreement was summarized by Spearman's rho and total-variation distance. Software environments, database archives, profiles, crosswalks, resource logs, and frozen outputs were checksum-locked; large FASTQ, indexes, BAM, and per-read outputs were retained outside version control.
-
-Methods 还应在补充材料给出：
-
-- 两个 FASTQ SHA-256 与 normalized pair-ID hash；
-- MetaPhlAn、Kraken 与 mOTUs database release/checksum；
-- `g`、confidence、hit groups、Bracken rank/read length/threshold；
-- strict crosswalk 与 excluded species 表；
-- native/default 与 sensitivity branches 的完整结果；
-- wall time、maximum RSS、threads、database bytes 和运行硬件。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 最少需要什么
-
-1. 每个样本同一份去宿主、质控后的 paired FASTQ；
-2. 三套 profiler 的 software version、database release 与 checksum；
-3. 样本 metadata、blank、positive mock 和批次信息；
-4. 保留 native feature IDs 的未过滤 profile；
-5. 若做性能声明，还需要可追溯 truth；没有 truth 时只能报告 concordance，不能报告 accuracy。
-
-### 把单样本 benchmark 升级为队列级比较
-
-对每个 sample 保留三套 native tables，先做数据库 crosswalk，再产生三个层级：
-
-```text
-native tables
-├── discovery: each profiler's full native feature space
-├── harmonized: strict one-to-one common species only
-└── discordance audit: absent / split / merge / name-only features
-```
-
-队列级结果不要只比较每样本 feature count。至少评估：
-
-- prevalence 与 abundance threshold sensitivity；
-- blank/control burden 与批次效应；
-- alpha/beta diversity conclusion stability；
-- disease association 的 effect direction、FDR 与 leave-one-cohort-out stability；
-- 关键 taxa 的独立 read alignment、coverage breadth 或 qPCR/ddPCR 验证。
-
-### 如何选择主工具
-
-| Primary goal | Sensible starting point | Required safeguard |
-|---|---|---|
-| 大型人体队列、标准化 species/SGB composition | MetaPhlAn 或 mOTUs | database coverage 与 unknown-feature boundary |
-| 广谱病原候选、非细菌内容、自定义参考 | Kraken2 + carefully built database | blanks、coverage、confirmatory alignment、contamination audit |
-| 环境样本、未知微生物较多 | 至少比较两种 reference strategies | unknown reference coverage、assembly/MAG complement |
-| 关键生物标志物投稿 | 一个主 profiler + 一个独立敏感性 profiler | prespecified consensus/discordance rule |
-
-工具选择应在看疾病标签和显著性之前预先声明。若两个 profiler 对关键结论分歧，优先解释 reference/feature/evidence 边界，并回到 reads 与 coverage；不要挑出最显著的那套结果当主分析。
-
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - MOCK1 数据与期望组成：Meslier et al. [@meslier2022platforms]
 - MetaPhlAn 4 方法与 SGB 扩展：Blanco-Míguez et al. [@blancomiguez2023metaphlan4]

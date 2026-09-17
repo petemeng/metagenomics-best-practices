@@ -69,7 +69,7 @@ def quarto_payload(manifest: dict[str, Any]) -> dict[str, Any]:
         "book": {
             "title": "宏基因组分析最佳实践 · Shotgun",
             "subtitle": "从真实公开数据到可投稿证据",
-            "author": "Songlab",
+            "author": "Peter",
             "site-url": "https://petemeng.github.io/metagenomics-best-practices/",
             "repo-url": "https://github.com/petemeng/metagenomics-best-practices",
             "repo-actions": ["edit", "issue"],

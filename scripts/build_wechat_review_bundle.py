@@ -107,6 +107,7 @@ def parse_args() -> argparse.Namespace:
         help="Build only this chapter; repeat to select multiple chapters.",
     )
     parser.add_argument("--author", default="Peter")
+    parser.add_argument("--source-ref", help="Immutable source commit for chapter-specific source links.")
     parser.add_argument(
         "--review-url",
         help="Public source URL; defaults to publication.repo.public_url.",
@@ -294,16 +295,8 @@ def remove_unwanted(main: etree._Element) -> None:
 def remove_wechat_bootstrap(main: etree._Element) -> int:
     """Remove generic website-only setup while retaining scientific decisions."""
     removed = 0
-    for section in list(main.xpath(".//section")):
-        headings = section.xpath("./h2[1]")
-        section_id = section.get("id") or ""
-        heading = normalized_text(headings[0]) if headings else ""
-        if section_id not in {"sec-setup", "sec-preparation"} and heading != "准备工作":
-            continue
-        parent = section.getparent()
-        if parent is not None:
-            parent.remove(section)
-            removed += 1
+    # A preparation section may contain the only data source or input table.
+    # Omission is explicit (.wechat-omit), never inferred from a section ID.
 
     for details in list(main.xpath(".//details")):
         summaries = details.xpath("./summary[1]")
@@ -322,6 +315,15 @@ def remove_wechat_bootstrap(main: etree._Element) -> int:
         parent = details.getparent()
         if parent is not None:
             parent.remove(details)
+            removed += 1
+    # Drop empty headings left after an explicitly omitted setup detail, but
+    # keep every section that still contains scientific prose/tables/code.
+    for section in reversed(list(main.xpath('.//section'))):
+        if section.get('id') not in {'sec-setup', 'sec-preparation'}:
+            continue
+        children = [c for c in section if c.tag not in {'h2', 'h3'}]
+        if not any(normalized_text(c) or c.xpath('.//img') for c in children):
+            section.drop_tree()
             removed += 1
     return removed
 
@@ -778,7 +780,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "author": args.author,
             "digest": digest_for(chapter),
             "content": content,
-            "content_source_url": review_url,
+            "content_source_url": (
+                f"{review_url.rstrip('/')}/blob/{args.source_ref}/{qmd_path}"
+                if args.source_ref else review_url
+            ),
             "thumb_media_id": None,
             "show_cover_pic": 1,
             "need_open_comment": 0,

@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -16,7 +18,17 @@ SHARED_ROOT = Path(__file__).resolve().parents[2]
 if str(SHARED_ROOT) not in sys.path:
     sys.path.insert(0, str(SHARED_ROOT))
 
-from tutorial_automation.manifest import load_manifest
+try:
+    from tutorial_automation.manifest import load_manifest
+except ModuleNotFoundError:
+    # A reader clone must not depend on the author's parent workspace.
+    def load_manifest(path):
+        document = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        if not isinstance(document, dict) or not isinstance(document.get('series'), dict):
+            raise ValueError('A valid tutorial manifest with a series section is required')
+        return {'manifest_hash': hashlib.sha256(
+            json.dumps(document, ensure_ascii=False, sort_keys=True).encode('utf-8')
+        ).hexdigest()}
 
 
 EXPECTED_COUNT = 77
@@ -28,16 +40,14 @@ UPSTREAM_EVAL_FALSE = {
     30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
 }
 REQUIRED_SECTIONS = (
-    "这一步对应论文里的哪张图",
-    "理论",
-    "准备工作",
-    "可复制代码",
-    "审计与升级",
-    "出版级美化",
-    "常见坑",
-    "这段 Methods 怎么写",
-    "换成你自己的数据怎么做",
-    "参考",
+    "先确定这一点",
+    "参考文献",
+)
+LEGACY_SLOT_H2 = re.compile(
+    r"^##\s+(?:这一步对应论文里的哪张图|理论[：:]|准备工作(?:\s|\{|$)|"
+    r"可复制代码(?:\s|[：:]|\{|$)|.*审计与升级|出版级美化|常见坑(?:方框)?(?:\s|[：:]|\{|$)|"
+    r"这段 Methods 怎么写|换成你自己的数据怎么做)",
+    re.M,
 )
 REQUIRED_ARTICLE_TOKENS = {
     1: (
@@ -1054,7 +1064,7 @@ def main() -> int:
         execute = metadata.get("execute", {})
         if not isinstance(execute, dict) or not isinstance(execute.get("eval"), bool):
             errors.append(f"article {number:02d} must declare boolean execute.eval")
-        elif number in EXECUTABLE_TOKEN_NUMBERS:
+        elif number in EXECUTABLE_TOKEN_NUMBERS and metadata.get('reader-mode') != 'evidence':
             expected_eval = number not in UPSTREAM_EVAL_FALSE
             if execute.get("eval") is not expected_eval:
                 errors.append(
@@ -1068,7 +1078,15 @@ def main() -> int:
                 errors.append(
                     f"article {number:02d} is missing section: {section}"
                 )
-        if number in EXECUTABLE_TOKEN_NUMBERS:
+        if number != 71 and metadata.get('reader-mode') != 'evidence':
+            for token in ("#sec-theory", "#sec-code", "#sec-audit", ".callout-caution"):
+                if token not in text:
+                    errors.append(
+                        f"article {number:02d} is missing localized linear token: {token}"
+                    )
+        if LEGACY_SLOT_H2.search(text):
+            errors.append(f"article {number:02d} still contains a legacy slot H2")
+        if number in EXECUTABLE_TOKEN_NUMBERS and metadata.get('reader-mode') != 'evidence':
             for token in REQUIRED_ARTICLE_TOKENS[number]:
                 if token not in text:
                     errors.append(

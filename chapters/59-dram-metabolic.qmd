@@ -1,5 +1,6 @@
 ---
-title: "第 59 篇 · 基因组解析代谢：DRAM / METABOLIC"
+author: "Peter"
+title: "基因组解析代谢：DRAM / METABOLIC"
 description: "用 24 个真实代表 MAG 比较 DRAM 与 METABOLIC 的 KO、模块和生物地球化学证据，并用确定性截短实验证明不完整 MAG 会制造代谢缺失"
 draft: false
 bibliography: ../references.bib
@@ -22,6 +23,7 @@ wechat:
     - {label: "质量敏感性", value: "50% · 70% · 90% · 100% truncation"}
   code_heading: "从共同 KO 域到模块共识、元素循环证据与 MAG 截短审计"
   expected_images: 6
+reader-mode: upstream
 ---
 
 > **先给结论：**DRAM 和 METABOLIC 都能把 MAG 转成代谢注释，但“检出一个同源基因”“一条规则通过”“模块达到完整度阈值”“该 MAG 具有代谢潜力”和“群落正在产生通量”是五个不同强度的结论。这里把 24 个真实、经 CheckM2 和 GTDB-Tk R232 审计的非冗余 MAG 同时交给 DRAM 1.5.0 与 METABOLIC-G v4.0，并用同一份 KOfam 2026-06-01 快照控制数据库差异。在共同 2,678-KO ID 域内，每个 MAG 的 KO-set Jaccard 中位数为 **0.853**（范围 0.794--0.941）；13 个共享 modules 的 312 个 genome-level 判定中有 **307 个一致（98.4%）**。工具间不一致不是应被抹平的噪声，而是需要回到阈值、模块规则、motif、基因邻域和 MAG 质量逐项解释的审计入口。
@@ -34,7 +36,13 @@ wechat:
 本次 28 个 genome inputs 在大内存节点上使用 DRAM **24 个并行分片 × 每片 3 threads**，总 CPU ceiling 为 72；METABOLIC-G 使用 32 threads。建议为这一并行配置预留 **192--256 GB RAM、72 CPU、80 GB 磁盘和 30--60 分钟**。普通服务器可把 `--dram-jobs` 降到 4--8，并为每个 KOfam scan 预留约 8 GB RAM，代价是延长 wall time。实测 DRAM annotation wall time 为 **41 min 50.94 s**，merge 为 2.85 s，distill 为 56.98 s；METABOLIC 的独立 Prodigal 步骤为 **2 min 10.39 s**，METABOLIC-G 为 **13 min 01.69 s**。数据库构建与全部步骤的 GNU-time 账本保存在固化包。没有服务器时，先用固化的 `annotations.tsv.gz`、`product.tsv`、六张 METABOLIC worksheets 和每基因组 KO 表完成统计与作图；完整 HMM 搜索放到 HPC 或云端批处理。
 :::
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+同源注释、模块完整度与代谢潜力要分开；不完整 MAG 的缺失不能直接写成功能缺失。
+
+:::
+
+## 通路相关基因存在，是否足以支持代谢功能？ {#sec-target}
 
 DRAM 原始论文的 **Figure 1** 是从 raw genomes 到 annotation、distillate 与 product 的工作流，**Figure 2** 展示单基因与代谢类别的 genome-centric 汇总，**Figure 3** 用 module completion、subunit completion 和 presence/absence heatmaps 比较 genomes，**Figure 4** 把这种证据用于肠道碳利用生态解释 [@shaffer2020dram]。本次首先复现 Figure 3 的核心思想：保留连续 module-step coverage，再在明确的 0.75 cutoff 上比较二元结论。
 
@@ -42,71 +50,28 @@ METABOLIC 论文的 **Figure 1** 给出 genome、HMM、motif、module 与 networ
 
 ![DRAM 对 13 个共享 KEGG modules 的连续 step coverage。叉号表示在 0.75 presence cutoff 上与 METABOLIC 的二元判定不一致。](../figures/59-pathway-module-heatmap.png){#fig-59-module-heatmap}
 
-## 理论：从同源基因到代谢潜力，中间有四道门 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. Profile HMM 命中首先是序列证据
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/59/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 23.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-KOfamKOALA 为每个 KEGG Ortholog（KO）建立 profile hidden Markov model，并提供 profile-specific adaptive score threshold [@aramaki2020kofamkoala]。HMMER 搜索给出的 score、E-value 和 domain alignment 是“该蛋白与某个家族相似”的证据 [@eddy2011hmmer]，但单次命中仍可能遇到：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/59/download.R)。
 
-- 同一保守 domain 被多个功能共享；
-- 截短基因只覆盖 HMM 的局部；
-- paralog 与真正催化亚基难以区分；
-- gene calling 跨 contig 边界而丢失 N/C 端；
-- contamination 把另一类群的命中带入当前 bin。
+```{r}
+#| label: reader-input-download-59
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/59/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-因此第一层结果应保存 gene ID、contig、坐标、strand、score、threshold、alignment 与 competing annotations，不能只留下一个扁平的 KO presence/absence 表。
-
-### 2. 诊断性过程常需要组合规则、motif 与邻域
-
-氮循环、甲烷代谢、硫循环和金属还原常由多亚基复合物、相似酶家族和方向不同的反应共同决定。METABOLIC 在通用 KOfam 之外使用 curated HMMs、multi-gene rules 与部分 motif gates，将 gene-level hits 汇总成 function presence [@zhou2022metabolic]。这比“任意一个 KO 命中即阳性”更接近生物学，但仍需要人工检查：
-
-1. 必需亚基是否齐全，还是只有 accessory subunit；
-2. diagnostic residue 或 motif 是否位于高质量 alignment 区域；
-3. 基因是否位于合理 operon/neighborhood，而不是分散在可疑 contigs；
-4. 同一 contig 的 coverage、GC 和 taxonomy 是否与 MAG 主体一致；
-5. 反应方向是否能由基因家族本身确定。
-
-### 3. Module completeness 是连续量，presence 是人为决策
-
-设 module 有 \(S\) 个逻辑 steps，第 \(s\) 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：
-
-\[
-C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.
-\]
-
-本次为跨工具审计预先固定 \(C_m \ge 0.75\) 作为 DRAM presence，并使用 METABOLIC-G 的 `-m-cutoff 0.75`。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。
-
-对于 genome \(g\)，两套 KO 集合的一致性用 Jaccard 指数：
-
-\[
-J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}
-{|K_g^{DRAM}\cup K_g^{METABOLIC}|}.
-\]
-
-Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。
-
-### 4. MAG 质量限定了“absence”和“完整 pathway”的可信度
-
-本次每个 SGB 都带回 CheckM2 completeness/contamination 与 GTDB-Tk R232 taxonomy。解释规则是：
-
-| MAG 状态 | 对阴性结果的解释 | 对阳性 pathway 的审计 |
-|---|---|---|
-| Completeness <70% | 不把未检出写成生物学缺失 | 检查是否只剩少数保守步骤 |
-| Completeness 70--90% | absence 仅作弱证据 | 报告 missing steps 与 contig 边界 |
-| Completeness >=90% | absence 仍是暂定结论 | 检查 gene call、motif 与替代路线 |
-| Contamination >=5% | 可能额外检出外源基因 | 检查 pathway 是否由异质 contigs 拼成 |
-
-`SGB_006` 的 CheckM2 contamination 为 6.95%，因此被显式标成 composite-pathway risk；`SGB_008` 和 `SGB_015` completeness 分别为 59.51% 和 69.48%，因此其阴性结果不能升级为物种层面的基因缺失。
-
-![24 个真实代表 MAG 的关键碳、氮、硫、甲烷、砷和金属过程规则。蓝格仅表示规则通过，不表示该过程正在发生。](../figures/59-key-process-evidence.png){#fig-59-key-processes}
-
-### 5. 证据阶梯决定结论上限
-
-![从 adaptive-threshold HMM hit 到 condition-matched activity/flux evidence 的五层证据阶梯。](../figures/59-metabolism-evidence-ladder.png){#fig-59-evidence-ladder}
-
-一个 gene hit 的结论上限是 homologous family detected；curated rule 可以支持 diagnostic trait；达到 cutoff 的模块支持 pathway encoded in part or in full；结合 MAG 质量与邻域审计后才可写“the genome has metabolic potential”。只有 RNA、protein、metabolite、isotope 或 flux evidence 才能把结论推进到 measured condition 下的 activity 或 flux。
-
-## 准备工作 {#sec-preparation}
+## 先锁定输入、版本和算力边界 {#sec-preparation}
 
 ### 真实输入与固定身份
 
@@ -133,7 +98,7 @@ Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、th
 
 METABOLIC v4.0 请求 2,644 个 KOfam profiles；锁定快照中 `K18513.hmm` 已不存在，因此兼容层只纳入 2,643 个实际存在的 profiles，并把 `K18513` 标为 fail-closed exclusion。METABOLIC 的 per-genome KO grid 有 2,678 行，因为另有 35 个 curated HMM rules 映射到 KO；不能把 2,678 误写成 KOfam profile 数。
 
-<details>
+<details class="wechat-omit">
 <summary><strong>安装精确环境、下载数据库并内联作图函数</strong></summary>
 
 ```bash
@@ -200,7 +165,7 @@ save_pub <- function(plot, file_base, width = 205, height = 145,
 
 </details>
 
-### 先核验固化证据
+### 先核验保存证据
 
 `data/small/59-dram-metabolic-frozen/` 保存输入 ledger、数据库 manifest/compatibility audit、压缩后的 DRAM annotations、DRAM distillate、METABOLIC 六张 worksheets、28 组 KO result/hit tables、命令、日志、资源账本、环境锁和全部汇总表。31 GB 数据库与完整 MAG FASTA 不重复打包；其来源、bytes、checksum 和派生关系均在证据包中。
 
@@ -214,9 +179,19 @@ column -ts $'\t' "$FROZEN/module-agreement-summary.tsv"
 cat "$FROZEN/summary.json"
 ```
 
-## 可复制代码：从 MAG FASTA 到可审计代谢矩阵 {#sec-code}
+## 准备 MAG、数据库链接与确定性 sensitivity inputs {#sec-code}
 
-### 第 1 步：准备 MAG、数据库链接与确定性 sensitivity inputs
+### Profile HMM 命中首先是序列证据 {#sec-theory}
+
+KOfamKOALA 为每个 KEGG Ortholog（KO）建立 profile hidden Markov model，并提供 profile-specific adaptive score threshold [@aramaki2020kofamkoala]。HMMER 搜索给出的 score、E-value 和 domain alignment 是“该蛋白与某个家族相似”的证据 [@eddy2011hmmer]，但单次命中仍可能遇到：
+
+- 同一保守 domain 被多个功能共享；
+- 截短基因只覆盖 HMM 的局部；
+- paralog 与真正催化亚基难以区分；
+- gene calling 跨 contig 边界而丢失 N/C 端；
+- contamination 把另一类群的命中带入当前 bin。
+
+因此第一层结果应保存 gene ID、contig、坐标、strand、score、threshold、alignment 与 competing annotations，不能只留下一个扁平的 KO presence/absence 表。
 
 ```bash
 ROOT="$PWD"
@@ -245,7 +220,29 @@ column -ts $'\t' "$WORK/kofam-compatibility-audit.tsv" | grep -E 'Profile|K18513
 
 送入 METABOLIC 的 contig 与 protein identifiers 都带 `genome_id__` 前缀。这个 gate 很重要：parent MAG 与截短 sensitivity genomes 共享原始 contig names；若 gene IDs 不加 genome prefix，合并 HMM 搜索会把重复 ID 归到错误 genome，制造整列假阴性。
 
-### 第 2 步：构建 KOfam-only DRAM database 与 METABOLIC indexes
+::: {.callout-caution title="5. 把 taxonomy 当成功能证据"}
+GTDB-Tk R232 taxonomy 用于标记 genome lineage，不自动赋予该属/种的教科书代谢。功能结论必须来自当前 genome 的序列证据；反过来，一个孤立 gene hit 也不能推翻整套分类。
+:::
+
+::: {.callout-caution title="6. 混用数据库 release 或隐性更新"}
+同一 cohort 中的 genomes 必须使用同一 KOfam、dbCAN、MEROPS 和 rule forms。不要让下载脚本指向 `latest` 后在队列中途更新；每个 archive 记录 release、bytes、SHA-256 和 retrieval date。
+:::
+
+::: {.callout-caution title="8. parent 与截短对照复用 gene IDs"}
+同一 genome 的完整与截短 FASTA 会共享 contig names。若合并 HMM 搜索只用裸 gene ID，后出现的记录可能覆盖前面的归属，造成某些 genomes 整列为零。所有 protein IDs 必须全局唯一；这里强制使用 `genome_id__contig_gene`，并要求每个 genome 至少有一个 KO hit、100% control 精确复现 parent KO set。
+:::
+
+## 构建 KOfam-only DRAM database 与 METABOLIC indexes
+
+### 诊断性过程常需要组合规则、motif 与邻域
+
+氮循环、甲烷代谢、硫循环和金属还原常由多亚基复合物、相似酶家族和方向不同的反应共同决定。METABOLIC 在通用 KOfam 之外使用 curated HMMs、multi-gene rules 与部分 motif gates，将 gene-level hits 汇总成 function presence [@zhou2022metabolic]。这比“任意一个 KO 命中即阳性”更接近生物学，但仍需要人工检查：
+
+1. 必需亚基是否齐全，还是只有 accessory subunit；
+2. diagnostic residue 或 motif 是否位于高质量 alignment 区域；
+3. 基因是否位于合理 operon/neighborhood，而不是分散在可疑 contigs；
+4. 同一 contig 的 coverage、GC 和 taxonomy 是否与 MAG 主体一致；
+5. 反应方向是否能由基因家族本身确定。
 
 ```bash
 python3 scripts/setup_article59_dram_database.py \
@@ -267,7 +264,15 @@ column -ts $'\t' "$WORK/merops-normalization-audit.tsv"
 
 DRAM database deliberately只启用 KOfam，以便工具比较不被 UniRef、Pfam 等额外资源混淆。MEROPS FASTA 的 whitespace cleanup 写入新文件，原始 `pepunit.lib` 不被修改；peptidase database 的生物学定义来自 MEROPS [@rawlings2014merops]。METABOLIC v4.0 安装说明中的 dbCAN v10 URL 已失效，因此这里使用当前 dbCAN 5.2.9 HMM，并把替换后的文件身份和兼容性审计写入 Methods [@zheng2023dbcan3]。
 
-### 第 3 步：运行 DRAM 和 METABOLIC-G
+### 同一 KOfam snapshot 不等于同一 workflow {#sec-audit}
+
+这次比较主动把 KOfam release 固定到 2026-06-01，因此数据库时间漂移被大幅压低，但搜索空间并不相同：DRAM 用完整 27,754-profile archive，METABOLIC 用 2,643-profile subset 加 35 条 curated KO rules。只有共同 2,678-KO grid 可以进入 KO Jaccard；全库 DRAM 数不能直接与 METABOLIC 数比较。共同域内的剩余差异主要来自 gene-to-KO parsing、profile threshold 应用、curated HMM、alternative steps 和 module logic。若两个工具不一致，正确顺序是回到 gene IDs 与 raw hits，再检查规则；不能投票后把少数结果删除。
+
+::: {.callout-caution title="3. 让污染 contigs 拼出一条完整通路"}
+若 pathway genes 分布在 coverage、GC 或 taxonomy 异常的 contigs 上，完整模块可能是 composite signal。对 contamination >=5% 或 GUNC 可疑的 MAG，先做 contig-level provenance，再讨论单细胞代谢能力。
+:::
+
+## 运行 DRAM 和 METABOLIC-G
 
 ```bash
 python3 scripts/run_article59_metabolism.py \
@@ -300,7 +305,57 @@ METABOLIC-G.pl \
 
 这种入口不要求为 FASTA parsing 额外引入旧版 BioPerl，并保证两个 workflow 都使用同一版 Prodigal。完成 gate 同时要求 six worksheets、28 个 KO result/hit pairs，以及日志中的 HMM、dbCAN、MEROPS 和 `METABOLIC-G was done` 四类完成证据。
 
-### 第 4 步：汇总 KO、modules、traits 与 MAG 质量
+### DRAM 1.5.0 是稳定复现锚点，DRAM2 仍需分支验证
+
+本次选择 DRAM 1.5.0，是因为已发表版本、exact conda lock 和输出 schema 可以一起锁定。DRAM2 提供重新设计的数据库与工作流，但截至本次环境审计仍以 beta release 迭代；不要把 DRAM2 beta 的命令、database manifest 或输出列与 DRAM 1.5.0 混写。迁移时应建立独立环境与数据库，先在同一批 checksum-identified MAGs 上验证 KO retention、module schema 和 resource use，再决定是否替换主流程。
+
+### 数据库更新必须与方法更新一起报告
+
+KOfam、dbCAN、MEROPS 和 curated forms 都会变化。数据库版本改变可能比软件 minor version 更显著地改变 hits。这里遇到的 `K18513` 缺失采用 fail-closed exclusion，不下载来源不明的旧 profile；METABOLIC 旧 dbCAN URL 失效则以当前 5.2.9 替换，并完整记录 checksum。正式研究若必须忠实复现旧论文，应保留旧数据库快照；若采用新库，则把结果写成 method update 而非声称 byte-level replication。
+
+::: {.callout-caution title="1. 把 gene hit 写成 activity 或 flux"}
+Genome annotation描述 DNA 编码潜力。即使某条 pathway 的所有 genes 都在，也不能证明它在采样条件下表达、产生代谢物或贡献净通量。结果中使用 `encoded`, `genomic potential`, `putative`；只有增加条件匹配的功能证据后再使用 `active` 或 `flux`。
+:::
+
+::: {.callout-caution title="4. 只看 KO 名，不检查 motif、亚基和邻域"}
+氮、硫、甲烷和金属过程常有 homolog ambiguity。对决定性结论保留 raw HMM hit、alignment 与 gene coordinates；必要时用人工结构域/保守位点检查和独立工具验证。
+:::
+
+## 汇总 KO、modules、traits 与 MAG 质量
+
+### Module completeness 是连续量，presence 是人为决策
+
+设 module 有 \(S\) 个逻辑 steps，第 \(s\) 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：
+
+\[
+C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.
+\]
+
+本次为跨工具审计预先固定 \(C_m \ge 0.75\) 作为 DRAM presence，并使用 METABOLIC-G 的 `-m-cutoff 0.75`。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。
+
+对于 genome \(g\)，两套 KO 集合的一致性用 Jaccard 指数：
+
+\[
+J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}
+{|K_g^{DRAM}\cup K_g^{METABOLIC}|}.
+\]
+
+Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。
+
+### MAG 质量限定了“absence”和“完整 pathway”的可信度
+
+本次每个 SGB 都带回 CheckM2 completeness/contamination 与 GTDB-Tk R232 taxonomy。解释规则是：
+
+| MAG 状态 | 对阴性结果的解释 | 对阳性 pathway 的审计 |
+|---|---|---|
+| Completeness <70% | 不把未检出写成生物学缺失 | 检查是否只剩少数保守步骤 |
+| Completeness 70--90% | absence 仅作弱证据 | 报告 missing steps 与 contig 边界 |
+| Completeness >=90% | absence 仍是暂定结论 | 检查 gene call、motif 与替代路线 |
+| Contamination >=5% | 可能额外检出外源基因 | 检查 pathway 是否由异质 contigs 拼成 |
+
+`SGB_006` 的 CheckM2 contamination 为 6.95%，因此被显式标成 composite-pathway risk；`SGB_008` 和 `SGB_015` completeness 分别为 59.51% 和 69.48%，因此其阴性结果不能升级为物种层面的基因缺失。
+
+![24 个真实代表 MAG 的关键碳、氮、硫、甲烷、砷和金属过程规则。蓝格仅表示规则通过，不表示该过程正在发生。](../figures/59-key-process-evidence.png){#fig-59-key-processes}
 
 ```bash
 python3 scripts/summarize_article59_metabolism.py \
@@ -321,7 +376,25 @@ DRAM 完整分支搜索全部 27,754 个 KOfam profiles，METABOLIC `small` 分�
 截短对照保留 52.04%、70.18%、91.07% 和 100% parent sequence 时，DRAM full-KOfam parent KO retention 分别为 **59.04%、73.93%、93.87% 和 100%**，METABOLIC 分别为 **64.05%、78.92%、95.68% 和 100%**；所有截短分支的新 KO 数均为 0。序列完全相同的 `TRUNC_100` 在两套工具中都逐 KO 精确复现 parent，说明前三级的损失来自 contig removal，而不是随机漂移或 ID 冲突。
 :::
 
-### 第 5 步：出图、固化并做独立重算 QA
+### 截短实验校准“阴性”结论
+
+![同一 *N. europaea* MAG 在不同 sequence-retention levels 下的 KO 与 positive-module retention。](../figures/59-truncation-sensitivity.png){#fig-59-truncation}
+
+截短 sensitivity branch 不试图模拟所有组装错误；它只隔离 contig loss 这一机制。若一个 parent-positive KO 或 module 在 50%/70% sequence branch 消失，这就是假阴性的直接演示。相反，真实污染可能引入新 KO、创建虚假完整模块；因此 completeness 和 contamination 要在同一张审计图中呈现。
+
+![CheckM2 completeness、contamination、KO 数与跨工具一致性。低完整度放大阴性风险，污染放大复合通路风险。](../figures/59-completeness-absence-audit.png){#fig-59-absence-audit}
+
+::: {.callout-caution title="2. 把不完整 MAG 的未检出写成物种缺失"}
+低 completeness、contig break 和 truncated gene 都会制造 false absence。至少联报 CheckM2、contig count、missing module steps，并用完整度敏感性或高质量 genome 子集复核。
+:::
+
+## 出图、保存并做独立重算 QA
+
+### 证据阶梯决定结论上限
+
+![从 adaptive-threshold HMM hit 到 condition-matched activity/flux evidence 的五层证据阶梯。](../figures/59-metabolism-evidence-ladder.png){#fig-59-evidence-ladder}
+
+一个 gene hit 的结论上限是 homologous family detected；curated rule 可以支持 diagnostic trait；达到 cutoff 的模块支持 pathway encoded in part or in full；结合 MAG 质量与邻域审计后才可写“the genome has metabolic potential”。只有 RNA、protein、metabolite、isotope 或 flux evidence 才能把结论推进到 measured condition 下的 activity 或 flux。
 
 ```bash
 MPLCONFIGDIR=/tmp/article59-mpl \
@@ -349,29 +422,7 @@ QA 先逐文件核验固化包，再从压缩 DRAM annotations、product、METAB
 
 ![两个 workflow 的 KO 数、KO-set Jaccard，以及 13 个共享模块在 0.75 cutoff 上的一致率。](../figures/59-tool-concordance.png){#fig-59-tool-concordance}
 
-## 审计与升级 {#sec-audit}
-
-### 1. 同一 KOfam snapshot 不等于同一 workflow
-
-这次比较主动把 KOfam release 固定到 2026-06-01，因此数据库时间漂移被大幅压低，但搜索空间并不相同：DRAM 用完整 27,754-profile archive，METABOLIC 用 2,643-profile subset 加 35 条 curated KO rules。只有共同 2,678-KO grid 可以进入 KO Jaccard；全库 DRAM 数不能直接与 METABOLIC 数比较。共同域内的剩余差异主要来自 gene-to-KO parsing、profile threshold 应用、curated HMM、alternative steps 和 module logic。若两个工具不一致，正确顺序是回到 gene IDs 与 raw hits，再检查规则；不能投票后把少数结果删除。
-
-### 2. DRAM 1.5.0 是稳定复现锚点，DRAM2 仍需分支验证
-
-本次选择 DRAM 1.5.0，是因为已发表版本、exact conda lock 和输出 schema 可以一起锁定。DRAM2 提供重新设计的数据库与工作流，但截至本次环境审计仍以 beta release 迭代；不要把 DRAM2 beta 的命令、database manifest 或输出列与 DRAM 1.5.0 混写。迁移时应建立独立环境与数据库，先在同一批 checksum-identified MAGs 上验证 KO retention、module schema 和 resource use，再决定是否替换主流程。
-
-### 3. 数据库更新必须与方法更新一起报告
-
-KOfam、dbCAN、MEROPS 和 curated forms 都会变化。数据库版本改变可能比软件 minor version 更显著地改变 hits。这里遇到的 `K18513` 缺失采用 fail-closed exclusion，不下载来源不明的旧 profile；METABOLIC 旧 dbCAN URL 失效则以当前 5.2.9 替换，并完整记录 checksum。正式研究若必须忠实复现旧论文，应保留旧数据库快照；若采用新库，则把结果写成 method update 而非声称 byte-level replication。
-
-### 4. 截短实验校准“阴性”结论
-
-![同一 *N. europaea* MAG 在不同 sequence-retention levels 下的 KO 与 positive-module retention。](../figures/59-truncation-sensitivity.png){#fig-59-truncation}
-
-截短 sensitivity branch 不试图模拟所有组装错误；它只隔离 contig loss 这一机制。若一个 parent-positive KO 或 module 在 50%/70% sequence branch 消失，这就是假阴性的直接演示。相反，真实污染可能引入新 KO、创建虚假完整模块；因此 completeness 和 contamination 要在同一张审计图中呈现。
-
-![CheckM2 completeness、contamination、KO 数与跨工具一致性。低完整度放大阴性风险，污染放大复合通路风险。](../figures/59-completeness-absence-audit.png){#fig-59-absence-audit}
-
-### 5. 今天怎样把 genome-centric potential 升级为生态结论
+### 今天怎样把 genome-centric potential 升级为生态结论
 
 推荐的升级顺序是：
 
@@ -381,54 +432,11 @@ KOfam、dbCAN、MEROPS 和 curated forms 都会变化。数据库版本改变可
 4. 用 targeted metabolite、stable-isotope probing、rate measurement 或培养实验验证产物/通量；
 5. 若研究 community exchange，再构建 abundance-weighted network 或 genome-scale metabolic model，并显式列出 thermodynamic 与 medium assumptions。
 
-## 出版级美化 {#sec-figures}
-
-六组图采用 colorblind-safe palette、英文轴标签、嵌入式矢量字体，并同时导出 PDF、350 dpi PNG 和 LZW-compressed TIFF。图形编码遵循以下规则：
-
-- module heatmap 用连续色阶表达 coverage，黑色 `×` 单独标记 cutoff-level disagreement；
-- curated process heatmap 上方加 positive-MAG count，避免把稀有规则与普遍规则看成同等证据；
-- KO comparison 同时显示 identity line、domain shape、genome-size point area 和 Jaccard color；
-- completeness audit 不拟合小样本相关线，只标出预先定义的高风险 genomes；
-- truncation plot 同时显示 sequence、KO 和 module retention，不把二元模块曲线当作连续恢复率；
-- evidence ladder 的每一级只写允许的 claim ceiling。
-
-若正文版面有限，优先保留 @fig-59-module-heatmap、@fig-59-tool-concordance 和 @fig-59-truncation；其余放补充材料。投稿时 PDF 用于排版，TIFF 满足期刊 raster 要求，PNG 用于网页和公众号。不要从网页截图回填论文。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="1. 把 gene hit 写成 activity 或 flux"}
-Genome annotation描述 DNA 编码潜力。即使某条 pathway 的所有 genes 都在，也不能证明它在采样条件下表达、产生代谢物或贡献净通量。结果中使用 `encoded`, `genomic potential`, `putative`；只有增加条件匹配的功能证据后再使用 `active` 或 `flux`。
-:::
-
-::: {.callout-caution title="2. 把不完整 MAG 的未检出写成物种缺失"}
-低 completeness、contig break 和 truncated gene 都会制造 false absence。至少联报 CheckM2、contig count、missing module steps，并用完整度敏感性或高质量 genome 子集复核。
-:::
-
-::: {.callout-caution title="3. 让污染 contigs 拼出一条完整通路"}
-若 pathway genes 分布在 coverage、GC 或 taxonomy 异常的 contigs 上，完整模块可能是 composite signal。对 contamination >=5% 或 GUNC 可疑的 MAG，先做 contig-level provenance，再讨论单细胞代谢能力。
-:::
-
-::: {.callout-caution title="4. 只看 KO 名，不检查 motif、亚基和邻域"}
-氮、硫、甲烷和金属过程常有 homolog ambiguity。对决定性结论保留 raw HMM hit、alignment 与 gene coordinates；必要时用人工结构域/保守位点检查和独立工具验证。
-:::
-
-::: {.callout-caution title="5. 把 taxonomy 当成功能证据"}
-GTDB-Tk R232 taxonomy 用于标记 genome lineage，不自动赋予该属/种的教科书代谢。功能结论必须来自当前 genome 的序列证据；反过来，一个孤立 gene hit 也不能推翻整套分类。
-:::
-
-::: {.callout-caution title="6. 混用数据库 release 或隐性更新"}
-同一 cohort 中的 genomes 必须使用同一 KOfam、dbCAN、MEROPS 和 rule forms。不要让下载脚本指向 `latest` 后在队列中途更新；每个 archive 记录 release、bytes、SHA-256 和 retrieval date。
-:::
-
 ::: {.callout-caution title="7. 把工具一致当成独立验证"}
 DRAM 与 METABOLIC 共享 KOfam 和 Prodigal 时并非统计独立。两者一致可提高 workflow robustness，但不能替代独立 biochemical evidence；两者不一致则应触发 raw-hit review。
 :::
 
-::: {.callout-caution title="8. parent 与截短对照复用 gene IDs"}
-同一 genome 的完整与截短 FASTA 会共享 contig names。若合并 HMM 搜索只用裸 gene ID，后出现的记录可能覆盖前面的归属，造成某些 genomes 整列为零。所有 protein IDs 必须全局唯一；这里强制使用 `genome_id__contig_gene`，并要求每个 genome 至少有一个 KO hit、100% control 精确复现 parent KO set。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 报告代谢注释与基因组完整性 {#sec-methods}
 
 ### Methods template
 
@@ -440,7 +448,7 @@ DRAM 与 METABOLIC 共享 KOfam 和 Prodigal 时并非统计独立。两者一�
 
 Methods 中还应报告：输入 genome 数与选择规则、CheckM2/GUNC gate、GTDB release、gene caller、每个软件版本/commit、每个数据库 release/checksum、module cutoff、CPU/RAM、失败与重跑规则，以及 raw-hit/manual-review protocol。Results 则报告 numerator/denominator 与 disagreement，不能只写“多数 MAG 具有丰富代谢功能”。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 1. 准备每个 MAG 一个 FASTA，basename 唯一；建立 `genome_id / sample / binning branch / SHA-256 / CheckM2 / GUNC / GTDB-Tk` ledger。
 2. 先定义研究问题：碳利用、氮循环、硫循环、甲烷、抗性或整体 module survey；据此预注册 key genes、必需亚基、motif 与 cutoff。
@@ -453,7 +461,24 @@ Methods 中还应报告：输入 genome 数与选择规则、CheckM2/GUNC gate�
 
 最低交付物应包括：input ledger、database manifest、exact environments、commands、gene-level annotations、KO matrix、module coverage matrix、curated-rule matrix、MAG quality audit、discordance review、固化图表和 Methods/Results 文本。这样审稿人可以从一张 pathway heatmap 回到具体 genome、contig、gene 与数据库阈值。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-figures}
+
+六组图采用 colorblind-safe palette、英文轴标签、嵌入式矢量字体，并同时导出 PDF、350 dpi PNG 和 LZW-compressed TIFF。图形编码遵循以下规则：
+
+- module heatmap 用连续色阶表达 coverage，黑色 `×` 单独标记 cutoff-level disagreement；
+- curated process heatmap 上方加 positive-MAG count，避免把稀有规则与普遍规则看成同等证据；
+- KO comparison 同时显示 identity line、domain shape、genome-size point area 和 Jaccard color；
+- completeness audit 不拟合小样本相关线，只标出预先定义的高风险 genomes；
+- truncation plot 同时显示 sequence、KO 和 module retention，不把二元模块曲线当作连续恢复率；
+- evidence ladder 的每一级只写允许的 claim ceiling。
+
+若正文版面有限，优先保留 @fig-59-module-heatmap、@fig-59-tool-concordance 和 @fig-59-truncation；其余放补充材料。投稿时 PDF 用于排版，TIFF 满足期刊 raster 要求，PNG 用于网页和公众号。不要从网页截图回填论文。
+
+## 回到最初的问题
+
+把同源基因、规则通过、模块完整、代谢潜力和真实通量分成五级结论，并用截短 MAG 暴露假阴性。
+
+## 参考文献 {#sec-references}
 
 - DRAM 工作流与 genome-centric distillation [@shaffer2020dram]
 - METABOLIC-G、biogeochemical traits 与 community-scale framework [@zhou2022metabolic]

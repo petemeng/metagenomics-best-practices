@@ -1,6 +1,6 @@
 ---
-title: "第 03 篇 · 研究设计、样本量与统计效力"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "研究设计、样本量与统计效力"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -36,25 +36,29 @@ wechat:
     03-cohort-balance.png: "CRC and control sample balance across eight cohorts"
     03-covariate-completeness.png: "Covariate completeness across eight CRC cohorts"
     03-power-sensitivity.png: "Minimum detectable standardized effect under two alpha scenarios"
+reader-mode: analysis
 ---
 
 > **学习目标：**把“计划测多少例”拆成可审计的独立实验单位、主要终点、队列/批次结构、协变量完整度、最小有意义效应和验证方案。  
 > **真实数据：**Wirbel 等 CRC 跨队列研究公开的 8 个队列、768 个 CRC/对照样本；本文使用队列与临床元数据，不使用虚构菌群丰度。  
 > **预计资源：**普通笔记本约 1 分钟，内存低于 500 MB；效力曲线是设计敏感性分析，不是从 metadata 估计的疾病效应。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+先确定独立实验单位与主要终点，再估计效力；增加同一人的重复样本，不能替代增加受试者。
+
+:::
+
+## 多少独立样本，才足以回答研究问题？ {#sec-target}
 
 研究设计不只属于 Methods。它决定论文中的每张结果图能否被解释。
 
-Wirbel 等在发现阶段整合 5 个 CRC 队列，又把 3 个未参与发现的队列留作独立验证；论文 Figure 3 与 Figure 5 的价值不只是 AUC 高低，而是检验疾病 signature 能否跨研究迁移 [@wirbel2019crc]。这里不复制论文面板，而是从作者公开 metadata 重绘三张设计审计图：
+Wirbel 等在发现阶段整合 5 个 CRC 队列，又把 3 个未参与发现的队列留作独立验证；论文 Figure 3 与 Figure 5 的价值不只是 AUC 高低，而是检验疾病 signature 能否跨研究迁移 [@wirbel2019crc]。公开 metadata 可以进一步说明队列规模、协变量缺失与效力之间的关系：
 
 ::: {layout-ncol="2"}
-![八个队列中 CRC 与 control 的样本数；每个队列的较小组决定许多队列内比较的精度。](../figures/03-cohort-balance.png){#fig-cohort-balance}
 
-![年龄、性别、BMI 和测序量在八个队列中的可用比例。](../figures/03-covariate-completeness.png){#fig-covariate-completeness}
 :::
 
-![在理想化两独立组连续终点下，达到 80% power 所需的最小可检测标准化差异；底部短线是八个真实队列的较小组样本量。](../figures/03-power-sensitivity.png){#fig-power-sensitivity}
 
 图 @fig-cohort-balance 显示总数接近平衡，并不意味着每个队列都同样有力：单个设计臂从 24 到 74 人不等。图 @fig-covariate-completeness 进一步显示，公开的 `IT-CRC-2` metadata 中年龄、性别和 BMI 均不可用。图 @fig-power-sensitivity 则把这些真实样本量放进一个**明确受限的规划近似**：主要终点、显著性水平或多重检验目标一变，效力也随之改变。
 
@@ -62,74 +66,31 @@ Wirbel 等在发现阶段整合 5 个 CRC 队列，又把 3 个未参与发现�
 `768 samples` 不能自动替代“8 个独立队列、16 个病例—对照设计臂”。队列内检验受较小设计臂限制；跨队列模型还要为中心异质性、协变量缺失和外部验证预留信息。把全部样本打散后随机分训练集和测试集，会让同一队列的技术与人群特征同时进入两边。
 :::
 
-## 理论：从 estimand 倒推设计，而不是从预算倒推故事 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 先写一句能被计算的主要问题
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/03/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-**Estimand（目标估计量）**是研究真正想估计的量。宏基因组研究中，下面四句话需要四套不同的效力方案：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/03/download.R)。
 
-- CRC 与 control 的 Shannon diversity 平均差；
-- 病例状态对 Bray–Curtis 群落差异解释的变异比例；
-- 一个预先指定物种的 log abundance ratio；
-- 一组物种在完全未见队列中的预测 AUC。
+```{r}
+#| label: reader-input-download-03
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/03/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-“比较两组菌群是否不同”没有指定数据对象、终点、统计模型或最小有意义效应，因此也没有唯一的样本量答案。STORMS 报告规范要求把研究设计、样本处理、生信和统计信息放在同一条可追溯链上 [@mirzayi2021storms]。
+## 先确认系统环境与版本来源 {#sec-setup}
 
-### 2. 独立实验单位决定真正的 N
-
-- **Experimental unit（实验单位）**：可以独立接受处理、暴露或抽样的最小单位；
-- **Observation（观测）**：实际进入测序和分析的一份样本；
-- **Technical replicate（技术重复）**：对同一生物材料重复提取、建库或测序。
-
-同一位受试者的两个时间点是两个观测，但通常仍只有一个独立受试者。若处理施加在笼位，实验单位可能是笼而不是动物。技术重复能帮助估计测量误差，却不能把 20 位受试者变成 40 个独立重复。
-
-CRC 公开 metadata 的 `Sample_ID` 在这 768 个样本中唯一，适合审计病例—对照横断面设计；但它不能证明所有未来数据都没有家庭、中心、纵向或重复采样结构。自己的 metadata 必须显式提供 `SubjectID`、`Site`、`Batch`、`Timepoint` 和配对关系。
-
-### 3. 平衡、分层与混杂决定参数能否被识别
-
-病例与对照数量相近，只解决了一个维度。还要问：
-
-1. 病例和对照是否分布在相同提取板、建库批次和测序 lane？
-2. 年龄、性别、BMI、用药和采样流程是否在组间可比较？
-3. `Disease` 是否与 `Study`、`Country` 或 `Batch` 完全重合？
-4. 每个队列是否同时包含两组，允许估计队列内疾病差异？
-
-如果所有病例都在 batch A、所有对照都在 batch B，模型 `feature ~ disease + batch` 的两个系数不可分。增加 reads 或事后使用 batch-correction 软件都不能创造缺失的交叉设计。
-
-### 4. 样本量、测序深度和发现目标是三种不同预算
-
-在固定总预算下，增加独立受试者通常提高对人群差异的覆盖；增加单样本测序深度主要提高低丰度物种、基因和组装对象的可见性。两者不能互相完全替代：
-
-- read-based 常见物种或群落终点可能先受个体异质性限制；
-- 稀有物种、低丰度功能或 strain SNV 可能先受覆盖度限制；
-- MAG 和病毒发现还受群落复杂度、目标丰度与组装连续性限制。
-
-因此，第 04 篇会单独处理“测多深”；本节只讨论**独立样本数与设计信息**。
-
-### 5. 微生物组效力必须与终点和数据生成过程匹配
-
-两组连续终点可用标准化均值差 $d$ 做初步规划；但微生物组表具有稀疏、过度离散、组成型约束、特征相关和不等测序深度。差异丰度的真实效力通常需要从 pilot 表拟合分布，再按计划模型重复模拟 [@larosa2012power; @chen2020powmic]。
-
-若主要终点是 PERMANOVA，效力取决于组内距离、目标群落效应、距离度量、协变量和合法置换结构；不能把普通 t 检验的样本量直接搬过来。Kelly 等提出的距离矩阵模拟框架正是为这一类问题服务 [@kelly2015micropower]。Ferdous 等的综述也强调，样本量计算应围绕可检验假设，而不是寻找一个适用于所有微生物组研究的固定数字 [@ferdous2022power]。
-
-<details>
-<summary><strong>深入：为什么不能用研究结束后的 observed power 挽救阴性结果</strong></summary>
-
-研究结束后把观测效应和 P 值代回效力公式，得到的 observed power 通常只是 P 值的单调变换。它不能区分：
-
-- 真效应接近零；
-- 样本量不足；
-- 终点噪声过大；
-- 批次或混杂掩盖了效应；
-- 分析方法与数据分布不匹配。
-
-阴性结果应报告效应量、置信区间、质量控制和设计能够排除的效应范围。设计阶段则用外部 pilot、最小有意义效应和多个情景做 prospective sensitivity analysis（前瞻性敏感性分析）。
-</details>
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：安装依赖、重建公开设计表并定义作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 首次运行安装轻量依赖：
 
@@ -248,9 +209,18 @@ save_pub <- function(
 ```
 </details>
 
-## 可复制代码：先审计有效 N，再做规划敏感性 {#sec-code}
+## 读取 16 个真实设计臂 {#sec-code}
 
-### 1. 读取 16 个真实设计臂
+### 先写一句能被计算的主要问题 {#sec-theory}
+
+**Estimand（目标估计量）**是研究真正想估计的量。宏基因组研究中，下面四句话需要四套不同的效力方案：
+
+- CRC 与 control 的 Shannon diversity 平均差；
+- 病例状态对 Bray–Curtis 群落差异解释的变异比例；
+- 一个预先指定物种的 log abundance ratio；
+- 一组物种在完全未见队列中的预测 AUC。
+
+“比较两组菌群是否不同”没有指定数据对象、终点、统计模型或最小有意义效应，因此也没有唯一的样本量答案。STORMS 报告规范要求把研究设计、样本处理、生信和统计信息放在同一条可追溯链上 [@mirzayi2021storms]。
 
 ```{r}
 design <- read.delim(
@@ -286,7 +256,31 @@ kable(design[, c(
 
 每行是一个队列中的一个病例—对照设计臂。公开表没有菌群特征，因此这里不估计“CRC 的微生物效应”；它只回答设计是否拥有足够、完整且可分层的信息。
 
-### 2. 把总样本量拆回队列内比较
+::: {.callout-caution title="把样本管数当独立 N"}
+纵向样本、左右侧样本、同笼动物或技术重复没有写入模型，会低估标准误并夸大显著性。先画 subject—sample—batch 层级表，再决定随机效应、配对检验和置换限制。
+:::
+
+## 把总样本量拆回队列内比较
+
+### 独立实验单位决定真正的 N
+
+- **Experimental unit（实验单位）**：可以独立接受处理、暴露或抽样的最小单位；
+- **Observation（观测）**：实际进入测序和分析的一份样本；
+- **Technical replicate（技术重复）**：对同一生物材料重复提取、建库或测序。
+
+同一位受试者的两个时间点是两个观测，但通常仍只有一个独立受试者。若处理施加在笼位，实验单位可能是笼而不是动物。技术重复能帮助估计测量误差，却不能把 20 位受试者变成 40 个独立重复。
+
+CRC 公开 metadata 的 `Sample_ID` 在这 768 个样本中唯一，适合审计病例—对照横断面设计；但它不能证明所有未来数据都没有家庭、中心、纵向或重复采样结构。自己的 metadata 必须显式提供 `SubjectID`、`Site`、`Batch`、`Timepoint` 和配对关系。
+
+### 样本量、测序深度和发现目标是三种不同预算
+
+在固定总预算下，增加独立受试者通常提高对人群差异的覆盖；增加单样本测序深度主要提高低丰度物种、基因和组装对象的可见性。两者不能互相完全替代：
+
+- read-based 常见物种或群落终点可能先受个体异质性限制；
+- 稀有物种、低丰度功能或 strain SNV 可能先受覆盖度限制；
+- MAG 和病毒发现还受群落复杂度、目标丰度与组装连续性限制。
+
+因此，第 04 篇会单独处理“测多深”；本节只讨论**独立样本数与设计信息**。
 
 ```{r}
 study_order <- unique(design$Study)
@@ -325,7 +319,33 @@ kable(cohort_counts)
 
 8 个队列合计 `r sum(cohort_counts$Total)` 人，但较小设计臂中位数只有 `r median(cohort_counts$Smaller_arm)` 人，范围为 `r paste(range(cohort_counts$Smaller_arm), collapse = "–")` 人。队列内 effect estimate 的不确定性首先由这些数字决定，而不是由合并后的 768 决定。
 
-### 3. 审计协变量能否进入预定模型
+### 从“合并后显著”升级到“队列内可识别” {#sec-audit}
+
+Wirbel 研究最值得保留的设计思想是发现队列与外部验证队列分开 [@wirbel2019crc]。今天实施时应再增加四层审计：
+
+1. **预注册主要终点。** 明确是 community-level、feature-level 还是 predictive endpoint，并指定效应量尺度。
+2. **把 Study 当作设计结构。** 先估计队列内效应，再做 meta-analysis；或在分层模型中显式建模 study，而不是把 768 个样本视为同分布。
+3. **把缺失写进 estimand。** 若某队列没有年龄/BMI，决定是使用未调整的队列内效应、分层调整、插补，还是限制目标总体；每种选择回答的问题不同。
+4. **把验证集锁死。** 特征筛选、预处理、超参数和阈值只能在训练数据中确定；真正未见队列只能在管线冻结后打开。
+
+::: {.callout-caution title="用一个通用数字回答所有终点"}
+“每组 30 个就够”没有统计意义。α diversity、PERMANOVA、差异物种、MAG 发现和外部 AUC 的效力函数不同；至少要给主要终点、最小效应、方差/距离、alpha、power 和不可用比例。
+:::
+
+![八个队列中 CRC 与 control 的样本数；每个队列的较小组决定许多队列内比较的精度。](../figures/03-cohort-balance.png){#fig-cohort-balance}
+
+## 检查协变量能否进入预定模型
+
+### 平衡、分层与混杂决定参数能否被识别
+
+病例与对照数量相近，只解决了一个维度。还要问：
+
+1. 病例和对照是否分布在相同提取板、建库批次和测序 lane？
+2. 年龄、性别、BMI、用药和采样流程是否在组间可比较？
+3. `Disease` 是否与 `Study`、`Country` 或 `Batch` 完全重合？
+4. 每个队列是否同时包含两组，允许估计队列内疾病差异？
+
+如果所有病例都在 batch A、所有对照都在 batch B，模型 `feature ~ disease + batch` 的两个系数不可分。增加 reads 或事后使用 batch-correction 软件都不能创造缺失的交叉设计。
 
 ```{r}
 covariate_spec <- data.frame(
@@ -395,7 +415,25 @@ kable(missing_totals)
 
 年龄缺失 `r missing_totals$Missing[missing_totals$Variable == "Age"]` 例，性别缺失 `r missing_totals$Missing[missing_totals$Variable == "Gender"]` 例，BMI 缺失 `r missing_totals$Missing[missing_totals$Variable == "BMI"]` 例。若强制在全体样本中拟合 `feature ~ disease + age + sex + BMI + study`，complete-case analysis 会整队列删除 `IT-CRC-2`，从而改变“外部验证”的目标人群。
 
-### 4. 用两个 alpha 情景计算最小可检测差异
+### 不要把测序量完整误解为协变量完整
+
+本文 768 例的 `Library_Size` 全部可用，但年龄、性别和 BMI 并非如此。测序量完整只能说明一个技术字段存在，不能替代临床混杂变量。反过来，把 library size 机械加入每一个下游模型也不一定正确：相对丰度、offset、下采样、presence/absence 和 read-depth QC 对测序量的处理不同，必须服从数据对象和统计模型。
+
+::: {.callout-caution title="把 pilot 点估计当真效应"}
+小型 pilot 的效应常被高估。规划时同时使用最小有意义效应、pilot 置信区间和保守情景；不要只选择能让预算看起来足够的数字。
+:::
+
+::: {.callout-caution title="忽略多重检验和 prevalence"}
+物种表中 500 个特征不等于 500 个同等有力的检验。稀有特征的有效样本数更低，零值、离散度和相关结构会改变 power 与 FDR；应按预过滤规则和计划 DA 方法模拟。
+:::
+
+::: {.callout-caution title="complete-case analysis 偷换目标人群"}
+如果缺失集中在一个队列，完整病例分析不是随机少几个人，而是可能删除整个中心。需要报告每个队列的缺失模式，并说明插补、分层调整或未调整 meta-analysis 各自的 estimand。
+:::
+
+![年龄、性别、BMI 和测序量在八个队列中的可用比例。](../figures/03-covariate-completeness.png){#fig-covariate-completeness}
+
+## 用两个 alpha 情景计算最小可检测差异
 
 下面只考虑一个理想化问题：
 
@@ -490,7 +528,29 @@ kable(sensitivity_landmarks, digits = 3)
 
 这些数值不应直接当作物种差异丰度研究的正式样本量。它们只证明：**同一个 N 在不同主要终点和错误控制目标下，代表完全不同的可检测范围。**
 
-### 5. 把失访、质控淘汰和分层写进招募数
+![在理想化两独立组连续终点下，达到 80% power 所需的最小可检测标准化差异；底部短线是八个真实队列的较小组样本量。](../figures/03-power-sensitivity.png){#fig-power-sensitivity}
+
+## 把失访、质控淘汰和分层写进招募数
+
+### 微生物组效力必须与终点和数据生成过程匹配
+
+两组连续终点可用标准化均值差 $d$ 做初步规划；但微生物组表具有稀疏、过度离散、组成型约束、特征相关和不等测序深度。差异丰度的真实效力通常需要从 pilot 表拟合分布，再按计划模型重复模拟 [@larosa2012power; @chen2020powmic]。
+
+若主要终点是 PERMANOVA，效力取决于组内距离、目标群落效应、距离度量、协变量和合法置换结构；不能把普通 t 检验的样本量直接搬过来。Kelly 等提出的距离矩阵模拟框架正是为这一类问题服务 [@kelly2015micropower]。Ferdous 等的综述也强调，样本量计算应围绕可检验假设，而不是寻找一个适用于所有微生物组研究的固定数字 [@ferdous2022power]。
+
+<details>
+<summary><strong>深入：为什么不能用研究结束后的 observed power 挽救阴性结果</strong></summary>
+
+研究结束后把观测效应和 P 值代回效力公式，得到的 observed power 通常只是 P 值的单调变换。它不能区分：
+
+- 真效应接近零；
+- 样本量不足；
+- 终点噪声过大；
+- 批次或混杂掩盖了效应；
+- 分析方法与数据分布不匹配。
+
+阴性结果应报告效应量、置信区间、质量控制和设计能够排除的效应范围。设计阶段则用外部 pilot、最小有意义效应和多个情景做 prospective sensitivity analysis（前瞻性敏感性分析）。
+</details>
 
 若模型估计需要 $n_\text{analysis}$ 个可分析受试者，预计总不可用比例为 $q$，最低招募数为：
 
@@ -523,21 +583,6 @@ kable(recruitment)
 
 不可用比例应包括撤回、metadata 缺失、DNA 量不足、建库失败、去宿主后微生物 reads 不足和预先定义的 QC 淘汰；不能在结果出来后临时改变分母。
 
-## 审计与升级 {#sec-audit}
-
-### 从“合并后显著”升级到“队列内可识别”
-
-Wirbel 研究最值得保留的设计思想是发现队列与外部验证队列分开 [@wirbel2019crc]。今天实施时应再增加四层审计：
-
-1. **预注册主要终点。** 明确是 community-level、feature-level 还是 predictive endpoint，并指定效应量尺度。
-2. **把 Study 当作设计结构。** 先估计队列内效应，再做 meta-analysis；或在分层模型中显式建模 study，而不是把 768 个样本视为同分布。
-3. **把缺失写进 estimand。** 若某队列没有年龄/BMI，决定是使用未调整的队列内效应、分层调整、插补，还是限制目标总体；每种选择回答的问题不同。
-4. **把验证集锁死。** 特征筛选、预处理、超参数和阈值只能在训练数据中确定；真正未见队列只能在管线冻结后打开。
-
-### 不要把测序量完整误解为协变量完整
-
-本文 768 例的 `Library_Size` 全部可用，但年龄、性别和 BMI 并非如此。测序量完整只能说明一个技术字段存在，不能替代临床混杂变量。反过来，把 library size 机械加入每一个下游模型也不一定正确：相对丰度、offset、下采样、presence/absence 和 read-depth QC 对测序量的处理不同，必须服从数据对象和统计模型。
-
 ### 正式效力分析的升级路线
 
 | 主要终点 | 需要的 pilot 信息 | 建议规划方式 |
@@ -552,9 +597,72 @@ Wirbel 研究最值得保留的设计思想是发现队列与外部验证队列�
 如果疾病与批次完全混杂，或所有验证样本在分析前已参与特征筛选，再大的名义 power 也不能恢复目标效应。样本量公式假定设计和检验本身有效；它不会修复不可识别参数、数据泄漏或错误实验单位。
 :::
 
-## 出版级美化 {#sec-polish}
+::: {.callout-caution title="随机切分冒充外部验证"}
+同一队列随机拆分会共享采样、提取、测序和人群特征。跨队列问题应按 Study 留出；所有特征选择和调参都留在训练队列内部。
+:::
 
-### 1. 队列内病例—对照平衡图
+## 报告样本量依据、排除流程和协变量 {#sec-methods}
+
+下面模板与本文实际执行对象一致：
+
+> **Study-design audit and planning sensitivity.** We reconstructed the case-control design from the public metadata accompanying the Wirbel et al. colorectal cancer metagenome meta-analysis (Zenodo record 3517209, version 1.0; `meta_all.tsv`; MD5 `da18b10fdabae6308329e80b73991f84`; CC BY 4.0). Eight prespecified cohorts containing both colorectal cancer and control samples were retained, yielding 768 unique subjects (386 cases and 382 controls). Cohort-specific arm sizes ranged from 24 to 74 subjects. Availability of age, sex, BMI and sequencing library size was summarized within each cohort and outcome group; 60 age values, 60 sex values and 71 BMI values were missing, whereas library size was complete. The `IT-CRC-2` public metadata contained no age, sex or BMI values. As an illustrative prospective sensitivity analysis—not an estimate of a microbiome disease effect—we calculated the minimum detectable standardized mean difference for two independent balanced groups using a two-sided t-test, 80% power, and either alpha = 0.05 for one primary endpoint or alpha = 0.0005 as a conservative Bonferroni boundary for 100 confirmatory hypotheses. Calculations and figures were generated in R 4.4.1 with a fixed seed of 20260719 and exported as PDF and 300-ppi PNG/TIFF files.
+
+若用于自己的研究，还必须补充：
+
+- 招募来源、纳入/排除标准和独立实验单位；
+- 主要/次要终点及最小有意义效应；
+- 随机化、配对、阻断和 batch 平衡方案；
+- pilot 数据来源、方差/距离/分布参数及软件版本；
+- 多重检验、失访和 QC 淘汰假设；
+- 预注册的训练、验证和最终测试边界。
+
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
+
+### 最低 metadata 约定
+
+每行一个观测，至少提供：
+
+| 字段 | 含义 | 不能省略的原因 |
+|---|---|---|
+| `SampleID` | 测序样本唯一标识 | 对齐 FASTQ、谱表和 QC |
+| `SubjectID` | 独立受试者/实验单位 | 识别配对和伪重复 |
+| `Group` | 主要暴露或结局 | 定义主要比较 |
+| `Study` / `Site` | 队列或中心 | 分层、meta-analysis、外部验证 |
+| `Batch` / `Plate` / `Lane` | 实验技术结构 | 检查混杂与阻断 |
+| `Timepoint` | 纵向时间 | 定义基线与重复测量 |
+| 核心协变量 | 年龄、性别、BMI、用药等 | 控制预先指定的混杂 |
+| `LibrarySize` | QC 后 reads 或目标层 reads | 审计测序深度与可用性 |
+
+### 开工前完成五张表
+
+1. `table(Group, Study)`：每个队列是否同时有各组；
+2. `table(Group, Batch)`：疾病与实验批次是否重合；
+3. 每个 `SubjectID` 的观测数：谁是独立 N；
+4. `Study × covariate` 完整度矩阵：调整模型会删除谁；
+5. 主要终点的 power 情景表：效应、方差、alpha、power、失访和招募数。
+
+### 正式模拟的最小伪代码
+
+```{r}
+#| eval: false
+set.seed(20260719)
+
+for (n_per_group in c(30, 50, 80, 120)) {
+  for (simulation_id in seq_len(1000)) {
+    # 1. 从外部 pilot 拟合的 prevalence、mean、dispersion、
+    #    correlation 和 library-size 分布生成数据
+    # 2. 按未来方案加入 Study、Batch、pairing 或 longitudinal structure
+    # 3. 原样执行预过滤、normalization、model 和 FDR procedure
+    # 4. 记录 primary endpoint 是否检出，以及 empirical FDR
+  }
+}
+```
+
+模拟脚本必须使用未来计划中的**完整分析管线**。若只模拟正态数据，却计划使用稀疏组成型物种表、队列分层和 BH FDR，得到的 power 不对应真正研究。
+
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### 队列内病例—对照平衡图
 
 ```{r}
 balance_long <- rbind(
@@ -642,7 +750,7 @@ save_pub(
 )
 ```
 
-### 2. 协变量完整度热图
+### 协变量完整度热图
 
 ```{r}
 completeness$Study_label <- paste0(
@@ -730,7 +838,7 @@ save_pub(
 )
 ```
 
-### 3. 最小可检测差异敏感性曲线
+### 最小可检测差异敏感性曲线
 
 ```{r}
 power_sensitivity$Label <- factor(
@@ -809,92 +917,7 @@ save_pub(
 
 三张图都导出 PDF、300-ppi PNG 和 LZW 压缩 TIFF。图内的队列、分组、轴、图例和统计标注均为英文；Methods 中仍应解释 `Discovery`、`Validation` 和 power 情景的定义。
 
-## 常见坑：审稿人会追问什么 {#sec-pitfalls}
-
-::: {.callout-caution title="把样本管数当独立 N"}
-纵向样本、左右侧样本、同笼动物或技术重复没有写入模型，会低估标准误并夸大显著性。先画 subject—sample—batch 层级表，再决定随机效应、配对检验和置换限制。
-:::
-
-::: {.callout-caution title="用一个通用数字回答所有终点"}
-“每组 30 个就够”没有统计意义。α diversity、PERMANOVA、差异物种、MAG 发现和外部 AUC 的效力函数不同；至少要给主要终点、最小效应、方差/距离、alpha、power 和不可用比例。
-:::
-
-::: {.callout-caution title="把 pilot 点估计当真效应"}
-小型 pilot 的效应常被高估。规划时同时使用最小有意义效应、pilot 置信区间和保守情景；不要只选择能让预算看起来足够的数字。
-:::
-
-::: {.callout-caution title="忽略多重检验和 prevalence"}
-物种表中 500 个特征不等于 500 个同等有力的检验。稀有特征的有效样本数更低，零值、离散度和相关结构会改变 power 与 FDR；应按预过滤规则和计划 DA 方法模拟。
-:::
-
-::: {.callout-caution title="complete-case analysis 偷换目标人群"}
-如果缺失集中在一个队列，完整病例分析不是随机少几个人，而是可能删除整个中心。需要报告每个队列的缺失模式，并说明插补、分层调整或未调整 meta-analysis 各自的 estimand。
-:::
-
-::: {.callout-caution title="随机切分冒充外部验证"}
-同一队列随机拆分会共享采样、提取、测序和人群特征。跨队列问题应按 Study 留出；所有特征选择和调参都留在训练队列内部。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-下面模板与本文实际执行对象一致：
-
-> **Study-design audit and planning sensitivity.** We reconstructed the case-control design from the public metadata accompanying the Wirbel et al. colorectal cancer metagenome meta-analysis (Zenodo record 3517209, version 1.0; `meta_all.tsv`; MD5 `da18b10fdabae6308329e80b73991f84`; CC BY 4.0). Eight prespecified cohorts containing both colorectal cancer and control samples were retained, yielding 768 unique subjects (386 cases and 382 controls). Cohort-specific arm sizes ranged from 24 to 74 subjects. Availability of age, sex, BMI and sequencing library size was summarized within each cohort and outcome group; 60 age values, 60 sex values and 71 BMI values were missing, whereas library size was complete. The `IT-CRC-2` public metadata contained no age, sex or BMI values. As an illustrative prospective sensitivity analysis—not an estimate of a microbiome disease effect—we calculated the minimum detectable standardized mean difference for two independent balanced groups using a two-sided t-test, 80% power, and either alpha = 0.05 for one primary endpoint or alpha = 0.0005 as a conservative Bonferroni boundary for 100 confirmatory hypotheses. Calculations and figures were generated in R 4.4.1 with a fixed seed of 20260719 and exported as PDF and 300-ppi PNG/TIFF files.
-
-若用于自己的研究，还必须补充：
-
-- 招募来源、纳入/排除标准和独立实验单位；
-- 主要/次要终点及最小有意义效应；
-- 随机化、配对、阻断和 batch 平衡方案；
-- pilot 数据来源、方差/距离/分布参数及软件版本；
-- 多重检验、失访和 QC 淘汰假设；
-- 预注册的训练、验证和最终测试边界。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 最低 metadata 合同
-
-每行一个观测，至少提供：
-
-| 字段 | 含义 | 不能省略的原因 |
-|---|---|---|
-| `SampleID` | 测序样本唯一标识 | 对齐 FASTQ、谱表和 QC |
-| `SubjectID` | 独立受试者/实验单位 | 识别配对和伪重复 |
-| `Group` | 主要暴露或结局 | 定义主要比较 |
-| `Study` / `Site` | 队列或中心 | 分层、meta-analysis、外部验证 |
-| `Batch` / `Plate` / `Lane` | 实验技术结构 | 检查混杂与阻断 |
-| `Timepoint` | 纵向时间 | 定义基线与重复测量 |
-| 核心协变量 | 年龄、性别、BMI、用药等 | 控制预先指定的混杂 |
-| `LibrarySize` | QC 后 reads 或目标层 reads | 审计测序深度与可用性 |
-
-### 开工前完成五张表
-
-1. `table(Group, Study)`：每个队列是否同时有各组；
-2. `table(Group, Batch)`：疾病与实验批次是否重合；
-3. 每个 `SubjectID` 的观测数：谁是独立 N；
-4. `Study × covariate` 完整度矩阵：调整模型会删除谁；
-5. 主要终点的 power 情景表：效应、方差、alpha、power、失访和招募数。
-
-### 正式模拟的最小伪代码
-
-```{r}
-#| eval: false
-set.seed(20260719)
-
-for (n_per_group in c(30, 50, 80, 120)) {
-  for (simulation_id in seq_len(1000)) {
-    # 1. 从外部 pilot 拟合的 prevalence、mean、dispersion、
-    #    correlation 和 library-size 分布生成数据
-    # 2. 按未来方案加入 Study、Batch、pairing 或 longitudinal structure
-    # 3. 原样执行预过滤、normalization、model 和 FDR procedure
-    # 4. 记录 primary endpoint 是否检出，以及 empirical FDR
-  }
-}
-```
-
-模拟脚本必须使用未来计划中的**完整分析管线**。若只模拟正态数据，却计划使用稀疏组成型物种表、队列分层和 BH FDR，得到的 power 不对应真正研究。
-
-## 小结
+## 回到最初的问题
 
 - 真正的 N 是独立实验单位数，不是 FASTQ、样本管或技术重复数。
 - 8 个队列的 768 例应被看成有层级的设计，而不是一个同分布的大样本。
@@ -902,7 +925,7 @@ for (n_per_group in c(30, 50, 80, 120)) {
 - 样本量必须绑定主要终点、最小效应、alpha、power、不可用比例和验证边界。
 - t 检验曲线只能作为明确标注的规划近似；PERMANOVA、差异丰度、纵向和外部预测应使用与分析方法匹配的模拟。
 
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Wirbel J, Pyl PT, Kartal E, et al. Meta-analysis of fecal metagenomes reveals global microbial signatures that are specific for colorectal cancer. *Nature Medicine*. 2019;25:679–689. <https://doi.org/10.1038/s41591-019-0406-6>
 - La Rosa PS, Brooks JP, Deych E, et al. Hypothesis testing and power calculations for taxonomic-based human microbiome data. *PLoS ONE*. 2012;7:e52078. <https://doi.org/10.1371/journal.pone.0052078>

@@ -1,6 +1,6 @@
 ---
-title: "第 16 篇 · Kraken2 + Bracken：k-mer 分类与丰度重估"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "Kraken2 + Bracken：k-mer 分类与丰度重估"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: false
   freeze: auto
@@ -37,15 +37,20 @@ wechat:
     16-kraken-classification-ledger.png: "Stacked classified versus unclassified paired fragments beside direct Kraken assignment ranks"
     16-bracken-redistribution.png: "Lollipop comparison of Kraken species-clade shares and Bracken re-estimated species shares"
     16-bracken-parameter-sensitivity.png: "Taxon counts across Bracken rank threshold and read-length settings beside abundance sensitivity scatter plots"
+reader-mode: upstream
 ---
 
 > **学习目标：**从 clean paired FASTQ 生成可审计的 Kraken2 standard report 与 Bracken 物种丰度表；分清 read、paired fragment、direct assignment、clade count 和 abundance estimate；正确选择 Bracken 的 rank、read length 与 threshold；保留数据库、未分类片段和参数敏感性边界。  
 > **真实数据：**71-strain MOCK1 DNA 的 Illumina HiSeq 3000 run `ERR9765746`，ENA project `PRJEB52977`、sample `SAMEA14435832` [@meslier2022platforms]。输入是 fastp 后保留的 99,991 个同步 read pairs；R1/R2 分别包含 14,974,589 与 14,835,184 bases，压缩文件 SHA-256、记录数和 pair-ID hash 均在运行前复核。  
 > **预计资源：**本次固定的 Standard-8 索引安装后为 8.64 GB，Kraken2 实测峰值内存 7.77 GiB。建议分配 8 核、12–16 GB RAM，并预留至少 20 GB 磁盘同时容纳 5.54 GiB 压缩包、索引和临时输出。完整 Standard 或 `core_nt` 数据库的磁盘与内存需求会高得多，不能套用这里的 8 GB 预算。没有服务器时，可用 Standard-8 在 16 GB 内存工作站运行小样本；生产队列应提交到 HPC 或合规云，并让每个作业独占足以加载索引的内存。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 两张 Figure 1 定义了两种不同的任务
+先读清 Kraken2 的层级计数，再解释 Bracken 重分配；不要把模型估计当成原始物种 read counts。
+
+:::
+
+## Kraken2 分类与 Bracken 丰度，回答的是两个问题 {#sec-target}
 
 Kraken2 论文 Figure 1a–c 展示了 `k`-mer、minimizer、spaced-seed mask、compact hash 与 lowest common ancestor（LCA，最低共同祖先）的关系 [@wood2019kraken2]。本次数据库的实际参数是 `k = 35`、`l = 31`：每条 read 产生一串重叠 35-mers，每个 35-mer 由 31 bp minimizer 查询 compact hash table，命中的 taxonomy evidence 再共同决定 read 或 read pair 的分类节点。
 
@@ -65,7 +70,28 @@ one call per paired fragment
 
 这条链必须保存两张表：Kraken report 回答“片段落在 taxonomy tree 的哪里”，Bracken table 回答“在指定 rank、read length 和 threshold 下，组成质量如何重估”。后者不能覆盖前者。
 
-### 结果一：先守住 pair-level 分类账本
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/16/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/16/download.R)。
+
+```{r}
+#| label: reader-input-download-16
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/16/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## 先守住 pair-level 分类记录表
 
 ![Kraken2 对 99,991 个同步 read pairs 逐 pair 给出一个状态。左图保存 classified/unclassified 分母；右图只对 86,373 个 classified fragments 展示最终直接落点。Other rank 主要由中间层级、subspecies 与 strain rank code 构成，不等于“未知物种”。](../figures/16-kraken-classification-ledger.png){#fig-kraken-ledger}
 
@@ -91,7 +117,7 @@ Kraken2 日志中的 `99,991 sequences` 指 99,991 个 paired fragments，而不
 standard report 的第二列是该 clade 及全部 descendants 覆盖的 fragments，第三列才是直接落在当前节点的 fragments。父节点的 clade count 已包含子节点；沿整棵树相加会重复计算同一个 fragment。只有 direct assignment 加上 unclassified 才能做全样本守恒检查。
 :::
 
-### 结果二：Bracken 改变的是 rank-level estimate
+## Bracken 改变的是 rank-level estimate
 
 ![物种层级丰度最高的 12 个 taxa。灰点是入选 65 个 species 的 Kraken species-clade counts 在自身分母中的比例，橙点是 Bracken 重估后的比例；两套比例使用各自 rank-resolved 分母，连线只表示重估方向，不表示置信区间。](../figures/16-bracken-redistribution.png){#fig-bracken-redistribution}
 
@@ -131,7 +157,7 @@ $$
 + 26_{\mathrm{rounding}}.
 $$
 
-### 结果三：threshold 比本次 read-length 分支更敏感
+## threshold 比本次 read-length 分支更敏感
 
 ![左图比较 species/genus、read length 与 threshold 对输出行数的影响；右图把主模型与 100 bp distribution、threshold 0 的物种比例逐 taxon 比较。虚线为完全一致。](../figures/16-bracken-parameter-sensitivity.png){#fig-bracken-sensitivity}
 
@@ -146,123 +172,10 @@ R1 和 R2 的平均 clean read length 分别为 149.76 与 148.37 bp，范围为
 
 相反，把 threshold 从 10 改为 0 会把 65 个物种扩展到 214 个，total variation distance 为 0.066305。新增行包含真实低丰度候选、近缘数据库分配尾部与噪声可能性的混合物；`-t 10` 也不是生物学检出限，只是这次主分析采用的稳定性规则。
 
-## 理论：从 minimizer 分类到 rank-level 重估 {#sec-theory}
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 1. Kraken2 查询的是 minimizer evidence
-
-对 read 中每个长度为 $k$ 的窗口，Kraken2 取长度为 $l$ 的 canonical minimizer，经 spaced-seed mask 和 compact hash 查询数据库。数据库将查询键关联到参考序列 taxonomy 的 LCA。简化表示为：
-
-$$
-r \longrightarrow \{m_1, m_2, \ldots, m_q\}
-\longrightarrow \{t_1, t_2, \ldots, t_q\}
-\longrightarrow \widehat t_r,
-$$
-
-其中 $m_i$ 是 minimizer query，$t_i$ 是数据库返回的 taxon，$\widehat t_r$ 是综合 root-to-leaf 支持后得到的分类节点。多个相邻 k-mers 可能共享同一 minimizer，所以支持不能简单解释成独立证据条数。
-
-本次显式设定 `--minimum-hit-groups 2`，要求至少两个 hit groups 支撑分类；`--confidence 0.0` 则保留默认 voting boundary。两者控制的是 read-level call，不是 Bracken 的 abundance threshold。
-
-### 2. paired-end 的计数单位是 fragment
-
-使用 `--paired` 时，Kraken2 仍分别扫描两端序列的 minimizers，但把两端 evidence 合并成一个 pair-level call。于是：
-
-- 输入 FASTQ 有 199,982 条 reads；
-- Kraken log 和 report 的总量是 99,991 个 paired fragments；
-- per-fragment 输出一 pair 一行；
-- Bracken 接收 report 后也沿用 fragment counts。
-
-若把结果写成“86,373 reads classified”，读者很可能理解成 86,373 / 199,982，分类率会被错误减半。Methods、结果表和下游 abundance matrix 必须统一写 fragments 或 read pairs。
-
-### 3. standard report 是一棵有重复覆盖的树
-
-Kraken2 standard report 的六列为：
-
-| Column | Meaning |
-|---:|---|
-| 1 | percent of total fragments covered by this clade |
-| 2 | fragments in this clade, including descendants |
-| 3 | fragments assigned directly to this taxon |
-| 4 | rank code |
-| 5 | NCBI taxonomy ID |
-| 6 | indented scientific name |
-
-若一个 fragment 直接落在 species，它也会同时进入该 genus、family、order 等祖先节点的 clade count。报告适合沿一条 rank 切片或审计树结构，不适合全表求和。`--use-mpa-style` 会改变 report 形态，不能作为 Bracken 的输入；Bracken 需要完整 standard report。
-
-rank code 也不只 `D/K/P/C/O/F/G/S`。例如 subspecies、strain 与介于主要 rank 之间的节点会使用扩展 code；图中的 `Other rank` 是这些直接落点的合计，而不是“没有 taxonomy”。
-
-### 4. Bracken 估计的是条件分配权重
-
-假设 fragment 被 Kraken 放在高层级节点 $a$，其下有候选目标 taxa $i \in D(a)$。Bracken 利用固定数据库、固定 read length 下预计算的 k-mer assignment distribution，构建非负权重 $w_{i|a}$，满足：
-
-$$
-w_{i|a} \ge 0,
-\qquad
-\sum_{i \in D(a)} w_{i|a} \le 1.
-$$
-
-rank-level estimate 可概括为：
-
-$$
-\widehat n_i
-= n_i^{\mathrm{Kraken\ clade}}
-+ \sum_a n_a^{\mathrm{eligible}} w_{i|a}.
-$$
-
-权重来自“该数据库中的 genome 经过指定 read length 模拟后，Kraken 倾向把片段放在哪里”的模型，并结合当前样本中 descendants 的 evidence。数据库没有的 organism 不会被 Bracken 创造出来；reference representation 不均衡也会传进权重。
-
-### 5. `-r` 是单条 read length，不是 insert size
-
-Standard-8 随包提供 50、75、100、150、200、250 和 300 bp 的 Bracken distributions。这里的 150 是单端 read 的名义长度，不是两端相加的 300 bp，也不是 fastp 报告的 265 bp insert-size peak。
-
-若 trimming 后长度差异很大，应先画 read-length distribution：
-
-- 长度集中在某个已提供 grid 时，用最接近的 distribution，并做相邻长度敏感性；
-- 长度横跨多个 grid 时，可按长度 strata 分别运行再合并 counts，或为研究数据库构建更合适的 distribution；
-- 不要因为 paired-end 就把 `-r` 写成 `2 × read length`。
-
-### 6. `-t` 是模型准入阈值，不是测序检出限
-
-Bracken 的 `-t 10` 让当前 rank 上 Kraken-assigned count 超过 10 的 taxa 才进入分配。它会同时影响：
-
-1. 输出 feature 数；
-2. 哪些 descendants 能接受高层级 fragments；
-3. 未能分配的 fragments 数；
-4. 其余 taxa 的归一化比例。
-
-因此不能先在一个 threshold 下运行、再把输出表简单删到另一个 threshold，声称两者等价。阈值应在全队列固定，并在 mock、negative controls 与生物样本上做统一敏感性。
-
-### 7. `fraction_total_reads` 不是全 FASTQ 分母
-
-主输出的 `new_est_reads` 合计为 84,147，而 `fraction_total_reads` 合计为 0.99970。这个 fraction 实际上在被报告的 rank-level estimates 内归一化；13,618 个 unclassified fragments、阈值丢弃和无法分配的质量不在它的分母中。五位小数逐行输出还会产生约 $10^{-3}$ 量级的求和偏差。
-
-因此至少保留三层数据：
-
-```text
-all paired fragments = 99,991
-├── Kraken unclassified = 13,618
-└── Kraken classified = 86,373
-    ├── Bracken reported species estimates = 84,147
-    └── threshold / no eligible descendant / integer rounding = 2,226
-```
-
-跨样本堆积图可以在同一 Bracken rank 内再归一化，但 Methods 必须说明这是一张 classified-and-resolved composition；不能把它写成“占全部 reads 的百分比”。
-
-### 8. 分类、丰度、绝对负载和菌株不是同一个结论
-
-| Claim | This workflow provides | Still required |
-|---|---|---|
-| taxon-compatible sequence evidence | Kraken minimizer/LCA call | controls and database sensitivity |
-| rank-level relative composition | Bracken estimate under fixed model | stable denominator across samples |
-| absolute microbial load | no | spike-in, qPCR, flow cytometry or other load measurement |
-| viable or active organism | no | culture, RNA, PMA or other activity evidence |
-| strain identity/transmission | no | strain-resolved variants, coverage and epidemiology |
-
-主表中有 11 个 `Homo sapiens` species-clade fragments，但这一个数字不能证明样本存在可报告的人源污染：Standard-8 包含 human reference，默认 confidence、近缘/低复杂度 evidence 和 capped database 都可能影响边界。host-removal report、negative control、per-fragment alignment 审计与 database/confidence sensitivity 应共同决定解释，而不是看一个低计数 taxonomy row。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：算力、版本锁、数据库下载、真实输入与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 算力与存储门槛
 
@@ -399,9 +312,7 @@ save_pub <- function(plot, file_base, width = 180, height = 105,
 
 </details>
 
-## 可复制代码 {#sec-code}
-
-### 1. 用一次性脚本生成完整证据包
+## 用一次性脚本生成完整证据包 {#sec-code}
 
 原始 FASTQ、5.54 GiB archive、8.64 GB index 和 per-fragment output 都留在 Git 之外；聚合 reports、资源日志、版本、校验表和 figures 才进入小型证据包。
 
@@ -421,7 +332,59 @@ bash scripts/run_article16_kraken2_bracken.sh \
 
 脚本拒绝覆盖非空的 work/frozen 目录，避免失败重跑把旧结果与新结果混在一起。若只想理解每个命令，下面按执行顺序展开。
 
-### 2. 运行 Kraken2
+### 把 2017/2019 算法放进 2026 数据库约定 {#sec-audit}
+
+Kraken2 与 Bracken 的核心问题没有过时：一个负责快速 taxonomy placement，一个负责 rank-level abundance re-estimation。需要升级的是“只报工具名”的做法。当前可复现单位至少包括：
+
+```text
+Kraken2 version
++ Bracken package and CLI identity
++ exact database release/date/checksum/content/cap
++ k/l and classification parameters
++ paired-fragment counting unit
++ Bracken rank/read length/threshold
++ unclassified and unresolved mass ledger
+```
+
+仅写“Kraken2 + Bracken default parameters”无法重现结果，因为数据库 release、cap、read-length distribution 与 threshold 都能改变 feature space 和 abundance。
+
+### Standard-8 是算力折中，不是默认真值
+
+本次选 Standard-8 是为了在 12–16 GB RAM 范围展示完整流程。它把 hash cap 到 8 GB，官方数据库页明确提示 sensitivity/accuracy 代价。论文主分析至少应在代表性 samples 上比较：
+
+- fixed Standard-8；
+- 同日期或明确日期的 full Standard / 更广数据库；
+- 与研究问题相关的 custom database；
+- negative controls 与 mock community。
+
+比较时必须固定 input、Kraken2 parameters 和 Bracken parameters，按 taxid 做 lineage-aware crosswalk；数据库改名、split/merge 不能被误写成生物变化。
+
+## 运行 Kraken2
+
+### Kraken2 查询的是 minimizer evidence {#sec-theory}
+
+对 read 中每个长度为 $k$ 的窗口，Kraken2 取长度为 $l$ 的 canonical minimizer，经 spaced-seed mask 和 compact hash 查询数据库。数据库将查询键关联到参考序列 taxonomy 的 LCA。简化表示为：
+
+$$
+r \longrightarrow \{m_1, m_2, \ldots, m_q\}
+\longrightarrow \{t_1, t_2, \ldots, t_q\}
+\longrightarrow \widehat t_r,
+$$
+
+其中 $m_i$ 是 minimizer query，$t_i$ 是数据库返回的 taxon，$\widehat t_r$ 是综合 root-to-leaf 支持后得到的分类节点。多个相邻 k-mers 可能共享同一 minimizer，所以支持不能简单解释成独立证据条数。
+
+本次显式设定 `--minimum-hit-groups 2`，要求至少两个 hit groups 支撑分类；`--confidence 0.0` 则保留默认 voting boundary。两者控制的是 read-level call，不是 Bracken 的 abundance threshold。
+
+### paired-end 的计数单位是 fragment
+
+使用 `--paired` 时，Kraken2 仍分别扫描两端序列的 minimizers，但把两端 evidence 合并成一个 pair-level call。于是：
+
+- 输入 FASTQ 有 199,982 条 reads；
+- Kraken log 和 report 的总量是 99,991 个 paired fragments；
+- per-fragment 输出一 pair 一行；
+- Bracken 接收 report 后也沿用 fragment counts。
+
+若把结果写成“86,373 reads classified”，读者很可能理解成 86,373 / 199,982，分类率会被错误减半。Methods、结果表和下游 abundance matrix 必须统一写 fragments 或 read pairs。
 
 ```bash
 set -euo pipefail
@@ -461,7 +424,32 @@ export PYTHONHASHSEED=0
 
 不要加 `--use-mpa-style`：Bracken 需要 standard Kraken report。per-fragment output 对排错有价值，但可能包含原始 read ID，且本次约 99,991 行，因此只放受控 scratch，不进入公开 bundle。
 
-### 3. 审计 report 的六列与守恒
+::: {.callout-caution title="坑 3：给 Bracken 输入 MPA-style report"}
+Bracken 需要 standard six-column Kraken report。`--use-mpa-style` 的 lineage table 适合另一类展示，不保留 Bracken 所需的完整树计数结构。
+:::
+
+::: {.callout-caution title="坑 4：把 -r 写成 paired insert length"}
+`-r` 是单条 read 的长度。150 bp paired-end 仍用 `-r 150`，不是 300，也不是 insert-size peak。trimmed length 很分散时需要 sensitivity 或分层运行。
+:::
+
+## 检查 report 的六列与守恒
+
+### standard report 是一棵有重复覆盖的树
+
+Kraken2 standard report 的六列为：
+
+| Column | Meaning |
+|---:|---|
+| 1 | percent of total fragments covered by this clade |
+| 2 | fragments in this clade, including descendants |
+| 3 | fragments assigned directly to this taxon |
+| 4 | rank code |
+| 5 | NCBI taxonomy ID |
+| 6 | indented scientific name |
+
+若一个 fragment 直接落在 species，它也会同时进入该 genus、family、order 等祖先节点的 clade count。报告适合沿一条 rank 切片或审计树结构，不适合全表求和。`--use-mpa-style` 会改变 report 形态，不能作为 Bracken 的输入；Bracken 需要完整 standard report。
+
+rank code 也不只 `D/K/P/C/O/F/G/S`。例如 subspecies、strain 与介于主要 rank 之间的节点会使用扩展 code；图中的 `Other rank` 是这些直接落点的合计，而不是“没有 taxonomy”。
 
 ```bash
 # 前 12 行，保留 name 前的 taxonomy indentation
@@ -489,7 +477,37 @@ awk -F '\t' '{sum += $3} END {print sum}' "${FROZEN}/kraken-report.tsv"
 
 本次得到 `k=35`、`l=31`、59,403 taxonomy nodes、hash table size 1,399,434,069 和 capacity 2,000,000,000。数据库 inspect 结果应与 release manifest 一起归档。
 
-### 4. 运行主 Bracken 模型
+### MOCK1 不是可随意扩写的完整 taxonomy truth
+
+`ERR9765746` 是真实 71-strain MOCK1 数据，适合检查流程、守恒和已知成员 recovery；但当前 NCBI taxid、数据库同义名、strain/assembly 可用性与论文配方之间需要专门 crosswalk。这里不把所有 214 个 Kraken species rows 强制贴成 TP/FP，也不从一个样本估计普适灵敏度。
+
+如果要做 benchmark，应冻结一张 machine-readable truth table：strain label、expected abundance、assembly accession、当前 taxid、允许的 ancestor match、数据库是否包含该 genome。未进入数据库的成员不能计作 Bracken 算法本身的错误。
+
+::: {.callout-caution title="坑 2：把 report 第二列全表相加"}
+clade count 沿祖先节点重复覆盖。全表相加没有可解释分母；按一个 rank 切片，或使用 direct count 做全树守恒。
+:::
+
+## 运行主 Bracken 模型
+
+### Bracken 估计的是条件分配权重
+
+假设 fragment 被 Kraken 放在高层级节点 $a$，其下有候选目标 taxa $i \in D(a)$。Bracken 利用固定数据库、固定 read length 下预计算的 k-mer assignment distribution，构建非负权重 $w_{i|a}$，满足：
+
+$$
+w_{i|a} \ge 0,
+\qquad
+\sum_{i \in D(a)} w_{i|a} \le 1.
+$$
+
+rank-level estimate 可概括为：
+
+$$
+\widehat n_i
+= n_i^{\mathrm{Kraken\ clade}}
++ \sum_a n_a^{\mathrm{eligible}} w_{i|a}.
+$$
+
+权重来自“该数据库中的 genome 经过指定 read length 模拟后，Kraken 倾向把片段放在哪里”的模型，并结合当前样本中 descendants 的 evidence。数据库没有的 organism 不会被 Bracken 创造出来；reference representation 不均衡也会传进权重。
 
 ```bash
 /usr/bin/time -v \
@@ -513,7 +531,19 @@ name  taxonomy_id  taxonomy_lvl  kraken_assigned_reads  added_reads  new_est_rea
 
 `-w` 产生与重估结果一致的 hierarchy report，适合 Krona 等 tree-aware 展示；统计矩阵则优先使用 tabular output 中稳定的 `taxonomy_id`、`new_est_reads` 和明确记录的 rank。
 
-### 5. 固定三条敏感性分支
+### Bracken 的 package/CLI 版本分歧必须如实保留
+
+Bioconda 包是 `3.1p1`，上游 wrapper 却输出 `Bracken v3.0.1`。这不是分析失败，但只记录 `bracken -v` 会丢掉实际 package identity；只写包版本又会让读者无法复核 CLI。环境 lock、conda metadata、CLI output 三者都保留，Methods 同时写出。
+
+::: {.callout-caution title="坑 6：把 Bracken fraction 当作全部 FASTQ 的比例"}
+主表 fraction 在 84,147 个 reported species estimates 内归一化，不含 13,618 个 unclassified 与 2,226 个 unresolved/discarded/rounding fragments。图注必须写清 denominator。
+:::
+
+::: {.callout-caution title="坑 8：删除 Kraken report，只保留 Bracken 表"}
+没有原始 report 就无法重审 unclassified、direct/clade counts、rank placement，也无法在同一 classifier output 上重跑其他 Bracken rank/read-length/threshold 分支。
+:::
+
+## 固定三条敏感性分支
 
 ```bash
 # threshold sensitivity：同一 rank/read length，只改变准入阈值
@@ -540,7 +570,35 @@ name  taxonomy_id  taxonomy_lvl  kraken_assigned_reads  added_reads  new_est_rea
 
 若目标是比较 `--confidence` 或数据库，必须重新运行 Kraken2 再运行 Bracken；只改 Bracken 参数无法审计 read-level classifier boundary。
 
-### 6. 聚合审计并重建三张图
+### default confidence 适合展示机制，不足以独立定阳性
+
+当前显式保存 `--confidence 0.0` 与 `--minimum-hit-groups 2`。compact hash、共享 minimizers、reference imbalance 与低复杂度片段都可能在低计数尾部留下候选。升级分析应在同一数据库上比较 confidence grid，并至少报告：
+
+- classified fraction；
+- mock expected/unsupported taxa；
+- negative-control taxa；
+- low-count feature persistence；
+- top-taxa abundance stability；
+- false discovery boundary 的定义。
+
+不能把 confidence 调高后“行数更少”直接等同于“更准确”；sensitivity 与 precision 需要带真值或 controls 的证据。
+
+::: {.callout-caution title="坑 5：把 -t 当成生物学检出限"}
+threshold 决定哪些 taxa 能接受 redistribution。这里 `t=0` 与 `t=10` 分别得到 214 与 65 个 species；差异包含真实低丰度与模型尾部，不能用单一数字划分“存在/不存在”。
+:::
+
+## 聚合检查并重建三张图
+
+### `-t` 是模型准入阈值，不是测序检出限
+
+Bracken 的 `-t 10` 让当前 rank 上 Kraken-assigned count 超过 10 的 taxa 才进入分配。它会同时影响：
+
+1. 输出 feature 数；
+2. 哪些 descendants 能接受高层级 fragments；
+3. 未能分配的 fragments 数；
+4. 其余 taxa 的归一化比例。
+
+因此不能先在一个 threshold 下运行、再把输出表简单删到另一个 threshold，声称两者等价。阈值应在全队列固定，并在 mock、negative controls 与生物样本上做统一敏感性。
 
 ```bash
 "${KRAKEN_ENV_PREFIX}/bin/python" \
@@ -554,7 +612,7 @@ name  taxonomy_id  taxonomy_lvl  kraken_assigned_reads  added_reads  new_est_rea
 
 routine validation 不读取 FASTQ、不读取大数据库、不联网；它检查 33 个 frozen payload checksums、版本合同、report 算术、四个 Bracken branches、图像尺寸与格式。本次通过 73/73 checks，`results/16-kraken2-bracken/validation-summary.json` 的 `status` 为 `passed`。
 
-### 7. 从冻结表独立重画分类账本
+## 从保存表独立重画分类记录表
 
 ```r
 library(readr)
@@ -604,7 +662,45 @@ p_classification <- p_ledger + p_rank + plot_layout(widths = c(0.8, 1.3))
 save_pub(p_classification, "figures/16-kraken-classification-ledger")
 ```
 
-### 8. 独立重画 redistribution 与 parameter sensitivity
+## 独立重画 redistribution 与 parameter sensitivity
+
+### `-r` 是单条 read length，不是 insert size
+
+Standard-8 随包提供 50、75、100、150、200、250 和 300 bp 的 Bracken distributions。这里的 150 是单端 read 的名义长度，不是两端相加的 300 bp，也不是 fastp 报告的 265 bp insert-size peak。
+
+若 trimming 后长度差异很大，应先画 read-length distribution：
+
+- 长度集中在某个已提供 grid 时，用最接近的 distribution，并做相邻长度敏感性；
+- 长度横跨多个 grid 时，可按长度 strata 分别运行再合并 counts，或为研究数据库构建更合适的 distribution；
+- 不要因为 paired-end 就把 `-r` 写成 `2 × read length`。
+
+### `fraction_total_reads` 不是全 FASTQ 分母
+
+主输出的 `new_est_reads` 合计为 84,147，而 `fraction_total_reads` 合计为 0.99970。这个 fraction 实际上在被报告的 rank-level estimates 内归一化；13,618 个 unclassified fragments、阈值丢弃和无法分配的质量不在它的分母中。五位小数逐行输出还会产生约 $10^{-3}$ 量级的求和偏差。
+
+因此至少保留三层数据：
+
+```text
+all paired fragments = 99,991
+├── Kraken unclassified = 13,618
+└── Kraken classified = 86,373
+    ├── Bracken reported species estimates = 84,147
+    └── threshold / no eligible descendant / integer rounding = 2,226
+```
+
+跨样本堆积图可以在同一 Bracken rank 内再归一化，但 Methods 必须说明这是一张 classified-and-resolved composition；不能把它写成“占全部 reads 的百分比”。
+
+### 分类、丰度、绝对负载和菌株不是同一个结论
+
+| Claim | This workflow provides | Still required |
+|---|---|---|
+| taxon-compatible sequence evidence | Kraken minimizer/LCA call | controls and database sensitivity |
+| rank-level relative composition | Bracken estimate under fixed model | stable denominator across samples |
+| absolute microbial load | no | spike-in, qPCR, flow cytometry or other load measurement |
+| viable or active organism | no | culture, RNA, PMA or other activity evidence |
+| strain identity/transmission | no | strain-resolved variants, coverage and epidemiology |
+
+主表中有 11 个 `Homo sapiens` species-clade fragments，但这一个数字不能证明样本存在可报告的人源污染：Standard-8 包含 human reference，默认 confidence、近缘/低复杂度 evidence 和 capped database 都可能影响边界。host-removal report、negative control、per-fragment alignment 审计与 database/confidence sensitivity 应共同决定解释，而不是看一个低计数 taxonomy row。
 
 ```r
 library(tidyr)
@@ -714,59 +810,7 @@ save_pub(
 )
 ```
 
-## 审计与升级 {#sec-audit}
-
-### 1. 把 2017/2019 算法放进 2026 数据库合同
-
-Kraken2 与 Bracken 的核心问题没有过时：一个负责快速 taxonomy placement，一个负责 rank-level abundance re-estimation。需要升级的是“只报工具名”的做法。当前可复现单位至少包括：
-
-```text
-Kraken2 version
-+ Bracken package and CLI identity
-+ exact database release/date/checksum/content/cap
-+ k/l and classification parameters
-+ paired-fragment counting unit
-+ Bracken rank/read length/threshold
-+ unclassified and unresolved mass ledger
-```
-
-仅写“Kraken2 + Bracken default parameters”无法重现结果，因为数据库 release、cap、read-length distribution 与 threshold 都能改变 feature space 和 abundance。
-
-### 2. Standard-8 是算力折中，不是默认真值
-
-本次选 Standard-8 是为了在 12–16 GB RAM 范围展示完整流程。它把 hash cap 到 8 GB，官方数据库页明确提示 sensitivity/accuracy 代价。论文主分析至少应在代表性 samples 上比较：
-
-- fixed Standard-8；
-- 同日期或明确日期的 full Standard / 更广数据库；
-- 与研究问题相关的 custom database；
-- negative controls 与 mock community。
-
-比较时必须固定 input、Kraken2 parameters 和 Bracken parameters，按 taxid 做 lineage-aware crosswalk；数据库改名、split/merge 不能被误写成生物变化。
-
-### 3. default confidence 适合展示机制，不足以独立定阳性
-
-当前显式保存 `--confidence 0.0` 与 `--minimum-hit-groups 2`。compact hash、共享 minimizers、reference imbalance 与低复杂度片段都可能在低计数尾部留下候选。升级分析应在同一数据库上比较 confidence grid，并至少报告：
-
-- classified fraction；
-- mock expected/unsupported taxa；
-- negative-control taxa；
-- low-count feature persistence；
-- top-taxa abundance stability；
-- false discovery boundary 的定义。
-
-不能把 confidence 调高后“行数更少”直接等同于“更准确”；sensitivity 与 precision 需要带真值或 controls 的证据。
-
-### 4. MOCK1 不是可随意扩写的完整 taxonomy truth
-
-`ERR9765746` 是真实 71-strain MOCK1 数据，适合检查流程、守恒和已知成员 recovery；但当前 NCBI taxid、数据库同义名、strain/assembly 可用性与论文配方之间需要专门 crosswalk。这里不把所有 214 个 Kraken species rows 强制贴成 TP/FP，也不从一个样本估计普适灵敏度。
-
-如果要做 benchmark，应冻结一张 machine-readable truth table：strain label、expected abundance、assembly accession、当前 taxid、允许的 ancestor match、数据库是否包含该 genome。未进入数据库的成员不能计作 Bracken 算法本身的错误。
-
-### 5. Bracken 的 package/CLI 版本分歧必须如实保留
-
-Bioconda 包是 `3.1p1`，上游 wrapper 却输出 `Bracken v3.0.1`。这不是分析失败，但只记录 `bracken -v` 会丢掉实际 package identity；只写包版本又会让读者无法复核 CLI。环境 lock、conda metadata、CLI output 三者都保留，Methods 同时写出。
-
-### 6. 给 abundance estimate 加 cohort-level 稳定性
+### 给 abundance estimate 加 cohort-level 稳定性
 
 单样本参数分支只说明算法边界。真实队列还应在所有 samples 上计算：
 
@@ -778,59 +822,15 @@ Bioconda 包是 `3.1p1`，上游 wrapper 却输出 `Bracken v3.0.1`。这不是�
 
 只有跨样本结论稳定，才值得进入差异丰度或机器学习模型。
 
-## 出版级美化 {#sec-polish}
-
-三张图分别承担不同证据，不把它们挤成一张“漂亮但不可审计”的堆积图：
-
-1. **classification ledger** 同时显示 classified/unclassified 分母与 direct rank placement；
-2. **redistribution lollipop** 显示 Bracken 改动方向，并明确两端使用各自 within-rank denominator；
-3. **parameter sensitivity** 把 feature-count instability 与 abundance instability 分开。
-
-图内所有文字使用英文；物种名保留拉丁学名；颜色使用蓝橙主对比，并辅以点形，避免只靠红绿区分。输出同时生成可编辑 PDF、350 dpi PNG 和 LZW-compressed TIFF。lollipop 连线不是 uncertainty interval，图注必须明确；没有 bootstrap 或 replicate 就不画伪误差条。
-
-投稿时还应检查：
-
-- taxonomy labels 是否按 abundance 排序并保持斜体；
-- sample denominator 是否出现在轴或图注；
-- `Other` 是低丰度 taxa 合并，还是 extended rank codes，二者不可同名；
-- Bracken fraction 是否误标为 all-read percentage；
-- 图与补充表是否记录 database release、rank、read length、threshold。
-
-## 常见坑方框 {#sec-pitfalls}
-
 ::: {.callout-caution title="坑 1：把 paired fragments 写成 reads"}
 `--paired` 后日志的 99,991 sequences、report counts 和 Bracken counts 都是 pairs/fragments。原始 mates 是 199,982 条。Results 和 Methods 混用会制造两倍误差。
-:::
-
-::: {.callout-caution title="坑 2：把 report 第二列全表相加"}
-clade count 沿祖先节点重复覆盖。全表相加没有可解释分母；按一个 rank 切片，或使用 direct count 做全树守恒。
-:::
-
-::: {.callout-caution title="坑 3：给 Bracken 输入 MPA-style report"}
-Bracken 需要 standard six-column Kraken report。`--use-mpa-style` 的 lineage table 适合另一类展示，不保留 Bracken 所需的完整树计数结构。
-:::
-
-::: {.callout-caution title="坑 4：把 -r 写成 paired insert length"}
-`-r` 是单条 read 的长度。150 bp paired-end 仍用 `-r 150`，不是 300，也不是 insert-size peak。trimmed length 很分散时需要 sensitivity 或分层运行。
-:::
-
-::: {.callout-caution title="坑 5：把 -t 当成生物学检出限"}
-threshold 决定哪些 taxa 能接受 redistribution。这里 `t=0` 与 `t=10` 分别得到 214 与 65 个 species；差异包含真实低丰度与模型尾部，不能用单一数字划分“存在/不存在”。
-:::
-
-::: {.callout-caution title="坑 6：把 Bracken fraction 当作全部 FASTQ 的比例"}
-主表 fraction 在 84,147 个 reported species estimates 内归一化，不含 13,618 个 unclassified 与 2,226 个 unresolved/discarded/rounding fragments。图注必须写清 denominator。
 :::
 
 ::: {.callout-caution title="坑 7：跨数据库按物种名直接 join"}
 名称会改、同名会合并、taxa 会 split。至少用 taxid + lineage + database release；跨 release 先做 taxonomy crosswalk，再判断是否能合并。
 :::
 
-::: {.callout-caution title="坑 8：删除 Kraken report，只保留 Bracken 表"}
-没有原始 report 就无法重审 unclassified、direct/clade counts、rank placement，也无法在同一 classifier output 上重跑其他 Bracken rank/read-length/threshold 分支。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 分别记录分类与丰度重估参数 {#sec-methods}
 
 下面模板中的版本、数据库、参数和计数单位与本次真实运行一致；换数据后应同步替换 checksum、样本数、read length 与资源描述。
 
@@ -846,7 +846,7 @@ threshold 决定哪些 taxa 能接受 redistribution。这里 `t=0` 与 `t=10` �
 
 这句话同时错在计数单位、presence claim 和 absolute abundance。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 最少需要什么
 
@@ -913,7 +913,29 @@ done < samples.tsv
 
 参数应在查看 case/control outcome 前固定。若参数选择使用了 outcome 标签，它本身已成为分析步骤，必须进入交叉验证或外部验证，不能再把同一数据上的结果当无偏证据。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-polish}
+
+三张图分别承担不同证据，不把它们挤成一张“漂亮但不可审计”的堆积图：
+
+1. **classification ledger** 同时显示 classified/unclassified 分母与 direct rank placement；
+2. **redistribution lollipop** 显示 Bracken 改动方向，并明确两端使用各自 within-rank denominator；
+3. **parameter sensitivity** 把 feature-count instability 与 abundance instability 分开。
+
+图内所有文字使用英文；物种名保留拉丁学名；颜色使用蓝橙主对比，并辅以点形，避免只靠红绿区分。输出同时生成可编辑 PDF、350 dpi PNG 和 LZW-compressed TIFF。lollipop 连线不是 uncertainty interval，图注必须明确；没有 bootstrap 或 replicate 就不画伪误差条。
+
+投稿时还应检查：
+
+- taxonomy labels 是否按 abundance 排序并保持斜体；
+- sample denominator 是否出现在轴或图注；
+- `Other` 是低丰度 taxa 合并，还是 extended rank codes，二者不可同名；
+- Bracken fraction 是否误标为 all-read percentage；
+- 图与补充表是否记录 database release、rank、read length、threshold。
+
+## 回到最初的问题
+
+Kraken2 给每个同步 read pair 一个分类位置；Bracken 再把兼容的高层级片段重估到指定 rank。两张表的分母、阈值和数据库边界必须分开审计。
+
+## 参考文献 {#sec-references}
 
 - @wood2019kraken2
 - @lu2017bracken

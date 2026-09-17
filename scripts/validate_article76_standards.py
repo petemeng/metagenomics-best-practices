@@ -292,16 +292,15 @@ def audit_chapter(chapter: Path, rendered: Path, audit: Audit) -> None:
     audit.add("Chapter", "freeze-auto", metadata.get("execute", {}).get("freeze") == "auto", metadata.get("execute"))
     audit.add("Chapter", "expected-images", metadata.get("wechat", {}).get("expected_images") == 10, metadata.get("wechat", {}).get("expected_images"))
     for heading in (
-        "## 这一步对应论文里的哪张图",
-        "## 理论：为什么这么做",
-        "## 准备工作",
-        "## 可复制代码",
-        "## 审计与升级",
-        "## 出版级美化",
-        "## 常见坑",
-        "## 这段 Methods 怎么写",
-        "## 换成你自己的数据怎么做",
-        "## 参考",
+        "先确定这一点",
+        "#sec-theory",
+        "#sec-code",
+        "#sec-audit",
+        ".callout-caution",
+        "#sec-methods",
+        "#sec-own-data",
+        "参考文献",
+        "图中应该保留哪些信息",
     ):
         audit.add("Chapter heading", heading, heading in text, heading)
     audit.add("Chapter", "inline-theme", all(token in text for token in ("pal_pub <-", "scale_color_pub <-", "scale_fill_pub <-", "theme_pub <-", "save_pub <-")), "five helpers")

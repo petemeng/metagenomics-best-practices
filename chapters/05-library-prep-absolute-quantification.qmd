@@ -1,6 +1,6 @@
 ---
-title: "第 05 篇 · 从样本到文库：DNA 提取、建库偏差与定量宏基因组"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "从样本到文库：DNA 提取、建库偏差与定量宏基因组"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -36,13 +36,20 @@ wechat:
     05-extraction-bias.png: "Protocol-specific relative extraction efficiencies for ten taxa in the Costea cellular mock community"
     05-protocol-bias-range.png: "Maximum and average pairwise bias for Costea extraction protocols H Q and W"
     05-syndna-quantification.png: "Expected cell percentages compared with synDNA estimates and relative read percentages"
+reader-mode: analysis
 ---
 
 > **学习目标：**把“选一个常用试剂盒送测”升级成可审计的测量设计：区分保存、裂解、提取、建库、测序与比对造成的偏差；知道 cellular mock、blank、whole-cell spike-in、DNA spike-in、qPCR 和 flow cytometry 各自覆盖哪一段；把 relative abundance 转成有明确分母的 quantitative abundance。  
 > **真实数据：**Costea 等 Phase III 的 10 菌整细胞 mock、8 份人粪便背景和 1 份 mock-only 样本，经 H/Q/W 三种提取协议形成的 27 个 MetaPhlAn2 profiles；Zaramela 等 Table 1 中 8 菌商业 DNA mock 的 synDNA Pool 2 预测值与相对 read 比例。  
 > **预计资源：**本文的 309 行固化小表在普通笔记本上通常低于 1 分钟、内存低于 1 GB。真正的湿实验资源由样本数、重复、mock、blank、提取板和文库体系决定；做 CRC 粪便队列时，应在正式收样前用代表性基质完成至少一次提取—建库 pilot，而不是等 FASTQ 到手后才发现病例与批次不可分。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+相对丰度不能代替细胞数；外部定量参照的加入位置，决定它能够校正哪一段流程。
+
+:::
+
+## 提取偏差与绝对数量，需要分别测量 {#sec-target}
 
 Costea 等把同一批粪便材料交给 21 种 DNA extraction protocols，发现提取步骤是所考察技术因素中影响最大的部分；论文 Figure 3 直接比较了提取与 library preparation 对群落组成的影响，Phase III 又用已知细胞组成的 mock 检验推荐协议 [@costea2017standards]。
 
@@ -55,155 +62,42 @@ McLaren、Willis 和 Callahan随后用一个乘法偏差模型重新分析 Phase
 
 本文从作者归档的 RDA 对象重新计算同一组 relative efficiencies。Protocol H 中 *Lactobacillus plantarum* 的相对效率约为 0.0168，而 *Fusobacterium nucleatum* 约为 46.29；二者之比形成约 2,751 倍的最大成对偏差。
 
-![三种提取协议对 10 个 mock taxa 的几何中心化相对效率。1 表示与该协议的“平均 taxon”一致，而不是 100% 回收率。](../figures/05-extraction-bias.png){#fig-extraction-bias}
 
-![每种协议的最大和平均成对偏差。Protocol Q 在这套 10 菌—粪便—MetaPhlAn2 体系中偏差较小，但不能据此宣称它在所有基质和目标中最佳。](../figures/05-protocol-bias-range.png){#fig-protocol-bias}
 
 提取偏差解决的是“不同 taxon 被不等比例看见”；绝对定量还要解决“整份样本里一共有多少”。Vandeputte 等用 flow cytometry 发现健康人粪便 microbial load 可相差约 10 倍，说明相同的 10% relative abundance 可能对应完全不同的 cells per gram [@vandeputte2017qmp]。
 
 Zaramela 等把不同 GC 的 synthetic DNA standards 与一个 8 菌商业 DNA mock 联合建库，用 spike-in calibration 预测 genome copies/cells。本文按其 Table 1 原值重绘 Pool 2：预期 cell percentage 与 synDNA 预测的 Pearson $r=0.992$、RMSE 为 0.98 percentage points；普通 relative reads 的 $r=-0.749$、RMSE 为 12.20 percentage points [@zaramela2022syndna]。
 
-![商业 8 菌 DNA mock 中，synDNA 预测接近 1:1 线，而未经 genome-copy calibration 的相对 reads 给出相反的排序趋势。](../figures/05-syndna-quantification.png){#fig-syndna}
 
 ::: {.callout-important title="对照放在哪里，决定它能校正什么"}
 整细胞 mock 或 whole-cell spike-in 在裂解前加入，能感知提取偏差；synthetic DNA 在提取后、建库前加入，只能审计建库、测序与比对。后者即使完美，也不能找回从未被裂解或在提取中丢失的原生 DNA。
 :::
 
-## 理论：从细胞到 reads 是一串有方向的测量过程 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 提取偏差是乘法偏差，不是随机噪声
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/05/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-设样本 $s$ 中 taxon $i$ 的真实绝对量为 $A_{is}$，整个 wet-lab 与 bioinformatics protocol 对它的相对效率为 $b_i$。只观察组成时：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/05/download.R)。
 
-$$
-\widetilde{p}_{is}
-=
-\frac{b_i A_{is}}
-{\sum_j b_j A_{js}}.
-$$
+```{r}
+#| label: reader-input-download-05
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/05/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-两个 taxon 的观测比值满足：
+## 先确认系统环境与版本来源 {#sec-setup}
 
-$$
-\frac{\widetilde{p}_{is}}
-{\widetilde{p}_{ks}}
-=
-\frac{b_i}{b_k}
-\times
-\frac{A_{is}}{A_{ks}}.
-$$
-
-因此，若 $b_i/b_k=50$，真实比例相同的两个 taxon 也会被测成 50:1。增加测序深度可以降低 sampling noise，却不会让 $b_i/b_k$ 自动回到 1。
-
-McLaren 等把每个 taxon 的效率除以全部 mock taxa 效率的 geometric mean，得到 relative efficiency。它没有“细胞回收百分比”的单位，只回答该 taxon 相对同一协议中其他 taxon 被放大还是压低。最大成对偏差：
-
-$$
-B_{\max}
-=
-\frac{\max_i(b_i)}
-{\min_i(b_i)}
-$$
-
-表示任意两种 mock taxa 的比例最多会因系统偏差改变多少倍 [@mclaren2019bias]。
-
-### 2. 裂解强度、DNA 纯度和片段长度会互相牵制
-
-粪便中既有易裂解细胞，也有厚 peptidoglycan、孢子、真菌细胞壁和被基质包裹的细胞。机械 bead beating 往往有助于提高难裂解对象的回收，却也会剪切 DNA；温和酶解或 HMW extraction 有利于长片段，却可能改变 taxon recovery。抑制物去除、离心、柱纯化和磁珠选择又会继续改变总产量与片段分布。
-
-这使短读和长读的“最佳提取”目标不同：
-
-- **short-read profiling**更重视跨 taxon 的均衡裂解、纯度和批间一致性；
-- **long-read assembly**还要求足够浓度、完整性和高分子量 DNA；
-- 同一 aliquot 很难同时把强机械裂解和极长片段做到最优；
-- HMW 协议也必须用 mock 或 paired short-read profile 检查 taxon dropout，不能只看 Nanodrop 和 read N50。
-
-Trigodet 等对复杂 metagenome 的六种 HMW strategies 进行 benchmark，也强调长读实验需要高浓度、高纯度、高分子量输入，传统短读提取方案并不能直接替代 [@trigodet2022hmw]。若研究同时要做 CRC species profile 和 long-read MAG，稳妥方案常是从充分 homogenized stool 分出两个预注册 aliquots：一个优化均衡裂解，一个优化 HMW；两条线不能在分析阶段假装成同一种测量。
-
-### 3. 建库会再乘上一层 GC、insert 与 PCR 偏差
-
-DNA 进入 library preparation 后，还会经历 fragmentation、end repair、adapter ligation、size selection、PCR 或 PCR-free amplification、pooling 和 sequencing。每一步都可能改变某些片段被读到的概率：
-
-- GC 极端片段可能在 PCR、cluster generation 或 base calling 中损失；
-- 过窄的 size selection 会改变可进入文库的片段群；
-- low-input library 的 PCR cycles 增加时，duplicates 与 amplification skew 往往上升；
-- enzymatic fragmentation 与 mechanical shearing 的序列/片段选择机制不同；
-- insert-size distribution、adapter dimers、duplicate rate 和 GC coverage 需要逐文库审计；
-- platform、flow-cell chemistry 和 index design 也可能形成系统差异。
-
-Jones 等在 mock 与 human microbiome 材料中观察到 library methodology 会改变 genomic 和 functional predictions，并在其 benchmark 条件下建议优先考虑 PCR-free [@jones2015library]。这不是“PCR-free 永远无偏”：输入不足、DNA 质量差或 kit/platform 改变时，PCR-free 也会产生选择；PCR 建库则应记录 input mass、cycle number、fragmentation、insert range 和 batch。
-
-Poulsen 等比较 Nextera（含 PCR）、KAPA PCR-free、NEXTflex PCR-free 与 HiSeq/NextSeq 组合，发现 library preparation 和 platform 都有系统效应，而且效应依赖样本类型 [@poulsen2022library]。所以病例和对照不能分开发往不同平台或不同建库体系，再指望统计模型把它们完全“校正掉”。
-
-### 4. Relative abundance 不包含 total microbial load
-
-若一个相对 profile 与一个相容的总量测量共享同一目标总体和分母，最简单的 load scaling 是：
-
-$$
-A_{is}=p_{is}\times L_s,
-$$
-
-其中 $L_s$ 可以是 cells/g wet stool、16S copies/g、genome equivalents/g 或 target-gene copies/g。单位必须跟着 $L_s$ 走。
-
-这个公式看似简单，实际有三个前提：
-
-1. $p_{is}$ 的组成分母与 $L_s$ 的总量分母相容；
-2. profile 对各 taxon 的效率差异已经足够小或经过同体系校准；
-3. 样本质量、稀释倍数、提取体积与原始质量被完整追溯。
-
-例如 total bacterial 16S qPCR 测到的是 **gene copies**，不是 cells；不同 taxon 的 16S copy number、提取回收与 PCR inhibition 都会影响换算。Flow cytometry 直接给 total cells，却不提供 taxon identity，并受 gating、debris、聚团、染色和保存影响。把 flow-derived cells/g 乘到一个 genome-length-weighted shotgun profile 上时，还必须证明 profiler 输出确实可解释为相容的 cell fraction。
-
-### 5. Spike-in 的流程位置与分子形态决定可见范围
-
-设加入样本的 synthetic standard 有已知 genome equivalents $G_{\mathrm{std},s}$，target 和 standard 的 length-normalized signals 分别为 $R_{is}/L_i$ 与 $R_{\mathrm{std},s}/L_{\mathrm{std}}$。在“相同有效回收、相同可比对性”的理想近似下：
-
-$$
-\widehat{G}_{is}
-=
-\frac{R_{is}/L_i}
-{R_{\mathrm{std},s}/L_{\mathrm{std}}}
-\times
-G_{\mathrm{std},s}.
-$$
-
-单一标准很难覆盖 GC、fragment length、copy state 和 mapping behavior。synDNA 方案使用多个不同 GC 的 synthetic sequences 建立 sample-specific calibration curve，因此比简单“除以 spike reads”更能审计 library/sequencing response [@zaramela2022syndna]。但 synthetic DNA 与原生细胞仍不共享裂解步骤。
-
-控制体系应按问题组合：
-
-| Control or scale | 最适合回答的问题 | 不能单独回答 |
-|---|---|---|
-| Extraction blank | 污染从试剂/操作进入了多少 | 原生 taxon 回收是否均衡 |
-| Cellular mock | 整条协议对已知 taxa 的相对效率 | 未包含 taxa 和真实基质的全部行为 |
-| Whole-cell spike-in | 从保存/裂解到 mapping 的总回收 | spike 与原生 taxa 是否等效裂解 |
-| Synthetic DNA spike-in | 建库、测序、mapping 的样本内 calibration | 保存、裂解与提取损失 |
-| Total bacterial qPCR/ddPCR | 指定 target 的 gene copies 与 inhibition | 未校正 copy number 时的 cells |
-| Flow cytometry | 总 cells per mass/volume | taxon identity 与提取偏差 |
-
-### 6. “绝对”不是一句形容词，而是一条单位链
-
-对 CRC 粪便研究，建议把单位链写成：
-
-$$
-\text{wet stool mass}
-\rightarrow
-\text{homogenate volume}
-\rightarrow
-\text{extraction aliquot}
-\rightarrow
-\text{elution volume}
-\rightarrow
-\text{library input}
-\rightarrow
-\text{reads}
-\rightarrow
-\text{cells or copies per gram}.
-$$
-
-其中任何一个质量、体积或稀释倍数缺失，最后的“per gram”都无法复核。RPKM、CPM、relative abundance、copies per million reads 和 genome equivalents per million reads 仍是 sequencing-denominator units；没有外部标尺时，不应把它们改名为 absolute abundance。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：安装依赖、获取固定输入并定义作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 本文重绘只依赖轻量 R 包：
 
@@ -364,9 +258,7 @@ save_pub <- function(
 ```
 </details>
 
-## 可复制代码：从 protocol bias 到 quantitative unit {#sec-code}
-
-### 1. 读取并验证 27 个真实 mock profiles
+## 读取并验证 27 个真实 mock profiles {#sec-code}
 
 ```{r}
 mock_profiles <- read.delim(
@@ -460,7 +352,96 @@ kable(mock_audit)
 
 这里的 27 个样本不是 27 个独立受试者，而是 9 个 backgrounds × 3 个 protocols。它适合估计 protocol-specific measurement bias，不适合拿来做疾病统计或把技术重复当生物学重复。
 
-### 2. 从 relative efficiency 计算成对偏差
+### 从一份 mock 升级为分层 control panel
+
+一个 10 菌 mock 可以准确识别这 10 个 taxa 的 bias，却无法证明其他对象也无偏。根据主要终点增加控制：
+
+| Primary endpoint | 至少增加的 control |
+|---|---|
+| Common bacterial species | Matrix-matched cellular mock + extraction blank |
+| Fungi/eukaryotes | 含厚壁真菌或目标真核的 mock |
+| Spore-formers | 含孢子或相近难裂解对象的 recovery test |
+| Resistome copies/g | Known gene-copy/genomic standard + inhibition test |
+| Long-read MAG | HMW reference material + fragment-length and taxon-recovery audit |
+| Low biomass | Multiple blanks, positive control, lot tracking, detection-limit study |
+| Cross-center cohort | Shared reference material + bridge specimens |
+
+### 从一个“绝对丰度”字段升级为可检查的 measurement model
+
+投稿表中不要只有 `Absolute_abundance`。至少保存：
+
+```text
+SampleID
+OriginalMass_gWet
+HomogenateVolume_mL
+ExtractionAliquot_g
+ElutionVolume_uL
+LibraryInput_ng
+SpikeType
+SpikeAmount
+SpikeAddedAt
+SpikeReads
+TotalLoadMethod
+TotalLoadValue
+TotalLoadUnit
+TargetSignal
+AbsoluteEstimate
+AbsoluteUnit
+LOD
+LOQ
+ExtractionPlate
+LibraryBatch
+SequencingLane
+```
+
+若用 qPCR，还要保存 primer/probe、target region、standard material、efficiency、$R^2$、replicate Cq、inhibition/dilution test 和 copy-number correction。若用 flow cytometry，要保存 staining、gating、beads、dilution、events、debris/doublet rule 和样本保存方式。
+
+::: {.callout-caution title="病例和对照分批提取或建库"}
+病例状态与 extraction plate、kit lot、operator、library batch 或 lane 完全重合时，疾病效应不可辨识。统计上的 batch covariate 不能凭空恢复不存在的交叉设计。
+:::
+
+::: {.callout-caution title="mock 只跑一次且只在项目开头跑"}
+lot、operator、instrument 和 reagent drift 会让 bias 随批次变化。至少在关键批次放置 bridge controls，并预先定义控制图、可接受范围与失败后的重提取/重建库规则。
+:::
+
+![三种提取协议对 10 个 mock taxa 的几何中心化相对效率。1 表示与该协议的“平均 taxon”一致，而不是 100% 回收率。](../figures/05-extraction-bias.png){#fig-extraction-bias}
+
+## 从 relative efficiency 计算成对偏差
+
+### 提取偏差是乘法偏差，不是随机噪声 {#sec-theory}
+
+设样本 $s$ 中 taxon $i$ 的真实绝对量为 $A_{is}$，整个 wet-lab 与 bioinformatics protocol 对它的相对效率为 $b_i$。只观察组成时：
+
+$$
+\widetilde{p}_{is}
+=
+\frac{b_i A_{is}}
+{\sum_j b_j A_{js}}.
+$$
+
+两个 taxon 的观测比值满足：
+
+$$
+\frac{\widetilde{p}_{is}}
+{\widetilde{p}_{ks}}
+=
+\frac{b_i}{b_k}
+\times
+\frac{A_{is}}{A_{ks}}.
+$$
+
+因此，若 $b_i/b_k=50$，真实比例相同的两个 taxon 也会被测成 50:1。增加测序深度可以降低 sampling noise，却不会让 $b_i/b_k$ 自动回到 1。
+
+McLaren 等把每个 taxon 的效率除以全部 mock taxa 效率的 geometric mean，得到 relative efficiency。它没有“细胞回收百分比”的单位，只回答该 taxon 相对同一协议中其他 taxon 被放大还是压低。最大成对偏差：
+
+$$
+B_{\max}
+=
+\frac{\max_i(b_i)}
+{\min_i(b_i)}
+$$
+
+表示任意两种 mock taxa 的比例最多会因系统偏差改变多少倍 [@mclaren2019bias]。
 
 每个 protocol 的 relative efficiencies 已以 geometric mean 居中到 1。下面独立重算最大与平均成对偏差：
 
@@ -549,7 +530,58 @@ kable(protocol_metrics)
 
 Protocol H 的极端值主要由 *L. plantarum* 低效率与 *F. nucleatum* 高效率驱动。Protocol Q 在这套数据里最大偏差最小，但 McLaren 等同时报告 Q 的平均 noise 较高，并指出这可能与 mock reads 较少有关 [@mclaren2019bias]。所以正确结论是“在该 benchmark 中 Q 的系统偏差范围较小”，而不是“所有项目都买 Q”。
 
-### 3. 审计 synDNA 是否恢复已知 cell composition
+### 忠实复算历史 benchmark，但不把旧流程当成当前数据库规范 {#sec-audit}
+
+本文复算使用作者归档的 MetaPhlAn2 2.7.6 profiles，并确认 H/Q/W 最大成对偏差约为 2,751、56 和 74，与 eLife Table 2 的舍入值一致 [@mclaren2019bias]。这份数据适合证明 protocol bias 的结构，因为：
+
+- raw study、sample mapping、mock truth 和 profiling command 有明确来源；
+- 10 个 mock taxa 在全部 27 个 samples 中被检测到；
+- 三个 extraction protocols 共用后续流程；
+- relative efficiency 的定义与原分析一致。
+
+它不适合作为当前 CRC taxonomic profiling 的参考数据库：
+
+- MetaPhlAn2 marker database release 没有写入 RDA；
+- `--min_cu_len 0 --stat avg_g` 为提高 rare mock sensitivity 而选；
+- mock 的 10 个 taxa 不能代表全部 human gut、fungi、virus、archaea、spore-formers 或 resistome；
+- 原文指出 Figure 6 中三个 taxa 的标签与 FACS 表可能不一致，复算采用公开 FACS measurements；
+- 历史 taxonomy、contaminant assignment 与今天的数据库可能不同。
+
+因此，Methods 应把 database release 写成“not encoded in the archived object”，而不是根据年份猜一个版本。
+
+### 从“统一试剂盒”升级为“统一流程 + 真实 matrix validation”
+
+统一 extraction protocol 是降低 differential bias 的重要起点，却不是充分条件。当前设计至少还要锁定：
+
+1. collection device、preservative、time-to-freezing 和 freeze-thaw；
+2. wet/dry mass、homogenization、aliquot mass 和 elution volume；
+3. bead-beating instrument、speed、duration、tube/beat lot；
+4. kit、lot、operator、plate position 和 extraction date；
+5. DNA concentration assay、purity、fragment distribution；
+6. library input mass、fragmentation、size-selection、PCR cycles；
+7. index set、pooling rule、lane/platform/chemistry；
+8. profiler、reference/database release 和 thresholds。
+
+若多个中心无法统一，可在每个中心运行同一 cellular mock/reference material，并让一部分 bridge samples 跨实验室重复。bridge samples 可以估计 differential bias，但不能证明任一中心都接近真值。
+
+![每种协议的最大和平均成对偏差。Protocol Q 在这套 10 菌—粪便—MetaPhlAn2 体系中偏差较小，但不能据此宣称它在所有基质和目标中最佳。](../figures/05-protocol-bias-range.png){#fig-protocol-bias}
+
+## 检查 synDNA 是否恢复已知 cell composition
+
+### 建库会再乘上一层 GC、insert 与 PCR 偏差
+
+DNA 进入 library preparation 后，还会经历 fragmentation、end repair、adapter ligation、size selection、PCR 或 PCR-free amplification、pooling 和 sequencing。每一步都可能改变某些片段被读到的概率：
+
+- GC 极端片段可能在 PCR、cluster generation 或 base calling 中损失；
+- 过窄的 size selection 会改变可进入文库的片段群；
+- low-input library 的 PCR cycles 增加时，duplicates 与 amplification skew 往往上升；
+- enzymatic fragmentation 与 mechanical shearing 的序列/片段选择机制不同；
+- insert-size distribution、adapter dimers、duplicate rate 和 GC coverage 需要逐文库审计；
+- platform、flow-cell chemistry 和 index design 也可能形成系统差异。
+
+Jones 等在 mock 与 human microbiome 材料中观察到 library methodology 会改变 genomic 和 functional predictions，并在其 benchmark 条件下建议优先考虑 PCR-free [@jones2015library]。这不是“PCR-free 永远无偏”：输入不足、DNA 质量差或 kit/platform 改变时，PCR-free 也会产生选择；PCR 建库则应记录 input mass、cycle number、fragmentation、insert range 和 batch。
+
+Poulsen 等比较 Nextera（含 PCR）、KAPA PCR-free、NEXTflex PCR-free 与 HiSeq/NextSeq 组合，发现 library preparation 和 platform 都有系统效应，而且效应依赖样本类型 [@poulsen2022library]。所以病例和对照不能分开发往不同平台或不同建库体系，再指望统计模型把它们完全“校正掉”。
 
 ```{r}
 rmse <- function(observed, expected) {
@@ -599,7 +631,59 @@ kable(syn_metrics, digits = 3)
 
 这张表比较的是 commercial DNA mock 中的 **genome-copy/cell percentage**。作者为便于与制造商 composition 对照，采用“一细胞一 genome copy”的简化；快速生长细菌可能有多份染色体，所以正式实验应把输出优先称为 genome equivalents，除非 cells 的换算经过验证 [@zaramela2022syndna]。
 
-### 4. 给每种 control 标明进入流程的位置
+### 从“PCR-free 更好”升级为输入分层的决策
+
+PCR-free 在输入量与质量足够时，常用于减少 amplification bias；但研究不能把高 DNA 样本做 PCR-free、低 DNA 样本做 amplified library，再让这两类恰好对应 control/CRC。建议：
+
+- 先用 pilot 得到各临床分层的 DNA-yield distribution；
+- 为同一 primary analysis 预先选择一个可覆盖大多数样本的 library strategy；
+- 对低输入 exception 设独立标签和敏感性分析；
+- 记录实际 input mass 与 cycle number，而不只写 kit name；
+- 比较 insert distribution、GC coverage、duplicates、adapter contamination 和 mapped fraction；
+- technical re-library 应跨关键分层抽样，不只重做失败最严重的组。
+
+![商业 8 菌 DNA mock 中，synDNA 预测接近 1:1 线，而未经 genome-copy calibration 的相对 reads 给出相反的排序趋势。](../figures/05-syndna-quantification.png){#fig-syndna}
+
+## 给每种 control 标明进入流程的位置
+
+### 裂解强度、DNA 纯度和片段长度会互相牵制
+
+粪便中既有易裂解细胞，也有厚 peptidoglycan、孢子、真菌细胞壁和被基质包裹的细胞。机械 bead beating 往往有助于提高难裂解对象的回收，却也会剪切 DNA；温和酶解或 HMW extraction 有利于长片段，却可能改变 taxon recovery。抑制物去除、离心、柱纯化和磁珠选择又会继续改变总产量与片段分布。
+
+这使短读和长读的“最佳提取”目标不同：
+
+- **short-read profiling**更重视跨 taxon 的均衡裂解、纯度和批间一致性；
+- **long-read assembly**还要求足够浓度、完整性和高分子量 DNA；
+- 同一 aliquot 很难同时把强机械裂解和极长片段做到最优；
+- HMW 协议也必须用 mock 或 paired short-read profile 检查 taxon dropout，不能只看 Nanodrop 和 read N50。
+
+Trigodet 等对复杂 metagenome 的六种 HMW strategies 进行 benchmark，也强调长读实验需要高浓度、高纯度、高分子量输入，传统短读提取方案并不能直接替代 [@trigodet2022hmw]。若研究同时要做 CRC species profile 和 long-read MAG，稳妥方案常是从充分 homogenized stool 分出两个预注册 aliquots：一个优化均衡裂解，一个优化 HMW；两条线不能在分析阶段假装成同一种测量。
+
+### Spike-in 的流程位置与分子形态决定可见范围
+
+设加入样本的 synthetic standard 有已知 genome equivalents $G_{\mathrm{std},s}$，target 和 standard 的 length-normalized signals 分别为 $R_{is}/L_i$ 与 $R_{\mathrm{std},s}/L_{\mathrm{std}}$。在“相同有效回收、相同可比对性”的理想近似下：
+
+$$
+\widehat{G}_{is}
+=
+\frac{R_{is}/L_i}
+{R_{\mathrm{std},s}/L_{\mathrm{std}}}
+\times
+G_{\mathrm{std},s}.
+$$
+
+单一标准很难覆盖 GC、fragment length、copy state 和 mapping behavior。synDNA 方案使用多个不同 GC 的 synthetic sequences 建立 sample-specific calibration curve，因此比简单“除以 spike reads”更能审计 library/sequencing response [@zaramela2022syndna]。但 synthetic DNA 与原生细胞仍不共享裂解步骤。
+
+控制体系应按问题组合：
+
+| Control or scale | 最适合回答的问题 | 不能单独回答 |
+|---|---|---|
+| Extraction blank | 污染从试剂/操作进入了多少 | 原生 taxon 回收是否均衡 |
+| Cellular mock | 整条协议对已知 taxa 的相对效率 | 未包含 taxa 和真实基质的全部行为 |
+| Whole-cell spike-in | 从保存/裂解到 mapping 的总回收 | spike 与原生 taxa 是否等效裂解 |
+| Synthetic DNA spike-in | 建库、测序、mapping 的样本内 calibration | 保存、裂解与提取损失 |
+| Total bacterial qPCR/ddPCR | 指定 target 的 gene copies 与 inhibition | 未校正 copy number 时的 cells |
+| Flow cytometry | 总 cells per mass/volume | taxon identity 与提取偏差 |
 
 ```{r}
 kable(
@@ -625,7 +709,41 @@ kable(
 - qPCR/ddPCR 或 flow cytometry 提供与 sequencing denominator 独立的 load；
 - technical replicates 用于估计 precision，却不能替代 blank 或 truth-known mock。
 
-### 5. 用 load scaling 保留单位
+::: {.callout-caution title="只看 DNA yield，不看 taxon recovery"}
+高 ng/µL 可能主要来自易裂解 taxa 或宿主 DNA。至少同时审计 mock recovery、host fraction、purity、fragment distribution 和 endpoint-specific yield。
+:::
+
+::: {.callout-caution title="把 Nanodrop 当作 library-ready DNA"}
+吸光度比值不能替代 fluorometric dsDNA concentration、抑制物测试与 fragment-size measurement。长读还要给 HMW 分布；短读也要确认输入量与建库适配。
+:::
+
+::: {.callout-caution title="把 PCR-free 写成无偏"}
+PCR-free 可减少一类 amplification bias，但 fragmentation、ligation、size selection、cluster generation、platform 和 mapping bias 仍在。低输入样本若改用 PCR，必须记录 cycles 并做分层敏感性分析。
+:::
+
+::: {.callout-caution title="DNA spike-in 被当作 end-to-end control"}
+提取后加入的 DNA 没经历保存、裂解与 purification，不能发现难裂解 taxa 或提取损失。若主要问题是 end-to-end recovery，应加入 cellular mock/whole-cell spike-in。
+:::
+
+## 用 load scaling 保留单位
+
+### Relative abundance 不包含 total microbial load
+
+若一个相对 profile 与一个相容的总量测量共享同一目标总体和分母，最简单的 load scaling 是：
+
+$$
+A_{is}=p_{is}\times L_s,
+$$
+
+其中 $L_s$ 可以是 cells/g wet stool、16S copies/g、genome equivalents/g 或 target-gene copies/g。单位必须跟着 $L_s$ 走。
+
+这个公式看似简单，实际有三个前提：
+
+1. $p_{is}$ 的组成分母与 $L_s$ 的总量分母相容；
+2. profile 对各 taxon 的效率差异已经足够小或经过同体系校准；
+3. 样本质量、稀释倍数、提取体积与原始质量被完整追溯。
+
+例如 total bacterial 16S qPCR 测到的是 **gene copies**，不是 cells；不同 taxon 的 16S copy number、提取回收与 PCR inhibition 都会影响换算。Flow cytometry 直接给 total cells，却不提供 taxon identity，并受 gating、debris、聚团、染色和保存影响。把 flow-derived cells/g 乘到一个 genome-length-weighted shotgun profile 上时，还必须证明 profiler 输出确实可解释为相容的 cell fraction。
 
 ```{r}
 scale_by_total_load <- function(
@@ -656,7 +774,11 @@ scale_by_total_load <- function(
 
 函数不会猜单位。输入 `total_load = cells/g wet stool`，输出才是 load-scaled cells/g；输入 `16S copies/g`，输出就是 copies/g。若 relative profile 排除了 unclassified、virus、host 或只含 selected taxa，和 total load 的分母已经不同，必须先定义 remainder，而不是强制归一后相乘。
 
-### 6. 用一个已知 spike 计算 genome equivalents
+::: {.callout-caution title="qPCR copies 被直接称为 cells"}
+16S qPCR 测的是 target copies；copy-number variation、PCR efficiency、inhibition 和 extraction recovery都会进入结果。未校正时，应报告 copies/g 而不是 cells/g。
+:::
+
+## 用一个已知 spike 计算 genome equivalents
 
 ```{r}
 estimate_from_single_spike <- function(
@@ -695,7 +817,33 @@ estimate_from_single_spike <- function(
 - extraction 后加入时，不能声称覆盖 extraction loss；
 - 每批都有标准曲线、blank、LOD/LOQ 和失败规则。
 
-### 7. 在送样前审计病例—批次可辨识性
+::: {.callout-caution title="RPKM/CPM 被命名为绝对丰度"}
+这些单位的分母仍是本样本文库。没有外部 load 或已知 spike，RPKM、CPM 和 relative abundance 不能判断一个 taxon 的绝对量是升是降。
+:::
+
+## 在送样前检查病例—批次可辨识性
+
+### “绝对”不是一句形容词，而是一条单位链
+
+对 CRC 粪便研究，建议把单位链写成：
+
+$$
+\text{wet stool mass}
+\rightarrow
+\text{homogenate volume}
+\rightarrow
+\text{extraction aliquot}
+\rightarrow
+\text{elution volume}
+\rightarrow
+\text{library input}
+\rightarrow
+\text{reads}
+\rightarrow
+\text{cells or copies per gram}.
+$$
+
+其中任何一个质量、体积或稀释倍数缺失，最后的“per gram”都无法复核。RPKM、CPM、relative abundance、copies per million reads 和 genome equivalents per million reads 仍是 sequencing-denominator units；没有外部标尺时，不应把它们改名为 absolute abundance。
 
 把 extraction plate、library plate、kit lot、operator、sequencing lane 和 index set 写进 metadata。下面的函数不“校正”混杂，只在完全混杂时立即停止：
 
@@ -725,97 +873,6 @@ audit_outcome_batch <- function(
 
 在 CRC case-control 设计中，应在 cohort/site 内按病例状态、性别、年龄层和关键临床分层 block-randomize，再把 aliquots 分散到 extraction plates、library batches 和 lanes。若所有 CRC 在 plate A、所有 control 在 plate B，任何 downstream association 都同时是 batch association。
 
-## 审计与升级 {#sec-audit}
-
-### 忠实复算历史 benchmark，但不把旧流程当成当前数据库规范
-
-本文复算使用作者归档的 MetaPhlAn2 2.7.6 profiles，并确认 H/Q/W 最大成对偏差约为 2,751、56 和 74，与 eLife Table 2 的舍入值一致 [@mclaren2019bias]。这份数据适合证明 protocol bias 的结构，因为：
-
-- raw study、sample mapping、mock truth 和 profiling command 有明确来源；
-- 10 个 mock taxa 在全部 27 个 samples 中被检测到；
-- 三个 extraction protocols 共用后续流程；
-- relative efficiency 的定义与原分析一致。
-
-它不适合作为当前 CRC taxonomic profiling 的参考数据库：
-
-- MetaPhlAn2 marker database release 没有写入 RDA；
-- `--min_cu_len 0 --stat avg_g` 为提高 rare mock sensitivity 而选；
-- mock 的 10 个 taxa 不能代表全部 human gut、fungi、virus、archaea、spore-formers 或 resistome；
-- 原文指出 Figure 6 中三个 taxa 的标签与 FACS 表可能不一致，复算采用公开 FACS measurements；
-- 历史 taxonomy、contaminant assignment 与今天的数据库可能不同。
-
-因此，Methods 应把 database release 写成“not encoded in the archived object”，而不是根据年份猜一个版本。
-
-### 从“统一试剂盒”升级为“统一流程 + 真实 matrix validation”
-
-统一 extraction protocol 是降低 differential bias 的重要起点，却不是充分条件。当前设计至少还要锁定：
-
-1. collection device、preservative、time-to-freezing 和 freeze-thaw；
-2. wet/dry mass、homogenization、aliquot mass 和 elution volume；
-3. bead-beating instrument、speed、duration、tube/beat lot；
-4. kit、lot、operator、plate position 和 extraction date；
-5. DNA concentration assay、purity、fragment distribution；
-6. library input mass、fragmentation、size-selection、PCR cycles；
-7. index set、pooling rule、lane/platform/chemistry；
-8. profiler、reference/database release 和 thresholds。
-
-若多个中心无法统一，可在每个中心运行同一 cellular mock/reference material，并让一部分 bridge samples 跨实验室重复。bridge samples 可以估计 differential bias，但不能证明任一中心都接近真值。
-
-### 从“PCR-free 更好”升级为输入分层的决策
-
-PCR-free 在输入量与质量足够时，常用于减少 amplification bias；但研究不能把高 DNA 样本做 PCR-free、低 DNA 样本做 amplified library，再让这两类恰好对应 control/CRC。建议：
-
-- 先用 pilot 得到各临床分层的 DNA-yield distribution；
-- 为同一 primary analysis 预先选择一个可覆盖大多数样本的 library strategy；
-- 对低输入 exception 设独立标签和敏感性分析；
-- 记录实际 input mass 与 cycle number，而不只写 kit name；
-- 比较 insert distribution、GC coverage、duplicates、adapter contamination 和 mapped fraction；
-- technical re-library 应跨关键分层抽样，不只重做失败最严重的组。
-
-### 从一份 mock 升级为分层 control panel
-
-一个 10 菌 mock 可以准确识别这 10 个 taxa 的 bias，却无法证明其他对象也无偏。根据主要终点增加控制：
-
-| Primary endpoint | 至少增加的 control |
-|---|---|
-| Common bacterial species | Matrix-matched cellular mock + extraction blank |
-| Fungi/eukaryotes | 含厚壁真菌或目标真核的 mock |
-| Spore-formers | 含孢子或相近难裂解对象的 recovery test |
-| Resistome copies/g | Known gene-copy/genomic standard + inhibition test |
-| Long-read MAG | HMW reference material + fragment-length and taxon-recovery audit |
-| Low biomass | Multiple blanks, positive control, lot tracking, detection-limit study |
-| Cross-center cohort | Shared reference material + bridge specimens |
-
-### 从一个“绝对丰度”字段升级为可审计的 measurement model
-
-投稿表中不要只有 `Absolute_abundance`。至少保存：
-
-```text
-SampleID
-OriginalMass_gWet
-HomogenateVolume_mL
-ExtractionAliquot_g
-ElutionVolume_uL
-LibraryInput_ng
-SpikeType
-SpikeAmount
-SpikeAddedAt
-SpikeReads
-TotalLoadMethod
-TotalLoadValue
-TotalLoadUnit
-TargetSignal
-AbsoluteEstimate
-AbsoluteUnit
-LOD
-LOQ
-ExtractionPlate
-LibraryBatch
-SequencingLane
-```
-
-若用 qPCR，还要保存 primer/probe、target region、standard material、efficiency、$R^2$、replicate Cq、inhibition/dilution test 和 copy-number correction。若用 flow cytometry，要保存 staining、gating、beads、dilution、events、debris/doublet rule 和样本保存方式。
-
 ### 把 calibration 与 validation 分开
 
 用同一份 mock 估计 bias 并报告“校正后完美”只是 calibration fit。更强的验证设计是：
@@ -830,9 +887,110 @@ SequencingLane
 一旦改变 extraction、bead beating、library kit、PCR cycles、platform、read length、profiler 或 database release，原 bias vector 的可迁移性就需要重新验证。校正系数不是试剂盒的永久属性。
 :::
 
-## 出版级美化 {#sec-polish}
+## 说明定量参照的位置和最终单位 {#sec-methods}
 
-### 1. 三种协议的 taxon-specific relative efficiency
+### 本文真实复算的英文模板
+
+> Extraction-associated taxon bias was re-estimated from the archived Costea Phase III objects distributed with the McLaren, Willis and Callahan analysis repository (commit `24c0edd557f18f0b62b8fd46a60fe3819515227a`; MIT license). The experiment comprised a ten-taxon cellular mock community, eight fecal backgrounds and one mock-only background, each processed using extraction protocols H, Q and W (27 metagenomes). True mock composition was defined by the arithmetic mean of the published FACS cell measurements. Archived species profiles had been generated with MetaPhlAn2 v2.7.6 using `--min_cu_len 0 --stat avg_g`; the marker-database release was not encoded in the archived objects and was therefore recorded as unavailable. Within each sample, observed mock proportions were divided by the known mock proportions, and the resulting efficiencies were centered by their geometric mean. Protocol-level efficiencies were estimated by geometric averaging across the nine backgrounds. Maximum pairwise bias was defined as the ratio of the largest to the smallest protocol-level relative efficiency.
+
+> The synDNA comparison transcribed the eight bacterial rows from Table 1 of Zaramela et al. (2022) without renormalization. Agreement with the manufacturer-reported cell composition was summarized using Pearson correlation and root-mean-square error in percentage points. All redraws were generated in R 4.4.1 with a fixed seed (`20260719`) and exported as PDF, 300-dpi PNG and 300-dpi LZW-compressed TIFF.
+
+### 换成 CRC 粪便队列的英文模板
+
+> Stool was homogenized before aliquoting, and `[MASS]` g wet stool was used per extraction. Samples were block-randomized within recruitment site by case-control status, sex and age stratum across extraction plates, library batches and sequencing lanes. DNA was extracted using `[PROTOCOL, KIT, LOT]` with `[BEAD-BEATING INSTRUMENT, SPEED, DURATION]` and eluted in `[VOLUME]` µL. Each extraction plate contained an extraction blank, a matrix-matched cellular mock community and `[WHOLE-CELL OR DNA]` spike-in controls added `[BEFORE LYSIS / AFTER EXTRACTION]` at `[AMOUNT AND UNIT]`. DNA concentration was measured by `[FLUOROMETRIC ASSAY]`; purity, inhibition and fragment-size distributions were assessed by `[METHODS]`.
+
+> Libraries were prepared from `[INPUT MASS]` ng DNA using `[KIT VERSION]` with `[PCR-FREE / N CYCLES]`, a target insert size of `[RANGE]` bp and unique dual indexes. Libraries were pooled using `[RULE]` and sequenced on `[PLATFORM, CHEMISTRY, READ LENGTH]`. Per-library QC included adapter content, insert-size distribution, duplicate fraction, GC-coverage response, negative-control reads and spike recovery. Quantitative abundances were reported as `[CELLS / GENOME EQUIVALENTS / GENE COPIES]` per gram wet stool using `[FLOW CYTOMETRY / qPCR / ddPCR / SPIKE-IN CALIBRATION]`; all mass, volume and dilution factors were propagated from the original aliquot. Values below the prespecified LOD or LOQ were retained as censored measurements rather than converted to biological absence.
+
+正式稿还要补：
+
+- collection/preservation、time-to-freezing、freeze-thaw；
+- sample mass basis（wet/dry）、homogenization 和 aliquot rule；
+- blank/mock/spike 的 catalog、composition、加入时间与浓度；
+- extraction、library、platform、index 和 reagent lot；
+- qPCR/ddPCR standard、efficiency、inhibition 或 flow gating；
+- profiler/reference/database release、mapping thresholds；
+- calibration/validation split、LOD/LOQ 和 failure action；
+- 每个 batch 的实际 controls 与剔除/重做数量。
+
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
+
+### 先写 primary unit 和 measurement boundary
+
+在任何试剂采购前填完：
+
+| Field | 必填内容 |
+|---|---|
+| Primary endpoint | Species、pathway、ARG、MAG 或 strain |
+| Primary unit | Relative abundance、cells/g、genome equivalents/g、copies/g |
+| Sample basis | Wet mass、dry mass、volume 或 swab area |
+| Extraction target | Balanced short-read recovery 或 HMW long-read DNA |
+| Total-load method | Flow、qPCR/ddPCR、whole-cell spike、DNA spike |
+| Spike placement | Before storage、before lysis、after extraction、before library |
+| Calibration scope | 哪些 taxa、GC、fragment lengths、batches 和 matrices |
+| Controls per batch | Extraction blank、library blank、mock、bridge sample |
+| LOD/LOQ | 按单位、sample mass 和 pipeline 定义 |
+| Failure action | Re-extract、re-library、exclude、censor 或改终点 |
+
+### 用代表性真实基质做 extraction pilot
+
+CRC 粪便 pilot 不应只用纯菌 mock。至少选择：
+
+- 预期的低/中/高 microbial load；
+- 低/高宿主 DNA 或炎症程度；
+- 不同 Bristol stool form、保存时间或采样中心；
+- 关键 clinical strata 中各自的代表样本；
+- 一个 matrix-matched cellular mock、blank 和 bridge specimen。
+
+每种候选协议比较：
+
+- dsDNA yield per gram，而非只看最终浓度；
+- purity、inhibition、fragment distribution；
+- cellular-mock relative efficiencies 与最大 pairwise bias；
+- native profile repeatability 和 host fraction；
+- library success、insert、duplicates、GC response；
+- 主要 endpoint 的稳定性；
+- 若做长读，read N50/length yield 与 taxon recovery同时达标。
+
+### 用 pilot 决定是否分两条 extraction line
+
+如果强 bead beating 对 short-read recovery 更稳，而 HMW protocol 对 long-read yield 更好，可从同一 homogenate 预先分 aliquots：
+
+- line A：short-read quantitative profiling；
+- line B：long-read assembly/MAG；
+- 每条线各自保留 controls、unit 和 Methods；
+- 不把两条线的 abundance values 当作可直接互换；
+- 用 shared bridge material 量化两条线的 differential bias。
+
+### 先滴定 spike，再锁正式浓度
+
+spike 太少会受 stochastic sampling 和 mapping threshold 支配；太多会消耗有效测序深度并改变 matrix。用 3–5 个代表性样本测试多个预先指定浓度，选择满足：
+
+- 所有标准落在线性区间；
+- 最低标准高于 LOQ；
+- 不超过可接受的 read fraction；
+- 不与 host/native database 交叉；
+- 跨 GC/fragment bins 的 residual 可接受；
+- blank 不出现不可解释 signal。
+
+正式研究固定 spike material、lot、加入时间和单位，不根据样本结果临时改变浓度。
+
+### 在收样表中保留原始量，不只保留最终 abundance
+
+每一行 absolute estimate 都应能追溯到 sample mass、体积、稀释、spike amount、raw signal、calibration curve 和 QC status。建议同时发布：
+
+- raw/filtered relative profile；
+- total-load 或 spike signal；
+- absolute estimate 与单位；
+- LOD/LOQ、censor flag；
+- extraction/library/lane metadata；
+- calibration model version；
+- blank/mock/bridge audit。
+
+这样审稿人才能判断“CRC 中某 taxon copies/g 上升”究竟来自真实 load、composition、提取效率还是 batch。
+
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### 三种协议的 taxon-specific relative efficiency
 
 ```{r}
 taxon_order <- bias_summary$Taxon[
@@ -927,7 +1085,7 @@ save_pub(
 p_extraction_bias
 ```
 
-### 2. 最大与平均成对偏差
+### 最大与平均成对偏差
 
 ```{r}
 protocol_plot_data <- unique(
@@ -1022,7 +1180,7 @@ save_pub(
 p_protocol_bias
 ```
 
-### 3. synDNA 与 relative reads 的 cell-composition recovery
+### synDNA 与 relative reads 的 cell-composition recovery
 
 ```{r}
 syndna_long <- rbind(
@@ -1184,142 +1342,7 @@ p_syndna
 2. pairwise summary 显示比例失真的数量级；
 3. synDNA benchmark 显示有外部标尺时，测序信号才可能回到 genome-copy/cell composition。
 
-## 常见坑：审稿人会追问什么 {#sec-pitfalls}
-
-::: {.callout-caution title="病例和对照分批提取或建库"}
-病例状态与 extraction plate、kit lot、operator、library batch 或 lane 完全重合时，疾病效应不可辨识。统计上的 batch covariate 不能凭空恢复不存在的交叉设计。
-:::
-
-::: {.callout-caution title="只看 DNA yield，不看 taxon recovery"}
-高 ng/µL 可能主要来自易裂解 taxa 或宿主 DNA。至少同时审计 mock recovery、host fraction、purity、fragment distribution 和 endpoint-specific yield。
-:::
-
-::: {.callout-caution title="把 Nanodrop 当作 library-ready DNA"}
-吸光度比值不能替代 fluorometric dsDNA concentration、抑制物测试与 fragment-size measurement。长读还要给 HMW 分布；短读也要确认输入量与建库适配。
-:::
-
-::: {.callout-caution title="把 PCR-free 写成无偏"}
-PCR-free 可减少一类 amplification bias，但 fragmentation、ligation、size selection、cluster generation、platform 和 mapping bias 仍在。低输入样本若改用 PCR，必须记录 cycles 并做分层敏感性分析。
-:::
-
-::: {.callout-caution title="DNA spike-in 被当作 end-to-end control"}
-提取后加入的 DNA 没经历保存、裂解与 purification，不能发现难裂解 taxa 或提取损失。若主要问题是 end-to-end recovery，应加入 cellular mock/whole-cell spike-in。
-:::
-
-::: {.callout-caution title="qPCR copies 被直接称为 cells"}
-16S qPCR 测的是 target copies；copy-number variation、PCR efficiency、inhibition 和 extraction recovery都会进入结果。未校正时，应报告 copies/g 而不是 cells/g。
-:::
-
-::: {.callout-caution title="RPKM/CPM 被命名为绝对丰度"}
-这些单位的分母仍是本样本文库。没有外部 load 或已知 spike，RPKM、CPM 和 relative abundance 不能判断一个 taxon 的绝对量是升是降。
-:::
-
-::: {.callout-caution title="mock 只跑一次且只在项目开头跑"}
-lot、operator、instrument 和 reagent drift 会让 bias 随批次变化。至少在关键批次放置 bridge controls，并预先定义控制图、可接受范围与失败后的重提取/重建库规则。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-### 本文真实复算的英文模板
-
-> Extraction-associated taxon bias was re-estimated from the archived Costea Phase III objects distributed with the McLaren, Willis and Callahan analysis repository (commit `24c0edd557f18f0b62b8fd46a60fe3819515227a`; MIT license). The experiment comprised a ten-taxon cellular mock community, eight fecal backgrounds and one mock-only background, each processed using extraction protocols H, Q and W (27 metagenomes). True mock composition was defined by the arithmetic mean of the published FACS cell measurements. Archived species profiles had been generated with MetaPhlAn2 v2.7.6 using `--min_cu_len 0 --stat avg_g`; the marker-database release was not encoded in the archived objects and was therefore recorded as unavailable. Within each sample, observed mock proportions were divided by the known mock proportions, and the resulting efficiencies were centered by their geometric mean. Protocol-level efficiencies were estimated by geometric averaging across the nine backgrounds. Maximum pairwise bias was defined as the ratio of the largest to the smallest protocol-level relative efficiency.
-
-> The synDNA comparison transcribed the eight bacterial rows from Table 1 of Zaramela et al. (2022) without renormalization. Agreement with the manufacturer-reported cell composition was summarized using Pearson correlation and root-mean-square error in percentage points. All redraws were generated in R 4.4.1 with a fixed seed (`20260719`) and exported as PDF, 300-dpi PNG and 300-dpi LZW-compressed TIFF.
-
-### 换成 CRC 粪便队列的英文模板
-
-> Stool was homogenized before aliquoting, and `[MASS]` g wet stool was used per extraction. Samples were block-randomized within recruitment site by case-control status, sex and age stratum across extraction plates, library batches and sequencing lanes. DNA was extracted using `[PROTOCOL, KIT, LOT]` with `[BEAD-BEATING INSTRUMENT, SPEED, DURATION]` and eluted in `[VOLUME]` µL. Each extraction plate contained an extraction blank, a matrix-matched cellular mock community and `[WHOLE-CELL OR DNA]` spike-in controls added `[BEFORE LYSIS / AFTER EXTRACTION]` at `[AMOUNT AND UNIT]`. DNA concentration was measured by `[FLUOROMETRIC ASSAY]`; purity, inhibition and fragment-size distributions were assessed by `[METHODS]`.
-
-> Libraries were prepared from `[INPUT MASS]` ng DNA using `[KIT VERSION]` with `[PCR-FREE / N CYCLES]`, a target insert size of `[RANGE]` bp and unique dual indexes. Libraries were pooled using `[RULE]` and sequenced on `[PLATFORM, CHEMISTRY, READ LENGTH]`. Per-library QC included adapter content, insert-size distribution, duplicate fraction, GC-coverage response, negative-control reads and spike recovery. Quantitative abundances were reported as `[CELLS / GENOME EQUIVALENTS / GENE COPIES]` per gram wet stool using `[FLOW CYTOMETRY / qPCR / ddPCR / SPIKE-IN CALIBRATION]`; all mass, volume and dilution factors were propagated from the original aliquot. Values below the prespecified LOD or LOQ were retained as censored measurements rather than converted to biological absence.
-
-正式稿还要补：
-
-- collection/preservation、time-to-freezing、freeze-thaw；
-- sample mass basis（wet/dry）、homogenization 和 aliquot rule；
-- blank/mock/spike 的 catalog、composition、加入时间与浓度；
-- extraction、library、platform、index 和 reagent lot；
-- qPCR/ddPCR standard、efficiency、inhibition 或 flow gating；
-- profiler/reference/database release、mapping thresholds；
-- calibration/validation split、LOD/LOQ 和 failure action；
-- 每个 batch 的实际 controls 与剔除/重做数量。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 1. 先写 primary unit 和 measurement boundary
-
-在任何试剂采购前填完：
-
-| Field | 必填内容 |
-|---|---|
-| Primary endpoint | Species、pathway、ARG、MAG 或 strain |
-| Primary unit | Relative abundance、cells/g、genome equivalents/g、copies/g |
-| Sample basis | Wet mass、dry mass、volume 或 swab area |
-| Extraction target | Balanced short-read recovery 或 HMW long-read DNA |
-| Total-load method | Flow、qPCR/ddPCR、whole-cell spike、DNA spike |
-| Spike placement | Before storage、before lysis、after extraction、before library |
-| Calibration scope | 哪些 taxa、GC、fragment lengths、batches 和 matrices |
-| Controls per batch | Extraction blank、library blank、mock、bridge sample |
-| LOD/LOQ | 按单位、sample mass 和 pipeline 定义 |
-| Failure action | Re-extract、re-library、exclude、censor 或改终点 |
-
-### 2. 用代表性真实基质做 extraction pilot
-
-CRC 粪便 pilot 不应只用纯菌 mock。至少选择：
-
-- 预期的低/中/高 microbial load；
-- 低/高宿主 DNA 或炎症程度；
-- 不同 Bristol stool form、保存时间或采样中心；
-- 关键 clinical strata 中各自的代表样本；
-- 一个 matrix-matched cellular mock、blank 和 bridge specimen。
-
-每种候选协议比较：
-
-- dsDNA yield per gram，而非只看最终浓度；
-- purity、inhibition、fragment distribution；
-- cellular-mock relative efficiencies 与最大 pairwise bias；
-- native profile repeatability 和 host fraction；
-- library success、insert、duplicates、GC response；
-- 主要 endpoint 的稳定性；
-- 若做长读，read N50/length yield 与 taxon recovery同时达标。
-
-### 3. 用 pilot 决定是否分两条 extraction line
-
-如果强 bead beating 对 short-read recovery 更稳，而 HMW protocol 对 long-read yield 更好，可从同一 homogenate 预先分 aliquots：
-
-- line A：short-read quantitative profiling；
-- line B：long-read assembly/MAG；
-- 每条线各自保留 controls、unit 和 Methods；
-- 不把两条线的 abundance values 当作可直接互换；
-- 用 shared bridge material 量化两条线的 differential bias。
-
-### 4. 先滴定 spike，再锁正式浓度
-
-spike 太少会受 stochastic sampling 和 mapping threshold 支配；太多会消耗有效测序深度并改变 matrix。用 3–5 个代表性样本测试多个预先指定浓度，选择满足：
-
-- 所有标准落在线性区间；
-- 最低标准高于 LOQ；
-- 不超过可接受的 read fraction；
-- 不与 host/native database 交叉；
-- 跨 GC/fragment bins 的 residual 可接受；
-- blank 不出现不可解释 signal。
-
-正式研究固定 spike material、lot、加入时间和单位，不根据样本结果临时改变浓度。
-
-### 5. 在收样表中保留原始量，不只保留最终 abundance
-
-每一行 absolute estimate 都应能追溯到 sample mass、体积、稀释、spike amount、raw signal、calibration curve 和 QC status。建议同时发布：
-
-- raw/filtered relative profile；
-- total-load 或 spike signal；
-- absolute estimate 与单位；
-- LOD/LOQ、censor flag；
-- extraction/library/lane metadata；
-- calibration model version；
-- blank/mock/bridge audit。
-
-这样审稿人才能判断“CRC 中某 taxon copies/g 上升”究竟来自真实 load、composition、提取效率还是 batch。
-
-## 小结
+## 回到最初的问题
 
 从样本到文库不是把真实群落无损搬进 FASTQ，而是一串会选择性放大和丢失信号的步骤。
 
@@ -1331,7 +1354,7 @@ spike 太少会受 stochastic sampling 和 mapping threshold 支配；太多会�
 
 对 CRC 队列，最重要的不是先选一个“大家都用的 kit”，而是先写清**主要终点、最终单位、控制面板、批次随机化、校准范围和失败规则**，再用真实粪便基质完成 pilot。
 
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Costea PI, Zeller G, Sunagawa S, et al. Towards standards for human fecal sample processing in metagenomic studies. *Nature Biotechnology*. 2017. [doi:10.1038/nbt.3960](https://doi.org/10.1038/nbt.3960)
 - McLaren MR, Willis AD, Callahan BJ. Consistent and correctable bias in metagenomic sequencing experiments. *eLife*. 2019. [doi:10.7554/eLife.46923](https://doi.org/10.7554/eLife.46923)

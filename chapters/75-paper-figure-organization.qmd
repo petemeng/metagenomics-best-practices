@@ -1,7 +1,7 @@
 ---
-title: "第 75 篇 · 一篇宏基因组论文的主图和补图如何组织"
+title: "一篇宏基因组论文的主图和补图如何组织"
 description: "从研究设计、差异物种与功能，到 MAG、菌株、病毒、代谢模型和外部验证：用 claim-first 证据链规划主图，用完整 QC、实体台账、数据库版本与敏感性分析构成补充材料"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+author: "Peter"
 date: last-modified
 draft: false
 bibliography: ../references.bib
@@ -12,7 +12,7 @@ format:
     code-fold: true
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -47,7 +47,11 @@ wechat:
     75-sensitivity-matrix.png: "Sensitivity-analysis matrix across the five manuscript figures"
     75-style-contract.png: "English-only color, shape, outline, and line-style contract for publication figures"
     75-reviewer-attack-map.png: "Risk map of common reviewer challenges and their potential impact"
+reader-mode: evidence
 ---
+
+
+
 
 > **先给结论：**一篇完整的 shotgun 宏基因组论文，主图应沿着同一条证据链推进：**Figure 1 定义研究对象与分母，Figure 2 给出跨队列可重复的物种和功能，Figure 3 展示通过质量门槛的 MAG、菌株或病毒发现，Figure 4 把关联收窄到机制兼容性或代谢模型，Figure 5 用完全未参与筛选的队列或实验检验中心结论**。补充材料不是“放不下的图”，而是主张成立所依赖的完整 QC、全量结果、实体纳入表、数据库版本、阴性结果与敏感性分析。
 
@@ -93,7 +97,13 @@ stopifnot(
 )
 ```
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+每张图承担一个清楚的结论；全量结果、失败对比和敏感性留在可找到的补充材料中。
+
+:::
+
+## 主图应该回答问题，而不是罗列软件输出 {#sec-target}
 
 Wirbel 等整合五个 discovery 队列，先问哪些物种在不同研究中方向一致。Figure 1a–c 把 meta 分析显著性、逐研究效应与核心标志物强度放在同一张图；Figure 1d 则正面比较 CRC 状态和 study identity 对物种变异的解释度。它没有把“队列效应”藏进一句 limitation，而是把混杂风险画进主图 [@wirbel2019crc]。
 
@@ -104,8 +114,8 @@ Wirbel 等整合五个 discovery 队列，先问哪些物种在不同研究中�
 ![Wirbel 2019 的五图证据弧。五幅图共 22 个 panel；发现结果没有直接跳到临床主张，而是经过异质性、模型迁移、正交检测和独立人群。](../figures/article75/75-wirbel-figure-arc.png){#fig-75-paper-arc}
 
 ```{r}
-#| label: table-wirbel-figure-ledger
 #| echo: false
+#| label: table-wirbel-figure-ledger
 knitr::kable(
   paper75[, c("SourceLabel", "Panels", "NarrativeRole", "StatisticalUnit", "ValidationRole")],
   col.names = c("Figure", "Panels", "Narrative role", "Independent unit", "Validation role"),
@@ -117,9 +127,9 @@ knitr::kable(
 若研究没有 MAG、菌株或病毒发现，Figure 3 不应为了显得“组学丰富”而强行加入；可以把它让给更完整的功能验证。相反，若 genome-resolved 发现本身就是主要贡献，MAG、菌株和病毒也不一定要挤进一张图，应按中心主张拆成两幅主图。**固定的是证据门，不是软件菜单。**
 :::
 
-## 理论：主图组织的是证据，不是分析菜单 {#sec-theory}
+## 先建 result ledger，而不是先开画布 {#sec-code}
 
-### 2.1 先写一句主张，再决定一幅图
+### 先写一句主张，再决定一幅图 {#sec-theory}
 
 每幅主图先写一个可证伪句子：
 
@@ -141,130 +151,10 @@ $$
 
 其中 (U_f) 是真正独立的分析单位，(D_f) 是数据与方法适用边界。图做得再漂亮，也不能让 (C_f) 超过现有证据集合 (E)。
 
-### 2.2 panel 的独立单位决定统计量
-
-宏基因组论文常在同一幅图混合五种单位：subject、sample、feature、MAG/vOTU 和 pair。每个点到底是什么，决定了误差线、检验、随机效应和有效样本量：
-
-- 多时间点来自同一个人时，点数不是独立受试者数；
-- 一名受试者贡献几百个物种时，物种是多重检验单位，不是重复受试者；
-- MAG 完整度和污染是 genome-level 质量属性，不能用 reads 数扩充样本量；
-- strain pair 或 virus–host pair 共享样本或参考基因组时，pair 并非彼此独立；
-- metabolic flux 来自模型与培养基假设，solver 解的数量不是生物学重复。
-
-因此 panel register 至少要有 `AnalysisUnit`、`Statistic`、`Gate` 和 `ResultID`。图注再从台账自动生成，避免在排版阶段临时猜测 (n)。
-
-### 2.3 主张越强，证据包越厚
-
-“本队列观察到差异”“跨队列 biomarker”“发现新 vOTU”“与某代谢机制兼容”“产生临床或因果效应”需要的证据不同。尤其要守住三条边界：相关不等于外部 biomarker；代谢潜力不等于体内通量；宿主预测不等于正在感染或产生因果生态效应。
-
-![不同主张的最低证据要求。绿色为必需，黄色为支持性证据，灰色表示不适用或单独不足以支撑该主张。](../figures/article75/75-claim-evidence.png){#fig-75-claim-evidence}
-
-MIMAG 要求把 MAG 的完整度、污染、rRNA、tRNA 与质量等级放在可追踪记录中 [@bowers2017mimag]；MIUViG 对病毒序列来源、质量、分类与宿主证据提出对应记录要求 [@roux2019miuvig]。这些表不是主图的替代品，而是主图中每一个 genome-resolved 点的审计底座。
-
-### 2.4 补图保存分母、全量结果和失败路径
-
-主图做信息压缩，补图负责保持可审计性。判断某项内容放哪，不看“漂不漂亮”，看它与中心主张的关系：
-
-- 没它就无法理解中心结果：主图；
-- 没它就无法判断中心结果是否可信：主图摘要 + 补充材料全量；
-- 它定义纳入、排除、数据库或敏感性边界：Methods + 补充材料；
-- 它是阴性或失败分析：补充材料，并在主文相应位置诚实引用；
-- 它只是另一个软件输出、没有新问题：删除。
-
-## 准备工作 {#sec-preparation}
-
-### 3.1 数据、算力与证据边界
-
-本章不重跑 FASTQ、组装或分箱。输入是一个小型、checksum-covered 投稿设计包：锚定论文的 DOI、五幅主图成员哈希和释义台账，以及不同公开示例的结果摘要。完整 XML 和动态 ZIP 仅在下载区核验，不进入冻结包；ZIP 外层时间戳可能变化，因此锁定的是其中五个 JPEG 成员，而不是外层压缩文件。
-
-| Stage | CPU | RAM | Disk | Time |
-|---|---:|---:|---:|---:|
-| Verify Europe PMC XML and five members | 1 | <1 GB | about 6 MB | seconds to 2 min |
-| Build all ledgers | 1 | <1 GB | <10 MB | seconds |
-| Render nine vector/raster diagrams | 1 | 1–2 GB | about 5 MB | <1 min |
-| Quarto render and QA | 1 | 2–4 GB | <100 MB | about 1–3 min |
-
-这里的 8 队列/771 人、23 个 MAG、菌株比较、病毒 mock community、代谢模型和因果证据指标来自不同章节的数据对象。**它们不是同一批样本，也不共同支持任何疾病机制。**换成自己的论文时，只能登记同一 analysis contract 下真实生成的结果。
-
-### 3.2 下载锚定资料并核验成员
-
-```{bash}
-#| eval: false
-python3 scripts/download_article75_paper.py \
-  --output-dir downloads/article75
-
-python3 scripts/download_article75_paper.py \
-  --output-dir downloads/article75 \
-  --verify-only
-
-python3 scripts/prepare_article75_storyboard.py \
-  --project-root . \
-  --evidence-dir downloads/article75 \
-  --output-dir results/75-paper-figure-organization
-```
-
-全文 XML 的固定 SHA-256 为 `b6363f2dcf652a352546e8550b43673ffc6518047e35bd722d1f60653e5793a8`。下载器还核验 DOI `10.1038/s41591-019-0406-6`、题名、Figure 1–5 与 ZIP 成员名的一一对应，以及五个成员各自的 SHA-256。
-
-### 3.3 安装依赖并内联作图函数
-
-<details>
-<summary>展开：R/Python 依赖、随机状态与出版级导出函数</summary>
-
-```bash
-mamba create -n article75 -y -c conda-forge \
-  python=3.13 pandas=3.0 matplotlib=3.10 pillow=12.2 pyyaml=6.0 \
-  r-base=4.4 r-ggplot2=3.5 r-knitr r-scales
-conda activate article75
-```
-
-```{r}
-#| eval: false
-set.seed(20260775)
-
-pal_pub <- c(
-  Control = "#0072B2", Case = "#D55E00",
-  Discovery = "#009E73", External = "#CC79A7",
-  Threshold = "#E9C46A", Excluded = "#8D99AE"
-)
-
-theme_pub <- function(base_size = 10) {
-  ggplot2::theme_classic(base_size = base_size) +
-    ggplot2::theme(
-      plot.title = ggplot2::element_text(face = "bold"),
-      legend.position = "top",
-      axis.text = ggplot2::element_text(color = "#263238"),
-      strip.background = ggplot2::element_blank(),
-      strip.text = ggplot2::element_text(face = "bold")
-    )
-}
-
-save_pub <- function(plot, stem, width = 180, height = 120) {
-  ggplot2::ggsave(
-    paste0(stem, ".pdf"), plot,
-    width = width, height = height, units = "mm",
-    device = grDevices::cairo_pdf
-  )
-  ggplot2::ggsave(
-    paste0(stem, ".png"), plot,
-    width = width, height = height, units = "mm",
-    dpi = 360, bg = "white"
-  )
-}
-```
-
-</details>
-
-::: {.callout-important title="先冻结结论，再让美工开始排版"}
-当 panel 还会因阈值、样本排除或模型选择而变化时，不要先在 Illustrator 里手工拼版。先冻结 `ResultID → source table → statistic → validation gate → checksum`，再批量导出 panel。否则最终 PDF 很容易混入不同分析批次。
-:::
-
-## 可复制代码 {#sec-code}
-
-### 4.1 先建 result ledger，而不是先开画布
-
 下面是一份最小结果登记函数。`claim_id` 指向中心主张，`unit` 写真正独立单位，`source_sha256` 锁定产生该结果的表；不要把图片文件名当唯一溯源。
 
 ```{r}
+#| echo: false
 #| eval: false
 new_result_record <- function(
   result_id, claim_id, figure, panel,
@@ -297,6 +187,7 @@ new_result_record <- function(
 一个结果进入主图前，至少通过以下检查：
 
 ```{r}
+#| echo: false
 #| eval: false
 assert_result_ledger <- function(x) {
   required <- c(
@@ -318,13 +209,25 @@ assert_result_ledger <- function(x) {
 
 ![25 个候选 panel 的四字段审计：独立单位、统计量、验证门和 checksum 缺一不可。真实项目还应把脚本、环境、输入与输出路径写进同一行。](../figures/article75/75-traceability-audit.png){#fig-75-traceability}
 
-### 4.2 给五幅主图分配 panel budget
+## 给五幅主图分配 panel budget
+
+### panel 的独立单位决定统计量
+
+宏基因组论文常在同一幅图混合五种单位：subject、sample、feature、MAG/vOTU 和 pair。每个点到底是什么，决定了误差线、检验、随机效应和有效样本量：
+
+- 多时间点来自同一个人时，点数不是独立受试者数；
+- 一名受试者贡献几百个物种时，物种是多重检验单位，不是重复受试者；
+- MAG 完整度和污染是 genome-level 质量属性，不能用 reads 数扩充样本量；
+- strain pair 或 virus–host pair 共享样本或参考基因组时，pair 并非彼此独立；
+- metabolic flux 来自模型与培养基假设，solver 解的数量不是生物学重复。
+
+因此 panel register 至少要有 `AnalysisUnit`、`Statistic`、`Gate` 和 `ResultID`。图注再从台账自动生成，避免在排版阶段临时猜测 (n)。
 
 主图 panel 数不是越多越好。每幅图至少保留一个 primary panel 和一个 validation/sensitivity panel；context 与 diagnostic 只保留读懂分母所必需的部分。
 
 ```{r}
-#| label: table-panel-budget
 #| echo: false
+#| label: table-panel-budget
 panel_budget75 <- as.data.frame.matrix(table(panel75$Figure, panel75$PanelRole))
 panel_budget75$Figure <- rownames(panel_budget75)
 rownames(panel_budget75) <- NULL
@@ -336,9 +239,29 @@ knitr::kable(panel_budget75, caption = "五幅主图的 panel 角色预算。")
 
 一个实用的删图顺序是：先删重复软件视图，再删没有独立问题的描述图，最后把完整 QC 和阈值网格迁入补充材料。不要先删 external validation、阴性对照或不确定性。
 
-### 4.3 同时写 main map 与 supplement map
+### 再按当前标准补齐 genome-resolved 分支
+
+今天的 shotgun 项目可能多出 MAG、菌株、病毒和代谢模型。新增分支必须增加对应的质量门，而不是只增加一个彩色 panel：
+
+- MAG：CheckM2/marker quality、GUNC、MIMAG 字段、GTDB release、contig/graph 边界与纳入原因 [@bowers2017mimag; @chklovski2023checkm2; @orakov2021gunc]；
+- 菌株：coverage breadth、SNP/ANI 阈值、marker 数、alignment sites、reference sampling 与 topology sensitivity [@olm2021instrain; @truong2017strainphlan]；
+- 病毒：至少两类发现证据、CheckV quality、vOTU ANI + alignment fraction、分类 release、丰度 breadth 与宿主证据等级 [@roux2019miuvig; @nayfach2021checkv]；
+- 代谢模型：input MAG quality、GPR coverage、gap-fill burden、medium、abundance、solver、alternative optimum 与外部代谢物/实验验证 [@diener2020micom]。
+
+若其中一条分支只有描述性输出，标题和结论就停在“discovery”或“prediction”，不要借 Figure 4 的位置把它写成 mechanism。
+
+::: {.callout-caution title="坑 1：按软件分主图"}
+“MetaPhlAn 一图、HUMAnN 一图、CheckM2 一图、GTDB-Tk 一图”只说明跑了哪些工具，没有说明每幅图回答什么问题。把同一主张需要的物种、功能、效应量和验证放在一起；工具版本进入 Methods 与版本台账。
+:::
+
+::: {.callout-caution title="坑 2：把 external validation 藏进补图"}
+若论文标题或摘要宣称 biomarker、generalizable、robust 或 clinical relevance，完整 external cohort/experiment 就是主结果。只展示 discovery CV，把外测失败放补图，会让整个证据顺序倒置。
+:::
+
+## 同时写 main map 与 supplement map
 
 ```{r}
+#| echo: false
 #| eval: false
 place_result <- function(claim_distance, needed_for_trust, full_audit) {
   main <- if (claim_distance == 0L) "full" else if (needed_for_trust) "summary" else "none"
@@ -371,13 +294,25 @@ place_result(
 11. 阴性、null、未收敛和预先计划但无法估计的分析；
 12. 数据、代码、MAG/vOTU accession 与 result-to-source ledger。
 
-### 4.4 用真实结果测试图的证据边界
+::: {.callout-caution title="坑 4：把 strain tree 当传播证据"}
+近邻关系可能来自 reference sampling、marker 缺失、coverage 或树方法。没有纵向、流行病学接触和足够分辨率时，树支持 genetic similarity，不自动支持 transmission。
+:::
+
+## 用真实结果测试图的证据边界
+
+### 主张越强，证据包越厚
+
+“本队列观察到差异”“跨队列 biomarker”“发现新 vOTU”“与某代谢机制兼容”“产生临床或因果效应”需要的证据不同。尤其要守住三条边界：相关不等于外部 biomarker；代谢潜力不等于体内通量；宿主预测不等于正在感染或产生因果生态效应。
+
+![不同主张的最低证据要求。绿色为必需，黄色为支持性证据，灰色表示不适用或单独不足以支撑该主张。](../figures/article75/75-claim-evidence.png){#fig-75-claim-evidence}
+
+MIMAG 要求把 MAG 的完整度、污染、rRNA、tRNA 与质量等级放在可追踪记录中 [@bowers2017mimag]；MIUViG 对病毒序列来源、质量、分类与宿主证据提出对应记录要求 [@roux2019miuvig]。这些表不是主图的替代品，而是主图中每一个 genome-resolved 点的审计底座。
 
 下面的指标来自不同公开对象，目的不是组成一篇虚构论文，而是检查图注能否说清分析单位和边界。
 
 ```{r}
-#| label: table-series-evidence-metrics
 #| echo: false
+#| label: table-series-evidence-metrics
 knitr::kable(
   metric75[, c("Domain", "Metric", "Value", "Unit", "EvidenceBoundary")],
   col.names = c("Domain", "Metric", "Value", "Unit", "Boundary"),
@@ -387,13 +322,32 @@ knitr::kable(
 
 例如，8 个完整 CRC 队列的 771 名受试者可支撑 cross-cohort LODO 图；层级 bootstrap 的 macro AUROC 为 0.779（95% CI 0.711–0.832），但 (I^2=52.1\%\) 仍要在主文显示。另一个 MAG fixture 有 23 个通过审计的 bins，其中 4 个 high-quality、19 个 medium-quality；这只能说明 acceptance table 如何组织，不能与 CRC 模型相连。病毒 mock community 的 12 个 vOTU、代谢模型的 48 个模型和 virus-host 阴性对照同理。
 
-### 4.5 让敏感性分析跟着可被推翻的主张走
+### 先忠实复现 2019 年的证据顺序 {#sec-audit}
+
+Wirbel 2019 的主干是 read-based species/function meta analysis：逐研究效应、blocked test、单队列迁移、LOSO、多疾病 specificity、qPCR 和三个独立人群 [@wirbel2019crc]。复现时先保持这些 estimand 和数据分层，不应用今天的工具名称替换后宣称“逐值复刻”。尤其要记录：
+
+- 原分析与当前 curatedMetagenomicData 的 profile、数据库和样本口径不同；
+- study-to-study transfer 与真正的 N−1/LODO 回答不同问题；
+- Figure 2 的病例亚组结果是探索性结构，不应升级成稳定亚型；
+- qPCR 支持特定基因的 DNA/RNA 测量，不等于验证整个因果机制；
+- 独立病例–对照队列验证不等于筛查人群的临床效用。
+
+::: {.callout-caution title="坑 3：只展示 high-quality MAG，隐藏所有淘汰对象"}
+主图可以突出少数代表 MAG；补充材料必须列出所有 bins 的 completeness、contamination、GUNC、MIMAG tier、taxonomy、纳入状态和排除原因。否则 genome selection 无法审计。
+:::
+
+::: {.callout-caution title="坑 5：virus-host 箭头没有证据等级"}
+integrated prophage、CRISPR spacer、long-read/Hi-C、iPHoP、k-mer 和 co-abundance 的 claim ceiling 不同。图中线型、透明度或边框必须映射 evidence tier；仅 composition/co-abundance 不能画成确定宿主。
+:::
+
+## 让敏感性分析跟着可被推翻的主张走
 
 敏感性分析不是最后统一做一张“大杂烩热图”。它应回答：改变哪个合理选择，会让哪一幅主图的结论改变？
 
 ![九条敏感性轴与五幅主图的对应关系。绿色是该主张成立前必须完成的检查，黄色取决于数据类型和研究设计。](../figures/article75/75-sensitivity-matrix.png){#fig-75-sensitivity}
 
 ```{r}
+#| echo: false
 #| eval: false
 required_sensitivity <- subset(
   sense75,
@@ -405,7 +359,25 @@ split(required_sensitivity$SensitivityAxis, required_sensitivity$Figure)
 
 这张矩阵应在看最终 P 值和 AUC 前冻结。若先看结果再只展示“最稳定”的阈值，就是选择性报告。
 
-### 4.6 冻结投稿包
+::: {.callout-caution title="坑 6：模型有 flux 就写机制成立"}
+FBA/MICOM 输出依赖 genome annotation、gap filling、培养基、abundance 和 objective。主图至少展示 medium/gap-fill sensitivity；若没有代谢物、转录、培养或 perturbation，措辞停在 model-predicted potential。
+:::
+
+::: {.callout-caution title="坑 7：所有失败结果都消失"}
+不收敛模型、零生长样本、低质量病毒、外测失败队列和预先计划但不可估计的比较，都是结果边界。保留它们，说明原因，并在结论中降级；不要只存于个人临时目录。
+:::
+
+## 保存投稿包
+
+### 补图保存分母、全量结果和失败路径
+
+主图做信息压缩，补图负责保持可审计性。判断某项内容放哪，不看“漂不漂亮”，看它与中心主张的关系：
+
+- 没它就无法理解中心结果：主图；
+- 没它就无法判断中心结果是否可信：主图摘要 + 补充材料全量；
+- 它定义纳入、排除、数据库或敏感性边界：Methods + 补充材料；
+- 它是阴性或失败分析：补充材料，并在主文相应位置诚实引用；
+- 它只是另一个软件输出、没有新问题：删除。
 
 ```{bash}
 #| eval: false
@@ -425,34 +397,11 @@ python3 scripts/freeze_article75_storyboard.py \
 
 冻结包不应只含最终 PNG。至少保留 result ledger、panel register、claim matrix、完整 TSV、输入/输出 checksum、环境锁、生成脚本、数据库版本表和原图权利边界。
 
-## 审计与升级 {#sec-audit}
-
-### 5.1 先忠实复现 2019 年的证据顺序
-
-Wirbel 2019 的主干是 read-based species/function meta analysis：逐研究效应、blocked test、单队列迁移、LOSO、多疾病 specificity、qPCR 和三个独立人群 [@wirbel2019crc]。复现时先保持这些 estimand 和数据分层，不应用今天的工具名称替换后宣称“逐值复刻”。尤其要记录：
-
-- 原分析与当前 curatedMetagenomicData 的 profile、数据库和样本口径不同；
-- study-to-study transfer 与真正的 N−1/LODO 回答不同问题；
-- Figure 2 的病例亚组结果是探索性结构，不应升级成稳定亚型；
-- qPCR 支持特定基因的 DNA/RNA 测量，不等于验证整个因果机制；
-- 独立病例–对照队列验证不等于筛查人群的临床效用。
-
-### 5.2 再按当前标准补齐 genome-resolved 分支
-
-今天的 shotgun 项目可能多出 MAG、菌株、病毒和代谢模型。新增分支必须增加对应的质量门，而不是只增加一个彩色 panel：
-
-- MAG：CheckM2/marker quality、GUNC、MIMAG 字段、GTDB release、contig/graph 边界与纳入原因 [@bowers2017mimag; @chklovski2023checkm2; @orakov2021gunc]；
-- 菌株：coverage breadth、SNP/ANI 阈值、marker 数、alignment sites、reference sampling 与 topology sensitivity [@olm2021instrain; @truong2017strainphlan]；
-- 病毒：至少两类发现证据、CheckV quality、vOTU ANI + alignment fraction、分类 release、丰度 breadth 与宿主证据等级 [@roux2019miuvig; @nayfach2021checkv]；
-- 代谢模型：input MAG quality、GPR coverage、gap-fill burden、medium、abundance、solver、alternative optimum 与外部代谢物/实验验证 [@diener2020micom]。
-
-若其中一条分支只有描述性输出，标题和结论就停在“discovery”或“prediction”，不要借 Figure 4 的位置把它写成 mechanism。
-
-### 5.3 用证据阶梯约束措辞
+### 用证据阶梯约束措辞
 
 ```{r}
-#| label: table-evidence-language
 #| echo: false
+#| label: table-evidence-language
 knitr::kable(
   ladder75,
   col.names = c("Rung", "Evidence", "Allowed wording", "Forbidden leap"),
@@ -468,9 +417,13 @@ knitr::kable(
 
 证据链可以支持更具体的假设，但不能凭图形箭头制造更强结论。
 
-## 出版级美化 {#sec-publication}
+::: {.callout-caution title="坑 8：同一批数据完成筛选、调参和验证"}
+随机拆 sample 不能模拟新医院、新国家或新批次。外层按目标 domain 留出，所有过滤、transform、feature selection、超参数和 cutoff 只在 training domains 决定；最后一次 external test 不再回流。
+:::
 
-### 6.1 一套语义只占一个视觉通道
+![审稿风险图。右上区域的问题可能直接推翻中心结论；补充材料应优先围绕这些攻击面组织，而不是按分析时间顺序堆文件。](../figures/article75/75-reviewer-attack-map.png){#fig-75-reviewer-map}
+
+## 一套语义只占一个视觉通道 {#sec-publication}
 
 颜色优先编码生物学组别；shape、outline 或 line type 再编码 discovery/external、included/excluded 与 threshold/CI。不要让红色在 Figure 2 表示病例、Figure 3 表示 high-quality MAG、Figure 4 又表示正 flux。
 
@@ -486,7 +439,7 @@ knitr::kable(
 - panel label 统一为粗体小写或大写，但全稿只选一种；
 - 图内轴、图例、注释一律英文，中文解释留在正文和图注。
 
-### 6.2 图注要能离开正文单独成立
+## 图注要能离开正文单独成立
 
 每个 panel 的图注按同一顺序写：
 
@@ -494,7 +447,7 @@ knitr::kable(
 
 不要只写 “Data are mean ± SD”。需要明确 SD 是生物学重复之间的离散、bootstrap 不确定性，还是模型在外层队列之间的波动。
 
-### 6.3 导出同时保留矢量与高分辨率位图
+## 导出同时保留矢量与高分辨率位图
 
 - 线图、森林图、散点和示意图：PDF/SVG 为权威源；
 - 热图和高密度 raster：至少 300–600 dpi，检查缩放后的标签；
@@ -503,43 +456,7 @@ knitr::kable(
 - PDF/SVG 中保留可搜索英文文字，提交前嵌入字体；
 - PNG/TIFF 只作为投稿系统或公众号兼容副本。
 
-## 常见坑 {#sec-pitfalls}
-
-![审稿风险图。右上区域的问题可能直接推翻中心结论；补充材料应优先围绕这些攻击面组织，而不是按分析时间顺序堆文件。](../figures/article75/75-reviewer-attack-map.png){#fig-75-reviewer-map}
-
-::: {.callout-caution title="坑 1：按软件分主图"}
-“MetaPhlAn 一图、HUMAnN 一图、CheckM2 一图、GTDB-Tk 一图”只说明跑了哪些工具，没有说明每幅图回答什么问题。把同一主张需要的物种、功能、效应量和验证放在一起；工具版本进入 Methods 与版本台账。
-:::
-
-::: {.callout-caution title="坑 2：把 external validation 藏进补图"}
-若论文标题或摘要宣称 biomarker、generalizable、robust 或 clinical relevance，完整 external cohort/experiment 就是主结果。只展示 discovery CV，把外测失败放补图，会让整个证据顺序倒置。
-:::
-
-::: {.callout-caution title="坑 3：只展示 high-quality MAG，隐藏所有淘汰对象"}
-主图可以突出少数代表 MAG；补充材料必须列出所有 bins 的 completeness、contamination、GUNC、MIMAG tier、taxonomy、纳入状态和排除原因。否则 genome selection 无法审计。
-:::
-
-::: {.callout-caution title="坑 4：把 strain tree 当传播证据"}
-近邻关系可能来自 reference sampling、marker 缺失、coverage 或树方法。没有纵向、流行病学接触和足够分辨率时，树支持 genetic similarity，不自动支持 transmission。
-:::
-
-::: {.callout-caution title="坑 5：virus-host 箭头没有证据等级"}
-integrated prophage、CRISPR spacer、long-read/Hi-C、iPHoP、k-mer 和 co-abundance 的 claim ceiling 不同。图中线型、透明度或边框必须映射 evidence tier；仅 composition/co-abundance 不能画成确定宿主。
-:::
-
-::: {.callout-caution title="坑 6：模型有 flux 就写机制成立"}
-FBA/MICOM 输出依赖 genome annotation、gap filling、培养基、abundance 和 objective。主图至少展示 medium/gap-fill sensitivity；若没有代谢物、转录、培养或 perturbation，措辞停在 model-predicted potential。
-:::
-
-::: {.callout-caution title="坑 7：所有失败结果都消失"}
-不收敛模型、零生长样本、低质量病毒、外测失败队列和预先计划但不可估计的比较，都是结果边界。保留它们，说明原因，并在结论中降级；不要只存于个人临时目录。
-:::
-
-::: {.callout-caution title="坑 8：同一批数据完成筛选、调参和验证"}
-随机拆 sample 不能模拟新医院、新国家或新批次。外层按目标 domain 留出，所有过滤、transform、feature selection、超参数和 cutoff 只在 training domains 决定；最后一次 external test 不再回流。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 让图注说明单位、统计量和局限 {#sec-methods}
 
 下面模板同时覆盖主图规划、结果台账、敏感性和版本冻结。方括号替换成真实项目值；没有做的分支应删除，不能保留成含糊占位。
 
@@ -547,9 +464,9 @@ FBA/MICOM 输出依赖 genome annotation、gap filling、培养基、abundance �
 
 对于真实生物学分析，还要在同一段或相邻段落补齐：每个工具版本、完整参数、数据库 release、sample/subject 数、重复结构、协变量、检验双侧性、多重校正、CI 方法、outer split、预设阈值和排除标准。只写“default parameters were used”不够。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
-### 9.1 先准备九张权威表
+### 先准备九张权威表
 
 开始拼图前，至少准备：
 
@@ -565,7 +482,7 @@ FBA/MICOM 输出依赖 genome annotation、gap filling、培养基、abundance �
 
 表没有完成，就说明相应图还没有完成。
 
-### 9.2 按研究类型选择主干，不必强行五类全做
+### 按研究类型选择主干，不必强行五类全做
 
 - **read-based association paper**：F1 design/QC；F2 taxa/functions；F3 heterogeneity/interaction；F4 predictive or orthogonal assay；F5 external cohort。
 - **genome-resolved discovery paper**：F1 design/assembly；F2 MAG yield/quality；F3 phylogeny/novelty；F4 strain/virus/function；F5 independent recovery or experiment。
@@ -574,11 +491,11 @@ FBA/MICOM 输出依赖 genome annotation、gap filling、培养基、abundance �
 
 只保留与中心问题相关的分支。一个没有病毒研究设计和合适文库的项目，不需要为了“完整”增加 virus figure。
 
-### 9.3 建立版本台账
+### 建立版本台账
 
 ```{r}
-#| label: table-version-ledger
 #| echo: false
+#| label: table-version-ledger
 knitr::kable(
   version75,
   col.names = c("Layer", "Resource", "Release", "Artifact", "Checksum", "Boundary"),
@@ -588,7 +505,7 @@ knitr::kable(
 
 版本表必须记录真正参与结果生成的 artifact，而不是写当前网页上的 latest。数据库更新后新建目录和新结果，不要原地覆盖旧 release。
 
-### 9.4 投稿前执行四级 gate
+### 投稿前执行四级 gate
 
 **Claim gate**
 
@@ -616,7 +533,11 @@ knitr::kable(
 
 最后在一个干净目录重建一次投稿包；随机抽取至少一个主图 panel、一个 MAG、一个 vOTU 和一个 external prediction，从图反向追到原始行与命令。任何一条链断开，就先修台账，不要继续排版。
 
-## 参考 {#sec-references}
+## 回到最初的问题
+
+主图不是软件输出的橱窗，而是五道证据门：研究设计、可重复的物种/功能、MAG/菌株/病毒发现、机制或代谢模型、外部或实验验证；补图负责保留分母、失败结果、版本与敏感性。
+
+## 参考文献 {#sec-references}
 
 - Wirbel J, et al. *Nature Medicine* (2019): CRC fecal metagenome meta-analysis and cross-study validation [@wirbel2019crc].
 - Bowers RM, et al. *Nature Biotechnology* (2017): MIMAG genome reporting standards [@bowers2017mimag].

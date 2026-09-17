@@ -1,6 +1,6 @@
 ---
-title: "第 22 篇 · 多样性：Alpha / Beta（物种谱、MAG 表、基因谱）"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "多样性：Alpha / Beta（物种谱、MAG 表、基因谱）"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -39,15 +39,20 @@ wechat:
     22-alpha-hill-numbers.png: "Distributions of Hill q zero, one, and two for species, gene-family, and recovered-MAG feature spaces"
     22-beta-ordination.png: "Bray-Curtis PCoA for matched human species and gene-family profiles and an independent hot-spring MAG catalog"
     22-sensitivity-recruitment.png: "Gene prevalence, distance-rank sensitivity, and recovered-MAG richness versus read recruitment"
+reader-mode: analysis
 ---
 
 > **学习目标：**先声明 feature universe、native scale、filter、closure 与 zero，再计算 Hill \(q=0/1/2\)、Bray–Curtis、binary Jaccard 和 Aitchison；区分样本匹配的人体 species / gene-family profiles 与独立的温泉 MAG catalog；把重复采样、负特征值、零值替换和 MAG reads recruitment 保留在解释边界内。  
 > **真实数据：**人体分支来自 curatedMetagenomicData 3.12.0 的 <code>AsnicarF_2017.relative_abundance</code>（ExperimentHub <code>EH7091</code>）与同批 24 profiles 的 <code>gene_families</code>（<code>EH7086</code>），对应 15 位受试者 [@asnicar2017transmission; @pasolli2017cmd]。MAG 分支来自美国西部 56 个温泉的 500 个 metagenomes 与 780 个 recovered MAGs，固定到 Figshare 30284068 v2 [@korchagina2026hotsprings; @louca2026hotsprings]。  
 > **预计资源：**常规复算读取 12 MB checksum-locked 输入，不访问网络；1–2 核、建议 4 GB RAM，实测约 30 s。一次性源数据下载约 58 MB；不需要重跑 MetaPhlAn、HUMAnN、assembly、binning 或 read mapping。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 原图锚点：Figure 5 的 MAG composition 只在 recovered catalog 内闭合
+物种、基因和 MAG 的多样性各有自己的特征集合；过滤、零值和目录回收率都会影响结果。
+
+:::
+
+## 计算多样性之前，先确认在比较什么特征 {#sec-target}
 
 Korchagina 等对每个样本的质控 reads 竞争性比对到 780 个 MAG，以每个 MAG 的平均 genome coverage 除以该样本全部 MAG coverages 之和，得到 catalog 内 relative abundance。论文 Figure 5A–B 再按 phylum / order 汇总这些比例 [@korchagina2026hotsprings]。
 
@@ -57,90 +62,35 @@ Korchagina 等对每个样本的质控 reads 竞争性比对到 780 个 MAG，�
 
 人体分支的论文关注母婴菌株传播 [@asnicar2017transmission]；这里利用 cMD 统一处理后的 MetaPhlAn species 与 HUMAnN gene-family profiles，把同一批样本投影到两个不同 feature spaces。它们可以做样本匹配的几何对照，却不能因为行数不同就比较“哪层更丰富”。
 
-![三种 feature space 的数据谱系与 denominator。species 和 gene families 共享 24 个 human profiles；MAG catalog 来自独立的 500 个环境样本。](../figures/22-resolution-boundaries.png){#fig-22-boundary}
 
-![Hill q=0/1/2 都写成 effective number of features。每个 panel 使用自己的 y 范围；绝对值受 feature universe、过滤与检出机制约束。](../figures/22-alpha-hill-numbers.png){#fig-22-alpha}
 
-![三套 closed abundance 的 Bray-Curtis PCoA。人体两个 panel 连接同一 subject 的重复 profiles；温泉 panel 按实测温度着色。坐标使用 Cailliez correction，原始负特征值仍保留在审计表。](../figures/22-beta-ordination.png){#fig-22-beta}
 
-![左：gene-family richness 随 prevalence 门槛改变。中：只报告距离排序的描述性 rho，不把非独立 pair 当重复。右：MAG richness 与 reads recruitment 的 rho 仅为 0.156，不给 p-value 或因果解释。](../figures/22-sensitivity-recruitment.png){#fig-22-sensitivity}
 
-## 理论：多样性首先是“在哪个宇宙里数” {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. Alpha 是一个样本内的有效特征数
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/22/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 11.7 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-对已经固定 feature universe 且闭合为 \(p_i\) 的样本，Hill number 为 [@jost2006entropy]：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/22/download.R)。
 
-\[
-{}^qD=
-\begin{cases}
-\left(\sum_i p_i^q\right)^{1/(1-q)}, & q\neq 1\\
-\exp\left(-\sum_i p_i\log p_i\right), & q=1.
-\end{cases}
-\]
+```{r}
+#| label: reader-input-download-22
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/22/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-三个常用阶数具有同一单位“effective number of features”：
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-- \(q=0\)：observed richness，只看 \(p_i>0\)，最受检出阈值和过滤影响；
-- \(q=1\)：\(\exp(\mathrm{Shannon})\)，按丰度加权常见特征；
-- \(q=2\)：inverse Simpson \(1/\sum_i p_i^2\)，更强调优势特征。
-
-同一样本应满足 \({}^0D\ge{}^1D\ge{}^2D\)。但 56,066 个 gene families、38.5 个 species 与 180.5 个 MAGs 的中位 richness 并不是一场“谁更高”的竞赛：UniRef90 family、MetaPhlAn species 和 recovered MAG 是不同观测单位，行数上限与 zero 生成机制也不同。
-
-### 2. 三种表先经过三种 denominator 合同
-
-| Feature space | Native values | Primary feature rule | Diversity denominator |
-|---|---|---|---|
-| Species | MetaPhlAn percentage；原列和 94.65166–100.00003 | 保留 298 个 species-level features | 每个样本 observed species 内 closure |
-| Gene families | HUMAnN relative fraction | 去掉 taxon-stratified 与特殊行；prevalence ≥5/24 | 过滤后 ordinary UniRef90 families 内 closure |
-| MAG catalog | genome-coverage relative fraction；原列和 0.999989–1.000011 | 保留 780 个 recovered MAGs | recovered-MAG catalog closure |
-
-gene-family 原对象有 2,704,846 行。community-level ordinary UniRef90 families 为 1,140,842；冻结表保留至少在 3/24 profiles 检出的 415,581 行，主分析再固定为至少 5/24 profiles 的 178,928 行。50% 门槛只剩 1,896 行，说明 q=0 不是过滤之外的“生物真值”。
-
-### 3. Beta 的三种距离回答不同问题
-
-对样本 \(x,y\)：
-
-\[
-d_{\mathrm{Bray}}(x,y)=
-\frac{\sum_i|x_i-y_i|}{\sum_i(x_i+y_i)}.
-\]
-
-Bray–Curtis 保留 abundance 变化 [@bray1957ordination]。当两行都闭合到 1 时，分母固定为 2；这不消除组成约束，只让 denominator 明确。
-
-binary Jaccard 先把数值变成 presence / absence：
-
-\[
-d_J=1-\frac{|A\cap B|}{|A\cup B|}.
-\]
-
-它回答“检出的 feature membership 是否相同”，不回答丰度差多少。因此 detection threshold 也是模型的一部分。
-
-Aitchison distance 则在 centered log-ratio（CLR）空间求 Euclidean distance [@gloor2017compositional]：
-
-\[
-\operatorname{clr}(p)_i=
-\log(p_i+\delta)-\frac{1}{D}\sum_j\log(p_j+\delta),
-\qquad
-d_A(x,y)=\|\operatorname{clr}(x)-\operatorname{clr}(y)\|_2.
-\]
-
-零值使对数未定义，所以必须先过滤并声明 \(\delta\)。species 使用 \(10^{-6}\) 对 \(10^{-5}\)，gene families 使用 \(10^{-8}\) 对 \(10^{-7}\) 做 sensitivity。MAG catalog 没有强行做 Aitchison：低 recruitment 下，unrecovered genomes 不只是矩阵里的普通 sampling zero。
-
-### 4. PCoA 是坐标，不是显著性检验
-
-Bray–Curtis 可能不是严格 Euclidean distance，PCoA 会产生负特征值。直接隐藏负值会让坐标看似无问题；这里先记录 raw negative eigenvalues，再用 Cailliez additive constant 得到可绘制坐标 [@cailliez1983additive]。species、gene-family 与 MAG 分支分别有 3、1 与 165 个 raw negative eigenvalues。
-
-PCoA 中“看起来分开”不等于显著。PERMANOVA 还需要 exchangeability、重复样本 block、dispersion 与多重检验合同；这些检验不在本篇执行。
-
-::: {.callout-important title="先给每个数写一句带分母的定义"}
-推荐写法是“within-filtered-gene-family Hill q=1”或“within-recovered-MAG-catalog Bray-Curtis”，而不是只写“Shannon”或“beta diversity”。分母进入名字以后，很多过度解释会自动消失。
-:::
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：环境、下载校验、冻结输入与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 资源门槛
 
@@ -317,9 +267,7 @@ save_pub <- function(
 
 </details>
 
-## 可复制代码：从谱表得到 Alpha、Beta 与审计表 {#sec-code}
-
-### 第 1 步：读入三种谱表并对齐 metadata
+## 读入三种谱表并对齐 metadata {#sec-code}
 
 ```{r}
 input_dir <- "data/small/22-diversity-inputs"
@@ -398,7 +346,23 @@ head(mag_metadata[, c(
 )], 4)
 ```
 
-### 第 2 步：过滤后再 closure
+::: {.callout-caution title="坑 2：gene-family community 与 stratified rows 一起计数"}
+同一个 UniRef90 family 的 community row 与 taxon-specific rows 同时进入 q=0，会重复定义 feature universe。先只留 community-level ordinary rows。
+:::
+
+![三种 feature space 的数据谱系与 denominator。species 和 gene families 共享 24 个 human profiles；MAG catalog 来自独立的 500 个环境样本。](../figures/22-resolution-boundaries.png){#fig-22-boundary}
+
+## 过滤后再 closure
+
+### 三种表先经过三种 denominator 约定
+
+| Feature space | Native values | Primary feature rule | Diversity denominator |
+|---|---|---|---|
+| Species | MetaPhlAn percentage；原列和 94.65166–100.00003 | 保留 298 个 species-level features | 每个样本 observed species 内 closure |
+| Gene families | HUMAnN relative fraction | 去掉 taxon-stratified 与特殊行；prevalence ≥5/24 | 过滤后 ordinary UniRef90 families 内 closure |
+| MAG catalog | genome-coverage relative fraction；原列和 0.999989–1.000011 | 保留 780 个 recovered MAGs | recovered-MAG catalog closure |
+
+gene-family 原对象有 2,704,846 行。community-level ordinary UniRef90 families 为 1,140,842；冻结表保留至少在 3/24 profiles 检出的 415,581 行，主分析再固定为至少 5/24 profiles 的 178,928 行。50% 门槛只剩 1,896 行，说明 q=0 不是过滤之外的“生物真值”。
 
 ```{r}
 close_rows <- function(x) {
@@ -477,7 +441,35 @@ stopifnot(
 
 不要把 species percentage 乘 <code>number_reads</code> 反推 pseudo-counts，也不要把 MAG catalog proportion 当作 read recruitment。两者都已经是模型或 coverage 派生的 composition。
 
-### 第 3 步：统一计算 Hill q=0/1/2
+::: {.callout-caution title="坑 1：把 relative abundance 当 raw counts 后 rarefy"}
+MetaPhlAn percentage、HUMAnN relative fraction 和 MAG coverage proportion 都不是原始 read-event matrix。乘 library size 得到的 pseudo-count 不能恢复 marker、length、mapping 或 catalog uncertainty。
+:::
+
+::: {.callout-caution title="坑 3：把 MAG column sum=1 写成全部 reads 被解释"}
+本数据平均只有 12.98% quality-filtered reads 被 780 个 MAG 招募。column sum=1 只是 catalog 内 coverage closure。
+:::
+
+## 统一计算 Hill q=0/1/2
+
+### Alpha 是一个样本内的有效特征数 {#sec-theory}
+
+对已经固定 feature universe 且闭合为 \(p_i\) 的样本，Hill number 为 [@jost2006entropy]：
+
+\[
+{}^qD=
+\begin{cases}
+\left(\sum_i p_i^q\right)^{1/(1-q)}, & q\neq 1\\
+\exp\left(-\sum_i p_i\log p_i\right), & q=1.
+\end{cases}
+\]
+
+三个常用阶数具有同一单位“effective number of features”：
+
+- \(q=0\)：observed richness，只看 \(p_i>0\)，最受检出阈值和过滤影响；
+- \(q=1\)：\(\exp(\mathrm{Shannon})\)，按丰度加权常见特征；
+- \(q=2\)：inverse Simpson \(1/\sum_i p_i^2\)，更强调优势特征。
+
+同一样本应满足 \({}^0D\ge{}^1D\ge{}^2D\)。但 56,066 个 gene families、38.5 个 species 与 180.5 个 MAGs 的中位 richness 并不是一场“谁更高”的竞赛：UniRef90 family、MetaPhlAn species 和 recovered MAG 是不同观测单位，行数上限与 zero 生成机制也不同。
 
 ```{r}
 hill_values <- function(x) {
@@ -549,7 +541,56 @@ for (space in unique(alpha$FeatureSpace)) {
 
 同一行内从 q=0 到 q=2 的下降表示 dominance；跨行的数量级差异首先来自 feature definition 和 filtering。
 
-### 第 4 步：Bray、binary Jaccard 与 Aitchison 分开算
+### 忠实保留数据提供方的量 {#sec-audit}
+
+温泉论文的 MAG abundance 按下面顺序产生 [@korchagina2026hotsprings]：
+
+1. quality-filtered reads 竞争性比对到 780 MAGs；
+2. 只保留 MAPQ ≥30；
+3. 每个 sample / MAG 计算逐位点 depth 后取整条 MAG 的平均 coverage；
+4. 每个 MAG coverage 除以同一样本 780 个 MAG coverages 之和。
+
+这里不把它改写为 read counts，不对相对比例 rarefy，也不把 100% closure 当作 whole-community coverage。独立的 recruitment 表才回答多少 reads 进入 catalog。
+
+人体分支保留 cMD 的 MetaPhlAn / HUMAnN 标度 [@manghi2026cmd3; @beghini2021biobakery]。species 原百分比先存档再 closure；gene families 先去掉 stratified / special rows、固定 prevalence，再在每个样本内 closure。community 与 taxon-stratified rows 不会重复进入 richness。
+
+::: {.callout-caution title="坑 4：用一个 prevalence 门槛决定“真实基因丰富度”"}
+本数据 10% / 20% / 50% 门槛分别保留 415,581 / 178,928 / 1,896 个 gene families。q=0 必须与门槛绑定报告。
+:::
+
+![Hill q=0/1/2 都写成 effective number of features。每个 panel 使用自己的 y 范围；绝对值受 feature universe、过滤与检出机制约束。](../figures/22-alpha-hill-numbers.png){#fig-22-alpha}
+
+## Bray、binary Jaccard 与 Aitchison 分开算
+
+### Beta 的三种距离回答不同问题
+
+对样本 \(x,y\)：
+
+\[
+d_{\mathrm{Bray}}(x,y)=
+\frac{\sum_i|x_i-y_i|}{\sum_i(x_i+y_i)}.
+\]
+
+Bray–Curtis 保留 abundance 变化 [@bray1957ordination]。当两行都闭合到 1 时，分母固定为 2；这不消除组成约束，只让 denominator 明确。
+
+binary Jaccard 先把数值变成 presence / absence：
+
+\[
+d_J=1-\frac{|A\cap B|}{|A\cup B|}.
+\]
+
+它回答“检出的 feature membership 是否相同”，不回答丰度差多少。因此 detection threshold 也是模型的一部分。
+
+Aitchison distance 则在 centered log-ratio（CLR）空间求 Euclidean distance [@gloor2017compositional]：
+
+\[
+\operatorname{clr}(p)_i=
+\log(p_i+\delta)-\frac{1}{D}\sum_j\log(p_j+\delta),
+\qquad
+d_A(x,y)=\|\operatorname{clr}(x)-\operatorname{clr}(y)\|_2.
+\]
+
+零值使对数未定义，所以必须先过滤并声明 \(\delta\)。species 使用 \(10^{-6}\) 对 \(10^{-5}\)，gene families 使用 \(10^{-8}\) 对 \(10^{-7}\) 做 sensitivity。MAG catalog 没有强行做 Aitchison：低 recruitment 下，unrecovered genomes 不只是矩阵里的普通 sampling zero。
 
 ```{r}
 aitchison_distance <- function(x, pseudocount) {
@@ -663,7 +704,25 @@ stopifnot(
 
 这里的 276 或 124,750 个 distances 是 sample pairs，不是 276 或 124,750 个独立生物重复。因此 distance-vector rho 只用于 sensitivity，不附 p-value。
 
-### 第 5 步：保留 raw negative eigenvalues，再画 PCoA
+::: {.callout-caution title="坑 5：把所有距离叫 beta diversity 后挑最好看的"}
+Bray 看 abundance，binary Jaccard 看 detected membership，Aitchison 看 log-ratio。它们不一致时应解释 measurement difference，而不是挑一个最分离的 panel。
+:::
+
+::: {.callout-caution title="坑 6：对 pairwise distances 做普通相关显著性检验"}
+24 个样本产生 276 个 pairs，但 pairs 共享样本并不独立。本文只报告 geometry sensitivity rho，不报告基于 276 个“重复”的 p-value。
+:::
+
+## 保留 raw negative eigenvalues，再画 PCoA
+
+### PCoA 是坐标，不是显著性检验
+
+Bray–Curtis 可能不是严格 Euclidean distance，PCoA 会产生负特征值。直接隐藏负值会让坐标看似无问题；这里先记录 raw negative eigenvalues，再用 Cailliez additive constant 得到可绘制坐标 [@cailliez1983additive]。species、gene-family 与 MAG 分支分别有 3、1 与 165 个 raw negative eigenvalues。
+
+PCoA 中“看起来分开”不等于显著。PERMANOVA 还需要 exchangeability、重复样本 block、dispersion 与多重检验合同；这些检验不在本篇执行。
+
+::: {.callout-important title="先给每个数写一句带分母的定义"}
+推荐写法是“within-filtered-gene-family Hill q=1”或“within-recovered-MAG-catalog Bray-Curtis”，而不是只写“Shannon”或“beta diversity”。分母进入名字以后，很多过度解释会自动消失。
+:::
 
 ```{r}
 pcoa_scores <- function(d, feature_space, dataset) {
@@ -743,7 +802,13 @@ unique(ordination[, c(
 
 PCoA1 / PCoA2 对 corrected geometry 的解释率分别为 species 15.8% / 13.4%、gene families 26.4% / 15.4%、MAG 10.3% / 6.1%。这些百分比只描述各自距离矩阵，不能跨 panel 当作模型优劣。
 
-### 第 6 步：过滤、零值与 recruitment sensitivity
+::: {.callout-caution title="坑 7：PCoA 分开就写显著"}
+PCoA 是描述性坐标。组效应还需要受设计约束的 permutation、PERMDISP 与预先声明的模型；负特征值和 correction 也必须报告。
+:::
+
+![三套 closed abundance 的 Bray-Curtis PCoA。人体两个 panel 连接同一 subject 的重复 profiles；温泉 panel 按实测温度着色。坐标使用 Cailliez correction，原始负特征值仍保留在审计表。](../figures/22-beta-ordination.png){#fig-22-beta}
+
+## 过滤、零值与 recruitment sensitivity
 
 ```{r}
 gene_bray10 <- vegan::vegdist(
@@ -804,7 +869,9 @@ stopifnot(
 
 10% 对 20% gene Bray 的 rho 为 0.997，但 50% 对 20% 降到 0.799；Aitchison pseudocount sensitivity 为 gene 0.982、species 0.997。高 rho 只表示这批样本 pair 的排序较稳定，不证明任一门槛“正确”。
 
-### 第 7 步：把重复结构写进账本
+![左：gene-family richness 随 prevalence 门槛改变。中：只报告距离排序的描述性 rho，不把非独立 pair 当重复。右：MAG richness 与 reads recruitment 的 rho 仅为 0.156，不给 p-value 或因果解释。](../figures/22-sensitivity-recruitment.png){#fig-22-sensitivity}
+
+## 把重复结构写进记录表
 
 ```{r}
 human_repeat_audit <- do.call(
@@ -853,7 +920,26 @@ stopifnot(
 
 15 位人体 subject 中，9 位只有 1 个 profile、3 位有 2 个、3 位有 3 个。温泉样本也按 56 个 sites 聚集。后续若检验 group effect，permutation 或模型结构必须保留这些层级。
 
-### 第 8 步：生成四组出版图
+### 今天应增加的六项检查
+
+1. **Hill profile，而非单个 Shannon：**q=0、1、2 同时报告，区分 richness 与 dominance。
+2. **feature filter sensitivity：**gene prevalence 10% / 20% / 50% 分支全部保留。
+3. **distance meaning：**Bray、binary Jaccard、Aitchison 不互相替代。
+4. **zero sensitivity：**Aitchison 至少比较两个预声明 pseudocount。
+5. **ordination eigen audit：**原始负特征值数量与质量写入表，再声明 correction。
+6. **design ledger：**human subject 与 hot-spring site 层级在进入推断前保留。
+
+真实结果显示，gene richness 中位数会从 10% 门槛的 78,850 降到 20% 的 56,066.5，再降到 50% 的 1,160.5；相应 Bray distance rank rho 从 0.997（10% vs 20%）降到 0.799（50% vs 20%）。如果只报告一个门槛，读者无法判断结果依赖的是生物结构还是 feature universe。
+
+::: {.callout-note title="为什么本篇没有 PERMANOVA p-value"}
+人体 24 profiles 只对应 15 subjects；500 个环境样本聚集在 56 个 hot springs。未经 block 的自由置换会破坏 exchangeability。PERMANOVA 还要与 dispersion 审计配套；这些属于下一步推断合同，不应由 PCoA 图形替代。
+:::
+
+::: {.callout-caution title="坑 8：忽略 subject / site 的重复结构"}
+24 个人体 profiles 不是 24 位独立受试者，500 个温泉样本也不是 500 个独立 sites。把它们自由置换会夸大有效样本量。
+:::
+
+## 生成四组出版图
 
 以下代码直接使用前述对象；所有可见文字为英文。
 
@@ -1309,93 +1395,7 @@ save_pub(
 )
 ```
 
-## 审计与升级：把“多样性指数”升级成 measurement contract {#sec-audit}
-
-### 忠实保留数据提供方的量
-
-温泉论文的 MAG abundance 按下面顺序产生 [@korchagina2026hotsprings]：
-
-1. quality-filtered reads 竞争性比对到 780 MAGs；
-2. 只保留 MAPQ ≥30；
-3. 每个 sample / MAG 计算逐位点 depth 后取整条 MAG 的平均 coverage；
-4. 每个 MAG coverage 除以同一样本 780 个 MAG coverages 之和。
-
-这里不把它改写为 read counts，不对相对比例 rarefy，也不把 100% closure 当作 whole-community coverage。独立的 recruitment 表才回答多少 reads 进入 catalog。
-
-人体分支保留 cMD 的 MetaPhlAn / HUMAnN 标度 [@manghi2026cmd3; @beghini2021biobakery]。species 原百分比先存档再 closure；gene families 先去掉 stratified / special rows、固定 prevalence，再在每个样本内 closure。community 与 taxon-stratified rows 不会重复进入 richness。
-
-### 今天应增加的六项审计
-
-1. **Hill profile，而非单个 Shannon：**q=0、1、2 同时报告，区分 richness 与 dominance。
-2. **feature filter sensitivity：**gene prevalence 10% / 20% / 50% 分支全部保留。
-3. **distance meaning：**Bray、binary Jaccard、Aitchison 不互相替代。
-4. **zero sensitivity：**Aitchison 至少比较两个预声明 pseudocount。
-5. **ordination eigen audit：**原始负特征值数量与质量写入表，再声明 correction。
-6. **design ledger：**human subject 与 hot-spring site 层级在进入推断前保留。
-
-真实结果显示，gene richness 中位数会从 10% 门槛的 78,850 降到 20% 的 56,066.5，再降到 50% 的 1,160.5；相应 Bray distance rank rho 从 0.997（10% vs 20%）降到 0.799（50% vs 20%）。如果只报告一个门槛，读者无法判断结果依赖的是生物结构还是 feature universe。
-
-::: {.callout-note title="为什么本篇没有 PERMANOVA p-value"}
-人体 24 profiles 只对应 15 subjects；500 个环境样本聚集在 56 个 hot springs。未经 block 的自由置换会破坏 exchangeability。PERMANOVA 还要与 dispersion 审计配套；这些属于下一步推断合同，不应由 PCoA 图形替代。
-:::
-
-## 出版级美化 {#sec-polish}
-
-### 视觉规则
-
-- 图内全部使用英文；
-- species / gene families / MAG catalog 固定为 blue / orange / green；
-- q=0 / q=1 / q=2 同时使用颜色与明确文字；
-- Alpha panel 使用独立 y 范围并明确标注，避免假装跨 feature spaces 可直接比较；
-- 人体 PCoA 用灰线连接同一 subject 的重复 profiles；
-- MAG PCoA 用连续温度色标，不把人为分箱伪装成天然组别；
-- sensitivity 图把 rho 写在轴内，不显示 p-value；
-- 原始论文图与重绘图分开标注，避免把二次分析误写成作者原结果。
-
-四张重绘图均导出 PDF master、PNG 和 350 dpi LZW TIFF。尺寸为：
-
-| Figure | Width × height |
-|---|---:|
-| Resolution boundaries | 190 × 112 mm |
-| Alpha Hill numbers | 180 × 105 mm |
-| Beta ordination | 210 × 100 mm |
-| Sensitivity / recruitment | 220 × 110 mm |
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="坑 1：把 relative abundance 当 raw counts 后 rarefy"}
-MetaPhlAn percentage、HUMAnN relative fraction 和 MAG coverage proportion 都不是原始 read-event matrix。乘 library size 得到的 pseudo-count 不能恢复 marker、length、mapping 或 catalog uncertainty。
-:::
-
-::: {.callout-caution title="坑 2：gene-family community 与 stratified rows 一起计数"}
-同一个 UniRef90 family 的 community row 与 taxon-specific rows 同时进入 q=0，会重复定义 feature universe。先只留 community-level ordinary rows。
-:::
-
-::: {.callout-caution title="坑 3：把 MAG column sum=1 写成全部 reads 被解释"}
-本数据平均只有 12.98% quality-filtered reads 被 780 个 MAG 招募。column sum=1 只是 catalog 内 coverage closure。
-:::
-
-::: {.callout-caution title="坑 4：用一个 prevalence 门槛决定“真实基因丰富度”"}
-本数据 10% / 20% / 50% 门槛分别保留 415,581 / 178,928 / 1,896 个 gene families。q=0 必须与门槛绑定报告。
-:::
-
-::: {.callout-caution title="坑 5：把所有距离叫 beta diversity 后挑最好看的"}
-Bray 看 abundance，binary Jaccard 看 detected membership，Aitchison 看 log-ratio。它们不一致时应解释 measurement difference，而不是挑一个最分离的 panel。
-:::
-
-::: {.callout-caution title="坑 6：对 pairwise distances 做普通相关显著性检验"}
-24 个样本产生 276 个 pairs，但 pairs 共享样本并不独立。本文只报告 geometry sensitivity rho，不报告基于 276 个“重复”的 p-value。
-:::
-
-::: {.callout-caution title="坑 7：PCoA 分开就写显著"}
-PCoA 是描述性坐标。组效应还需要受设计约束的 permutation、PERMDISP 与预先声明的模型；负特征值和 correction 也必须报告。
-:::
-
-::: {.callout-caution title="坑 8：忽略 subject / site 的重复结构"}
-24 个人体 profiles 不是 24 位独立受试者，500 个温泉样本也不是 500 个独立 sites。把它们自由置换会夸大有效样本量。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 报告多样性指标、过滤和重复采样 {#sec-methods}
 
 > **Diversity analysis.** Taxonomic and gene-family profiles for 24 longitudinal stool metagenomes from 15 participants were obtained from curatedMetagenomicData 3.12.0 (AsnicarF_2017; ExperimentHub EH7091 and EH7086). The species table contained 298 MetaPhlAn-derived percentage features. For gene-family analysis, taxon-stratified rows and UNMAPPED, UNGROUPED, and UNINTEGRATED entries were excluded; UniRef90 families detected in at least 5 of 24 profiles (20% prevalence; 178,928 families) were retained, with 10% and 50% thresholds evaluated as sensitivity analyses. An independent environmental branch used the 780-MAG by 500-sample abundance matrix, metadata, and read-recruitment table from Figshare record 30284068 v2 (files 61153444, 61153429, and 61153471). MAG abundances were interpreted as genome-coverage proportions closed within the recovered-MAG catalog; the fraction of quality-filtered reads recruited to the catalog was retained separately (mean 12.98%). Within each declared feature universe, non-negative abundances were closed per sample and Hill numbers q=0, q=1, and q=2 were calculated as observed richness, exp(Shannon entropy), and inverse Simpson concentration, respectively. Bray–Curtis and binary Jaccard distances were computed with vegan 2.6.6.1. Aitchison distances were calculated for prefiltered human species and gene-family compositions after additive zero replacement; pseudocounts of 10^-6 versus 10^-5 (species) and 10^-8 versus 10^-7 (gene families) were compared without pairwise-distance p-values. Bray–Curtis PCoA was performed with ape 5.8; raw negative eigenvalues were audited and Cailliez-corrected coordinates were plotted. Repeated participants and hot-spring sites were retained in a design ledger. No biological group test or permutation was performed in this descriptive analysis. Analyses used R 4.4.1 with Matrix 1.6.5 and ggplot2 3.5.2; random seed 20260722 was fixed before plotting.
 
@@ -1405,7 +1405,7 @@ PCoA 是描述性坐标。组效应还需要受设计约束的 permutation、PER
 - gene prevalence 和 pseudocount 的预注册理由；
 - 若继续做 PERMANOVA，补 permutation block、dispersion test 与 contrasts。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 你至少需要什么
 
@@ -1466,7 +1466,33 @@ your_aitchison_2 <- aitchison_distance(
 
 如果输入是真正的 integer read counts，先单独处理 library-size / coverage 标准化问题；不要为了复用这段代码而先 TSS 后再声称做 count inference。如果输入是 MAG catalog 且没有 recruitment 或 unmapped-read ledger，只能把结果写成“within-catalog diversity”，不能外推到 whole-community richness。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-polish}
+
+### 视觉规则
+
+- 图内全部使用英文；
+- species / gene families / MAG catalog 固定为 blue / orange / green；
+- q=0 / q=1 / q=2 同时使用颜色与明确文字；
+- Alpha panel 使用独立 y 范围并明确标注，避免假装跨 feature spaces 可直接比较；
+- 人体 PCoA 用灰线连接同一 subject 的重复 profiles；
+- MAG PCoA 用连续温度色标，不把人为分箱伪装成天然组别；
+- sensitivity 图把 rho 写在轴内，不显示 p-value；
+- 原始论文图与重绘图分开标注，避免把二次分析误写成作者原结果。
+
+四张重绘图均导出 PDF master、PNG 和 350 dpi LZW TIFF。尺寸为：
+
+| Figure | Width × height |
+|---|---:|
+| Resolution boundaries | 190 × 112 mm |
+| Alpha Hill numbers | 180 × 105 mm |
+| Beta ordination | 210 × 100 mm |
+| Sensitivity / recruitment | 220 × 110 mm |
+
+## 回到最初的问题
+
+Alpha/Beta 不是脱离输入表的按钮。本文用 24 个样本匹配的人体 species/gene-family profiles 与独立的 500 样本温泉 MAG catalog，统一计算 Hill q=0/1/2、Bray-Curtis、binary Jaccard 和 Aitchison，并把 feature universe、closure、zero、重复采样与 reads recruitment 写进结果。
+
+## 参考文献 {#sec-references}
 
 - Hill numbers 与 effective diversity：[@jost2006entropy]。
 - Bray–Curtis dissimilarity：[@bray1957ordination]。

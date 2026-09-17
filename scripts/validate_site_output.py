@@ -25,7 +25,7 @@ MIN_HTML_BYTES = 10_000
 EXPECTED_COUNT = 77
 IGNORED_SCHEMES = {"data", "http", "https", "javascript", "mailto", "tel"}
 FORBIDDEN_RENDERED_PATTERNS = {
-    "personal_workspace_path": re.compile(r"/workspace"),
+    "personal_workspace_path": re.compile(r"/media/desk16/tly9658"),
     "redaction_placeholder": re.compile(r"\[REDACTED_LOCAL_PATH\]"),
     "draft_frontmatter": re.compile(r"\bdraft\s*:\s*true\b", re.IGNORECASE),
     "planned_chapter_placeholder": re.compile(r"\bPlanned chapter\b", re.IGNORECASE),

@@ -1,6 +1,6 @@
 ---
-title: "第 24 篇 · 差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -39,13 +39,20 @@ wechat:
     24-maaslin3-two-part.png: "Separate MaAsLin3 forest plots for abundance and prevalence associations"
     24-functional-associations.png: "Forest plot of the top adjusted MetaCyc pathway abundance associations"
     24-method-concordance.png: "Dot matrix comparing direction and FDR evidence across MaAsLin3, ANCOM-BC2, and ALDEx2"
+reader-mode: analysis
 ---
 
 > **学习目标：**把“差异丰度”拆成输入单位、分析全集、模型问题、效应尺度和 FDR family；用 MaAsLin3 分开解释非零样本中的 abundance 与是否检出的 prevalence；把 ANCOM-BC2、ALDEx2 放在正确的 count-like 输入边界内，而不是让三个软件多数投票。  
 > **真实数据：**`curatedMetagenomicData` 3.12.0 中 2021-03-31 发布的 `ZellerG_2014` MetaPhlAn3 物种谱、HUMAnN3 通路谱和临床元数据 [@zeller2014crc; @pasolli2017cmd]。  
 > **推断边界：**主模型是 110 名有完整年龄、性别、BMI 和测序深度的独立受试者，比较 CRC 与 Control。Adenoma 不混入二分类对照；所有结果都是调整后的横断面相对组成关联，不是绝对丰度或因果证据。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+先固定协变量和多重检验范围，再区分丰度与检出关联；由相对丰度重建的计数只能用于明确标注的敏感性分析。
+
+:::
+
+## 差异来自丰度变化，还是检出率变化？ {#sec-target}
 
 Zeller 等的 Figure 1A 把 22 个物种组成的 CRC signature、临床检测结果和分类分数放在同一张热图里；Figure 1E 再展示两个 *Fusobacterium nucleatum* 亚种、*Peptostreptococcus stomatis* 和 *Porphyromonas asaccharolytica* 随肿瘤进展的丰度变化。Figure 4 转向功能层，提出 CRC 粪便微生物组从膳食纤维利用向宿主来源底物和氨基酸利用偏移 [@zeller2014crc]。
 
@@ -53,65 +60,35 @@ Zeller 等的 Figure 1A 把 22 个物种组成的 CRC signature、临床检测�
 
 当前公开资源经过统一重处理，分辨率和原论文不完全相同：MetaPhlAn3 物种谱把原图中的两个 *F. nucleatum* 亚种合并为一个 species row；`Adenoma` 的 42 人也不等同于原图单列的 27 名 small adenoma。所以下图是对原论文生物学问题的**同队列、当前流程重分析**，不是每个数值和每个亚种都一一复刻。
 
-![选择 Figure 1 中的三种 CRC-enriched species，并加入 Figure 1A 中 depleted 的 Eubacterium rectale。上半图保留所有零值并用 pseudo-log 轴显示相对丰度；下半图直接显示检出率。描述图使用全部 156 名独立受试者。](../figures/24-zeller-marker-redraw.png){#fig-24-marker}
 
-![MaAsLin3 将 abundance 与 prevalence 分开。丰度部分只解释非零样本中的 log2 relative-abundance coefficient；检出部分解释 presence log odds。虚线分别是 abundance 的 disease-coefficient median null 和 prevalence 的 zero null。](../figures/24-maaslin3-two-part.png){#fig-24-two-part}
 
-![HUMAnN3 ordinary unstratified MetaCyc pathways 的 abundance association。系数来自 110 人的调整模型；分母只包含 493 条 ordinary annotated pathways。](../figures/24-functional-associations.png){#fig-24-function}
 
-![三种方法的方向与 FDR 证据。颜色只比较方向，点大小只表示各法自己的负 log10 q；不同方法的系数绝对值没有放在同一数轴上。](../figures/24-method-concordance.png){#fig-24-concordance}
 
-## 理论：先定义问题，再选择差异方法 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. “差异”至少有两个生物学问题
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/24/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 1.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-一个稀疏物种可以通过两种方式与 CRC 相关：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/24/download.R)。
 
-- **abundance association：**在已经检出的样本中，它的相对丰度是否变化；
-- **prevalence association：**它被检出的概率是否变化。
-
-把零值加上任意 pseudocount 后只做一个线性模型，会把“是否出现”和“出现后有多少”压成同一效应。MaAsLin3 的两部分模型分别拟合这两个分量，并提供 joint test 检验至少一个分量是否偏离声明的原假设 [@nickols2026maaslin3]。joint 显著不代表两个分量都显著，正文仍应报告各自的系数、可估性和 q 值。
-
-本文的 abundance 分量使用 TSS 后的 log transform，并启用 `median_comparison_abundance = TRUE`。因此单个 disease coefficient 的检验原假设不是 0，而是这一 metadata term 在全部物种中的 coefficient median；当前物种全集的 null 为 0.2757。prevalence 分量仍以 0 log odds 为原假设。
-
-### 2. 稀疏模型先过“可估性门”，再看 p 值
-
-如果某物种只在 CRC 组检出，logistic model 会发生 complete separation；如果某组只有几个非零样本，conditional abundance 也会极不稳定。本文预先规定：
-
-- abundance 结论要求 Control 和 CRC 各至少 10 个非零样本；
-- prevalence 结论要求两组都各至少 10 个 present 和 10 个 absent；
-- 不满足条件的行仍保留在结果表，但标记为 `Estimable = FALSE`，不能进入结论。
-
-这道门让“模型算出了一个巨大系数”和“数据支持稳定估计”成为两件事。本数据 212 个入选物种中，181 个可报告 abundance，144 个可报告 prevalence。
-
-### 3. 三种方法的系数不在同一把尺子上
-
-| Method | Primary question here | Input used here | Reported effect | Main restriction |
-|---|---|---|---|---|
-| MaAsLin3 1.5.3 | abundance + prevalence | relative fractions | log2 relative coefficient; presence log odds | primary method |
-| ANCOM-BC2 2.12.0 | bias-corrected mean abundance | reconstructed pseudo-count | natural-log coefficient | robust sensitivity only |
-| ALDEx2 1.42.0 | CLR difference under Monte Carlo sampling | reconstructed pseudo-count | expected CLR log2 coefficient | denominator sensitivity |
-
-ANCOM-BC2 对 sampling fraction 与 compositional bias 建模 [@lin2024ancombc2]；ALDEx2 用 Dirichlet Monte Carlo 实例估计 CLR effect [@fernandes2014aldex2]。但这里没有原始 taxon read counts：pseudo-count 是
-
-```text
-round(species relative fraction × whole-metagenome read depth)
+```{r}
+#| label: reader-input-download-24
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/24/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
 ```
 
-它既不是测序仪直接观察到的物种 reads，也不是绝对微生物负荷。因此 ANCOM-BC2 与 ALDEx2 只能回答“在这个重构规则下，方向和显著性是否敏感”，不能给 MaAsLin3 盖章，也不能把共识升级成独立验证。
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 4. FDR family 必须在看结果前写死
-
-本文把 BH 校正分开做：species abundance、species prevalence、species joint、pathway abundance、pathway prevalence 和 pathway joint 各是一个 family。跨物种与通路混成一个 family 会回答另一个问题；从 package-reported q 与 disease-only q 中挑较小者则是结果驱动选择。结果表同时保存两者，但正文固定使用 disease contrast 内的 BH。
-
-::: {.callout-important title="方向一致不等于三次独立重复"}
-三个方法使用同一批 110 人；其中两法还使用同一张 reconstructed pseudo-count 表。它们共享样本、上游谱和误差来源。方法重叠只能写作 **cross-method concordance**，不能写作 independent replication、majority vote 或 ground truth。
-:::
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：资源门槛、环境、数据下载与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 资源门槛
 
@@ -256,9 +233,18 @@ save_pub <- function(
 
 </details>
 
-## 可复制代码：从谱表到三种方法 {#sec-code}
+## 读表并锁定 110 名独立受试者 {#sec-code}
 
-### 第 1 步：读表并锁定 110 名独立受试者
+### “差异”至少有两个生物学问题 {#sec-theory}
+
+一个稀疏物种可以通过两种方式与 CRC 相关：
+
+- **abundance association：**在已经检出的样本中，它的相对丰度是否变化；
+- **prevalence association：**它被检出的概率是否变化。
+
+把零值加上任意 pseudocount 后只做一个线性模型，会把“是否出现”和“出现后有多少”压成同一效应。MaAsLin3 的两部分模型分别拟合这两个分量，并提供 joint test 检验至少一个分量是否偏离声明的原假设 [@nickols2026maaslin3]。joint 显著不代表两个分量都显著，正文仍应报告各自的系数、可估性和 q 值。
+
+本文的 abundance 分量使用 TSS 后的 log transform，并启用 `median_comparison_abundance = TRUE`。因此单个 disease coefficient 的检验原假设不是 0，而是这一 metadata term 在全部物种中的 coefficient median；当前物种全集的 null 为 0.2757。prevalence 分量仍以 0 log odds 为原假设。
 
 ```{r}
 input_dir <- "data/small/24-differential-abundance"
@@ -345,7 +331,23 @@ head(metadata_all[, c(
 
 这里最容易犯的错误是把源 taxonomic matrix 的七个 rank 一起闭合。源文件 1,019 行、每列总和约 700%；只保留 `|s__` 行后得到 661 个 species、每列才约 100%。功能谱也先删除 stratified rows 和 `UNMAPPED/UNGROUPED/UNINTEGRATED`，再在 493 条 ordinary unstratified pathways 内重闭合。这个 pathway 分母不代表“全部微生物代谢潜力”。
 
-### 第 2 步：协变量、参考水平和 feature universe
+### 原论文结论与当前重分析不能混写 {#sec-audit}
+
+原论文使用当时的物种/基因处理、feature selection 和分类流程，报告了内部 AUC 0.84、外部 AUC 0.85，并围绕 CRC marker species 与 KEGG/CAZy 功能变化展开 [@zeller2014crc]。本文使用同一研究的 cMD 统一重处理谱，但更换了 feature universe、协变量模型、分类分辨率、功能数据库表和统计方法。因此可以写“以 Figure 1/4 为问题锚点进行当前重分析”，不能写“精确复现 Figure 1/4 数值”。
+
+*F. nucleatum* 在当前 cMD 表中只有一个 species row，而且 Control 中 0/61、CRC 中 18/53 被检出。它通过预声明的 0.01% × 10% filter，却因 Control 没有非零值而无法估计 conditional abundance，也不满足每组至少 10 present/10 absent 的 prevalence gate。ALDEx2 给出 q = 0.00575，只能作为 reconstructed pseudo-count 下的 CLR sensitivity，不能覆盖前两项可估性失败。
+
+::: {.callout-caution title="坑 1：把七个 taxonomy ranks 混进一张 composition"}
+cMD taxonomic source 的每个 rank 都各自约为 100%，所以原矩阵列和约 700%。必须先固定 species-level rows；否则同一生物量被重复七次。
+:::
+
+::: {.callout-caution title="坑 4：complete separation 仍硬报巨大 OR"}
+某组全零时，有限 coefficient 可能只是优化器或正则化的产物。先报 present/absent 四格计数，再执行可估性门。
+:::
+
+![选择 Figure 1 中的三种 CRC-enriched species，并加入 Figure 1A 中 depleted 的 Eubacterium rectale。上半图保留所有零值并用 pseudo-log 轴显示相对丰度；下半图直接显示检出率。描述图使用全部 156 名独立受试者。](../figures/24-zeller-marker-redraw.png){#fig-24-marker}
+
+## 协变量、参考水平和 feature universe
 
 ```{r}
 z_score <- function(x) as.numeric(scale(as.numeric(x)))
@@ -395,7 +397,17 @@ c(
 
 阈值的单位是 fraction：`0.0001` 等于 0.01%，`0.00001` 等于 0.001%。阈值在 110 人主集合内一次性应用，不能看完 volcano plot 再改。
 
-### 第 3 步：MaAsLin3 两部分主模型
+## MaAsLin3 两部分主模型
+
+### 稀疏模型先过“可估性门”，再看 p 值
+
+如果某物种只在 CRC 组检出，logistic model 会发生 complete separation；如果某组只有几个非零样本，conditional abundance 也会极不稳定。本文预先规定：
+
+- abundance 结论要求 Control 和 CRC 各至少 10 个非零样本；
+- prevalence 结论要求两组都各至少 10 个 present 和 10 个 absent；
+- 不满足条件的行仍保留在结果表，但标记为 `Estimable = FALSE`，不能进入结论。
+
+这道门让“模型算出了一个巨大系数”和“数据支持稳定估计”成为两件事。本数据 212 个入选物种中，181 个可报告 abundance，144 个可报告 prevalence。
 
 ```{r}
 #| eval: false
@@ -471,7 +483,38 @@ fit_pathway <- maaslin3::maaslin3(
 
 `QDiseaseBH` 是本文主报告列；MaAsLin3 自带的 package-reported q 仍原样保存以便审计。对 prevalence，还要把每组 present/absent 计数与结果合并，只允许四个格子都至少为 10 的行进入正文。
 
-### 第 4 步：ANCOM-BC2 与 pseudo-count sensitivity
+### 三种方法没有形成“共同真值”
+
+主分析得到：
+
+- MaAsLin3 species abundance：7 个 FDR hits；prevalence：0 个；
+- ANCOM-BC2：只有 *Peptostreptococcus stomatis* 通过 package significance 与 pseudo-sensitivity robustness gate；
+- ALDEx2：4 个 disease-only BH hits；
+- 三法方向一致的 species 有 125/212，但被三法同时报告为 hit 的 species 为 0。
+
+*P. stomatis* 很能说明为什么不能投票：ANCOM-BC2 robust、ALDEx2 q = 0.000214，而 MaAsLin3 abundance q = 0.139。它不是“2 票对 1 票所以为真”，而是三种 estimand 与输入假设给出不同证据强度。
+
+![MaAsLin3 将 abundance 与 prevalence 分开。丰度部分只解释非零样本中的 log2 relative-abundance coefficient；检出部分解释 presence log odds。虚线分别是 abundance 的 disease-coefficient median null 和 prevalence 的 zero null。](../figures/24-maaslin3-two-part.png){#fig-24-two-part}
+
+![HUMAnN3 ordinary unstratified MetaCyc pathways 的 abundance association。系数来自 110 人的调整模型；分母只包含 493 条 ordinary annotated pathways。](../figures/24-functional-associations.png){#fig-24-function}
+
+## ANCOM-BC2 与 pseudo-count sensitivity
+
+### 三种方法的系数不在同一把尺子上
+
+| Method | Primary question here | Input used here | Reported effect | Main restriction |
+|---|---|---|---|---|
+| MaAsLin3 1.5.3 | abundance + prevalence | relative fractions | log2 relative coefficient; presence log odds | primary method |
+| ANCOM-BC2 2.12.0 | bias-corrected mean abundance | reconstructed pseudo-count | natural-log coefficient | robust sensitivity only |
+| ALDEx2 1.42.0 | CLR difference under Monte Carlo sampling | reconstructed pseudo-count | expected CLR log2 coefficient | denominator sensitivity |
+
+ANCOM-BC2 对 sampling fraction 与 compositional bias 建模 [@lin2024ancombc2]；ALDEx2 用 Dirichlet Monte Carlo 实例估计 CLR effect [@fernandes2014aldex2]。但这里没有原始 taxon read counts：pseudo-count 是
+
+```text
+round(species relative fraction × whole-metagenome read depth)
+```
+
+它既不是测序仪直接观察到的物种 reads，也不是绝对微生物负荷。因此 ANCOM-BC2 与 ALDEx2 只能回答“在这个重构规则下，方向和显著性是否敏感”，不能给 MaAsLin3 盖章，也不能把共识升级成独立验证。
 
 ```{r}
 #| eval: false
@@ -523,7 +566,19 @@ ancom_result <- data.frame(
 
 主结论只把 `diff_robust_diseaseCRC` 记为 ANCOM-BC2 hit。`pseudo_sens = TRUE` 失败的显著项不能绕过 robustness gate。这里不加入 `z_log10_reads`，因为 ANCOM-BC2 已把 sampling fraction 当作模型的一部分；年龄、性别和 BMI 与主模型保持一致。
 
-### 第 5 步：ALDEx2 与 denominator sensitivity
+::: {.callout-caution title="坑 2：把 reconstructed pseudo-count 写成 raw taxon count"}
+`round(relative_fraction × number_reads)` 只是一种方便变换。`number_reads` 是 whole metagenome depth，不是已归到每个物种的原始 reads；Methods、表头和图注都要保留这个限制。
+:::
+
+## ALDEx2 与 denominator sensitivity
+
+### FDR family 必须在看结果前写死
+
+本文把 BH 校正分开做：species abundance、species prevalence、species joint、pathway abundance、pathway prevalence 和 pathway joint 各是一个 family。跨物种与通路混成一个 family 会回答另一个问题；从 package-reported q 与 disease-only q 中挑较小者则是结果驱动选择。结果表同时保存两者，但正文固定使用 disease contrast 内的 BH。
+
+::: {.callout-important title="方向一致不等于三次独立重复"}
+三个方法使用同一批 110 人；其中两法还使用同一张 reconstructed pseudo-count 表。它们共享样本、上游谱和误差来源。方法重叠只能写作 **cross-method concordance**，不能写作 independent replication、majority vote 或 ground truth。
+:::
 
 ```{r}
 #| eval: false
@@ -561,7 +616,15 @@ aldex_result <- data.frame(
 
 ALDEx2 1.42.0 的 `QPackageBH` 是先在每个 Monte Carlo instance 内对 disease p 值做 BH、再对 128 次结果取期望；本文的 `QDiseaseBH` 则先对 p 值取期望、再在 disease feature family 内做 BH。由于“先校正后求期望”与“先求期望后校正”不可交换，两列不必相等。两者都保存，主文只读预声明的 `QDiseaseBH`。IQLR 分支先在 Control、CRC 和全体中分别找处于 CLR variance 四分位区间的 features，再取交集；本数据得到 62 个 denominator features。直接把 `denom = "iqlr"` 与 model matrix 混用会在该版本触发下标错误，显式 feature vector 才能保持同一定义。
 
-### 第 6 步：读取冻结结果并只汇报可报告行
+::: {.callout-caution title="坑 5：看结果后改 filter 或 FDR family"}
+把 10% 改成 20%、去掉 BMI、换 denominator 都可以做，但只能作为带标签的 sensitivity branch。不要从多个版本里选 q 最小的一张图。
+:::
+
+::: {.callout-caution title="坑 6：把三法交集称为独立验证"}
+同一队列、同一 feature table 不是独立 replication。真正的验证需要另一个独立队列，并在外部测试前锁定 feature mapping、方向和阈值。
+:::
+
+## 读取保存结果并只汇报可报告行
 
 ```{r}
 result_dir <- "results/24-differential-abundance"
@@ -638,25 +701,6 @@ knitr::kable(top_pathways, align = c("l", rep("r", 3)))
 
 当前分析有 50 条 pathway abundance associations。最靠前的是 `TRPSYN-PWY: L-tryptophan biosynthesis`，其 coefficient 为 −0.435、q = 5.68 × 10^-7；但这是 ordinary-pathway closure 下的相对功能潜力，不是转录活性、代谢物流量或宿主血液代谢物浓度。
 
-## 审计与升级：从“差异菌名单”到证据合同 {#sec-audit}
-
-### 原论文结论与当前重分析不能混写
-
-原论文使用当时的物种/基因处理、feature selection 和分类流程，报告了内部 AUC 0.84、外部 AUC 0.85，并围绕 CRC marker species 与 KEGG/CAZy 功能变化展开 [@zeller2014crc]。本文使用同一研究的 cMD 统一重处理谱，但更换了 feature universe、协变量模型、分类分辨率、功能数据库表和统计方法。因此可以写“以 Figure 1/4 为问题锚点进行当前重分析”，不能写“精确复现 Figure 1/4 数值”。
-
-*F. nucleatum* 在当前 cMD 表中只有一个 species row，而且 Control 中 0/61、CRC 中 18/53 被检出。它通过预声明的 0.01% × 10% filter，却因 Control 没有非零值而无法估计 conditional abundance，也不满足每组至少 10 present/10 absent 的 prevalence gate。ALDEx2 给出 q = 0.00575，只能作为 reconstructed pseudo-count 下的 CLR sensitivity，不能覆盖前两项可估性失败。
-
-### 三种方法没有形成“共同真值”
-
-主分析得到：
-
-- MaAsLin3 species abundance：7 个 FDR hits；prevalence：0 个；
-- ANCOM-BC2：只有 *Peptostreptococcus stomatis* 通过 package significance 与 pseudo-sensitivity robustness gate；
-- ALDEx2：4 个 disease-only BH hits；
-- 三法方向一致的 species 有 125/212，但被三法同时报告为 hit 的 species 为 0。
-
-*P. stomatis* 很能说明为什么不能投票：ANCOM-BC2 robust、ALDEx2 q = 0.000214，而 MaAsLin3 abundance q = 0.139。它不是“2 票对 1 票所以为真”，而是三种 estimand 与输入假设给出不同证据强度。
-
 ### 预声明敏感性分支
 
 ```{r}
@@ -686,7 +730,58 @@ ANCOM-BC2 不做预声明 filter 时在 634 个非全零物种中得到 2 个 ro
 HUMAnN pathway abundance 是 DNA 层面的编码潜力。若要写“通路被激活”“代谢通量升高”或“宿主暴露增加”，至少还需要 metatranscriptomics、metabolomics、绝对负荷或实验验证。横断面调整模型也不能区分肿瘤导致微生态改变，还是微生态参与肿瘤发生。
 :::
 
-## 出版级美化 {#sec-polish}
+::: {.callout-caution title="坑 3：把 abundance 与 prevalence 系数合并"}
+一个是非零样本中的 log2 relative coefficient，一个是 presence log odds。方向可以不同，joint p 也不能替代两个 component 的结果。
+:::
+
+::: {.callout-caution title="坑 7：把相对通路丰度写成代谢通量"}
+重闭合后的 MetaCyc pathway 只在 493 条 ordinary annotated rows 内解释。缺少转录、代谢物和绝对负荷时，不写 activation、production 或 flux。
+:::
+
+![三种方法的方向与 FDR 证据。颜色只比较方向，点大小只表示各法自己的负 log10 q；不同方法的系数绝对值没有放在同一数轴上。](../figures/24-method-concordance.png){#fig-24-concordance}
+
+## 报告关联类型、调整集和 FDR 范围 {#sec-methods}
+
+> Species-level relative-abundance and ordinary unstratified MetaCyc pathway profiles were obtained from the 2021-03-31 ZellerG_2014 release of curatedMetagenomicData v3.12.0. The primary analysis included 110 independent subjects with complete age, sex, BMI, and whole-metagenome read-depth data (59 controls and 51 colorectal-cancer cases); adenoma samples were excluded from the binary contrast. Species were retained when their relative abundance exceeded 0.01% in at least 10% of subjects, and pathways were retained when they exceeded 0.001% of the ordinary-pathway denominator in at least 20% of subjects. MaAsLin3 v1.5.3 (commit 3a194ece449ef249354df394b58bfe3e6f951ca3) was fitted with TSS normalization, log transformation, a compositional median null for abundance, a zero null for prevalence, and fixed effects for disease, standardized age, sex, standardized BMI, and standardized log10 read depth. Disease-term p values were adjusted by the Benjamini–Hochberg procedure separately within each feature space and model component. Prevalence associations were reported only when each disease group contained at least 10 present and 10 absent subjects. ANCOM-BC2 v2.12.0 with pseudo-count sensitivity enabled and ALDEx2 v1.42.0 with 128 Monte Carlo instances were used as sensitivity analyses on reconstructed pseudo-counts defined as rounded species relative abundance multiplied by whole-metagenome read depth; these values were not interpreted as observed taxon counts or absolute abundance. All stochastic steps used seed 20260724.
+
+cMD 的 2021-03-31 payload 是本文可核验的数据 release。它继承了 cMD 统一重处理所用的 MetaPhlAn3、HUMAnN3 与数据库映射；本文没有本地重跑数据库，也没有从 payload 中恢复出更细的 marker/MetaCyc database build identifier。投稿时应把这项 provenance limitation 原样写入 Methods 或 Data availability，不能自行补一个未核实的数据库版本。
+
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
+
+你至少需要两张表：
+
+- `species_relative.tsv`：行是同一 taxonomy release 下的 species，列是独立生物样本，值是 0–1 fraction；
+- `metadata.tsv`：每行一个样本，含 sample ID、subject ID、主分组、预声明混杂因素和测序深度。
+
+如果有 HUMAnN 通路表，先决定分析 `pathabundance` 的 community total 还是 stratified contributions；不要把两者混在同一 feature universe。如果有真实 taxon counts，ANCOM-BC2/ALDEx2 可以升级为主分析，但仍要说明 feature assignment、library denominator 和过滤规则。如果另有 spike-in、flow cytometry、qPCR 或每克粪便总微生物负荷，可同时报告 absolute abundance；不要从 relative composition 反推绝对变化。
+
+开始拟合前先写下：
+
+1. 哪一行是独立受试者，重复测量如何进入 random effect；
+2. case、reference 和需要排除的中间状态；
+3. 协变量、缺失值策略和是否可能受结局影响；
+4. abundance/prevalence 的阈值与可估性门；
+5. 每个 feature space、component 和 contrast 的 FDR family；
+6. 主方法、敏感性方法、效应尺度和输入单位；
+7. 预声明 sensitivity branches，而不是看结果后再挑参数；
+8. 外部队列如何做 feature mapping 和真正的 holdout replication。
+
+完整运行与审计命令为：
+
+```{bash}
+#| eval: false
+conda run -n metagenome-da-2026.07 \
+  Rscript scripts/validate_article24_differential_abundance.R \
+    --project-root . \
+    --input-dir data/small/24-differential-abundance \
+    --output-dir results/24-differential-abundance \
+    --figure-dir figures \
+    --maaslin-archive data/raw/article24/maaslin3-3a194ece449ef249354df394b58bfe3e6f951ca3.tar.gz
+```
+
+输出表保留模型报错、可估性、两套 q 值、效应尺度和 input boundary；把这些列一起交给合作者，比只交一张“显著菌 Excel”更能抵抗审稿追问。
+
+## 图中应该保留哪些信息？ {#sec-polish}
 
 差异结果最适合画“效应 + 不确定性 + FDR”，不是只画 −log10(p)：
 
@@ -735,78 +830,11 @@ p <- ggplot(
 save_pub(p, "figures/24-species-abundance-forest")
 ```
 
-## 常见坑 {#sec-pitfalls}
+## 回到最初的问题
 
-::: {.callout-caution title="坑 1：把七个 taxonomy ranks 混进一张 composition"}
-cMD taxonomic source 的每个 rank 都各自约为 100%，所以原矩阵列和约 700%。必须先固定 species-level rows；否则同一生物量被重复七次。
-:::
+差异菌不是一张火山图。本文用 ZellerG_2014 的 110 名完整病例/对照，先锁定协变量、特征全集和 FDR family，再让 MaAsLin3 分开回答非零丰度与检出率问题；ANCOM-BC2 和 ALDEx2 只作为 reconstructed pseudo-count 敏感性审计。
 
-::: {.callout-caution title="坑 2：把 reconstructed pseudo-count 写成 raw taxon count"}
-`round(relative_fraction × number_reads)` 只是一种方便变换。`number_reads` 是 whole metagenome depth，不是已归到每个物种的原始 reads；Methods、表头和图注都要保留这个限制。
-:::
-
-::: {.callout-caution title="坑 3：把 abundance 与 prevalence 系数合并"}
-一个是非零样本中的 log2 relative coefficient，一个是 presence log odds。方向可以不同，joint p 也不能替代两个 component 的结果。
-:::
-
-::: {.callout-caution title="坑 4：complete separation 仍硬报巨大 OR"}
-某组全零时，有限 coefficient 可能只是优化器或正则化的产物。先报 present/absent 四格计数，再执行可估性门。
-:::
-
-::: {.callout-caution title="坑 5：看结果后改 filter 或 FDR family"}
-把 10% 改成 20%、去掉 BMI、换 denominator 都可以做，但只能作为带标签的 sensitivity branch。不要从多个版本里选 q 最小的一张图。
-:::
-
-::: {.callout-caution title="坑 6：把三法交集称为独立验证"}
-同一队列、同一 feature table 不是独立 replication。真正的验证需要另一个独立队列，并在外部测试前锁定 feature mapping、方向和阈值。
-:::
-
-::: {.callout-caution title="坑 7：把相对通路丰度写成代谢通量"}
-重闭合后的 MetaCyc pathway 只在 493 条 ordinary annotated rows 内解释。缺少转录、代谢物和绝对负荷时，不写 activation、production 或 flux。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-> Species-level relative-abundance and ordinary unstratified MetaCyc pathway profiles were obtained from the 2021-03-31 ZellerG_2014 release of curatedMetagenomicData v3.12.0. The primary analysis included 110 independent subjects with complete age, sex, BMI, and whole-metagenome read-depth data (59 controls and 51 colorectal-cancer cases); adenoma samples were excluded from the binary contrast. Species were retained when their relative abundance exceeded 0.01% in at least 10% of subjects, and pathways were retained when they exceeded 0.001% of the ordinary-pathway denominator in at least 20% of subjects. MaAsLin3 v1.5.3 (commit 3a194ece449ef249354df394b58bfe3e6f951ca3) was fitted with TSS normalization, log transformation, a compositional median null for abundance, a zero null for prevalence, and fixed effects for disease, standardized age, sex, standardized BMI, and standardized log10 read depth. Disease-term p values were adjusted by the Benjamini–Hochberg procedure separately within each feature space and model component. Prevalence associations were reported only when each disease group contained at least 10 present and 10 absent subjects. ANCOM-BC2 v2.12.0 with pseudo-count sensitivity enabled and ALDEx2 v1.42.0 with 128 Monte Carlo instances were used as sensitivity analyses on reconstructed pseudo-counts defined as rounded species relative abundance multiplied by whole-metagenome read depth; these values were not interpreted as observed taxon counts or absolute abundance. All stochastic steps used seed 20260724.
-
-cMD 的 2021-03-31 payload 是本文可核验的数据 release。它继承了 cMD 统一重处理所用的 MetaPhlAn3、HUMAnN3 与数据库映射；本文没有本地重跑数据库，也没有从 payload 中恢复出更细的 marker/MetaCyc database build identifier。投稿时应把这项 provenance limitation 原样写入 Methods 或 Data availability，不能自行补一个未核实的数据库版本。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-你至少需要两张表：
-
-- `species_relative.tsv`：行是同一 taxonomy release 下的 species，列是独立生物样本，值是 0–1 fraction；
-- `metadata.tsv`：每行一个样本，含 sample ID、subject ID、主分组、预声明混杂因素和测序深度。
-
-如果有 HUMAnN 通路表，先决定分析 `pathabundance` 的 community total 还是 stratified contributions；不要把两者混在同一 feature universe。如果有真实 taxon counts，ANCOM-BC2/ALDEx2 可以升级为主分析，但仍要说明 feature assignment、library denominator 和过滤规则。如果另有 spike-in、flow cytometry、qPCR 或每克粪便总微生物负荷，可同时报告 absolute abundance；不要从 relative composition 反推绝对变化。
-
-开始拟合前先写下：
-
-1. 哪一行是独立受试者，重复测量如何进入 random effect；
-2. case、reference 和需要排除的中间状态；
-3. 协变量、缺失值策略和是否可能受结局影响；
-4. abundance/prevalence 的阈值与可估性门；
-5. 每个 feature space、component 和 contrast 的 FDR family；
-6. 主方法、敏感性方法、效应尺度和输入单位；
-7. 预声明 sensitivity branches，而不是看结果后再挑参数；
-8. 外部队列如何做 feature mapping 和真正的 holdout replication。
-
-完整运行与审计命令为：
-
-```{bash}
-#| eval: false
-conda run -n metagenome-da-2026.07 \
-  Rscript scripts/validate_article24_differential_abundance.R \
-    --project-root . \
-    --input-dir data/small/24-differential-abundance \
-    --output-dir results/24-differential-abundance \
-    --figure-dir figures \
-    --maaslin-archive data/raw/article24/maaslin3-3a194ece449ef249354df394b58bfe3e6f951ca3.tar.gz
-```
-
-输出表保留模型报错、可估性、两套 q 值、效应尺度和 input boundary；把这些列一起交给合作者，比只交一张“显著菌 Excel”更能抵抗审稿追问。
-
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Zeller 等的 CRC signature、Figure 1 与功能改变：[@zeller2014crc]
 - curatedMetagenomicData 的可访问、统一整理资源：[@pasolli2017cmd]

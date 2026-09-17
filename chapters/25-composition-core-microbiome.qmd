@@ -1,6 +1,6 @@
 ---
-title: "第 25 篇 · 组成与多分类级可视化、核心微生物组"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "组成与多分类级可视化、核心微生物组"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -39,13 +39,20 @@ wechat:
     25-individual-stool-composition.png: "Genus-level stacked composition of 95 individual stool samples ordered by Bacteroides abundance"
     25-prevalence-abundance.png: "Species prevalence and non-zero abundance compared between all samples and one representative per subject and habitat"
     25-core-membership-sensitivity.png: "Operational core membership heatmap and detection-by-prevalence threshold sensitivity grid"
+reader-mode: analysis
 ---
 
 > **学习目标：**把“组成”拆成分类层级、样本闭合与个体异质性；把“核心微生物组”写成可审计的 detection threshold × prevalence threshold 规则，并用 Wilson 区间、受试者 bootstrap 和阈值网格报告不确定性。  
 > **真实数据：**`curatedMetagenomicData` 3.12.0 中 2021-03-31 发布的 `HMP_2012` MetaPhlAn3 相对丰度谱与临床元数据 [@pasolli2017cmd; @beghini2021biobakery]。  
 > **推断边界：**结果描述健康 HMP 队列中 7 个具体 body habitats 的相对组成和检出模式；它们不是绝对微生物负荷、培养学存在证明、疾病效应或因果效应。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+先看每个样本的组成，再比较检出率；核心成员必须同时说明检测阈值、观察单位与稳定性。
+
+:::
+
+## 组成占比高，为什么还不能叫核心成员？ {#sec-target}
 
 Human Microbiome Project 的 Figure 3 把两个经常被堆叠柱图混在一起的问题分开了：颜色深浅表示人群检出率，圆点面积表示检出后的平均非零丰度。Figure 3a 和 3c 的 shotgun panels 使用 7 个具体 habitat，而 Figure 3b 的 16S panel 才扩展到更多亚位点 [@hmp2012structure]。
 
@@ -53,83 +60,35 @@ Human Microbiome Project 的 Figure 3 把两个经常被堆叠柱图混在一起
 
 这里沿用 Figure 3a/3c 的 7 个 shotgun habitats：anterior nares、retroauricular crease、buccal mucosa、tongue dorsum、supragingival plaque、stool 和 posterior fornix。公开资源经过统一的 bioBakery 3 重处理，分类数据库、物种命名与原论文分析年代不同；因此下面是**同队列、同图形问题的当前流程重分析**，不是逐像素复刻。一个明显例子是原图的 *Propionibacterium acnes* 在当前分类中显示为 *Cutibacterium acnes*。
 
-![每个分类层级都在该层级内单独闭合，再对 490 个 subject-habitat compositions 求等权均值。灰色 Other 是当前层级未展示 taxa 的总和，不是未分类 reads。](../figures/25-multirank-mean-composition.png){#fig-25-multirank}
 
-![95 名受试者各保留一个 stool 样本，并按 Bacteroides 丰度排序。组均值无法呈现这种连续变化和个体化组合。](../figures/25-individual-stool-composition.png){#fig-25-individual}
 
-![复刻 Figure 3 的 prevalence–abundance 语法。上面按全部重复样本计数，下面每位受试者在每个 habitat 只保留一个代表样本；颜色是 prevalence，面积是检出后的中位相对丰度。](../figures/25-prevalence-abundance.png){#fig-25-carriage}
 
-![主核心定义为 species abundance ≥0.01% 且 prevalence ≥80%。左侧展示全部跨 habitat 成员及每个 habitat 得分最高的 5 个成员；完整 92 个成员保存在结果表。右侧给出 112 个 detection × prevalence 定义分支。](../figures/25-core-membership-sensitivity.png){#fig-25-core}
 
-## 理论：组成、检出和核心是三个不同对象 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 每个分类层级都要单独闭合
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/25/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 3.4 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-MetaPhlAn 的完整 lineage table 同时含 kingdom、phylum、class、order、family、genus 和 species。把所有行直接当成同一张组成表，会让一个样本中的同一批 reads 沿谱系重复出现。本文只提取 terminal token 分别为 `p__`、`g__` 和 `s__` 的行，然后在每个 rank 内重闭合：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/25/download.R)。
 
-$$
-x_{ijs}^{(r)}=
-\frac{a_{ijs}^{(r)}}{\sum_{k \in r}a_{kjs}^{(r)}} ,
-\qquad
-\sum_{i \in r}x_{ijs}^{(r)}=1.
-$$
+```{r}
+#| label: reader-input-download-25
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/25/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-这里 $r$ 是分类层级，$i$ 是 taxon，$j$ 是样本。phylum、genus、species 柱子各自和为 100%，但三者不能拼成一个共同分母，也不能用不同 rank 的柱高比较“谁更多”。
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 2. 先闭合每个样本，再求组均值
-
-组组成采用 sample-wise closed composition 的算术均值：
-
-$$
-\bar{x}_{ih}=\frac{1}{n_h}\sum_{j \in h}x_{ij}.
-$$
-
-这让每个受试者-habitat 单位权重相同。先把所有人的 reads 加总再计算比例，会让测序更深的样本获得更大权重，得到的是 pooled-library composition，而不是“典型受试者的平均组成”。均值堆叠图适合比较群体中心，却会隐藏图 @fig-25-individual 中的个体异质性，所以发表时至少补一张 individual composition、ordination 或分布图。
-
-### 3. prevalence 和 abundance 要分开编码
-
-给定 detection threshold $t$，taxon $i$ 在 habitat $h$ 的检出率定义为：
-
-$$
-\hat{\pi}_{ih}(t)=\frac{1}{n_h}
-\sum_{j \in h}I(x_{ij}\ge t).
-$$
-
-本文主阈值 $t=0.0001$，即 0.01% relative abundance。圆点面积使用检出样本中的中位丰度，而不是把零值一起平均。这样“大而浅”表示少数携带者中丰度高，“小而深”表示普遍出现但每次丰度低。
-
-谱表中的零只表示“在当前样本、数据库、软件版本和阈值下未检出”。它不能证明生物学缺失。测序深度、宿主污染、参考数据库覆盖和物种可分辨性都会改变零的含义。
-
-### 4. 核心微生物组必须带定义
-
-本文的 operational core 是：
-
-$$
-C_h(t,p)=\left\{i:\hat{\pi}_{ih}(t)\ge p\right\},
-$$
-
-主分支取 $t=0.01\%$、$p=80\%$。文献中的 abundance 与 occurrence thresholds 差异很大，并不存在脱离 habitat、采样强度和研究问题的唯一“核心名单” [@shade2012core; @neu2021core]。因此结果必须同时写出：
-
-- taxonomic rank；
-- detection threshold 及其单位；
-- prevalence threshold；
-- 分母中的独立观察单位；
-- 未分类 taxa 的处理；
-- 对阈值与抽样误差的敏感性。
-
-### 5. 点估计过线，不等于成员稳定
-
-prevalence 是二项比例。本文为每个比例保存 Wilson 95% interval，并在每个 habitat 内以受试者为单位做 1,000 次 bootstrap。某 species 的 bootstrap inclusion frequency 是它在多少次重抽样中仍满足 80% 门槛。
-
-例如 retroauricular crease 只有 17 个独立单位；*Malassezia globosa* 检出 14 次，点 prevalence 为 82.4%，但 Wilson 95% interval 为 59.0%–93.8%，bootstrap core inclusion frequency 只有 64.5%。它满足主点阈值，却不属于本文预声明的 stable core（inclusion frequency ≥80%）。
-
-::: {.callout-important title="Habitat 不能先合并成宽泛 body site"}
-Buccal mucosa、tongue dorsum 和 supragingival plaque 都属于 oral cavity，但它们是不同生态位。先合并成 Oral cavity 再算 prevalence，会把“同一物种偏好不同口腔亚位点”误写成“重复采样造成的个体差异”。主分析必须以具体 habitat 为单位；宽泛 body site 只能用于明确标注的描述性概览。
-:::
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：资源门槛、安装、真实数据下载与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 资源门槛
 
@@ -162,7 +121,7 @@ stopifnot(
 
 验证环境为 R 4.4.1、ggplot2 3.5.2、patchwork 1.3.2、scales 1.3.0、jsonlite 1.8.8 和 digest 0.6.36。
 
-### 一次性下载并冻结真实资源
+### 一次性下载并保存真实资源
 
 ```{bash}
 #| eval: false
@@ -261,9 +220,20 @@ save_pub <- function(
 
 </details>
 
-## 可复制代码：从 rank 表到 operational core {#sec-code}
+## 读表并锁定观察单位 {#sec-code}
 
-### 第 1 步：读表并锁定观察单位
+### 每个分类层级都要单独闭合 {#sec-theory}
+
+MetaPhlAn 的完整 lineage table 同时含 kingdom、phylum、class、order、family、genus 和 species。把所有行直接当成同一张组成表，会让一个样本中的同一批 reads 沿谱系重复出现。本文只提取 terminal token 分别为 `p__`、`g__` 和 `s__` 的行，然后在每个 rank 内重闭合：
+
+$$
+x_{ijs}^{(r)}=
+\frac{a_{ijs}^{(r)}}{\sum_{k \in r}a_{kjs}^{(r)}} ,
+\qquad
+\sum_{i \in r}x_{ijs}^{(r)}=1.
+$$
+
+这里 $r$ 是分类层级，$i$ 是 taxon，$j$ 是样本。phylum、genus、species 柱子各自和为 100%，但三者不能拼成一个共同分母，也不能用不同 rank 的柱高比较“谁更多”。
 
 ```{r}
 input_dir <- "data/small/25-composition-core"
@@ -339,7 +309,29 @@ head(metadata[, c(
 
 代表样本规则是：在每个 subject × selected habitat 内保留 `number_reads` 最大的样本，若相同则按 `sample_id` 字典序决胜。左右 retroauricular crease 先合并为同一 habitat，再执行选择。该规则固定分析单位，不代表高深度样本在生物学上“更典型”。
 
-### 第 2 步：逐 rank 计算等权组成
+### 忠实保留的部分 {#sec-audit}
+
+当前重分析保留了原 Figure 3 最重要的三个设计选择：
+
+1. 使用相同的 7 个 shotgun habitats，而不是先合并成口腔、皮肤、肠道、阴道；
+2. 用颜色表示 prevalence，用圆点面积表示检出后的 abundance；
+3. 把 species carriage 与更高分类层级的组成概览分开解释。
+
+::: {.callout-caution title="坑 3：把 pooled reads 当平均组成"}
+先合并 reads 会按测序深度加权。要描述受试者层面的平均 composition，应先让每个样本闭合，再对独立单位等权求均值。
+:::
+
+## 逐 rank 计算等权组成
+
+### 先闭合每个样本，再求组均值
+
+组组成采用 sample-wise closed composition 的算术均值：
+
+$$
+\bar{x}_{ih}=\frac{1}{n_h}\sum_{j \in h}x_{ij}.
+$$
+
+这让每个受试者-habitat 单位权重相同。先把所有人的 reads 加总再计算比例，会让测序更深的样本获得更大权重，得到的是 pooled-library composition，而不是“典型受试者的平均组成”。均值堆叠图适合比较群体中心，却会隐藏图 @fig-25-individual 中的个体异质性，所以发表时至少补一张 individual composition、ordination 或分布图。
 
 ```{r}
 rank_composition_rows <- list()
@@ -458,7 +450,32 @@ save_pub(
 )
 ```
 
-### 第 3 步：把 prevalence、非零丰度和区间放在同一张表
+::: {.callout-caution title="坑 1：把多 rank lineage table 当成一张组成表"}
+kingdom 到 species 会重复计算同一批 reads。先按 terminal rank 拆表，再分别闭合；检查每个样本每个 rank 的列和是否为 1。
+:::
+
+::: {.callout-caution title="坑 2：每个组各画自己的 top 10"}
+这样同一种颜色会在不同柱子代表不同 taxa，跨组比较失效。先在全体预声明单位中选统一 top taxa，再在每个组计算它们的均值和 Other。
+:::
+
+![每个分类层级都在该层级内单独闭合，再对 490 个 subject-habitat compositions 求等权均值。灰色 Other 是当前层级未展示 taxa 的总和，不是未分类 reads。](../figures/25-multirank-mean-composition.png){#fig-25-multirank}
+
+![95 名受试者各保留一个 stool 样本，并按 Bacteroides 丰度排序。组均值无法呈现这种连续变化和个体化组合。](../figures/25-individual-stool-composition.png){#fig-25-individual}
+
+## 把 prevalence、非零丰度和区间放在同一张表
+
+### prevalence 和 abundance 要分开编码
+
+给定 detection threshold $t$，taxon $i$ 在 habitat $h$ 的检出率定义为：
+
+$$
+\hat{\pi}_{ih}(t)=\frac{1}{n_h}
+\sum_{j \in h}I(x_{ij}\ge t).
+$$
+
+本文主阈值 $t=0.0001$，即 0.01% relative abundance。圆点面积使用检出样本中的中位丰度，而不是把零值一起平均。这样“大而浅”表示少数携带者中丰度高，“小而深”表示普遍出现但每次丰度低。
+
+谱表中的零只表示“在当前样本、数据库、软件版本和阈值下未检出”。它不能证明生物学缺失。测序深度、宿主污染、参考数据库覆盖和物种可分辨性都会改变零的含义。
 
 ```{r}
 wilson_interval <- function(successes, total, confidence = 0.95) {
@@ -613,7 +630,43 @@ save_pub(
 )
 ```
 
-### 第 4 步：bootstrap 稳定性与阈值网格
+### 不同数据处理版本的结果为什么不完全相同
+
+| Boundary | 2012 paper | Current reanalysis |
+|---|---|---|
+| Taxonomic processing | original study pipeline and database | uniform bioBakery 3 / MetaPhlAn3 resource |
+| Public object used here | not applicable | 2021-03-31 cMD release |
+| Available ledger | original study analysis set | 748 samples, 103 subjects |
+| Species naming | historical names, including *P. acnes* | current resource labels, including *C. acnes* |
+| Abundance symbol | paper-specific mean non-zero abundance | median when detected for robustness |
+| Repeated observations | not the focus of the original panel | explicitly audited and reduced to one subject-habitat unit |
+
+所以图形可以复现问题和视觉语法，却不能把不同分类数据库得到的圆点大小或物种名单当作逐项相等。
+
+::: {.callout-caution title="坑 4：把谱表零值写成 absent"}
+推荐使用 not detected，并报告 profiler、database version、detection threshold 和 sequencing-depth context。不同流程的零不能直接比较。
+:::
+
+![复刻 Figure 3 的 prevalence–abundance 语法。上面按全部重复样本计数，下面每位受试者在每个 habitat 只保留一个代表样本；颜色是 prevalence，面积是检出后的中位相对丰度。](../figures/25-prevalence-abundance.png){#fig-25-carriage}
+
+## bootstrap 稳定性与阈值网格
+
+### 核心微生物组必须带定义
+
+本文的 operational core 是：
+
+$$
+C_h(t,p)=\left\{i:\hat{\pi}_{ih}(t)\ge p\right\},
+$$
+
+主分支取 $t=0.01\%$、$p=80\%$。文献中的 abundance 与 occurrence thresholds 差异很大，并不存在脱离 habitat、采样强度和研究问题的唯一“核心名单” [@shade2012core; @neu2021core]。因此结果必须同时写出：
+
+- taxonomic rank；
+- detection threshold 及其单位；
+- prevalence threshold；
+- 分母中的独立观察单位；
+- 未分类 taxa 的处理；
+- 对阈值与抽样误差的敏感性。
 
 ```{r}
 RNGkind("Mersenne-Twister", "Inversion", "Rejection")
@@ -703,7 +756,27 @@ stopifnot(nrow(sensitivity) == 112L)
 
 `bootstrap weights` 对同一次重抽样中的所有 species 共用，因而保留了 taxa 之间的相关结构。不能为每个 species 各自生成一套独立的“受试者抽样”。
 
-### 第 5 步：锁定结果并输出审计表
+::: {.callout-caution title="坑 5：核心名单不写阈值"}
+“核心菌包括 A、B、C”不可复核。必须写成“在某 habitat、某 rank、丰度至少 t、独立单位 prevalence 至少 p”。
+:::
+
+::: {.callout-caution title="坑 6：重复样本冒充独立个体"}
+同一受试者同一 habitat 的多个样本会缩窄不确定性并改变 prevalence。预先指定代表规则，或使用显式的 subject-level / longitudinal model。
+:::
+
+![主核心定义为 species abundance ≥0.01% 且 prevalence ≥80%。左侧展示全部跨 habitat 成员及每个 habitat 得分最高的 5 个成员；共有 92 个成员满足主核心定义。右侧给出 112 个 detection × prevalence 定义分支。](../figures/25-core-membership-sensitivity.png){#fig-25-core}
+
+## 锁定结果并输出检查表
+
+### 点估计过线，不等于成员稳定
+
+prevalence 是二项比例。本文为每个比例保存 Wilson 95% interval，并在每个 habitat 内以受试者为单位做 1,000 次 bootstrap。某 species 的 bootstrap inclusion frequency 是它在多少次重抽样中仍满足 80% 门槛。
+
+例如 retroauricular crease 只有 17 个独立单位；*Malassezia globosa* 检出 14 次，点 prevalence 为 82.4%，但 Wilson 95% interval 为 59.0%–93.8%，bootstrap core inclusion frequency 只有 64.5%。它满足主点阈值，却不属于本文预声明的 stable core（inclusion frequency ≥80%）。
+
+::: {.callout-important title="Habitat 不能先合并成宽泛 body site"}
+Buccal mucosa、tongue dorsum 和 supragingival plaque 都属于 oral cavity，但它们是不同生态位。先合并成 Oral cavity 再算 prevalence，会把“同一物种偏好不同口腔亚位点”误写成“重复采样造成的个体差异”。主分析必须以具体 habitat 为单位；宽泛 body site 只能用于明确标注的描述性概览。
+:::
 
 ```{r}
 site_counts <- aggregate(
@@ -766,30 +839,7 @@ Rscript scripts/validate_article25_composition_core.R \
 
 该运行固定通过 97 项检查，包括输入 SHA-256、样本顺序、rank closure、观察单位唯一性、Wilson 边界、bootstrap 频率、112 个阈值分支、结果漂移和 PDF/PNG/TIFF 完整性。
 
-## 审计与升级：从 2012 图形语法到可报告的核心定义 {#sec-audit}
-
-### 忠实保留的部分
-
-当前重分析保留了原 Figure 3 最重要的三个设计选择：
-
-1. 使用相同的 7 个 shotgun habitats，而不是先合并成口腔、皮肤、肠道、阴道；
-2. 用颜色表示 prevalence，用圆点面积表示检出后的 abundance；
-3. 把 species carriage 与更高分类层级的组成概览分开解释。
-
-### 不能假装完全复刻的部分
-
-| Boundary | 2012 paper | Current reanalysis |
-|---|---|---|
-| Taxonomic processing | original study pipeline and database | uniform bioBakery 3 / MetaPhlAn3 resource |
-| Public object used here | not applicable | 2021-03-31 cMD release |
-| Available ledger | original study analysis set | 748 samples, 103 subjects |
-| Species naming | historical names, including *P. acnes* | current resource labels, including *C. acnes* |
-| Abundance symbol | paper-specific mean non-zero abundance | median when detected for robustness |
-| Repeated observations | not the focus of the original panel | explicitly audited and reduced to one subject-habitat unit |
-
-所以图形可以复现问题和视觉语法，却不能把不同分类数据库得到的圆点大小或物种名单当作逐项相等。
-
-### 今天应补上的四项审计
+### 今天应补上的四项检查
 
 **第一，观察单位审计。** 7 个 habitats 的原始样本数为 93、27、119、136、127、147、62；独立代表单位为 74、17、84、90、88、95、42。若直接把重复样本当成独立人，749 × 7 个 species-habitat comparisons 中有 9 个会跨过 80% core 门槛；最大 prevalence 偏移为 8.71%。
 
@@ -803,57 +853,17 @@ Rscript scripts/validate_article25_composition_core.R \
 某 species 的 relative abundance 可以因为其他 species 减少而上升。若“核心”要支持定量生物标志物、定植稳定或跨时间持久性，应加入 spike-in、qPCR、flow cytometry 或其他 absolute-load 信息，并使用纵向重复采样验证。
 :::
 
-## 出版级美化 {#sec-polish}
-
-一张可投稿的组成图至少做到：
-
-- 图内只用英文 habitat、taxon、轴标题和图例；
-- 每个 rank 在自己的分母内闭合，并在 caption 解释 Other；
-- 所有 habitat 使用同一 taxon 顺序和颜色映射；
-- categorical palette 使用色盲友好颜色，连续 prevalence 使用 perceptually uniform viridis；
-- 圆点面积而不是半径映射 abundance，避免视觉夸大；
-- PDF 保存文字与矢量几何，PNG/TIFF 至少 300 dpi；
-- 图中只展示有预声明规则的 taxa 子集，完整检验全集另存表格。
-
-图 @fig-25-core 的左面板没有把 92 个 species 全塞进一页，而是展示全部 25 个跨 habitat 成员，再补每个 habitat 按 `prevalence × sqrt(mean abundance)` 最高的 5 个成员，去重后共 36 个。`core-display-selection.tsv` 保存每个展示成员的进入理由，避免“为了图好看手挑 taxa”。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="坑 1：把多 rank lineage table 当成一张组成表"}
-kingdom 到 species 会重复计算同一批 reads。先按 terminal rank 拆表，再分别闭合；检查每个样本每个 rank 的列和是否为 1。
-:::
-
-::: {.callout-caution title="坑 2：每个组各画自己的 top 10"}
-这样同一种颜色会在不同柱子代表不同 taxa，跨组比较失效。先在全体预声明单位中选统一 top taxa，再在每个组计算它们的均值和 Other。
-:::
-
-::: {.callout-caution title="坑 3：把 pooled reads 当平均组成"}
-先合并 reads 会按测序深度加权。要描述受试者层面的平均 composition，应先让每个样本闭合，再对独立单位等权求均值。
-:::
-
-::: {.callout-caution title="坑 4：把谱表零值写成 absent"}
-推荐使用 not detected，并报告 profiler、database version、detection threshold 和 sequencing-depth context。不同流程的零不能直接比较。
-:::
-
-::: {.callout-caution title="坑 5：核心名单不写阈值"}
-“核心菌包括 A、B、C”不可复核。必须写成“在某 habitat、某 rank、丰度至少 t、独立单位 prevalence 至少 p”。
-:::
-
-::: {.callout-caution title="坑 6：重复样本冒充独立个体"}
-同一受试者同一 habitat 的多个样本会缩窄不确定性并改变 prevalence。预先指定代表规则，或使用显式的 subject-level / longitudinal model。
-:::
-
 ::: {.callout-caution title="坑 7：把空 core 解释成没有共同生态功能"}
 Taxonomic core 可以为空，而多个互斥 species 仍执行相似功能。补充 pathway prevalence、guild 或 functional redundancy 分析，再讨论 functional core。
 :::
 
-## 这段 Methods 怎么写 {#sec-methods}
+## 写清分类层级、分母和核心定义 {#sec-methods}
 
 > Taxonomic relative-abundance profiles and sample metadata for the HMP_2012 cohort were obtained from curatedMetagenomicData v3.12.0 (resource release 2021-03-31). The source profile had been generated using a uniform bioBakery 3 workflow. Terminal MetaPhlAn lineages were extracted separately at the phylum, genus and species ranks and reclosed to unit sum within each rank and sample. Analyses focused on the seven shotgun habitats shown in HMP Figure 3: anterior nares, retroauricular crease, buccal mucosa, tongue dorsum, supragingival plaque, stool and posterior fornix. Left and right retroauricular crease samples were combined. To avoid pseudoreplication, one sample per participant and habitat was retained by maximizing the reported read count, with sample identifier used as a deterministic tie-break, yielding 490 participant–habitat units. Group compositions were calculated as equally weighted means of sample-wise closed compositions. Species detection was defined as relative abundance ≥0.01%, and the primary operational core required detection in ≥80% of independent units within a habitat. Wilson 95% confidence intervals were calculated for prevalence. Core stability was assessed using 1,000 participant-level bootstrap resamples, with a fixed seed of 20260725; stable members had a bootstrap inclusion frequency ≥80%. Sensitivity was evaluated across four detection thresholds (>0, 0.001%, 0.01% and 0.1%) and four prevalence thresholds (50%, 80%, 90% and 100%). Zeros were interpreted as profile-specific non-detections rather than confirmed biological absences. Analyses were performed in R v4.4.1; figures were generated with ggplot2 v3.5.2 and exported as PDF and 350-dpi PNG/TIFF files.
 
 若实际数据不是健康横断面队列，应在这段后补充 disease、treatment、time point、site、batch 和 subject 的具体处理，不能沿用“描述性 habitat composition”的推断边界。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 至少准备两张表：
 
@@ -878,7 +888,25 @@ Taxonomic core 可以为空，而多个互斥 species 仍执行相似功能。�
 保留完整 lineage 作为审计列，按最后一个 taxonomic token 选择 rank；在每个 rank 内重闭合后再进入本章代码。若不同样本由不同 MetaPhlAn database builds 生成，先统一重跑，不能只靠合并 feature names 修补版本差异。
 :::
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-polish}
+
+一张可投稿的组成图至少做到：
+
+- 图内只用英文 habitat、taxon、轴标题和图例；
+- 每个 rank 在自己的分母内闭合，并在 caption 解释 Other；
+- 所有 habitat 使用同一 taxon 顺序和颜色映射；
+- categorical palette 使用色盲友好颜色，连续 prevalence 使用 perceptually uniform viridis；
+- 圆点面积而不是半径映射 abundance，避免视觉夸大；
+- PDF 保存文字与矢量几何，PNG/TIFF 至少 300 dpi；
+- 图中只展示有预声明规则的 taxa 子集，完整检验全集另存表格。
+
+图 @fig-25-core 的左面板没有把 92 个 species 全塞进一页，而是展示全部 25 个跨 habitat 成员，再补每个 habitat 按 `prevalence × sqrt(mean abundance)` 最高的 5 个成员，去重后共 36 个。`core-display-selection.tsv` 保存每个展示成员的进入理由，避免“为了图好看手挑 taxa”。
+
+## 回到最初的问题
+
+一张堆叠柱图回答不了谁是核心成员。本文用 HMP_2012 的真实 MetaPhlAn3 谱表，在原论文 Figure 3 的 7 个 shotgun habitats 中锁定 490 个受试者-habitat 单位，分开处理分类层级闭合、个体组成、检出率、非零丰度、Wilson 区间、bootstrap 稳定性与核心阈值敏感性。
+
+## 参考文献 {#sec-references}
 
 - Human Microbiome Project Consortium 的健康人体微生物组结构与 Figure 3 [@hmp2012structure]。
 - `curatedMetagenomicData` 队列资源与统一重处理 [@pasolli2017cmd; @beghini2021biobakery]。

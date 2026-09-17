@@ -1,5 +1,6 @@
 ---
-title: "第 60 篇 · 基因组尺度代谢模型：gapseq / CarveMe"
+author: "Peter"
+title: "基因组尺度代谢模型：gapseq / CarveMe"
 description: "从 8 个真实 MAG 与 4 个确定性截短对照重建 48 个 SBML 模型，审计 GPR、gap filling、培养基依赖、空培养基泄漏和 MAG 不完整性"
 draft: false
 bibliography: ../references.bib
@@ -22,6 +23,7 @@ wechat:
     - {label: "敏感性", value: "50% · 70% · 90% · 100% MAG"}
   code_heading: "从 MAG 蛋白到 SBML、gap-fill burden、培养基与泄漏审计"
   expected_images: 6
+reader-mode: upstream
 ---
 
 > **先给结论：**基因组尺度代谢模型（genome-scale metabolic model，GEM）不是“把 MAG 注释得更漂亮”，而是把有基因证据的反应、化学计量关系、反应方向、交换边界、培养基和 biomass objective 组合成可求解的约束系统。自动重建最值得报告的并非一个最大生长数值，而是三类不确定性：哪些反应有 gene--protein--reaction（GPR）证据、为了得到可行 biomass 解补了多少无 GPR 反应、结论会不会随 MAG 完整度和培养基假设改变。
@@ -36,7 +38,13 @@ wechat:
 这组小 MAG 的成功步骤中，单任务峰值常驻内存最高为 **1,444,584 KB**，最长 wall time 为 **1,161.3 s**；并行峰值取决于同时运行的 jobs。真实人群 MAG 更大、数据库缓存与 solver 行为也不同，部署时仍按上述保守门槛预留资源。
 :::
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+培养基边界和补缺反应都会影响预测；模型可行不等于真实生长或通量已被测量。
+
+:::
+
+## 代谢模型预测生长，依赖哪些假设？ {#sec-target}
 
 CarveMe 原始论文的 **Figure 1** 对比 bottom-up reconstruction、top-down carving 与 context-dependent gap filling：前两者回答“基因组支持什么反应”，补洞则回答“为了在指定条件下满足 biomass 约束，最少还要假设什么” [@machado2018carveme]。这里保留这个分层，先固定 CarveMe draft，再调用独立 `gapfill` 命令；不把两次独立 carving 的差异误算成补洞反应。
 
@@ -44,85 +52,28 @@ gapseq 论文用 enzyme activity、carbon-source utilization、fermentation prod
 
 ![8 个真实 MAG 的固定 draft 与 gap-filled model 反应数。连线右侧的数字是增加的反应数；新增反应是模型修复假设。](../figures/60-model-size-gapfill.png){#fig-60-model-size}
 
-## 理论：GEM 在计算什么，又没有计算什么 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 从 MAG 到 GEM 至少经过五层对象
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/60/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 16.9 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-| 层级 | 典型对象 | 可以支持的结论 | 仍然不能证明 |
-|---|---|---|---|
-| MAG | contigs、quality、taxonomy | 该 bin 的序列身份与质量 | 每个基因都属于同一细胞 |
-| Gene evidence | proteins、homology hits | 某 enzyme family 可能存在 | 该酶在目标条件下表达或有活性 |
-| GPR | gene--protein--reaction rule | 反应与基因证据的逻辑连接 | 反应方向与通量已被测量 |
-| Network | metabolites、reactions、bounds | 一组化学计量约束 | 网络在真实细胞中唯一正确 |
-| Simulation | medium、objective、solver | 在这些假设下存在可行/最优解 | 预测值等于体外或原位速率 |
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/60/download.R)。
 
-最关键的分界是“模型里有反应”不等于“基因组里有支持该反应的基因”。Draft 中也会有 biomass、exchange、demand、spontaneous 或 template reactions；gap filling 新增的反应往往没有 GPR。反应表必须同时保存 `GPRBackedReactions` 和 `NoGPRReactions`。
+```{r}
+#| label: reader-input-download-60
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/60/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-### 2. FBA 是带假设的可行域优化
-
-设 $S \in \mathbb{R}^{m\times r}$ 为 metabolite × reaction 的 stoichiometric matrix，$v$ 为 reaction flux，稳态近似为：
-
-\[
-Sv=0.
-\]
-
-培养基、反应方向和容量写进上下界：
-
-\[
-\ell_j \le v_j \le u_j,
-\]
-
-常见 FBA 以 biomass reaction 为目标 [@orth2010fba]：
-
-\[
-\max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.
-\]
-
-因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。
-
-### 3. Gap filling 是“最小修复”，不是新基因发现
-
-若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 $A$，使修复后的网络可行，并最小化代价：
-
-\[
-\min_A \sum_{j\in A} w_j y_j,
-\]
-
-其中 $y_j$ 表示是否加入 reaction $j$，$w_j$ 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。
-
-本次定义：
-
-\[
-B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},
-\]
-
-并用 $B_g>10\%$ 作为需要人工复核的 **audit flag**，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。
-
-### 4. 培养基是模型条件，不是装饰参数
-
-gapseq 与 CarveMe 使用不同 reaction namespace 和内置 medium vocabulary：前者以 ModelSEED-style IDs 为主，后者以 BiGG IDs 为主。这里的 standardized reconstruction conditions 是：
-
-| Tool | Draft reconstruction | Gap-fill medium | Post-hoc sensitivity |
-|---|---|---|---|
-| gapseq 2.1.0 | sequence + pathway + transporter evidence；Archaea 固定 `-m Archaea` | Bacteria: `ALLmed.csv`; SGB_008: `autotrophic.csv + highH2`; SGB_010: `MM_anaerobic_CO2_H2.csv + highH2`; SGB_018: `meerwasser.csv` | common `ALLmed.csv`, `MM_glu.csv`, no uptake |
-| CarveMe 1.6.6 | bacteria/archaea universal model carving | built-in `LB` | built-in `M9`, no uptake |
-
-这些 gapseq profiles 与 CarveMe `LB` 的化学组成不同；三个 archaeal profiles 之间也不同。因此跨工具或跨生态型只能比较结构规模、修复负担和“各自在声明条件下是否可行”，不能把 objective value 当成同一实验条件下的性能竞赛。若研究问题是某个培养基或环境样本，必须把 measured medium composition 映射到每套 namespace，再做 mass/charge、exchange 和 concentration-bound audit。
-
-### 5. MAG 质量会同时制造 false absence 与 false completion
-
-不完整 MAG 会丢失 genes、GPR 和 reactions，促使 gap filling 加入更多无基因证据的连接；污染则可能把两个 organism 的 enzymes 放进同一个 network，造成虚假的 pathway completion。面板故意包含：
-
-- `SGB_008`：*Ignicoccus islandicus*，CheckM2 completeness 59.51%，用于 incomplete archaeal MAG stress；
-- `SGB_006`：*Shewanella baltica*，contamination 6.95%，用于 composite-network risk；
-- `SGB_018`：*Nanoarchaeum equitans*，reduced obligate symbiont，提醒“无法独立 biomass”可能是真实生态依赖；
-- `TRUNC_050/070/090/100`：同一 parent 的确定性 contig retention，隔离 genome completeness 对模型的影响。
-
-![修复负担与真实 MAG completeness，以及同一 parent 的确定性截短敏感性。横向 10% 线只是人工复核入口。](../figures/60-gapfill-burden.png){#fig-60-gapfill-burden}
-
-实际重建中，gapseq 的中位 repair burden 为 **13.00%**，12 个输入中 8 个超过 10% 审计线；CarveMe 的中位数为 **0.69%**，只有宿主依赖型 `SGB_018` 超过该线（22.37%）。这不是工具准确率排名：两者的 reaction universe、评分、biomass 和培养基都不同；它说明“补洞规模”必须和工具、条件及基因证据一起报告。
-
-## 准备工作 {#sec-preparation}
+## 先确认数据来源与运行边界 {#sec-preparation}
 
 ### 真实输入与固定身份
 
@@ -153,7 +104,7 @@ Seed **59002** 固定 contig shuffle；50%、70%、90%、100% targets 的实际 
 | LP/MILP solver | GLPK 5.0 / SCIP 10.0.3 | CarveMe SCIP limit 600 s, relative gap 0.001 |
 | Exchange definitions | gapseq media CSV / CarveMe `media_db.tsv` | exact files included in frozen evidence |
 
-<details>
+<details class="wechat-omit">
 <summary><strong>安装精确环境、下载数据库并内联作图函数</strong></summary>
 
 ```bash
@@ -215,7 +166,7 @@ save_pub <- function(plot, file_base, width = 205, height = 145,
 
 </details>
 
-### 先核验固化证据
+### 先核验保存证据
 
 `data/small/60-genome-scale-models-frozen/` 保存 12 份共享 protein FASTA、48 个压缩 SBML、原始命令与 resource logs、6 份 gapseq media、CarveMe media library、environment locks、database manifest/audit、所有汇总表和重画脚本。1.5 GB sequence DB 与 CarveMe universe/DIAMOND database 不重复打包，但其 bytes、checksums、release 和 extracted-file counts 都被锁定。
 
@@ -228,9 +179,32 @@ column -ts $'\t' "$FROZEN/determinism-control.tsv"
 cat "$FROZEN/summary.json"
 ```
 
-## 可复制代码：从真实 MAG 到可审计 SBML {#sec-code}
+## 准备 8 个 MAG、4 个 sensitivity inputs 和共享 proteins {#sec-code}
 
-### 第 1 步：准备 8 个 MAG、4 个 sensitivity inputs 和共享 proteins
+### 从 MAG 到 GEM 至少经过五层对象 {#sec-theory}
+
+| 层级 | 典型对象 | 可以支持的结论 | 仍然不能证明 |
+|---|---|---|---|
+| MAG | contigs、quality、taxonomy | 该 bin 的序列身份与质量 | 每个基因都属于同一细胞 |
+| Gene evidence | proteins、homology hits | 某 enzyme family 可能存在 | 该酶在目标条件下表达或有活性 |
+| GPR | gene--protein--reaction rule | 反应与基因证据的逻辑连接 | 反应方向与通量已被测量 |
+| Network | metabolites、reactions、bounds | 一组化学计量约束 | 网络在真实细胞中唯一正确 |
+| Simulation | medium、objective、solver | 在这些假设下存在可行/最优解 | 预测值等于体外或原位速率 |
+
+最关键的分界是“模型里有反应”不等于“基因组里有支持该反应的基因”。Draft 中也会有 biomass、exchange、demand、spontaneous 或 template reactions；gap filling 新增的反应往往没有 GPR。反应表必须同时保存 `GPRBackedReactions` 和 `NoGPRReactions`。
+
+### MAG 质量会同时制造 false absence 与 false completion
+
+不完整 MAG 会丢失 genes、GPR 和 reactions，促使 gap filling 加入更多无基因证据的连接；污染则可能把两个 organism 的 enzymes 放进同一个 network，造成虚假的 pathway completion。面板故意包含：
+
+- `SGB_008`：*Ignicoccus islandicus*，CheckM2 completeness 59.51%，用于 incomplete archaeal MAG stress；
+- `SGB_006`：*Shewanella baltica*，contamination 6.95%，用于 composite-network risk；
+- `SGB_018`：*Nanoarchaeum equitans*，reduced obligate symbiont，提醒“无法独立 biomass”可能是真实生态依赖；
+- `TRUNC_050/070/090/100`：同一 parent 的确定性 contig retention，隔离 genome completeness 对模型的影响。
+
+![修复负担与真实 MAG completeness，以及同一 parent 的确定性截短敏感性。横向 10% 线只是人工复核入口。](../figures/60-gapfill-burden.png){#fig-60-gapfill-burden}
+
+实际重建中，gapseq 的中位 repair burden 为 **13.00%**，12 个输入中 8 个超过 10% 审计线；CarveMe 的中位数为 **0.69%**，只有宿主依赖型 `SGB_018` 超过该线（22.37%）。这不是工具准确率排名：两者的 reaction universe、评分、biomass 和培养基都不同；它说明“补洞规模”必须和工具、条件及基因证据一起报告。
 
 ```bash
 ROOT="$PWD"
@@ -253,7 +227,39 @@ column -ts $'\t' "$WORK/protein-id-audit.tsv"
 
 每个 protein identifier 都被改成 `genome_id__original_id`，并检查全局唯一性。准备过程拒绝以下情况：Article 45 representative payload SHA-256 不匹配、GTDB release 不是 R232、输入数不是 8+4、protein IDs 重复、`TRUNC_100` 无法精确重现 parent protein sequences。
 
-### 第 2 步：固定 draft，再独立 gap filling
+### 忠实复现后，先检查“补了什么” {#sec-audit}
+
+自动工具论文通常用 phenotype benchmark 展示总体性能，但自己的 MAG 仍需逐模型检查：
+
+1. draft 与 filled 的 reaction set difference；
+2. 每个 added reaction 的 equation、reversibility、compartment 和 database annotation；
+3. added reaction 是否有 GPR，是否只靠 transporter/exchange 解锁；
+4. biomass precursors 缺失是否来自 MAG incompleteness、gene calling 或 database namespace；
+5. 多个等价 repair sets 是否给出相同 phenotype。
+
+本次 CarveMe 特意避免再次运行 `carve -g LB` 生成第二个独立 optimum；固定 draft 后再 `gapfill`，要求 `RemovedReactions == 0`。gapseq 也以 draft RDS 为唯一输入执行 `fill`。这样 `AddedReactions` 才能解释成相对于固定 draft 的 repair set。
+
+24 组 draft--filled 差分均保留全部 draft reactions，新增反应全部没有 GPR；因此它们只能进入 repair-hypothesis 清单。9 个高负担模型既包括 gapseq 的不完整/截短输入，也包括多个高完整度输入及 CarveMe 的 `SGB_018`，说明不能用一个全局阈值替代逐反应审计。
+
+## 固定 draft，再独立 gap filling
+
+### Gap filling 是“最小修复”，不是新基因发现
+
+若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 $A$，使修复后的网络可行，并最小化代价：
+
+\[
+\min_A \sum_{j\in A} w_j y_j,
+\]
+
+其中 $y_j$ 表示是否加入 reaction $j$，$w_j$ 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。
+
+本次定义：
+
+\[
+B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},
+\]
+
+并用 $B_g>10\%$ 作为需要人工复核的 **audit flag**，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。
 
 ```bash
 python3 scripts/run_article60_gem.py \
@@ -296,7 +302,54 @@ gapfill -m LB -u bacteria --fbc2 -v \
 
 Archaea 自动切换到 gapseq `-t Archaea -m Archaea -b Archaea` 与 CarveMe `-u archaea`。`SGB_008` 使用 `autotrophic.csv -e highH2`，`SGB_010` 使用官方 methanogen tutorial 的 `MM_anaerobic_CO2_H2.csv -e highH2`，`SGB_018` 使用 `meerwasser.csv` 作为 marine host-rich proxy。最初把细菌型 `LBmed.csv`、继而把单一 `ALLmed.csv` 强加给全部 Archaea 时，三个初始补洞均不可行；这些失败日志被保留，最终模型只采用预先记录的 ecology-aware profiles。批处理具备 resume：只有 required output 非空才跳过；任何一步 return code 非零都不会写 `.article60-models-complete`。
 
-### 第 3 步：统一解析、FBA audit、作图与冻结
+### 培养基敏感性优先于一个“漂亮生长率”
+
+![修复后模型在各工具声明的宽松、rich/minimal proxy 条件下是否达到 biomass threshold。格子只表示 feasibility。](../figures/60-medium-feasibility.png){#fig-60-medium}
+
+修复后模型在各自 construction medium 中 **24/24** 达到阈值；换成 post-hoc proxy 后，gapseq 在共同 rich proxy 中为 **9/12**、在 `MM_glu` 中为 **0/12**，CarveMe 在 `M9` 中为 **4/12**。全部 **48/48** no-uptake audits 均未产生正 biomass。由同一模型在不同约束下得到不同结论，正是培养基敏感性，而不是可忽略的数值波动。
+
+宽松 medium 下可行而 minimal proxy 下不可行，可能来自真实 auxotrophy、缺失 transporter、MAG 不完整、biomass composition 或 gap-fill medium bias。正确升级路线是：
+
+1. 用实验配方或环境化学测量重建 medium；
+2. 显式报告 exchange bounds 与单位；
+3. 先跑 feasibility，再做 FVA/pFBA，检查 alternative optima；
+4. 对关键 auxotrophy 做 gene/neighborhood 与培养实验验证；
+5. 社区模型再增加 abundance、shared compartment 和 uptake-capacity assumptions。
+
+## 统一解析、FBA audit、作图与保存
+
+### FBA 是带假设的可行域优化
+
+设 $S \in \mathbb{R}^{m\times r}$ 为 metabolite × reaction 的 stoichiometric matrix，$v$ 为 reaction flux，稳态近似为：
+
+\[
+Sv=0.
+\]
+
+培养基、反应方向和容量写进上下界：
+
+\[
+\ell_j \le v_j \le u_j,
+\]
+
+常见 FBA 以 biomass reaction 为目标 [@orth2010fba]：
+
+\[
+\max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.
+\]
+
+因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。
+
+### 培养基是模型条件，不是装饰参数
+
+gapseq 与 CarveMe 使用不同 reaction namespace 和内置 medium vocabulary：前者以 ModelSEED-style IDs 为主，后者以 BiGG IDs 为主。这里的 standardized reconstruction conditions 是：
+
+| Tool | Draft reconstruction | Gap-fill medium | Post-hoc sensitivity |
+|---|---|---|---|
+| gapseq 2.1.0 | sequence + pathway + transporter evidence；Archaea 固定 `-m Archaea` | Bacteria: `ALLmed.csv`; SGB_008: `autotrophic.csv + highH2`; SGB_010: `MM_anaerobic_CO2_H2.csv + highH2`; SGB_018: `meerwasser.csv` | common `ALLmed.csv`, `MM_glu.csv`, no uptake |
+| CarveMe 1.6.6 | bacteria/archaea universal model carving | built-in `LB` | built-in `M9`, no uptake |
+
+这些 gapseq profiles 与 CarveMe `LB` 的化学组成不同；三个 archaeal profiles 之间也不同。因此跨工具或跨生态型只能比较结构规模、修复负担和“各自在声明条件下是否可行”，不能把 objective value 当成同一实验条件下的性能竞赛。若研究问题是某个培养基或环境样本，必须把 measured medium composition 映射到每套 namespace，再做 mass/charge、exchange 和 concentration-bound audit。
 
 ```bash
 "$CARVEME_ENV/bin/python" scripts/summarize_article60_gem.py \
@@ -319,7 +372,41 @@ python3 scripts/freeze_article60_gem.py \
 
 统一解析器读取 SBML-FBC2，分别计算 reactions、metabolites、genes、GPR-backed reactions、no-GPR reactions、topological dead ends 和 biomass reaction。FBA threshold 固定为 $10^{-6}$。对每个 tool × stage 都做 no-uptake audit；若在完全关闭 exchange uptake 后仍能产生正 biomass，则标记 leak/energy-generating-cycle risk。
 
-### 第 4 步：fail-closed QA
+### Controlled incompleteness 比横截面相关更接近因果检查
+
+![同一 *N. europaea* parent 的 retained bases、predicted proteins、draft reactions 和 repair burden。](../figures/60-truncation-sensitivity.png){#fig-60-truncation}
+
+真实 MAG 的 completeness 与 gap-fill burden 相关时，taxonomy、genome size 和 lifestyle 都是混杂因素。`TRUNC_050/070/090/100` 固定 parent、taxonomy、原始 contigs 和 gene caller，只改变 retained sequence；因此能直接展示缺失序列如何传导到 gene evidence、draft size 与 optimization repair。它仍不是完整的 assembly-error simulation：没有加入 misassembly、frameshift、strain mixture 或 differential coverage。
+
+在 gapseq 中，retention 从 52.04% 增至 100% 时，predicted proteins 从 1,289 增至 2,468，draft reactions 从 1,106 增至 1,671，repair burden 从 16.90% 降至 7.53%；CarveMe 的对应负担从 1.54% 降至 0.21%，但中间点并非严格单调。`TRUNC_100` 与 parent 在两套工具、两个阶段的 reaction Jaccard 与结构哈希均完全一致（4/4），说明这条确定性控制没有把运行波动误当成缺失效应。
+
+### 一个通过求解的 SBML 仍可能质量很差
+
+![修复负担、topological dead ends、GPR genes 与 no-uptake flag 的联合审计。圆点面积对应模型 genes；叉号表示 no-uptake biomass 风险。](../figures/60-model-audit.png){#fig-60-audit}
+
+至少增加以下升级检查：
+
+- MEMOTE 的 stoichiometric consistency、annotation、mass/charge balance、biomass precursor 与 basic test suite [@lieven2020memote]；
+- blocked reactions 与 dead-end metabolites；
+- energy-generating cycles 和 no-carbon/no-nitrogen controls；
+- phenotype arrays、growth/no-growth media、essential genes、secreted metabolites；
+- reaction directionality 与 thermodynamic constraints；
+- alternative gap-fill solutions 或 model ensemble。
+
+CarveMe 当前 SCIP backend 对 carving 与 gap filling 使用 600 s time limit 和 0.001 relative gap，允许 suboptimal solution。这里固定 `ensemble_size = 1`，适合作为可审计的基线，不代表 repair set 唯一。关键 phenotype 应至少重建 20 个 alternative models 或枚举 near-optimal gap-fill sets，再报告 consensus prediction 与 uncertainty interval。
+
+::: {.callout-caution title="审稿人最常追问的八个问题"}
+1. **把 gap-filled reaction 当作基因组证据**：必须分开 GPR-backed 与 no-GPR reactions，并列出 added set。
+2. **培养基没有版本或配方**：名称相同也可能 composition 不同；保存 machine-readable medium file 与 checksum。
+3. **把 FBA objective 叫作真实 growth rate**：没有 calibrated uptake bounds 与 phenotype validation 时，只写 feasibility。
+4. **忽略 MAG completeness/contamination**：低完整度造成 false auxotrophy，高污染造成 composite metabolism。
+5. **直接比较 gapseq/CarveMe reaction IDs**：ModelSEED 与 BiGG namespace 不能做字符串 Jaccard。
+6. **两个独立重建结果相减当成 gap fill**：不同 MILP optimum 会混入差集；应固定 draft 后独立补洞。
+7. **只测 rich medium**：rich feasibility 不能证明 minimal-medium phenotype；至少增加 minimal、no uptake 和目标环境条件。
+8. **solver 返回结果就算质控通过**：还需 mass/charge、cycles、dead ends、MEMOTE、phenotype 和 alternative-solution audit。
+:::
+
+## fail-closed QA
 
 ```bash
 "$PRODIGAL_ENV/bin/python" scripts/validate_article60_gem.py \
@@ -338,23 +425,7 @@ cat qa/article60/validation-summary.json
 
 验证器解压全部 48 个 models，在独立目录重算 8 份 summary artifacts、重新生成 6 组 PDF/PNG/TIFF，并比较 table SHA-256 与 PNG pixel hash。它还检查 draft 是否被完整保留、reconstruction medium 是否产生可行 biomass、no-uptake 是否为零、exact-control reaction Jaccard 是否为 1，以及 source/figure/Methods/数据库锁是否完整。
 
-## 审计与升级 {#sec-audit}
-
-### 1. 忠实复现后，先审计“补了什么”
-
-自动工具论文通常用 phenotype benchmark 展示总体性能，但自己的 MAG 仍需逐模型检查：
-
-1. draft 与 filled 的 reaction set difference；
-2. 每个 added reaction 的 equation、reversibility、compartment 和 database annotation；
-3. added reaction 是否有 GPR，是否只靠 transporter/exchange 解锁；
-4. biomass precursors 缺失是否来自 MAG incompleteness、gene calling 或 database namespace；
-5. 多个等价 repair sets 是否给出相同 phenotype。
-
-本次 CarveMe 特意避免再次运行 `carve -g LB` 生成第二个独立 optimum；固定 draft 后再 `gapfill`，要求 `RemovedReactions == 0`。gapseq 也以 draft RDS 为唯一输入执行 `fill`。这样 `AddedReactions` 才能解释成相对于固定 draft 的 repair set。
-
-24 组 draft--filled 差分均保留全部 draft reactions，新增反应全部没有 GPR；因此它们只能进入 repair-hypothesis 清单。9 个高负担模型既包括 gapseq 的不完整/截短输入，也包括多个高完整度输入及 CarveMe 的 `SGB_018`，说明不能用一个全局阈值替代逐反应审计。
-
-### 2. 不把不同 namespace 的 reaction IDs 直接求 Jaccard
+### 不把不同 namespace 的 reaction IDs 直接求 Jaccard
 
 gapseq 以 ModelSEED-style reaction IDs 为主，CarveMe 使用 BiGG IDs。字符串交集会把同一化学反应当成不同，也会把 protonation、compartment 或 reversibility 不同的反应错误合并。跨工具比较若必须落到 reaction level，应先映射到 MetaNetX/EC/Rhea，并逐项处理：
 
@@ -367,96 +438,11 @@ gapseq 以 ModelSEED-style reaction IDs 为主，CarveMe 使用 BiGG IDs。字�
 
 因此这里只在各自 namespace 内比较 draft/filled 与 parent/exact control；跨工具图比较的是 counts、fractions、feasibility pattern 和 audit flags，不声称 reaction-set concordance。
 
-### 3. 培养基敏感性优先于一个“漂亮生长率”
-
-![修复后模型在各工具声明的宽松、rich/minimal proxy 条件下是否达到 biomass threshold。格子只表示 feasibility。](../figures/60-medium-feasibility.png){#fig-60-medium}
-
-修复后模型在各自 construction medium 中 **24/24** 达到阈值；换成 post-hoc proxy 后，gapseq 在共同 rich proxy 中为 **9/12**、在 `MM_glu` 中为 **0/12**，CarveMe 在 `M9` 中为 **4/12**。全部 **48/48** no-uptake audits 均未产生正 biomass。由同一模型在不同约束下得到不同结论，正是培养基敏感性，而不是可忽略的数值波动。
-
-宽松 medium 下可行而 minimal proxy 下不可行，可能来自真实 auxotrophy、缺失 transporter、MAG 不完整、biomass composition 或 gap-fill medium bias。正确升级路线是：
-
-1. 用实验配方或环境化学测量重建 medium；
-2. 显式报告 exchange bounds 与单位；
-3. 先跑 feasibility，再做 FVA/pFBA，检查 alternative optima；
-4. 对关键 auxotrophy 做 gene/neighborhood 与培养实验验证；
-5. 社区模型再增加 abundance、shared compartment 和 uptake-capacity assumptions。
-
-### 4. Controlled incompleteness 比横截面相关更接近因果审计
-
-![同一 *N. europaea* parent 的 retained bases、predicted proteins、draft reactions 和 repair burden。](../figures/60-truncation-sensitivity.png){#fig-60-truncation}
-
-真实 MAG 的 completeness 与 gap-fill burden 相关时，taxonomy、genome size 和 lifestyle 都是混杂因素。`TRUNC_050/070/090/100` 固定 parent、taxonomy、原始 contigs 和 gene caller，只改变 retained sequence；因此能直接展示缺失序列如何传导到 gene evidence、draft size 与 optimization repair。它仍不是完整的 assembly-error simulation：没有加入 misassembly、frameshift、strain mixture 或 differential coverage。
-
-在 gapseq 中，retention 从 52.04% 增至 100% 时，predicted proteins 从 1,289 增至 2,468，draft reactions 从 1,106 增至 1,671，repair burden 从 16.90% 降至 7.53%；CarveMe 的对应负担从 1.54% 降至 0.21%，但中间点并非严格单调。`TRUNC_100` 与 parent 在两套工具、两个阶段的 reaction Jaccard 与结构哈希均完全一致（4/4），说明这条确定性控制没有把运行波动误当成缺失效应。
-
-### 5. 一个通过求解的 SBML 仍可能质量很差
-
-![修复负担、topological dead ends、GPR genes 与 no-uptake flag 的联合审计。圆点面积对应模型 genes；叉号表示 no-uptake biomass 风险。](../figures/60-model-audit.png){#fig-60-audit}
-
-至少增加以下升级检查：
-
-- MEMOTE 的 stoichiometric consistency、annotation、mass/charge balance、biomass precursor 与 basic test suite [@lieven2020memote]；
-- blocked reactions 与 dead-end metabolites；
-- energy-generating cycles 和 no-carbon/no-nitrogen controls；
-- phenotype arrays、growth/no-growth media、essential genes、secreted metabolites；
-- reaction directionality 与 thermodynamic constraints；
-- alternative gap-fill solutions 或 model ensemble。
-
-CarveMe 当前 SCIP backend 对 carving 与 gap filling 使用 600 s time limit 和 0.001 relative gap，允许 suboptimal solution。这里固定 `ensemble_size = 1`，适合作为可审计的基线，不代表 repair set 唯一。关键 phenotype 应至少重建 20 个 alternative models 或枚举 near-optimal gap-fill sets，再报告 consensus prediction 与 uncertainty interval。
-
-### 6. 证据阶梯限定 Results 的措辞
+### 证据阶梯限定 Results 的措辞
 
 ![MAG-derived GEM 的六级证据阶梯。外部 phenotype 或 flux validation 才能把 feasibility 推进到生物学验证。](../figures/60-evidence-ladder.png){#fig-60-evidence}
 
 从 checksum-locked MAG 到 positive FBA objective，证据逐层增加，但每一层都有结论上限。最常见的越级是把 gap-filled reaction 写成 encoded pathway，或把 biomass objective 写成 measured growth。若没有同条件 phenotype/flux 数据，Results 应使用 `predicted`, `feasible`, `model-supported` 和 `under the specified constraints`。
-
-## 出版级美化 {#sec-publication}
-
-六组图遵守同一视觉语法：gapseq 为蓝色、CarveMe 为橙色、feasible 为绿色、audit threshold 为黄色/虚线、no-uptake flag 为叉号。所有轴、图例、annotations 和 species labels 使用英文；中文只在正文和 caption。输出包含矢量 PDF、350 dpi PNG 与 LZW-compressed TIFF。
-
-作图前先把数据整理成长表，不在 plotting code 内重算生物学结论：
-
-```r
-library(readr); library(dplyr); library(ggplot2)
-set.seed(20260760)
-
-gap <- read_tsv(
-  "data/small/60-genome-scale-models-frozen/gapfill-burden.tsv",
-  show_col_types = FALSE
-) %>%
-  mutate(
-    AddedFractionOfFilledPct = as.numeric(AddedFractionOfFilledPct),
-    Tool = factor(Tool, levels = c("gapseq", "CarveMe"))
-  )
-
-p <- gap %>%
-  filter(grepl("^SGB_", Genome)) %>%
-  ggplot(aes(x = reorder(Genome, AddedFractionOfFilledPct),
-             y = AddedFractionOfFilledPct, fill = Tool)) +
-  geom_col(position = position_dodge(width = 0.75), width = 0.68) +
-  geom_hline(yintercept = 10, linetype = 2, color = pal_pub[["Audit"]]) +
-  scale_fill_pub() +
-  labs(x = "Quality-audited real MAG", y = "Gap-fill burden (%)",
-       fill = "Tool") +
-  theme_pub() + coord_flip()
-
-save_pub(p, "figures/60-gapfill-burden-replot")
-```
-
-模型大小使用 paired dumbbell，突出同一 genome 的 draft-to-filled 变化；feasibility 用 binary heatmap，不用连续渐变暗示 objective value 可跨工具比较；sensitivity 图保留实际 retained percentage；audit 图同时编码 repair、dead ends、genes 和 leaks，避免用单一分数盖住不同失败模式。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="审稿人最常追问的八个问题"}
-1. **把 gap-filled reaction 当作基因组证据**：必须分开 GPR-backed 与 no-GPR reactions，并列出 added set。
-2. **培养基没有版本或配方**：名称相同也可能 composition 不同；保存 machine-readable medium file 与 checksum。
-3. **把 FBA objective 叫作真实 growth rate**：没有 calibrated uptake bounds 与 phenotype validation 时，只写 feasibility。
-4. **忽略 MAG completeness/contamination**：低完整度造成 false auxotrophy，高污染造成 composite metabolism。
-5. **直接比较 gapseq/CarveMe reaction IDs**：ModelSEED 与 BiGG namespace 不能做字符串 Jaccard。
-6. **两个独立重建结果相减当成 gap fill**：不同 MILP optimum 会混入差集；应固定 draft 后独立补洞。
-7. **只测 rich medium**：rich feasibility 不能证明 minimal-medium phenotype；至少增加 minimal、no uptake 和目标环境条件。
-8. **solver 返回结果就算质控通过**：还需 mass/charge、cycles、dead ends、MEMOTE、phenotype 和 alternative-solution audit。
-:::
 
 ::: {.callout-warning title="Reduced symbiont 不是自动重建流程的错误对照"}
 像 *Nanoarchaeum equitans* 这样的 obligate symbiont 可能依赖宿主提供 metabolites。强迫其单独在通用 medium 下合成完整 biomass，会把真实生态依赖“修复”为大量假设反应。此类 genome 应同时报告 single-organism infeasibility、host/community context 和 exchanged-metabolite hypotheses。
@@ -466,7 +452,7 @@ save_pub(p, "figures/60-gapfill-burden-replot")
 正文主图至少给出 MAG quality、draft/filled size、gap-fill burden、medium sensitivity 和 no-uptake audit；Supplementary Data 交付 SBML、medium files、GPR/reaction tables、added reaction list、solver/version/database locks 与 phenotype validation table。
 :::
 
-## 这段 Methods 怎么写 {#sec-methods}
+## 注明模型约束、补缺和敏感性 {#sec-methods}
 
 ### Methods template
 
@@ -478,7 +464,7 @@ save_pub(p, "figures/60-gapfill-burden-replot")
 
 若使用自己的数据，Methods 还要补：sample accession、assembly/binning/refinement lineage、MAG quality gate、gene caller mode、每个 medium 的完整配方和 bounds、oxygen condition、biomass equation、solver tolerance/time limit、gap-fill penalty、ensemble size、MEMOTE version，以及 phenotype/flux validation 的来源。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 最少需要什么
 
@@ -518,7 +504,46 @@ done
 
 最终交付至少包括 `models/draft/`、`models/gapfilled/`、`media/`、`added-reactions.tsv`、`gpr-audit.tsv`、`model-qc.tsv`、`phenotype-validation.tsv`、environment locks、database manifests、commands 和 checksums。若模型将用于机制主张，优先验证关键 exchange/auxotrophy，而不是继续增加自动生成的网络图。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-publication}
+
+六组图遵守同一视觉语法：gapseq 为蓝色、CarveMe 为橙色、feasible 为绿色、audit threshold 为黄色/虚线、no-uptake flag 为叉号。所有轴、图例、annotations 和 species labels 使用英文；中文只在正文和 caption。输出包含矢量 PDF、350 dpi PNG 与 LZW-compressed TIFF。
+
+作图前先把数据整理成长表，不在 plotting code 内重算生物学结论：
+
+```r
+library(readr); library(dplyr); library(ggplot2)
+set.seed(20260760)
+
+gap <- read_tsv(
+  "data/small/60-genome-scale-models-frozen/gapfill-burden.tsv",
+  show_col_types = FALSE
+) %>%
+  mutate(
+    AddedFractionOfFilledPct = as.numeric(AddedFractionOfFilledPct),
+    Tool = factor(Tool, levels = c("gapseq", "CarveMe"))
+  )
+
+p <- gap %>%
+  filter(grepl("^SGB_", Genome)) %>%
+  ggplot(aes(x = reorder(Genome, AddedFractionOfFilledPct),
+             y = AddedFractionOfFilledPct, fill = Tool)) +
+  geom_col(position = position_dodge(width = 0.75), width = 0.68) +
+  geom_hline(yintercept = 10, linetype = 2, color = pal_pub[["Audit"]]) +
+  scale_fill_pub() +
+  labs(x = "Quality-audited real MAG", y = "Gap-fill burden (%)",
+       fill = "Tool") +
+  theme_pub() + coord_flip()
+
+save_pub(p, "figures/60-gapfill-burden-replot")
+```
+
+模型大小使用 paired dumbbell，突出同一 genome 的 draft-to-filled 变化；feasibility 用 binary heatmap，不用连续渐变暗示 objective value 可跨工具比较；sensitivity 图保留实际 retained percentage；audit 图同时编码 repair、dead ends、genes 和 leaks，避免用单一分数盖住不同失败模式。
+
+## 回到最初的问题
+
+GEM 是带 GPR、化学计量、边界和培养基的约束系统；重点审计 gap filling、培养基依赖、泄漏与 MAG 不完整性。
+
+## 参考文献 {#sec-references}
 
 - gapseq 方法、benchmark 与 gap-filling 设计：[@zimmermann2021gapseq]；本次 sequence DB 快照：[@zimmermann2026gapseqdb]；软件版本：[@gapseq2026software]。
 - CarveMe top-down reconstruction、gap filling 与 phenotype benchmark：[@machado2018carveme]；软件版本：[@carveme2026software]。

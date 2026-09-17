@@ -1,6 +1,6 @@
 ---
-title: "第 21 篇 · 宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents"
+author: "Peter"
 date: last-modified
 draft: false
 format:
@@ -10,7 +10,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -38,119 +38,54 @@ wechat:
     21-denominator-closure.png: "Closure ratios for Bracken, MetaPhlAn and HUMAnN alongside the MetaPhlAn model read-equivalent ledger"
     21-genome-equivalent-calibration.png: "MicrobeCensus read-length sensitivity and comparison of HUMAnN CoPM with RPK per genome equivalent"
     21-zero-strata-semantics.png: "Joint abundance-coverage zero states and additive versus independently reconstructed stratification semantics"
+reader-mode: analysis
 ---
 
 > **学习目标：**拿到任意宏基因组表时，先写清 measurement object、feature space、correction、denominator、closure 和 zero，再决定能否求和、归一化、取对数、做 count model 或跨样本比较；区分 observed counts、model-estimated counts、RPK、CoPM、relative abundance、coverage、genome equivalents 与 RPKG。  
 > **真实数据：**分类证据来自同一份 <code>ERR9765746_MOCK1</code> clean library 的 MetaPhlAn 4.2.5 与 Kraken2 2.17.1 / Bracken 3.1p1 固化输出；功能证据来自同一文库的 HUMAnN 3.9，以及 curatedMetagenomicData 3.12.0 的 <code>AsnicarF_2017</code> pathway abundance / coverage 24 profiles。genome-equivalent 标尺使用 MicrobeCensus tag v1.1.1 的真实运行结果。  
 > **预计资源：**读取 checksum-locked 小表、重算全部账本并生成四张图，普通笔记本用 1–2 核、低于 2 GB RAM 和 50 MB 空间即可。MicrobeCensus 的两个一次性分支实测分别用时 49.73 s / 37.67 s，最大 RSS 约 625 / 583 MiB；从 FASTQ 重建 MetaPhlAn、Kraken2 或 HUMAnN 仍需对应数据库和服务器资源。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 它不是某一张结果图，而是所有 abundance 图之前的测量合同
+先区分观测计数、模型估计、长度校正值和相对丰度；单位没确认之前，不做求和、稀释或差异检验。
+
+:::
+
+## 同样叫 abundance，表里的数字究竟是什么？ {#sec-target}
 
 MicrobeCensus 论文用 average genome size（AGS）校正宏基因组之间的基因丰度比较，并把 genome equivalents 定义为总测序碱基数除以估计 AGS [@nayfach2015microbecensus]。MetaPhlAn 4 用 clade-specific marker 与基因组模型估计分类组成 [@blancomiguez2023metaphlan4]；Bracken 再分配 Kraken 分类证据得到 rank-specific abundance estimate [@lu2017bracken]；HUMAnN 则输出 gene-family RPK、CoPM、relative abundance、pathway abundance 与 pathway coverage [@beghini2021biobakery]。这些数都能出现在纵轴上，却不是同一种随机变量。
 
-![表名不能自动决定统计意义。只有 Kraken 直接分配接近离散观测事件；Bracken、MetaPhlAn、HUMAnN 与 genome-equivalent 派生量都包含不同模型和分母。最右列全部为 No，提醒这些表都不是每克样本的绝对量。](../figures/21-table-unit-map.png){#fig-21-unit-map}
 
-![左图只对已经声明 denominator 的量检查 closure。右图保留 MetaPhlAn 的 read-equivalent 账本：261,721 个 known-clade estimates 加上 −61,792 的 UNCLASSIFIED correction，才与 199,929 processed reads 对齐。](../figures/21-denominator-closure.png){#fig-21-closure}
 
-![同一 29,809,773 bp 序列宇宙在 150 bp 与 100 bp AGS 模型下分别得到 2.576 / 2.469 Mb 和 11.571 / 12.071 genome equivalents。中、右图比较同一批 HUMAnN gene families 在 TSS denominator 与 genome-equivalent denominator 下的数值。](../figures/21-genome-equivalent-calibration.png){#fig-21-ge}
 
-![AsnicarF_2017 的 10,680 个 ordinary pathway-profile cells 被拆成四种 abundance × coverage 状态。右图同时说明 gene-family 与 reaction strata 可审计为加和，而 pathway community 与 strata 是独立重建，不能强制 closure。](../figures/21-zero-strata-semantics.png){#fig-21-zero-strata}
 
 这四张图给出一个实用顺序：**先识别数是什么，再识别除过什么，最后才选择统计方法。** 整数外观不能证明它是 raw count；列和等于 1 也不能证明它是绝对量；不闭合到 1 更不等于结果错误。
 
-## 理论：一张表至少要回答六个问题 {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. Measurement object：每个数在数什么
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/21/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 13.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-先把“count”拆成三类：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/21/download.R)。
 
-1. **Observed event count：**例如 Kraken report 中某节点的 direct paired-fragment assignments。它仍受数据库与分类规则影响，但每个整数对应一次离散分配事件。
-2. **Redistributed estimate：**Bracken 的 <code>new_est_reads</code> 等于 <code>kraken_assigned_reads + added_reads</code>。整数化以后看起来像 raw counts，实质包含数据库与 read-length 模型重新分配的质量。
-3. **Model-derived read equivalent：**MetaPhlAn 的 <code>estimated_number_of_reads_from_the_clade</code> 来自 marker、coverage 与 genome-size 模型。不同 clades 的估计可以先超过 processed reads，再用 UNCLASSIFIED correction 对账；它不能回写成 read-level event。
+```{r}
+#| label: reader-input-download-21
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/21/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-因此“能不能用负二项 count model”不是看文件里有没有整数列，而是看生成机制、重复样本、library-size offset 和估计不确定性是否与模型假设相容。
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
-### 2. Feature space：行是否能相加
-
-同一 taxonomy report 里的 kingdom、phylum、genus 与 species 是嵌套层级；把所有等级一起求和会重复计算。closure 只能在固定 rank 内检查。功能表也一样：UniRef90 gene families、MetaCyc reactions 与 pathways 是不同 feature spaces，不能拼成一个矩阵后共同归一化。
-
-HUMAnN stratified rows还要分两种关系：
-
-- gene-family 与 regrouped-reaction community values 可在数值误差内等于各 taxa strata 之和；
-- pathway community abundance 与 taxon-specific pathway abundance 是分别重建的结果。本次 147 个 ordinary pathways 全部保留非加和差异，不能用比例缩放把它们伪造成守恒。
-
-### 3. Correction：数值已经校正过什么
-
-设 feature \(i\) 的 alignment-derived quantity 为 \(n_i\)，参考长度为 \(L_i\) kb。概念上的 length correction 是
-
-\[
-RPK_i = \frac{n_i}{L_i}.
-\]
-
-HUMAnN native gene-family table已经提供 RPK-like value；不要再除一次基因长度。MetaPhlAn 的相对丰度已经包含 marker 与 genome 模型；也不能把百分比乘 processed reads 后称为原始 read counts。
-
-### 4. Denominator 与 closure：除数是什么
-
-对选定的 community gene-family RPK denominator \(D=\sum_j RPK_j\)：
-
-\[
-CoPM_i = 10^6\frac{RPK_i}{D},
-\qquad
-RA_i = \frac{RPK_i}{D}.
-\]
-
-HUMAnN 文档中的 CPM 是 **copies per million（CoPM）**，不是 raw counts per million。本文真实表中 community gene-family CoPM 总和为 999,999.97064，relative abundance 总和为 0.99999997064，逐行满足 <code>CoPM = relative abundance × 1e6</code>，最大误差低于 \(10^{-12}\)。
-
-closure 总是相对于一个声明的 denominator：
-
-- Bracken <code>fraction_total_reads</code> 在输出 species estimates 内约闭合到 1；
-- MetaPhlAn relative abundance 在固定 species rank 内闭合到 100；
-- HUMAnN CoPM / relative abundance 在所选 feature level 与 special-row policy 下闭合；
-- pathway coverage 没有列和目标，不应做 TSS。
-
-### 5. Coverage：0–1 证据分数不是组成
-
-HUMAnN pathway coverage 是 pathway reaction evidence 的 0–1 score。不同 pathways 的 coverage 可同时接近 1，所以一列 coverage 的总和没有“总功能量”含义。本次 MOCK1 的 147 个 ordinary community pathways coverage 合计 45.417；这不是 closure 失败。
-
-abundance 与 coverage 的 zero 也不同。AsnicarF_2017 的 445 × 24 ordinary cells 中：
-
-| Abundance state | Coverage state | Cells | 保守解释 |
-|---|---|---:|---|
-| 0 | 0 | 5,422 | 两类 pipeline evidence 均未检出 |
-| >0 | 0 | 4,079 | 有 abundance reconstruction，但 coverage evidence 为 0 |
-| 0 | >0 | 0 | 本数据中未出现，不能推广为永不出现 |
-| >0 | >0 | 1,179 | 两类 evidence 均检出 |
-
-任何一种 zero 都不能单独证明生物学缺失；它还可能来自深度、数据库、阈值、feature reconstruction 或样本处理。
-
-### 6. Genome equivalents：测序覆盖标尺，不是细胞计数
-
-MicrobeCensus 用保守单拷贝 marker 的覆盖估计 average genome size。对同一份 clean sequence universe：
-
-\[
-GE = \frac{\text{total sequenced bp}}{\widehat{AGS}},
-\qquad
-RPKG_i = \frac{RPK_i}{GE}.
-\]
-
-本次 150 bp 主分支得到 \(\widehat{AGS}=2{,}576{,}205.26\) bp，因而
-
-\[
-GE=\frac{29{,}809{,}773}{2{,}576{,}205.26}=11.5711948566.
-\]
-
-这表示该文库含约 11.57 个“平均微生物基因组深度”等价的序列量，不是 11.57 个 cells、organisms、genomes per gram、biomass 或 absolute concentration。要做真正绝对定量，仍需 spike-in、flow cytometry、qPCR/ddPCR 或其他外部定量参照。
-
-::: {.callout-important title="把六列 data dictionary 写进分析方案"}
-每个输入表至少记录：measurement object、feature space、native unit、correction、denominator、closure target 与 zero meaning。若其中任意一项写不清，先回到工具文档和原始输出，不要直接进入差异分析。
-:::
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：环境、真实数据、checksum、MicrobeCensus 一次性运行与内联作图函数</strong></summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ### 资源门槛
 
@@ -176,7 +111,7 @@ install.packages(
 )
 ```
 
-### 校验六组固化输入
+### 校验六组保存输入
 
 ```{bash}
 (cd data/small/13-qc-frozen && sha256sum -c file-checksums.sha256)
@@ -303,9 +238,7 @@ save_pub <- function(
 
 </details>
 
-## 可复制代码：从表头重建统计语义 {#sec-code}
-
-### 第 1 步：先验 checksum，再读数据
+## 先验 checksum，再读数据 {#sec-code}
 
 ```{r}
 verify_sha256_manifest <- function(directory) {
@@ -349,7 +282,11 @@ stopifnot(identical(
 ))
 ```
 
-### 第 2 步：用各工具的原生列名读取，不先改成统一的 abundance
+### 忠实复现先于统一格式 {#sec-audit}
+
+第一遍复现保留每个工具的原生 feature IDs、special rows、rank、unit 与 denominator，不先做“统一 abundance 表”。只有当语义合同已经建立，才把不同表转换成长表或 SummarizedExperiment。否则一个通用的 <code>Value</code> 列会掩盖最重要的差异。
+
+## 用各工具的原生列名读取，不先改成统一的 abundance
 
 ```{r}
 read_metaphlan <- function(path) {
@@ -425,7 +362,51 @@ microcensus[, c(
 
 保留原始列名的价值是：<code>kraken_assigned_reads</code>、<code>added_reads</code> 和 <code>new_est_reads</code> 不会在导入时被粗暴合并成一个 <code>Count</code>；HUMAnN 的 RPK、CoPM 与 relative abundance 也不会因共同改名为 <code>Abundance</code> 而丢失分母。
 
-### 第 3 步：审计 counts、model estimates 与 closure
+### 整数 estimate 不能自动继承 count likelihood
+
+Bracken <code>new_est_reads</code> 可用于 rank-aware abundance 描述，也可在充分说明估计来源后作为 count-like input 做敏感性分析；但负二项模型会把这些数当成观测计数，并忽略 Bracken redistribution 的不确定性。主分析若能使用原始 read assignments、相对丰度专用方法或 bootstrap uncertainty，应与整数 estimate 分支并报。
+
+![表名不能自动决定统计意义。只有 Kraken 直接分配接近离散观测事件；Bracken、MetaPhlAn、HUMAnN 与 genome-equivalent 派生量都包含不同模型和分母。最右列全部为 No，提醒这些表都不是每克样本的绝对量。](../figures/21-table-unit-map.png){#fig-21-unit-map}
+
+## 检查 counts、model estimates 与 closure
+
+### Feature space：行是否能相加
+
+同一 taxonomy report 里的 kingdom、phylum、genus 与 species 是嵌套层级；把所有等级一起求和会重复计算。closure 只能在固定 rank 内检查。功能表也一样：UniRef90 gene families、MetaCyc reactions 与 pathways 是不同 feature spaces，不能拼成一个矩阵后共同归一化。
+
+HUMAnN stratified rows还要分两种关系：
+
+- gene-family 与 regrouped-reaction community values 可在数值误差内等于各 taxa strata 之和；
+- pathway community abundance 与 taxon-specific pathway abundance 是分别重建的结果。本次 147 个 ordinary pathways 全部保留非加和差异，不能用比例缩放把它们伪造成守恒。
+
+### Correction：数值已经校正过什么
+
+设 feature \(i\) 的 alignment-derived quantity 为 \(n_i\)，参考长度为 \(L_i\) kb。概念上的 length correction 是
+
+\[
+RPK_i = \frac{n_i}{L_i}.
+\]
+
+HUMAnN native gene-family table已经提供 RPK-like value；不要再除一次基因长度。MetaPhlAn 的相对丰度已经包含 marker 与 genome 模型；也不能把百分比乘 processed reads 后称为原始 read counts。
+
+### Denominator 与 closure：除数是什么
+
+对选定的 community gene-family RPK denominator \(D=\sum_j RPK_j\)：
+
+\[
+CoPM_i = 10^6\frac{RPK_i}{D},
+\qquad
+RA_i = \frac{RPK_i}{D}.
+\]
+
+HUMAnN 文档中的 CPM 是 **copies per million（CoPM）**，不是 raw counts per million。本文真实表中 community gene-family CoPM 总和为 999,999.97064，relative abundance 总和为 0.99999997064，逐行满足 <code>CoPM = relative abundance × 1e6</code>，最大误差低于 \(10^{-12}\)。
+
+closure 总是相对于一个声明的 denominator：
+
+- Bracken <code>fraction_total_reads</code> 在输出 species estimates 内约闭合到 1；
+- MetaPhlAn relative abundance 在固定 species rank 内闭合到 100；
+- HUMAnN CoPM / relative abundance 在所选 feature level 与 special-row policy 下闭合；
+- pathway coverage 没有列和目标，不应做 TSS。
 
 ```{r}
 stopifnot(
@@ -539,7 +520,9 @@ stopifnot(
 )
 ```
 
-### 第 4 步：把“是否闭合”与 MetaPhlAn model ledger 分开画
+![左图只对已经声明 denominator 的量检查 closure。右图保留 MetaPhlAn 的 read-equivalent 账本：261,721 个 known-clade estimates 加上 −61,792 的 UNCLASSIFIED correction，才与 199,929 processed reads 对齐。](../figures/21-denominator-closure.png){#fig-21-closure}
+
+## 把“是否闭合”与 MetaPhlAn model ledger 分开画
 
 ```{r}
 closure_plot_data <- closure_audit |>
@@ -650,7 +633,33 @@ save_pub(
 )
 ```
 
-### 第 5 步：从同一 sequence universe 计算 genome equivalents 与 RPKG
+### 组成型分析必须先固定 denominator
+
+MetaPhlAn percentages、Bracken fractions 与 HUMAnN relative abundance 都是 closed compositions，增加一个 feature 的份额必然压低其他 features [@gloor2017compositional]。CLR/ALR、pseudocount、prevalence filter 与 reference choice 都要预先声明；不同 taxonomic ranks、不同 special-row policies 或不同 feature spaces 不能直接拼接。
+
+## 从同一 sequence universe 计算 genome equivalents 与 RPKG
+
+### Genome equivalents：测序覆盖标尺，不是细胞计数
+
+MicrobeCensus 用保守单拷贝 marker 的覆盖估计 average genome size。对同一份 clean sequence universe：
+
+\[
+GE = \frac{\text{total sequenced bp}}{\widehat{AGS}},
+\qquad
+RPKG_i = \frac{RPK_i}{GE}.
+\]
+
+本次 150 bp 主分支得到 \(\widehat{AGS}=2{,}576{,}205.26\) bp，因而
+
+\[
+GE=\frac{29{,}809{,}773}{2{,}576{,}205.26}=11.5711948566.
+\]
+
+这表示该文库含约 11.57 个“平均微生物基因组深度”等价的序列量，不是 11.57 个 cells、organisms、genomes per gram、biomass 或 absolute concentration。要做真正绝对定量，仍需 spike-in、flow cytometry、qPCR/ddPCR 或其他外部定量参照。
+
+::: {.callout-important title="把六列 data dictionary 写进分析方案"}
+每个输入表至少记录：measurement object、feature space、native unit、correction、denominator、closure target 与 zero meaning。若其中任意一项写不清，先回到工具文档和原始输出，不要直接进入差异分析。
+:::
 
 ```{r}
 stopifnot(
@@ -792,7 +801,41 @@ save_pub(
 
 150 bp 改为 100 bp 后，AGS 降低 4.14%，GE 升高 4.32%。这不是选择“更好看参数”的理由，而是提示：小文库的 genome-equivalent calibration 必须报告 read length、usable reads 与 sensitivity。这里 150 bp 分支只有 180,995 reads 进入 AGS 估计，明显少于工具 README 所说通常能给出良好精度的默认 2,000,000 reads，因此只把它当方法校准，不把小数点后多位解释成生态精度。
 
-### 第 6 步：按 pathway ID 对齐后再审计 zero
+### Genome-equivalent scaling 不是绝对定量替代品
+
+GE/RPKG 可以缓解 average-genome-size 与 sequencing-effort 的一部分影响，但不能恢复样本进入提取前的细胞数。若论文要写“absolute abundance increased”，应增加外部 microbial-load 参照，并把 spike-in 添加阶段、回收率和 host-DNA fraction 纳入账本。
+
+::: {.callout-caution title="审稿人最容易追问的十个问题"}
+1. **把 Bracken <code>new_est_reads</code> 写成 raw reads。** 它包含 model-added fragments。
+2. **把 MetaPhlAn read equivalents 当 read assignments。** 本次 known-clade estimate 261,721 大于 199,929 processed reads，靠 −61,792 correction 对账。
+3. **混合 taxonomy ranks 后检查 100%。** kingdom、phylum、species 是嵌套层级，会重复计数。
+4. **把 HUMAnN CPM 展开成 counts per million。** 官方语义是 RPK 的 copies-per-million / TSS analog。
+5. **对 RPK 再除一次 feature length。** native table 已做 length correction。
+6. **把 coverage 做 CPM 或要求列和为 1。** coverage 是逐 pathway 0–1 evidence score。
+7. **按 row number 合并 abundance 与 coverage。** 本次真实 cMD 两表有 6 个位置顺序不同，必须按 ID 匹配。
+8. **强制 pathway strata 加回 community row。** pathway community 与 taxa strata 是独立 reconstruction。
+9. **把 genome equivalents 写成 cell counts 或 genomes per gram。** 它只标定文库中的 sequence coverage。
+10. **把 24 profiles 当 24 个独立 subjects。** AsnicarF_2017 实际只有 15 个 subjects；本文没有做任何生物组间显著性检验。
+:::
+
+![同一 29,809,773 bp 序列宇宙在 150 bp 与 100 bp AGS 模型下分别得到 2.576 / 2.469 Mb 和 11.571 / 12.071 genome equivalents。中、右图比较同一批 HUMAnN gene families 在 TSS denominator 与 genome-equivalent denominator 下的数值。](../figures/21-genome-equivalent-calibration.png){#fig-21-ge}
+
+## 按 pathway ID 对齐后再检查 zero
+
+### Coverage：0–1 证据分数不是组成
+
+HUMAnN pathway coverage 是 pathway reaction evidence 的 0–1 score。不同 pathways 的 coverage 可同时接近 1，所以一列 coverage 的总和没有“总功能量”含义。本次 MOCK1 的 147 个 ordinary community pathways coverage 合计 45.417；这不是 closure 失败。
+
+abundance 与 coverage 的 zero 也不同。AsnicarF_2017 的 445 × 24 ordinary cells 中：
+
+| Abundance state | Coverage state | Cells | 保守解释 |
+|---|---|---:|---|
+| 0 | 0 | 5,422 | 两类 pipeline evidence 均未检出 |
+| >0 | 0 | 4,079 | 有 abundance reconstruction，但 coverage evidence 为 0 |
+| 0 | >0 | 0 | 本数据中未出现，不能推广为永不出现 |
+| >0 | >0 | 1,179 | 两类 evidence 均检出 |
+
+任何一种 zero 都不能单独证明生物学缺失；它还可能来自深度、数据库、阈值、feature reconstruction 或样本处理。
 
 ```{r}
 abundance <- read.delim(
@@ -869,7 +912,25 @@ stopifnot(
 
 对齐必须按 pathway ID，而不是按原始 row number。两个 cMD objects 的 feature 集合相同，但有 6 个 row-order positions 不同；跳过 <code>match()</code> 会产生没有报错的 abundance–coverage 错配。
 
-### 第 7 步：分层关系按 output type 审计
+### Zero 要按生成环节分层
+
+至少区分：
+
+- no direct taxonomic assignment；
+- no rank-specific estimate；
+- no marker-model detection；
+- no gene-family alignment evidence；
+- no pathway abundance reconstruction；
+- no pathway coverage evidence；
+- filtered below prevalence / abundance threshold。
+
+把这些状态都改成一个 0，会把技术 censored value 与生物缺失混为一谈。若必须加 pseudocount，报告取值和数量级敏感性。
+
+::: {.callout-note title="本次升级后的最小合法运算"}
+固定 rank 后检查 MetaPhlAn / Bracken closure；在同一 HUMAnN feature level 和 special-row policy 下做 TSS；coverage 保持原生 0–1；按 pathway ID 对齐 abundance 与 coverage；RPKG 只用同一 clean sequence universe 的 GE；任何 absolute claim 另加外部定量参照。
+:::
+
+## 分层关系按 output type 检查
 
 ```{r}
 strata <- read.delim(
@@ -987,7 +1048,23 @@ save_pub(
 )
 ```
 
-### 第 8 步：把 data dictionary 变成机器可读表
+### 小文库只用于校准工作流
+
+MicrobeCensus 150/100 bp 两分支共享 199,982 reads 与 29,809,773 bp，排除了 sequence-universe 差异；但 usable reads 远低于 2M 默认值。本文报告 4.32% 的 GE sensitivity，不把 11.571 的多位小数当作真实生态精度。正式队列应预先固定 read length，检查每个样本可用 marker reads，并报告低深度样本的 sensitivity 或排除规则。
+
+![AsnicarF_2017 的 10,680 个 ordinary pathway-profile cells 被拆成四种 abundance × coverage 状态。右图同时说明 gene-family 与 reaction strata 可审计为加和，而 pathway community 与 strata 是独立重建，不能强制 closure。](../figures/21-zero-strata-semantics.png){#fig-21-zero-strata}
+
+## 把 data dictionary 变成机器可读表
+
+### Measurement object：每个数在数什么 {#sec-theory}
+
+先把“count”拆成三类：
+
+1. **Observed event count：**例如 Kraken report 中某节点的 direct paired-fragment assignments。它仍受数据库与分类规则影响，但每个整数对应一次离散分配事件。
+2. **Redistributed estimate：**Bracken 的 <code>new_est_reads</code> 等于 <code>kraken_assigned_reads + added_reads</code>。整数化以后看起来像 raw counts，实质包含数据库与 read-length 模型重新分配的质量。
+3. **Model-derived read equivalent：**MetaPhlAn 的 <code>estimated_number_of_reads_from_the_clade</code> 来自 marker、coverage 与 genome-size 模型。不同 clades 的估计可以先超过 processed reads，再用 UNCLASSIFIED correction 对账；它不能回写成 read-level event。
+
+因此“能不能用负二项 count model”不是看文件里有没有整数列，而是看生成机制、重复样本、library-size offset 和估计不确定性是否与模型假设相容。
 
 ```{r}
 semantics <- tibble::tribble(
@@ -1103,73 +1180,7 @@ save_pub(
 )
 ```
 
-## 审计与升级：从“作者用了什么列”到“今天允许什么运算” {#sec-audit}
-
-### 1. 忠实复现先于统一格式
-
-第一遍复现保留每个工具的原生 feature IDs、special rows、rank、unit 与 denominator，不先做“统一 abundance 表”。只有当语义合同已经建立，才把不同表转换成长表或 SummarizedExperiment。否则一个通用的 <code>Value</code> 列会掩盖最重要的差异。
-
-### 2. 整数 estimate 不能自动继承 count likelihood
-
-Bracken <code>new_est_reads</code> 可用于 rank-aware abundance 描述，也可在充分说明估计来源后作为 count-like input 做敏感性分析；但负二项模型会把这些数当成观测计数，并忽略 Bracken redistribution 的不确定性。主分析若能使用原始 read assignments、相对丰度专用方法或 bootstrap uncertainty，应与整数 estimate 分支并报。
-
-### 3. 组成型分析必须先固定 denominator
-
-MetaPhlAn percentages、Bracken fractions 与 HUMAnN relative abundance 都是 closed compositions，增加一个 feature 的份额必然压低其他 features [@gloor2017compositional]。CLR/ALR、pseudocount、prevalence filter 与 reference choice 都要预先声明；不同 taxonomic ranks、不同 special-row policies 或不同 feature spaces 不能直接拼接。
-
-### 4. Genome-equivalent scaling 不是绝对定量替代品
-
-GE/RPKG 可以缓解 average-genome-size 与 sequencing-effort 的一部分影响，但不能恢复样本进入提取前的细胞数。若论文要写“absolute abundance increased”，应增加外部 microbial-load 参照，并把 spike-in 添加阶段、回收率和 host-DNA fraction 纳入账本。
-
-### 5. 小文库只用于校准工作流
-
-MicrobeCensus 150/100 bp 两分支共享 199,982 reads 与 29,809,773 bp，排除了 sequence-universe 差异；但 usable reads 远低于 2M 默认值。本文报告 4.32% 的 GE sensitivity，不把 11.571 的多位小数当作真实生态精度。正式队列应预先固定 read length，检查每个样本可用 marker reads，并报告低深度样本的 sensitivity 或排除规则。
-
-### 6. Zero 要按生成环节分层
-
-至少区分：
-
-- no direct taxonomic assignment；
-- no rank-specific estimate；
-- no marker-model detection；
-- no gene-family alignment evidence；
-- no pathway abundance reconstruction；
-- no pathway coverage evidence；
-- filtered below prevalence / abundance threshold。
-
-把这些状态都改成一个 0，会把技术 censored value 与生物缺失混为一谈。若必须加 pseudocount，报告取值和数量级敏感性。
-
-::: {.callout-note title="本次升级后的最小合法运算"}
-固定 rank 后检查 MetaPhlAn / Bracken closure；在同一 HUMAnN feature level 和 special-row policy 下做 TSS；coverage 保持原生 0–1；按 pathway ID 对齐 abundance 与 coverage；RPKG 只用同一 clean sequence universe 的 GE；任何 absolute claim 另加外部定量参照。
-:::
-
-## 出版级美化 {#sec-polish}
-
-四张图均使用英文轴、图例和可见注释；正文保留中文解释。建议：
-
-1. 主文优先用 89 mm 单栏或 183 mm 双栏尺寸；本文多面板图采用约 230–300 mm 宽供网页阅读，投稿前按期刊版心缩放。
-2. 矢量母版保存 PDF；公众号使用白底 PNG；要求位图时交 350 dpi、LZW TIFF。
-3. closure 图不要截掉 1.0 reference line；负 correction 必须保留零线。
-4. 对数轴明确标注，zero 使用 pseudo-log 或单独类别，不能偷偷删除。
-5. genome-equivalent 图同时展示 AGS、total bp、read-length branch 和 GE，避免只给一个没有来源的小数。
-6. 配色之外保留 panel title、文字标签与正负方向，保证灰度打印仍可读。
-
-## 常见坑方框 {#sec-pitfalls}
-
-::: {.callout-caution title="审稿人最容易追问的十个问题"}
-1. **把 Bracken <code>new_est_reads</code> 写成 raw reads。** 它包含 model-added fragments。
-2. **把 MetaPhlAn read equivalents 当 read assignments。** 本次 known-clade estimate 261,721 大于 199,929 processed reads，靠 −61,792 correction 对账。
-3. **混合 taxonomy ranks 后检查 100%。** kingdom、phylum、species 是嵌套层级，会重复计数。
-4. **把 HUMAnN CPM 展开成 counts per million。** 官方语义是 RPK 的 copies-per-million / TSS analog。
-5. **对 RPK 再除一次 feature length。** native table 已做 length correction。
-6. **把 coverage 做 CPM 或要求列和为 1。** coverage 是逐 pathway 0–1 evidence score。
-7. **按 row number 合并 abundance 与 coverage。** 本次真实 cMD 两表有 6 个位置顺序不同，必须按 ID 匹配。
-8. **强制 pathway strata 加回 community row。** pathway community 与 taxa strata 是独立 reconstruction。
-9. **把 genome equivalents 写成 cell counts 或 genomes per gram。** 它只标定文库中的 sequence coverage。
-10. **把 24 profiles 当 24 个独立 subjects。** AsnicarF_2017 实际只有 15 个 subjects；本文没有做任何生物组间显著性检验。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 给每张丰度表写明测量对象和单位 {#sec-methods}
 
 下面模板可直接替换样本量和版本；不要省略 unit 与 denominator：
 
@@ -1181,7 +1192,7 @@ MicrobeCensus 150/100 bp 两分支共享 199,982 reads 与 29,809,773 bp，排�
 
 > Absolute microbial loads were anchored using [spike-in / flow cytometry / qPCR / ddPCR], added at [sampling / lysis / extraction / library] stage, with recovery and host-DNA fractions reported per sample.
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 必需输入
 
@@ -1209,7 +1220,22 @@ MicrobeCensus 150/100 bp 两分支共享 199,982 reads 与 29,809,773 bp，排�
 随机抽取论文主图中的任意一个数，能否沿着 feature ID、sample ID、native unit、correction、denominator、软件/数据库版本一路追到原始表？如果不能，先补数据谱系，再做统计。
 :::
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-polish}
+
+四张图均使用英文轴、图例和可见注释；正文保留中文解释。建议：
+
+1. 主文优先用 89 mm 单栏或 183 mm 双栏尺寸；本文多面板图采用约 230–300 mm 宽供网页阅读，投稿前按期刊版心缩放。
+2. 矢量母版保存 PDF；公众号使用白底 PNG；要求位图时交 350 dpi、LZW TIFF。
+3. closure 图不要截掉 1.0 reference line；负 correction 必须保留零线。
+4. 对数轴明确标注，zero 使用 pseudo-log 或单独类别，不能偷偷删除。
+5. genome-equivalent 图同时展示 AGS、total bp、read-length branch 和 GE，避免只给一个没有来源的小数。
+6. 配色之外保留 panel title、文字标签与正负方向，保证灰度打印仍可读。
+
+## 回到最初的问题
+
+同样叫 abundance，可能是观测 fragments、模型重分配值、marker-model 百分比、RPK、CoPM 或 genome-equivalent 标度。本文用同一份真实 MOCK1 和 24 个真实人体 profiles，把每张表的测量对象、分母、closure、zero 与合法运算写成可审计合同。
+
+## 参考文献 {#sec-references}
 
 - MicrobeCensus 的 AGS 与 genome-equivalent 定义：[@nayfach2015microbecensus]；固定源码为 [v1.1.1](https://github.com/snayfach/MicrobeCensus/tree/v1.1.1)。
 - MetaPhlAn 4 的 marker/SGB 模型：[@blancomiguez2023metaphlan4]。

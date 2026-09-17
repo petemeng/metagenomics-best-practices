@@ -1,6 +1,6 @@
 ---
-title: "第 06 篇 · 宿主去除与低生物量：湿实验宿主耗竭与计算去宿主"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+title: "宿主去除与低生物量：湿实验宿主耗竭与计算去宿主"
+author: "Peter"
 date: last-modified
 format:
   html:
@@ -9,7 +9,7 @@ format:
     code-fold: false
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: false
   freeze: auto
@@ -36,15 +36,20 @@ wechat:
     06-host-depletion-efficiency.png: "Observed host and microbial read fractions for six saliva host-depletion methods and projected total reads needed for ten million microbial reads"
     06-saponin-tradeoff.png: "Saponin dose series showing lower human-read fractions alongside lower Gram-negative representation in one sputum specimen"
     06-host-depletion-decision.png: "Paired pilot decision workflow for selecting and locking a host-depletion protocol"
+reader-mode: upstream
 ---
 
 > **学习目标：**把“宿主 reads 太多就去掉”拆成两项不同任务：用湿实验宿主耗竭（wet-lab host depletion）在建库前争取有效测序容量，用计算去宿主（computational host filtering）在分析与共享前清除残留人源序列；同时用配对 aliquot、blank、整细胞 mock、qPCR/ddPCR 和残留人源审计约束靶标损失、污染与隐私风险。  
 > **真实数据：**Marotz 等对 8 名受试者的唾液分别进行 6 种处理、每种处理 3 个 aliquots；Longhi 等对同一份痰液做 7 个 saponin 剂量条件。前者用于比较宿主 read fraction 和测序预算，后者只用于展示“宿主比例下降不等于群落保真”的剂量现象，不能推断人群最佳浓度。  
 > **预计资源：**读取本文固化小表和重绘三张图通常需要内存低于 1 GB、磁盘低于 100 MB、1 个 CPU、1 分钟以内。真实 paired-end short-read 去宿主建议准备 8 GB RAM、10–20 GB 可用磁盘、8 核，单样本常为 10–60 分钟；长读任务按 Hostile 给出的典型约 13 GB 内存需求，建议至少准备 16 GB RAM。实际耗时随 reads 数、存储和 CPU 改变。没有服务器时，可先在笔记本上处理小样本 pilot，正式队列提交到有访问控制的 HPC 或合规云环境；含潜在人源序列的原始 FASTQ 不应上传到未经授权的在线服务。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
 
-### 同样叫“去宿主”，解决的是两个不同分母
+把宿主去除率和微生物保留率同时报告；建库前耗竭与计算去宿主解决的是不同问题。
+
+:::
+
+## 降低宿主比例之后，微生物信号保住了吗？ {#sec-target}
 
 假设质控后宿主 read fraction 为 $f_h$，微生物 fraction 为 $f_m=1-f_h$。若目标是获得 $M$ 条微生物 reads，最简单的测序预算投影为：
 
@@ -71,7 +76,28 @@ lyPMA 相对 untreated 的微生物 read fraction 提高约 8.54 倍；若仅按
 
 Marotz 论文 Figure 2 与 Results 报告了均值及“±”字段，但图注未把该字段明确命名为 SD 或 SEM；固化表因此保留中性列名 `reported_plusminus_pct`，不替作者补写离散度类型。
 
-### 宿主比例最低，不代表微生物组成最可信
+## 下载本例数据与分析代码 {#sec-reader-inputs}
+
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/06/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
+
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/06/download.R)。
+
+```{r}
+#| label: reader-input-download-06
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/06/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
+
+## 宿主比例最低，不代表微生物组成最可信
 
 Longhi 等对一份痰液做 saponin 剂量系列：untreated 中 53.15% 高质量 reads 被判为人源，Gram-negative bacteria 占细菌组成的 82.75%；0.5% saponin 时，人源比例降到 2.16%，但 Gram-negative representation 也降到 34.98%，仅为 untreated 比例的 42.27% [@longhi2024saponin]。
 
@@ -85,89 +111,12 @@ Longhi 等对一份痰液做 saponin 剂量系列：untreated 中 53.15% 高质�
 做细菌 species profiling、DNA virus discovery、真菌分析、胞外 DNA、耐药基因或 MAG，允许损失的对象并不相同。不存在适用于所有基质和终点的 10%、5% 或 1% 宿主 fraction 及格线；应预先定义“需要多少 usable reads、哪些靶标不得丢、残留人源风险如何检测、失败后怎么处理”。
 :::
 
-## 理论：宿主耗竭是选择过程，不是无损净化 {#sec-theory}
+## 先确认系统环境与版本来源 {#sec-setup}
 
-### 1. 低生物量要看微生物负荷与宿主背景，不只看总 DNA
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
-“DNA 浓度不低”不代表“微生物量足够”。鼻咽拭子、痰液、组织、血液和活检中的 DNA 可能绝大部分来自宿主；Rajar 等在未耗竭的 pooled nasopharyngeal samples 中观察到约 99% 宿主 DNA，并发现不同提取/耗竭组合的表现依赖具体基质 [@rajar2022lowbiomass]。
-
-项目至少要区分：
-
-- **total dsDNA concentration**：宿主、微生物、胞外 DNA 和污染之和；
-- **microbial load**：每单位样本中的 microbial cells、genome equivalents 或 target copies；
-- **host-to-microbial ratio**：决定 shotgun reads 中有多少容量可能被宿主占用；
-- **library-compatible yield**：真正能进入建库的 DNA 量与片段分布；
-- **endpoint-specific recovery**：细菌、真菌、病毒、ARG 或 MAG 是否仍可检出。
-
-低生物量时，reagent contamination 与真实信号的比例升高；只增加 PCR cycles 或测序深度，会同时放大污染和随机性。blank、mock、load measurement 与批次随机化必须从湿实验开始，而不是在差异分析阶段补救。
-
-### 2. 不同耗竭机制有不同“盲区”
-
-| Mechanism | 主要思路 | 容易损失或误判的对象 | pilot 必查 |
-|---|---|---|---|
-| Size filtration | 按细胞/颗粒大小分离 | 聚团微生物、大细胞真菌、附着在宿主细胞上的微生物 | filter recovery、目标粒径、堵膜 |
-| Selective host lysis + nuclease | 先裂宿主细胞，再消化暴露 DNA | 易裂解细菌、受损细胞、胞外 microbial DNA | intact cellular mock、Gram+/Gram− recovery |
-| PMA after host lysis | 对可进入受损细胞或游离 DNA 的 PMA 进行光交联 | 受损微生物、胞外 DNA、部分病毒终点 | viability state、DNA virus 与 extracellular target |
-| Saponin/detergent | 差异裂解真核细胞 | 某些细菌膜结构、真菌/寄生虫、enveloped viruses | taxon- and virus-specific retention |
-| Methylation capture/depletion | 利用宿主与微生物 DNA 修饰差异 | 修饰模式重叠的微生物、目标真核微生物 | mock panel、未分类 reads、功能回收 |
-| Computational alignment | 与宿主参考比对后删除 | 与宿主同源的 microbial sequence、参考未覆盖的人源 reads | masked/unmasked sensitivity、independent residual screen |
-
-“更强的耗竭”通常意味着“更强的选择”。若 primary endpoint 包括 DNA viruses、fungi、parasites、cell-free DNA、受损细胞或 host-associated microbes，常规 bacterial depletion pilot 不能自动外推。
-
-### 3. 配对 pilot 同时估计效率与组成保真
-
-设真实微生物绝对量为 $A_i$，候选耗竭流程对 taxon $i$ 的相对保留效率为 $r_i$。耗竭后的组成是：
-
-$$
-\widetilde{p}_i
-=
-\frac{r_i A_i}
-{\sum_j r_j A_j}.
-$$
-
-即使宿主去除率接近 100%，只要 $r_i$ 在 taxa 间不同，微生物比例仍会改变。一个可判定的 paired pilot 应从同一 homogenized specimen 分 aliquots，并同时比较：
-
-1. untreated reference；
-2. 一个或多个 candidate depletion conditions；
-3. 跟随全部步骤的 matrix blank；
-4. 包含关键 Gram-positive、Gram-negative、fungal/viral targets 的 intact cellular mock；
-5. depletion 前后的 host qPCR/ddPCR、microbial qPCR/ddPCR；
-6. library yield、non-host read fraction 和 primary endpoint recovery。
-
-推荐用每个受试者或每份标本的 paired contrast，而不是把 untreated 和 depleted 分到不同人。若 pilot 只用一份样本，只能发现明显机制性风险，不能估计人群变异或给出通用剂量。
-
-### 4. 计算去宿主要平衡完整性、微生物保留与隐私
-
-人源过滤的召回率取决于参考是否覆盖真实人群中的结构变异、替代单倍型、HLA 和难组装区域。Bush 等的 benchmark 表明，Bowtie2 与 SNAP 可提供较高精确度，短 reads 还可从两阶段策略获益；他们也在公开 microbial datasets 中发现足以支持人类变异识别的残留 reads [@bush2020humanreads]。
-
-Hostile 将 paired-read 处理、重命名与输出顺序控制整合到宿主过滤流程中 [@constantinides2023hostile]。本文当前基线锁定：
-
-- Hostile `2.0.2`；
-- short-read 默认 Bowtie2 `--sensitive` 路径；
-- `human-t2t-hla` 索引：T2T-CHM13 `2.0` + IPD-IMGT/HLA `3.51`，发布标识 `2023-07`；
-- `--rename --reorder` 保持匿名化后的 paired-read 对应与确定顺序；
-- 输入、输出 read pairs、软件版本、索引身份和 checksum 全部进入审计表。
-
-`--very-sensitive-local` 等更敏感设置通常能找出更多宿主 reads，也可能增加与人类相似的 microbial reads 被误删的风险。masked host index 可保护列入 mask 的 bacterial/viral/phage references，却可能让与这些区域相似的人源 reads 留下。两种选择都不是“无风险”；应在同一 mock 和真实 pilot 上报告 retention–privacy sensitivity。
-
-### 5. “去宿主后可以公开”是危险推断
-
-Tomofuji 等显示，即使肠道 metagenome 中只残留少量人源 reads，仍可能重建性别等个人信息；其验证数据中 genetic sex prediction 达到 97.3% [@tomofuji2023privacy]。Guccione 等进一步指出，不完整的人类参考既会产生错误的生物学关联，也会留下可识别信息 [@guccione2025reference]。
-
-因此，clean FASTQ 仍应按潜在人类遗传数据管理：
-
-- 原始与 filtered FASTQ 都置于访问控制、审计和加密策略下；
-- 对外发布前进行独立 residual-human screen，而不是只相信过滤工具自己的 log；
-- 优先发布无法回推出个体基因型的 aggregate abundance tables；
-- 数据共享遵循知情同意、伦理审批、机构政策与数据库受控访问要求；
-- 删除本地原始数据不是授权共享的替代品，保留周期也应按审批文件执行。
-
-## 准备工作 {#sec-setup}
-
-<details>
-<summary><strong>展开：固定输入、安装环境、下载人源索引并定义作图函数</strong></summary>
-
-### 固化论文表格与校验指纹
+### 保存论文表格与校验指纹
 
 `06-marotz-host-depletion-source.tsv` 转录 Marotz 等 Results/Figure 2 的 6 个处理；`06-longhi-saponin-source.tsv` 联结 Longhi 等 main Table 2 与 Supplementary Table 6。许可、字段映射、PMCID、项目 accession 与原始补充文件指纹见 `06-data-NOTICE.txt`。
 
@@ -317,9 +266,21 @@ save_pub <- function(
 人源参考本身不是患者数据，但原始 metagenomic FASTQ 可能包含可识别的人类遗传信息。正式运行目录、临时文件、scheduler log、对象存储和备份都要纳入访问控制；不要为了省服务器资源把 FASTQ 发送到未经伦理或数据管理批准的网页工具。
 :::
 
-## 可复制代码：先做配对 pilot，再清除残留宿主 reads {#sec-code}
+## 从论文原值重算 read budget 与剂量权衡 {#sec-code}
 
-### 1. 从论文原值重算 read budget 与剂量权衡
+### 低生物量要看微生物负荷与宿主背景，不只看总 DNA {#sec-theory}
+
+“DNA 浓度不低”不代表“微生物量足够”。鼻咽拭子、痰液、组织、血液和活检中的 DNA 可能绝大部分来自宿主；Rajar 等在未耗竭的 pooled nasopharyngeal samples 中观察到约 99% 宿主 DNA，并发现不同提取/耗竭组合的表现依赖具体基质 [@rajar2022lowbiomass]。
+
+项目至少要区分：
+
+- **total dsDNA concentration**：宿主、微生物、胞外 DNA 和污染之和；
+- **microbial load**：每单位样本中的 microbial cells、genome equivalents 或 target copies；
+- **host-to-microbial ratio**：决定 shotgun reads 中有多少容量可能被宿主占用；
+- **library-compatible yield**：真正能进入建库的 DNA 量与片段分布；
+- **endpoint-specific recovery**：细菌、真菌、病毒、ARG 或 MAG 是否仍可检出。
+
+低生物量时，reagent contamination 与真实信号的比例升高；只增加 PCR cycles 或测序深度，会同时放大污染和随机性。blank、mock、load measurement 与批次随机化必须从湿实验开始，而不是在差异分析阶段补救。
 
 ```{r}
 marotz <- read.delim(
@@ -435,7 +396,59 @@ head(marotz)
 head(longhi)
 ```
 
-### 2. 把湿实验 pilot 做成可判定表
+### 忠实复现 Marotz 2018 的计算定义 {#sec-audit}
+
+Marotz 等使用 Atropos `1.1.5` 处理 adapters/quality，再以 Bowtie2 `2.3.0`、`--very-sensitive-local` 对 GRCh38.p7 做宿主比对 [@marotz2018hostdepletion]。若目标是忠实复现论文 Figure 2，应保留这套工具、参考与参数；换成 T2T/HLA 后得到的是升级分析，不能继续标作原图原值。
+
+| Layer | Historical reproduction | Current baseline | 为什么升级 |
+|---|---|---|---|
+| Trimming | Atropos 1.1.5 | 锁定项目 QC 工具与参数 | 软件版本与 read retention 可审计 |
+| Host reference | GRCh38.p7 | T2T-CHM13 2.0 + HLA 3.51 | 减少未覆盖区域与 HLA 缺口 |
+| Host aligner | Bowtie2 2.3.0 | Hostile 2.0.2 paired Bowtie2 workflow | 固化 pair、rename、reorder 与 log |
+| Sensitivity | `--very-sensitive-local` | 默认 sensitive + pilot sensitivity | 避免未验证地最大化 off-target loss |
+| Retention audit | 以 taxonomic change 为主 | cellular mock + viruses/fungi + endpoint | 将“宿主低”与“靶标保留”分开 |
+| Privacy gate | 未独立定义 | second detector/reference + controlled access | 过滤 log 不能证明不可识别 |
+
+::: {.callout-caution title="untreated 与 depleted 来自不同受试者"}
+个体差异会与处理效应混在一起。应从同一 homogenized specimen 分 paired aliquots，并保留 specimen-level paired analysis。
+:::
+
+## 把湿实验 pilot 做成可判定表
+
+### 不同耗竭机制有不同“盲区”
+
+| Mechanism | 主要思路 | 容易损失或误判的对象 | pilot 必查 |
+|---|---|---|---|
+| Size filtration | 按细胞/颗粒大小分离 | 聚团微生物、大细胞真菌、附着在宿主细胞上的微生物 | filter recovery、目标粒径、堵膜 |
+| Selective host lysis + nuclease | 先裂宿主细胞，再消化暴露 DNA | 易裂解细菌、受损细胞、胞外 microbial DNA | intact cellular mock、Gram+/Gram− recovery |
+| PMA after host lysis | 对可进入受损细胞或游离 DNA 的 PMA 进行光交联 | 受损微生物、胞外 DNA、部分病毒终点 | viability state、DNA virus 与 extracellular target |
+| Saponin/detergent | 差异裂解真核细胞 | 某些细菌膜结构、真菌/寄生虫、enveloped viruses | taxon- and virus-specific retention |
+| Methylation capture/depletion | 利用宿主与微生物 DNA 修饰差异 | 修饰模式重叠的微生物、目标真核微生物 | mock panel、未分类 reads、功能回收 |
+| Computational alignment | 与宿主参考比对后删除 | 与宿主同源的 microbial sequence、参考未覆盖的人源 reads | masked/unmasked sensitivity、independent residual screen |
+
+“更强的耗竭”通常意味着“更强的选择”。若 primary endpoint 包括 DNA viruses、fungi、parasites、cell-free DNA、受损细胞或 host-associated microbes，常规 bacterial depletion pilot 不能自动外推。
+
+### 配对 pilot 同时估计效率与组成保真
+
+设真实微生物绝对量为 $A_i$，候选耗竭流程对 taxon $i$ 的相对保留效率为 $r_i$。耗竭后的组成是：
+
+$$
+\widetilde{p}_i
+=
+\frac{r_i A_i}
+{\sum_j r_j A_j}.
+$$
+
+即使宿主去除率接近 100%，只要 $r_i$ 在 taxa 间不同，微生物比例仍会改变。一个可判定的 paired pilot 应从同一 homogenized specimen 分 aliquots，并同时比较：
+
+1. untreated reference；
+2. 一个或多个 candidate depletion conditions；
+3. 跟随全部步骤的 matrix blank；
+4. 包含关键 Gram-positive、Gram-negative、fungal/viral targets 的 intact cellular mock；
+5. depletion 前后的 host qPCR/ddPCR、microbial qPCR/ddPCR；
+6. library yield、non-host read fraction 和 primary endpoint recovery。
+
+推荐用每个受试者或每份标本的 paired contrast，而不是把 untreated 和 depleted 分到不同人。若 pilot 只用一份样本，只能发现明显机制性风险，不能估计人群变异或给出通用剂量。
 
 每个候选条件保留 paired specimen ID，而不是只汇总成组均值。下面的字段是最小审计合同：
 
@@ -502,7 +515,45 @@ pilot$pass <- with(
 
 若 qPCR/ddPCR 出现 zero、低于 LOD 或低于 LOQ，不要直接加一个任意 pseudocount 再算 log reduction。应保留 censor flag，并按 assay validation 中定义的 LOD/LOQ 报告区间或下限。
 
-### 3. 对 paired-end short reads 做当前计算去宿主
+::: {.callout-caution title="把计算过滤当成湿实验耗竭"}
+计算删除发生在测序之后，不能恢复被宿主 reads 占用的 lane，也不能补救因宿主过高而失败的低丰度物种、assembly 或 MAG。Methods 要分别写 wet-lab treatment 和 computational reference filtering。
+:::
+
+::: {.callout-caution title="用总 DNA 浓度定义低生物量"}
+宿主 DNA 可让 Qubit 浓度很高，而 microbial molecules 极少。至少增加 microbial/host qPCR 或 ddPCR、non-host fraction 和 per-unit-sample load。
+:::
+
+::: {.callout-caution title="耗竭试剂没有 blank"}
+额外裂解、洗涤、离心和酶反应都会增加污染入口。matrix blank/extraction blank 要走完整处理，并与样本共享 reagent lot、plate 和 sequencing batch。
+:::
+
+## 对 paired-end short reads 做当前计算去宿主
+
+### 计算去宿主要平衡完整性、微生物保留与隐私
+
+人源过滤的召回率取决于参考是否覆盖真实人群中的结构变异、替代单倍型、HLA 和难组装区域。Bush 等的 benchmark 表明，Bowtie2 与 SNAP 可提供较高精确度，短 reads 还可从两阶段策略获益；他们也在公开 microbial datasets 中发现足以支持人类变异识别的残留 reads [@bush2020humanreads]。
+
+Hostile 将 paired-read 处理、重命名与输出顺序控制整合到宿主过滤流程中 [@constantinides2023hostile]。本文当前基线锁定：
+
+- Hostile `2.0.2`；
+- short-read 默认 Bowtie2 `--sensitive` 路径；
+- `human-t2t-hla` 索引：T2T-CHM13 `2.0` + IPD-IMGT/HLA `3.51`，发布标识 `2023-07`；
+- `--rename --reorder` 保持匿名化后的 paired-read 对应与确定顺序；
+- 输入、输出 read pairs、软件版本、索引身份和 checksum 全部进入审计表。
+
+`--very-sensitive-local` 等更敏感设置通常能找出更多宿主 reads，也可能增加与人类相似的 microbial reads 被误删的风险。masked host index 可保护列入 mask 的 bacterial/viral/phage references，却可能让与这些区域相似的人源 reads 留下。两种选择都不是“无风险”；应在同一 mock 和真实 pilot 上报告 retention–privacy sensitivity。
+
+### “去宿主后可以公开”是危险推断
+
+Tomofuji 等显示，即使肠道 metagenome 中只残留少量人源 reads，仍可能重建性别等个人信息；其验证数据中 genetic sex prediction 达到 97.3% [@tomofuji2023privacy]。Guccione 等进一步指出，不完整的人类参考既会产生错误的生物学关联，也会留下可识别信息 [@guccione2025reference]。
+
+因此，clean FASTQ 仍应按潜在人类遗传数据管理：
+
+- 原始与 filtered FASTQ 都置于访问控制、审计和加密策略下；
+- 对外发布前进行独立 residual-human screen，而不是只相信过滤工具自己的 log；
+- 优先发布无法回推出个体基因型的 aggregate abundance tables；
+- 数据共享遵循知情同意、伦理审批、机构政策与数据库受控访问要求；
+- 删除本地原始数据不是授权共享的替代品，保留周期也应按审批文件执行。
 
 文件名映射先单独保存；用于分析与共享的输出使用不包含姓名、病历号或采样日期的 `sample_id`。
 
@@ -548,7 +599,11 @@ sha256sum "${clean_r1}" "${clean_r2}" \
 
 成对数据的统计单位是 **read pair**。若任一 mate 命中宿主，保守策略通常是整对删除；不能把两个 mate 独立过滤后再按行强行拼回。`--reorder` 用于稳定输出顺序，但仍要检查 R1/R2 数量相等、read IDs 成对且没有空文件。
 
-### 4. 把残留人源筛查作为独立发布门
+::: {.callout-caution title="过滤完成后直接公开 FASTQ"}
+过滤 log 不是隐私证明。参考缺口、变异和同源区域都可能留下人源 reads；filtered FASTQ 仍应受控，并通过独立 residual-human audit。
+:::
+
+## 把残留人源筛查作为独立发布门
 
 独立审计应使用另一套完整的人类参考构建流程或另一种检测器；若只是把同一命令再跑一次，无法发现共同盲点。下面展示“只输出汇总计数”的原则，审计中命中的 reads 不进入公开产物：
 
@@ -581,7 +636,32 @@ printf '%s\t%s\n' \
 
 `-F 12` 统计“至少一个 mate 已比对”的 alignment records，不等同于唯一人源 fragments，也不是统一隐私阈值。正式 audit 应定义 denominator、secondary/supplementary alignment、MAPQ、pair policy、重复序列和人工复核规则，并用含已知人源/微生物 reads 的 benchmark 校准。
 
-### 5. 比较 masked 与 unmasked host index 的敏感性
+### 当前标准要补上的六项
+
+1. **reference completeness**：记录 assembly、HLA、mask 集合、release 和 checksum；
+2. **pair policy**：明确一个 mate 命中后是否整对删除；
+3. **target-retention panel**：按 primary endpoint 选择细菌、真菌、病毒、胞外 DNA 与受损细胞；
+4. **negative controls**：耗竭试剂和额外操作本身可能引入 kitome；
+5. **batch lock**：病例与对照不能使用不同耗竭条件，试剂 lot 和 operator 要交叉；
+6. **privacy validation**：filtered FASTQ 仍受控，发布前有独立 residual screen。
+
+::: {.callout-note title="论文原值与当前重分析要并排报告"}
+历史复现回答“作者当时得到什么”；当前基线回答“今天用更完整参考和显式隐私门会得到什么”。两者都应保留，不能悄悄替换工具后仍声称忠实复现，也不能因为工具较新就忽略原论文的 paired biological design。
+:::
+
+::: {.callout-caution title="病例和对照使用不同耗竭策略"}
+当疾病状态与 protocol、lot、operator 或日期重合时，生物差异不可辨识。pilot 结束后锁定一套方案，并把病例/对照交叉分配到批次。
+:::
+
+::: {.callout-caution title="把 local-sensitive 当作永远更安全"}
+更敏感的局部比对可能提高人源召回，也可能误删与宿主相似的 microbial reads。用 human-positive benchmark 和 mock 画 sensitivity–retention trade-off，再决定参数。
+:::
+
+::: {.callout-caution title="报告百分比，却不报告分母和 pair policy"}
+“去掉 90% 宿主 reads”必须说明分母是 reads、read pairs 还是 bases，以及一个 mate 命中时如何处理整对。不同定义不能直接比较。
+:::
+
+## 比较 masked 与 unmasked host index 的敏感性
 
 若 primary endpoint 容易与宿主参考交叉，可在 pilot 上增加 masked index：
 
@@ -613,35 +693,109 @@ mamba run -n hostfilter-2.0.2 hostile clean \
 - 独立 residual-human audit；
 - pairs retained、CPU time 和峰值 RAM。
 
-## 审计与升级：从历史复现到当前基线 {#sec-audit}
-
-### 忠实复现 Marotz 2018 的计算定义
-
-Marotz 等使用 Atropos `1.1.5` 处理 adapters/quality，再以 Bowtie2 `2.3.0`、`--very-sensitive-local` 对 GRCh38.p7 做宿主比对 [@marotz2018hostdepletion]。若目标是忠实复现论文 Figure 2，应保留这套工具、参考与参数；换成 T2T/HLA 后得到的是升级分析，不能继续标作原图原值。
-
-| Layer | Historical reproduction | Current baseline | 为什么升级 |
-|---|---|---|---|
-| Trimming | Atropos 1.1.5 | 锁定项目 QC 工具与参数 | 软件版本与 read retention 可审计 |
-| Host reference | GRCh38.p7 | T2T-CHM13 2.0 + HLA 3.51 | 减少未覆盖区域与 HLA 缺口 |
-| Host aligner | Bowtie2 2.3.0 | Hostile 2.0.2 paired Bowtie2 workflow | 固化 pair、rename、reorder 与 log |
-| Sensitivity | `--very-sensitive-local` | 默认 sensitive + pilot sensitivity | 避免未验证地最大化 off-target loss |
-| Retention audit | 以 taxonomic change 为主 | cellular mock + viruses/fungi + endpoint | 将“宿主低”与“靶标保留”分开 |
-| Privacy gate | 未独立定义 | second detector/reference + controlled access | 过滤 log 不能证明不可识别 |
-
-### 当前标准要补上的六项
-
-1. **reference completeness**：记录 assembly、HLA、mask 集合、release 和 checksum；
-2. **pair policy**：明确一个 mate 命中后是否整对删除；
-3. **target-retention panel**：按 primary endpoint 选择细菌、真菌、病毒、胞外 DNA 与受损细胞；
-4. **negative controls**：耗竭试剂和额外操作本身可能引入 kitome；
-5. **batch lock**：病例与对照不能使用不同耗竭条件，试剂 lot 和 operator 要交叉；
-6. **privacy validation**：filtered FASTQ 仍受控，发布前有独立 residual screen。
-
-::: {.callout-note title="论文原值与当前重分析要并排报告"}
-历史复现回答“作者当时得到什么”；当前基线回答“今天用更完整参考和显式隐私门会得到什么”。两者都应保留，不能悄悄替换工具后仍声称忠实复现，也不能因为工具较新就忽略原论文的 paired biological design。
+::: {.callout-caution title="只按最低 host fraction 选方案"}
+最强耗竭可能同时损失易裂解细菌、真菌、病毒、胞外 DNA 或受损细胞。候选方案必须同时报告 microbial load retention、mock recovery 和 primary endpoint。
 :::
 
-## 出版级美化：同时画效率、代价和适用边界 {#sec-polish}
+::: {.callout-caution title="DNA mock 被用来证明 differential lysis 无偏"}
+提取后加入的裸 DNA 没有细胞膜、细胞壁或病毒衣壳，不能检验 selective lysis。应使用 intact cellular mock，并补充与研究终点匹配的病毒/真菌材料。
+:::
+
+## 同时报告宿主去除和靶标保留 {#sec-methods}
+
+### 忠实复现 Marotz 2018 的英文模板
+
+> Saliva samples from eight participants were split into triplicate aliquots for each host-depletion condition. Host DNA depletion was performed using untreated, 5-µm filtration, NEBNext Microbiome DNA Enrichment, MolYsis Basic, QIAamp DNA Microbiome, and lyPMA workflows as described by Marotz et al. (2018). Adapter and quality trimming used Atropos v1.1.5. Reads were aligned to GRCh38.p7 with Bowtie2 v2.3.0 using `--very-sensitive-local`, and the host-aligned fraction was calculated from quality-filtered reads. The values reproduced here were transcribed from the published Results and Figure 2; the dispersion field was retained as reported because the article did not explicitly identify the displayed “±” statistic as SD or SEM.
+
+### 当前 paired short-read 队列的英文模板
+
+> Before cohort-wide processing, `[N]` representative `[MATRIX]` specimens spanning the prespecified host-to-microbial load range were homogenized and divided into untreated and candidate-depletion aliquots. Each batch included a matrix blank and an intact cellular mock containing `[TARGET PANEL]`. Host and microbial loads before and after treatment were measured by `[qPCR/ddPCR ASSAYS, TARGETS, LOD/LOQ]`; library yield, non-host read-pair fraction, mock taxon recovery, viral/fungal target retention, and blank signal were evaluated against prespecified acceptance rules. `[PROTOCOL, REAGENT LOT, CONCENTRATION, INCUBATION, NUCLEASE AND STOPPING CONDITIONS]` was selected before cohort processing and applied identically across randomized case and control samples.
+
+> Paired-end reads were filtered using Hostile v2.0.2 with Bowtie2 v2.5.4 and the `human-t2t-hla` index (T2T-CHM13 v2.0 plus IPD-IMGT/HLA v3.51; index release 2023-07; index SHA-256 manifest `[FILE/HASH]`). Hostile was run with its short-read sensitive baseline, `--rename`, `--reorder`, and eight threads. If either mate was classified as host, the read pair was excluded. Input and retained read-pair counts, tool versions, command lines, index identity, peak memory, runtime, and output checksums were recorded per sample. Filtered reads remained under controlled access and were screened with `[INDEPENDENT TOOL AND COMPLETE REFERENCE, VERSION/HASH]` before any data release. Aggregate microbial profiles, rather than residual FASTQ, were used for open dissemination unless controlled-access approval explicitly permitted sequence sharing.
+
+### 若使用 masked index，额外写清
+
+> A masked host-reference sensitivity analysis used `human-t2t-hla.argos-bacteria-985_rs-viral-202401_ml-phage-202401` (`[INDEX HASH]`). The unmasked and masked outputs were compared for recall on known human-positive reads, retention of the cellular microbial/viral mock, residual-human alignments under an independent audit, and effects on `[PRIMARY ENDPOINT]`. The production index was chosen using prespecified privacy and target-retention criteria and was not selected after inspecting case-control associations.
+
+Methods 还必须给出：
+
+- specimen matrix、原始质量/体积、保存与 time-to-processing；
+- 分 aliquot 与 homogenization 规则；
+- wet-lab reagent、catalog、lot、浓度、时间、温度与 nuclease stop；
+- blank/mock 的组成、加入阶段、每批数量和失败规则；
+- host/microbial assay target、标准曲线、LOD/LOQ 与 inhibition；
+- FASTQ 质控、pair policy、Hostile/aligner/参考完整版本；
+- masked regions 或 protected references 的精确清单；
+- reads/pairs/bases 中使用哪个分母；
+- residual-human audit、数据访问等级与公开产物边界。
+
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
+
+### 先写 endpoint–risk 表
+
+| Primary endpoint | 湿实验最担心的损失 | 计算过滤最担心的损失 | 必加对照 |
+|---|---|---|---|
+| Bacterial species | 易裂解或受损细菌 | 与宿主同源片段 | Gram+/Gram− cellular mock |
+| DNA virome | free/enveloped viral DNA | host-integrated/同源病毒区域 | enveloped + non-enveloped virus panel |
+| Mycobiome/parasites | 真核靶标被当作宿主处理 | 与人类保守区比对 | fungal/eukaryotic mock |
+| ARG/gene catalog | extracellular/low-copy genes | conserved domains 被误删 | known-copy gene/cell controls |
+| MAG/assembly | 有效覆盖和长片段损失 | pair/coverage 缺口 | assembly mock + coverage audit |
+| Cell-free DNA | PMA/nuclease 直接消除终点 | 短片段 mapping ambiguity | fragment-size-matched DNA control |
+
+若同一项目同时研究细菌、病毒和真菌，可能没有一套强耗竭流程能保护所有终点。更稳妥的设计是从同一 homogenate 预先分实验线，每条线独立记录 protocol、controls、unit 与分析边界。
+
+### 选择代表性 pilot 样本
+
+至少覆盖：
+
+- 预期 host fraction 的低、中、高区间；
+- microbial load 的低、中、高区间；
+- 主要病例与对照 strata；
+- 不同黏度、炎症、血液/组织成分或采样中心；
+- 预计最难保留的 primary targets；
+- 每种候选条件的 paired untreated aliquot。
+
+单一 pooled sample 可用于早期排雷，不能替代 biological replicates。正式选择要看 subject-level paired effect 和变异范围，而不是只看总体均值。
+
+### 预先定义四类失败规则
+
+| Gate | 示例指标 | 失败后动作 |
+|---|---|---|
+| Capacity | non-host read-pair gain、library success | 调整耗竭强度或增加输入 |
+| Retention | microbial copies、mock taxa、virus/fungus recovery | 降低强度、改机制或拆实验线 |
+| Contamination | blank reads、kitome taxa、index bleed | 重做该批、换 lot、调查批次 |
+| Privacy | residual-human screen、human-positive recall | 改参考/参数、维持受控访问 |
+
+阈值应按 primary endpoint 和 assay validation 设定。例如 MAG 可能需要最低 coverage breadth，virus discovery 可能要求某组 reference materials 全部恢复；不要把某篇唾液论文的 8.53% 直接复制成你的痰液、组织或宫颈样本阈值。
+
+### 锁定后再进入正式队列
+
+pilot 完成后冻结：
+
+- wet-lab SOP、reagent lot 管理和 operator training；
+- sample randomization 与 plate map；
+- blank/mock frequency；
+- host reference、mask、aligner 与参数；
+- pair handling、file naming 和 secure temporary storage；
+- residual-human audit 与发布决策；
+- 失败、重做、排除与 protocol deviation 记录。
+
+若中途因 reagent 停产必须换 protocol，应把 bridge specimens 用两套方法并行处理，量化 batch/protocol shift；不能把旧病例与新对照直接合并后仅加一个 covariate。
+
+### 发布时优先共享检查充分的派生产物
+
+建议发布：
+
+- sample × species/pathway/ARG abundance tables；
+- host/non-host read-pair counts与分母定义；
+- wet-lab treatment、batch、lot、blank/mock QC；
+- software、reference、index checksum 和命令；
+- retention–privacy sensitivity summary；
+- 不含人类比对片段的聚合统计与图。
+
+raw/filtered FASTQ 是否开放不由“宿主比例很低”决定，而由 consent、伦理审批、机构政策、独立审计和仓库访问模式共同决定。
+
+## 图中应该保留哪些信息？ {#sec-polish}
 
 第一张图将宿主/微生物 fraction 与达到固定 microbial-read target 的总 read budget 并排。所有文字为英文，避免把 projected budget 误读为测序公司采购建议：
 
@@ -1026,143 +1180,7 @@ save_pub(
 
 正式图同时保留 PDF、300-dpi PNG 和 300-dpi LZW TIFF。caption 必须区分 observed、derived 与 illustrative：Marotz host fractions 是 observed；10M read budget 是 derived；流程图是 decision framework。
 
-## 常见坑：审稿人会追问什么 {#sec-pitfalls}
-
-::: {.callout-caution title="把计算过滤当成湿实验耗竭"}
-计算删除发生在测序之后，不能恢复被宿主 reads 占用的 lane，也不能补救因宿主过高而失败的低丰度物种、assembly 或 MAG。Methods 要分别写 wet-lab treatment 和 computational reference filtering。
-:::
-
-::: {.callout-caution title="只按最低 host fraction 选方案"}
-最强耗竭可能同时损失易裂解细菌、真菌、病毒、胞外 DNA 或受损细胞。候选方案必须同时报告 microbial load retention、mock recovery 和 primary endpoint。
-:::
-
-::: {.callout-caution title="用总 DNA 浓度定义低生物量"}
-宿主 DNA 可让 Qubit 浓度很高，而 microbial molecules 极少。至少增加 microbial/host qPCR 或 ddPCR、non-host fraction 和 per-unit-sample load。
-:::
-
-::: {.callout-caution title="untreated 与 depleted 来自不同受试者"}
-个体差异会与处理效应混在一起。应从同一 homogenized specimen 分 paired aliquots，并保留 specimen-level paired analysis。
-:::
-
-::: {.callout-caution title="耗竭试剂没有 blank"}
-额外裂解、洗涤、离心和酶反应都会增加污染入口。matrix blank/extraction blank 要走完整处理，并与样本共享 reagent lot、plate 和 sequencing batch。
-:::
-
-::: {.callout-caution title="DNA mock 被用来证明 differential lysis 无偏"}
-提取后加入的裸 DNA 没有细胞膜、细胞壁或病毒衣壳，不能检验 selective lysis。应使用 intact cellular mock，并补充与研究终点匹配的病毒/真菌材料。
-:::
-
-::: {.callout-caution title="病例和对照使用不同耗竭策略"}
-当疾病状态与 protocol、lot、operator 或日期重合时，生物差异不可辨识。pilot 结束后锁定一套方案，并把病例/对照交叉分配到批次。
-:::
-
-::: {.callout-caution title="把 local-sensitive 当作永远更安全"}
-更敏感的局部比对可能提高人源召回，也可能误删与宿主相似的 microbial reads。用 human-positive benchmark 和 mock 画 sensitivity–retention trade-off，再决定参数。
-:::
-
-::: {.callout-caution title="过滤完成后直接公开 FASTQ"}
-过滤 log 不是隐私证明。参考缺口、变异和同源区域都可能留下人源 reads；filtered FASTQ 仍应受控，并通过独立 residual-human audit。
-:::
-
-::: {.callout-caution title="报告百分比，却不报告分母和 pair policy"}
-“去掉 90% 宿主 reads”必须说明分母是 reads、read pairs 还是 bases，以及一个 mate 命中时如何处理整对。不同定义不能直接比较。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
-
-### 忠实复现 Marotz 2018 的英文模板
-
-> Saliva samples from eight participants were split into triplicate aliquots for each host-depletion condition. Host DNA depletion was performed using untreated, 5-µm filtration, NEBNext Microbiome DNA Enrichment, MolYsis Basic, QIAamp DNA Microbiome, and lyPMA workflows as described by Marotz et al. (2018). Adapter and quality trimming used Atropos v1.1.5. Reads were aligned to GRCh38.p7 with Bowtie2 v2.3.0 using `--very-sensitive-local`, and the host-aligned fraction was calculated from quality-filtered reads. The values reproduced here were transcribed from the published Results and Figure 2; the dispersion field was retained as reported because the article did not explicitly identify the displayed “±” statistic as SD or SEM.
-
-### 当前 paired short-read 队列的英文模板
-
-> Before cohort-wide processing, `[N]` representative `[MATRIX]` specimens spanning the prespecified host-to-microbial load range were homogenized and divided into untreated and candidate-depletion aliquots. Each batch included a matrix blank and an intact cellular mock containing `[TARGET PANEL]`. Host and microbial loads before and after treatment were measured by `[qPCR/ddPCR ASSAYS, TARGETS, LOD/LOQ]`; library yield, non-host read-pair fraction, mock taxon recovery, viral/fungal target retention, and blank signal were evaluated against prespecified acceptance rules. `[PROTOCOL, REAGENT LOT, CONCENTRATION, INCUBATION, NUCLEASE AND STOPPING CONDITIONS]` was selected before cohort processing and applied identically across randomized case and control samples.
-
-> Paired-end reads were filtered using Hostile v2.0.2 with Bowtie2 v2.5.4 and the `human-t2t-hla` index (T2T-CHM13 v2.0 plus IPD-IMGT/HLA v3.51; index release 2023-07; index SHA-256 manifest `[FILE/HASH]`). Hostile was run with its short-read sensitive baseline, `--rename`, `--reorder`, and eight threads. If either mate was classified as host, the read pair was excluded. Input and retained read-pair counts, tool versions, command lines, index identity, peak memory, runtime, and output checksums were recorded per sample. Filtered reads remained under controlled access and were screened with `[INDEPENDENT TOOL AND COMPLETE REFERENCE, VERSION/HASH]` before any data release. Aggregate microbial profiles, rather than residual FASTQ, were used for open dissemination unless controlled-access approval explicitly permitted sequence sharing.
-
-### 若使用 masked index，额外写清
-
-> A masked host-reference sensitivity analysis used `human-t2t-hla.argos-bacteria-985_rs-viral-202401_ml-phage-202401` (`[INDEX HASH]`). The unmasked and masked outputs were compared for recall on known human-positive reads, retention of the cellular microbial/viral mock, residual-human alignments under an independent audit, and effects on `[PRIMARY ENDPOINT]`. The production index was chosen using prespecified privacy and target-retention criteria and was not selected after inspecting case-control associations.
-
-Methods 还必须给出：
-
-- specimen matrix、原始质量/体积、保存与 time-to-processing；
-- 分 aliquot 与 homogenization 规则；
-- wet-lab reagent、catalog、lot、浓度、时间、温度与 nuclease stop；
-- blank/mock 的组成、加入阶段、每批数量和失败规则；
-- host/microbial assay target、标准曲线、LOD/LOQ 与 inhibition；
-- FASTQ 质控、pair policy、Hostile/aligner/参考完整版本；
-- masked regions 或 protected references 的精确清单；
-- reads/pairs/bases 中使用哪个分母；
-- residual-human audit、数据访问等级与公开产物边界。
-
-## 换成你自己的数据怎么做 {#sec-own-data}
-
-### 1. 先写 endpoint–risk 表
-
-| Primary endpoint | 湿实验最担心的损失 | 计算过滤最担心的损失 | 必加对照 |
-|---|---|---|---|
-| Bacterial species | 易裂解或受损细菌 | 与宿主同源片段 | Gram+/Gram− cellular mock |
-| DNA virome | free/enveloped viral DNA | host-integrated/同源病毒区域 | enveloped + non-enveloped virus panel |
-| Mycobiome/parasites | 真核靶标被当作宿主处理 | 与人类保守区比对 | fungal/eukaryotic mock |
-| ARG/gene catalog | extracellular/low-copy genes | conserved domains 被误删 | known-copy gene/cell controls |
-| MAG/assembly | 有效覆盖和长片段损失 | pair/coverage 缺口 | assembly mock + coverage audit |
-| Cell-free DNA | PMA/nuclease 直接消除终点 | 短片段 mapping ambiguity | fragment-size-matched DNA control |
-
-若同一项目同时研究细菌、病毒和真菌，可能没有一套强耗竭流程能保护所有终点。更稳妥的设计是从同一 homogenate 预先分实验线，每条线独立记录 protocol、controls、unit 与分析边界。
-
-### 2. 选择代表性 pilot 样本
-
-至少覆盖：
-
-- 预期 host fraction 的低、中、高区间；
-- microbial load 的低、中、高区间；
-- 主要病例与对照 strata；
-- 不同黏度、炎症、血液/组织成分或采样中心；
-- 预计最难保留的 primary targets；
-- 每种候选条件的 paired untreated aliquot。
-
-单一 pooled sample 可用于早期排雷，不能替代 biological replicates。正式选择要看 subject-level paired effect 和变异范围，而不是只看总体均值。
-
-### 3. 预先定义四类失败规则
-
-| Gate | 示例指标 | 失败后动作 |
-|---|---|---|
-| Capacity | non-host read-pair gain、library success | 调整耗竭强度或增加输入 |
-| Retention | microbial copies、mock taxa、virus/fungus recovery | 降低强度、改机制或拆实验线 |
-| Contamination | blank reads、kitome taxa、index bleed | 重做该批、换 lot、调查批次 |
-| Privacy | residual-human screen、human-positive recall | 改参考/参数、维持受控访问 |
-
-阈值应按 primary endpoint 和 assay validation 设定。例如 MAG 可能需要最低 coverage breadth，virus discovery 可能要求某组 reference materials 全部恢复；不要把某篇唾液论文的 8.53% 直接复制成你的痰液、组织或宫颈样本阈值。
-
-### 4. 锁定后再进入正式队列
-
-pilot 完成后冻结：
-
-- wet-lab SOP、reagent lot 管理和 operator training；
-- sample randomization 与 plate map；
-- blank/mock frequency；
-- host reference、mask、aligner 与参数；
-- pair handling、file naming 和 secure temporary storage；
-- residual-human audit 与发布决策；
-- 失败、重做、排除与 protocol deviation 记录。
-
-若中途因 reagent 停产必须换 protocol，应把 bridge specimens 用两套方法并行处理，量化 batch/protocol shift；不能把旧病例与新对照直接合并后仅加一个 covariate。
-
-### 5. 发布时优先共享审计充分的派生产物
-
-建议发布：
-
-- sample × species/pathway/ARG abundance tables；
-- host/non-host read-pair counts与分母定义；
-- wet-lab treatment、batch、lot、blank/mock QC；
-- software、reference、index checksum 和命令；
-- retention–privacy sensitivity summary；
-- 不含人类比对片段的聚合统计与图。
-
-raw/filtered FASTQ 是否开放不由“宿主比例很低”决定，而由 consent、伦理审批、机构政策、独立审计和仓库访问模式共同决定。
-
-## 小结
+## 回到最初的问题
 
 1. 湿实验宿主耗竭在建库前提高 microbial fraction；计算去宿主在测序后清除残留人源 reads，不能恢复已损失的测序容量。
 2. Marotz 的唾液配对实验中，lyPMA 将平均宿主 fraction 从 89.29% 降到 8.53%；这证明该条件在该基质中有效，不是所有样本的通用处方。
@@ -1170,7 +1188,7 @@ raw/filtered FASTQ 是否开放不由“宿主比例很低”决定，而由 con
 4. 低生物量项目必须联合 microbial load、host ratio、blank、intact mock 和 primary-target retention，不能只看 Qubit 或总 reads。
 5. 完整人类参考、明确 pair policy、masked/unmasked sensitivity 与独立残留人源审计共同构成当前计算基线；filtered FASTQ 仍可能需要受控访问。
 
-## 参考 {#sec-references}
+## 参考文献 {#sec-references}
 
 - Marotz CA, Sanders JG, Zuniga C, et al. Improving saliva shotgun metagenomics by chemical host DNA depletion. *Microbiome*. 2018. [doi:10.1186/s40168-018-0426-3](https://doi.org/10.1186/s40168-018-0426-3)
 - Longhi G, Argentini C, Fontana F, et al. Saponin treatment for eukaryotic DNA depletion alters the microbial DNA profiles by reducing the abundance of Gram-negative bacteria in metagenomics analyses. *Microbiome Research Reports*. 2024. [doi:10.20517/mrr.2023.02](https://doi.org/10.20517/mrr.2023.02)

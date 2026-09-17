@@ -1,5 +1,6 @@
 ---
-title: "第 40 篇 · BGC 与天然产物：antiSMASH / GECCO / DeepBGC"
+author: "Peter"
+title: "BGC 与天然产物：antiSMASH / GECCO / DeepBGC"
 description: "用真实完整基因组与宏基因组共组装，审计 BGC 预测、碎片化、MIBiG 相似度和 read-weighted abundance"
 draft: false
 bibliography: ../references.bib
@@ -22,6 +23,7 @@ wechat:
     - {label: "建议节点", value: "32 cores · 16 GB RAM · 30 GB disk"}
   code_heading: "从完整基因组与碎片化对照到 BGC 边界、MIBiG 和丰度账本"
   expected_images: 4
+reader-mode: upstream
 ---
 
 > **先给结论：**BGC（biosynthetic gene cluster，生物合成基因簇）不能靠单个 biosynthetic gene 判定。主分支用 antiSMASH 8.0.4 的 curated rules 定边界，GECCO 0.10.3 作为 de novo cross-check；完整 *Salinispora tropica* CNB-440 分别检出 19/15 个 regions，而把同一染色体切成 20 kb fragments 后变成 29/27 个 calls。以完整基因组 region 为基准，antiSMASH 只有 5/19、GECCO 只有 3/15 保留至少 80% 的边界覆盖。真实共组装的 ≥20 kb contigs 上，antiSMASH/GECCO 分别给出 71/21 个 regions，其中 17 个满足双向 overlap ≥25%。因此，metagenome BGC 的第一不确定性通常不是颜色怎么画，而是 contig fragmentation、工具定义和 reference universe。
@@ -30,7 +32,13 @@ wechat:
 本次以 32 CPU cores 实跑。完整基因组分支的 peak RAM 为 0.43–0.83 GiB、耗时 12 秒至 7 分 50 秒；39.7 Mb 的真实共组装子集上，antiSMASH 用时 22 分 26 秒、peak 0.77 GiB，GECCO 用时 52 秒、peak 1.77 GiB。建议预留 **16 GB RAM、32 CPU cores、30 GB 可用磁盘和 1 小时**；启用更多 antiSMASH modules、处理大队列或长读长组装时需按输入规模上调。
 :::
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+完整度、参考相似性和潜在新颖性分别报告；预测基因簇不等于已经检测到化合物。
+
+:::
+
+## 预测到基因簇之后，离天然产物还有多远？ {#sec-target}
 
 锚定图是 *S. tropica* CNB-440 基因组论文 Figure 1：环形染色体外圈标出 secondary-metabolite loci [@udwary2007salinispora]。原研究按当时的 domain library 报告 17 个 biosynthetic loci；用 antiSMASH 8.0.4、MIBiG 4.0 重新分析同一条 5,183,331-bp 染色体得到 19 个 regions。两者不是简单“多检出两个”：rule set、边界合并、数据库和 BGC ontology 都已变化。
 
@@ -38,47 +46,28 @@ antiSMASH 8 把可检测 cluster types 从 81 扩到 101，并更新了 terpene�
 
 ![同一序列在完整、20 kb 碎片和真实共组装条件下的 BGC yield；计数差异首先反映边界与模型定义。](../figures/40-tool-bgc-yield.png){#fig-40-yield}
 
-## 理论：从一个“命中”到可解释的 BGC {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. BGC 是邻域证据，不是 gene list
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/40/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-BGC 是一组在基因组上相邻、共同参与 specialized metabolite biosynthesis 的 genes。PKS、NRPS、RiPP precursor、tailoring enzymes、transporters 与 regulators 提供不同证据。单独命中一个 ketosynthase domain，既不能确定完整 cluster，也不能证明样本产生对应化合物。
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/40/download.R)。
 
-### 2. Rule-based 与 de novo 模型回答不同问题
+```{r}
+#| label: reader-input-download-40
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/40/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-antiSMASH 用人工维护的 biosynthetic rules 和 profile HMMs 定义 protoclusters，再把重叠 protoclusters 合并为 regions [@blin2025antismash8]。优点是类别和核心 gene 可解释；代价是新化学空间仍受 rule vocabulary 约束。
-
-GECCO 用 conditional random field 根据相邻 proteins 的 domain evidence 进行 de novo 预测，强调高精度、可扩展和模型可解释性 [@carroll2021gecco]。DeepBGC 则用深度学习序列模型学习 BGC context [@hannigan2019deepbgc]。两类机器学习 scores 不是 antiSMASH rule 的概率版本，也不能直接相加。
-
-### 3. 跨工具共识必须先定义边界重叠
-
-对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：
-
-\[
-\frac{|A\cap B|}{|A|}\ge 0.25
-\quad\text{且}\quad
-\frac{|A\cap B|}{|B|}\ge 0.25.
-\]
-
-双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。
-
-### 4. MIBiG similarity 不是 compound novelty
-
-MIBiG 4.0 是人工整理的 experimentally characterized BGC 集合 [@zdouc2025mibig4]。高 similarity 支持“接近已知 BGC”，低 similarity 只表示当前 sequence/context 与该 reference universe 不近。它不能证明产物新颖，更不能证明结构、产量或活性。
-
-### 5. Read-weighted abundance 要从 BGC 内 genes 守恒汇总
-
-一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：
-
-\[
-A_{rs}=\sum_{g\in r}w_{gr}C_{gs},
-\qquad
-P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.
-\]
-
-这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。
-
-## 准备工作 {#sec-setup}
+## 先锁定输入、版本和算力边界 {#sec-setup}
 
 ### 算力门槛
 
@@ -91,8 +80,8 @@ P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.
 
 没有服务器时，可直接读取 `data/small/40-bgc-natural-products-frozen/` 的 region ledger、fragmentation table、MIBiG summary、gene-to-BGC mapping 和资源日志。在线 antiSMASH 适合少量完整 genomes；涉及未公开人源样本时，不应上传到公共 web service。
 
-<details>
-<summary>点开：锁定两个环境、antiSMASH databases 与内联出版主题</summary>
+<details class="wechat-omit">
+<summary>环境配置与完整运行说明</summary>
 
 ```bash
 mamba create -n metagenome-antismash8-2026.07 \
@@ -152,9 +141,7 @@ save_pub <- function(plot, file_base, width = 180, height = 120, units = "mm", d
 
 完整序列、数据库和临时 indexes 不进入 git；输入 compressed SHA-256、数据库文件 SHA-256、命令、版本和 compact outputs 进入 frozen evidence。
 
-## 可复制代码：双工具、碎片化正控与 abundance {#sec-code}
-
-### 第 1 步：准备并核对输入
+## 准备并核对输入 {#sec-code}
 
 ```bash
 ROOT="$PWD"
@@ -172,7 +159,17 @@ python3 scripts/prepare_article40_bgc.py \
 
 准备器执行五层 fail-closed 检查：两个完整 genomes、共组装、catalog membership、abundance 的 SHA-256；antiSMASH 七个数据库文件；序列数与总 bp；675 条 contig 子集；`antiSMASH --check-prereqs`。`salinispora-fragment-map.tsv` 固定每个 20 kb fragment 在完整染色体上的坐标。
 
-### 第 2 步：运行八个预设分支
+### 从单工具列表升级为“定义 + overlap” {#sec-audit}
+
+完整 *S. tropica* 上，14/19 个 antiSMASH regions 获得 GECCO support，14/15 个 GECCO regions 获得 antiSMASH support；真实共组装上则只有 17/71 与 17/21。前者说明完整上下文下两个模型大体收敛，后者说明 fragments、短 contigs 和不同边界假设放大分歧。未获共识不等于假阳性；它进入 secondary tier，等待更长 assembly、domain architecture、taxonomy 与实验证据。
+
+## 运行八个预设分支
+
+### Rule-based 与 de novo 模型回答不同问题
+
+antiSMASH 用人工维护的 biosynthetic rules 和 profile HMMs 定义 protoclusters，再把重叠 protoclusters 合并为 regions [@blin2025antismash8]。优点是类别和核心 gene 可解释；代价是新化学空间仍受 rule vocabulary 约束。
+
+GECCO 用 conditional random field 根据相邻 proteins 的 domain evidence 进行 de novo 预测，强调高精度、可扩展和模型可解释性 [@carroll2021gecco]。DeepBGC 则用深度学习序列模型学习 BGC context [@hannigan2019deepbgc]。两类机器学习 scores 不是 antiSMASH rule 的概率版本，也不能直接相加。
 
 ```bash
 python3 scripts/run_article40_bgc.py \
@@ -184,7 +181,33 @@ python3 scripts/run_article40_bgc.py \
 
 antiSMASH 的固定参数为 bacterial taxon、`--minimal --cc-mibig --cb-knownclusters`；完整 genomes 用 `prodigal`，fragments 与 metagenome contigs 用 `prodigal-m`。GECCO 固定 `--threshold 0.8 --cds 3`。命令、UTC 起止时间、stdout/stderr 与 `/usr/bin/time -v` 全部写入日志。
 
-### 第 3 步：生成 compact evidence
+### 从“低 MIBiG 相似”升级为候选优先级
+
+71 个 co-assembly antiSMASH regions 中，best MIBiG region-to-region score 分为 3 个 high（≥0.75）、31 个 intermediate、36 个 low、1 个无 score。低 similarity 且 abundance 高的 region 值得优先做 assembly extension、GCF clustering、domain/synteny 检查与 metabolomics 联合分析；在这些验证之前，表述应是 **distant from characterized MIBiG entries**，不能写成 novel compound。
+
+![每个 co-assembly region 的 best MIBiG score 与两样本 assigned reads；点大小反映 region length。](../figures/40-mibig-similarity-abundance.png){#fig-40-mibig}
+
+::: {.callout-caution title="4. 混用 complete-genome 与 metagenome gene finder"}
+完整 bacterial genome 使用 `prodigal`；碎片化 contigs 使用 `prodigal-m`。更换 gene calls 会改变 domain arrangement 与 BGC boundaries，必须和结果一起版本化。
+:::
+
+## 生成 compact evidence
+
+### 跨工具共识必须先定义边界重叠
+
+对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：
+
+\[
+\frac{|A\cap B|}{|A|}\ge 0.25
+\quad\text{且}\quad
+\frac{|A\cap B|}{|B|}\ge 0.25.
+\]
+
+双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。
+
+### MIBiG similarity 不是 compound novelty
+
+MIBiG 4.0 是人工整理的 experimentally characterized BGC 集合 [@zdouc2025mibig4]。高 similarity 支持“接近已知 BGC”，低 similarity 只表示当前 sequence/context 与该 reference universe 不近。它不能证明产物新颖，更不能证明结构、产量或活性。
 
 ```bash
 python3 scripts/summarize_article40_bgc.py \
@@ -203,7 +226,15 @@ column -t -s $'\t' "${WORK}/summary/mibig-similarity-summary.tsv"
 | *Nostoc* PCC 7120 | 16 | 9 | 9 | 9 |
 | Co-assembly contigs ≥20 kb | 71 | 21 | 17 | 17 |
 
-### 第 4 步：检查 fragmentation 与已知正控
+::: {.callout-caution title="2. 把 MIBiG low similarity 写成 novel natural product"}
+MIBiG 只覆盖已表征 BGC 的一部分；low score 也可能来自 assembly truncation、gene-calling error 或 rearrangement。novelty 需要 GCF、结构和实验链条。
+:::
+
+::: {.callout-caution title="3. 只保留 antiSMASH HTML"}
+HTML 适合浏览，不适合作为唯一数据资产。至少保留 JSON/GenBank、region ledger、命令、版本、database hashes 和 compact summary。
+:::
+
+## 检查 fragmentation 与已知正控
 
 ```{r}
 frozen <- "data/small/40-bgc-natural-products-frozen"
@@ -225,7 +256,27 @@ positive |>
 
 ![以完整基因组 regions 为分母：20 kb fragments 对边界的 ≥80%、部分和缺失回收。](../figures/40-fragmentation-sensitivity.png){#fig-40-fragmentation}
 
-### 第 5 步：把 BGC regions 接回 gene catalog 与 reads
+### 从 call count 升级为 fragmentation recovery
+
+20 kb fragments 让 antiSMASH calls 从 19 增至 29，看似“发现更多”，但完整 regions 中仅 5 个被覆盖 ≥80%，14 个只部分回收。GECCO 对应为 3 个充分回收、10 个部分、2 个低于 20%。call inflation 与 boundary loss 可以同时发生，所以不能只比较每 Mb 有多少 BGC。
+
+## 把 BGC regions 接回 gene catalog 与 reads
+
+### BGC 是邻域证据，不是 gene list {#sec-theory}
+
+BGC 是一组在基因组上相邻、共同参与 specialized metabolite biosynthesis 的 genes。PKS、NRPS、RiPP precursor、tailoring enzymes、transporters 与 regulators 提供不同证据。单独命中一个 ketosynthase domain，既不能确定完整 cluster，也不能证明样本产生对应化合物。
+
+### Read-weighted abundance 要从 BGC 内 genes 守恒汇总
+
+一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：
+
+\[
+A_{rs}=\sum_{g\in r}w_{gr}C_{gs},
+\qquad
+P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.
+\]
+
+这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。
 
 ```{r}
 bgc <- read_tsv(file.path(frozen, "coassembly-bgc-abundance.tsv"), show_col_types = FALSE)
@@ -242,7 +293,23 @@ stopifnot(sum(bgc$MOCK2FractionalRawReads) == 68816)
 
 ![类别按 multi-category region 分数计数，并分别展示 region、gene 与两样本 read mass 的守恒构成。](../figures/40-bgc-type-profile.png){#fig-40-types}
 
-### 第 6 步：冻结与验收
+### DeepBGC 放在何处
+
+DeepBGC 的价值是提供不同于 curated rules 的序列模型 sensitivity branch [@hannigan2019deepbgc]。若加入，应锁定 DeepBGC package、downloaded model 与 classifer hashes，并用相同 reciprocal-overlap rule 对齐 regions。不能把 DeepBGC probability、GECCO probability 和 antiSMASH categories 拼成一个未经校准的“总分”。当前主闭环选择 GECCO，是为了保留可运行的现代 Python 环境、domain-level introspection 和稳定 TSV/GenBank outputs。
+
+### 从单个 regions 升级为 GCF 与 paired omics
+
+队列级 discovery 应进一步用 BiG-SCAPE/BiG-SLiCE 聚成 gene-cluster families（GCFs），按 sample 做 prevalence/abundance，再与 metabolomics features 通过 sample-matched analysis 关联。相关不等于产物归属；确证仍需培养、表达、MS/MS、isotope tracing、heterologous expression 或基因敲除。
+
+::: {.callout-caution title="1. 把 fragment 数增多解释为 BGC richness 上升"}
+同一条染色体切成 20 kb 后，antiSMASH 由 19 变成 29 个 calls，但 14/19 完整 regions 只得到部分回收。先做 boundary recovery，再谈 richness。
+:::
+
+::: {.callout-caution title="5. BGC presence 等同表达或产物"}
+DNA 层面的 region 和 read abundance 都不能回答是否转录、翻译或合成化合物。至少增加 metatranscriptomics 或 metabolomics；机制性结论需要实验验证。
+:::
+
+## 保存与结果核对
 
 ```bash
 python3 scripts/freeze_article40_bgc.py \
@@ -256,66 +323,11 @@ python3 scripts/validate_article40_bgc.py \
   --figure-dir figures --chapter chapters/40-bgc-natural-products.qmd
 ```
 
-## 审计与升级 {#sec-audit}
-
-### 从单工具列表升级为“定义 + overlap”
-
-完整 *S. tropica* 上，14/19 个 antiSMASH regions 获得 GECCO support，14/15 个 GECCO regions 获得 antiSMASH support；真实共组装上则只有 17/71 与 17/21。前者说明完整上下文下两个模型大体收敛，后者说明 fragments、短 contigs 和不同边界假设放大分歧。未获共识不等于假阳性；它进入 secondary tier，等待更长 assembly、domain architecture、taxonomy 与实验证据。
-
-### 从 call count 升级为 fragmentation recovery
-
-20 kb fragments 让 antiSMASH calls 从 19 增至 29，看似“发现更多”，但完整 regions 中仅 5 个被覆盖 ≥80%，14 个只部分回收。GECCO 对应为 3 个充分回收、10 个部分、2 个低于 20%。call inflation 与 boundary loss 可以同时发生，所以不能只比较每 Mb 有多少 BGC。
-
-### 从“低 MIBiG 相似”升级为候选优先级
-
-71 个 co-assembly antiSMASH regions 中，best MIBiG region-to-region score 分为 3 个 high（≥0.75）、31 个 intermediate、36 个 low、1 个无 score。低 similarity 且 abundance 高的 region 值得优先做 assembly extension、GCF clustering、domain/synteny 检查与 metabolomics 联合分析；在这些验证之前，表述应是 **distant from characterized MIBiG entries**，不能写成 novel compound。
-
-![每个 co-assembly region 的 best MIBiG score 与两样本 assigned reads；点大小反映 region length。](../figures/40-mibig-similarity-abundance.png){#fig-40-mibig}
-
-### DeepBGC 放在何处
-
-DeepBGC 的价值是提供不同于 curated rules 的序列模型 sensitivity branch [@hannigan2019deepbgc]。若加入，应锁定 DeepBGC package、downloaded model 与 classifer hashes，并用相同 reciprocal-overlap rule 对齐 regions。不能把 DeepBGC probability、GECCO probability 和 antiSMASH categories 拼成一个未经校准的“总分”。当前主闭环选择 GECCO，是为了保留可运行的现代 Python 环境、domain-level introspection 和稳定 TSV/GenBank outputs。
-
-### 从单个 regions 升级为 GCF 与 paired omics
-
-队列级 discovery 应进一步用 BiG-SCAPE/BiG-SLiCE 聚成 gene-cluster families（GCFs），按 sample 做 prevalence/abundance，再与 metabolomics features 通过 sample-matched analysis 关联。相关不等于产物归属；确证仍需培养、表达、MS/MS、isotope tracing、heterologous expression 或基因敲除。
-
-## 出版级美化 {#sec-publication}
-
-1. Tool、BGC category 与 recovery state 使用固定、色盲友好色板；图内全部使用英文。
-2. Yield 图同时写清输入 context，不把 complete genome 与 metagenome fragment 当同一 denominator。
-3. Fragmentation 图以完整 regions 为分母，图注给出 fragment size 和 recovery threshold。
-4. Type composition 使用 fractional allocation，避免一个 hybrid PKS/NRPS region 被重复计数两次。
-5. Similarity–abundance 图的 y 轴取 log scale，并保留零 abundance（`reads + 1`）；MIBiG score 不改名为 novelty score。
-6. 所有主图同时导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="1. 把 fragment 数增多解释为 BGC richness 上升"}
-同一条染色体切成 20 kb 后，antiSMASH 由 19 变成 29 个 calls，但 14/19 完整 regions 只得到部分回收。先做 boundary recovery，再谈 richness。
-:::
-
-::: {.callout-caution title="2. 把 MIBiG low similarity 写成 novel natural product"}
-MIBiG 只覆盖已表征 BGC 的一部分；low score 也可能来自 assembly truncation、gene-calling error 或 rearrangement。novelty 需要 GCF、结构和实验链条。
-:::
-
-::: {.callout-caution title="3. 只保留 antiSMASH HTML"}
-HTML 适合浏览，不适合作为唯一数据资产。至少保留 JSON/GenBank、region ledger、命令、版本、database hashes 和 compact summary。
-:::
-
-::: {.callout-caution title="4. 混用 complete-genome 与 metagenome gene finder"}
-完整 bacterial genome 使用 `prodigal`；碎片化 contigs 使用 `prodigal-m`。更换 gene calls 会改变 domain arrangement 与 BGC boundaries，必须和结果一起版本化。
-:::
-
-::: {.callout-caution title="5. BGC presence 等同表达或产物"}
-DNA 层面的 region 和 read abundance 都不能回答是否转录、翻译或合成化合物。至少增加 metatranscriptomics 或 metabolomics；机制性结论需要实验验证。
-:::
-
 ::: {.callout-caution title="6. 把 ML probability 当跨工具可比概率"}
 GECCO/DeepBGC 的 scores 来自不同模型、训练集和 calibration；antiSMASH 是 rule evidence。应分别报告，再按坐标 overlap 对齐。
 :::
 
-## 这段 Methods 怎么写 {#sec-methods}
+## 说明基因簇完整性与相似性边界 {#sec-methods}
 
 ### Methods template
 
@@ -325,7 +337,7 @@ GECCO/DeepBGC 的 scores 来自不同模型、训练集和 calibration；antiSMA
 
 > antiSMASH and GECCO detected 71 and 21 BGC regions, respectively, on metagenomic contigs ≥20 kb; 17 regions from each tool had reciprocal coordinate support. The 71 antiSMASH regions contained 1,499 gene-catalog members and accounted for 69,790 and 68,816 assigned reads in MOCK1 and MOCK2. In the complete-genome fragmentation control, only 5/19 antiSMASH and 3/15 GECCO regions retained ≥80% coordinate coverage after 20-kb fragmentation, demonstrating substantial boundary sensitivity. Of the metagenomic antiSMASH regions, 3, 31, 36, and 1 had high, intermediate, low, and unavailable best MIBiG 4.0 region-to-region scores, respectively; low similarity was used for candidate prioritization rather than claimed as chemical novelty.
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 1. 输入 assembly FASTA；先记录 assembler、版本、minimum contig length、N50 和 circularity。短 reads 研究建议主分析从 ≥10–20 kb contigs 或高质量 MAGs 起步，同时保留全 contig sensitivity branch。
 2. 固定 antiSMASH、GECCO/DeepBGC、gene finder 与 database/model versions；把 PFAM、MIBiG、MITE 或 model bundle 的 hashes 写入 manifest。
@@ -336,7 +348,20 @@ GECCO/DeepBGC 的 scores 来自不同模型、训练集和 calibration；antiSMA
 7. 低 MIBiG similarity 候选先做 contig extension、domain architecture、synteny、GCF clustering 和 contamination 检查，再进入 metabolomics/实验验证。
 8. 交付时保留 JSON/GenBank/TSV、compact tables、commands、resource logs、checksums 与三种图形格式。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-publication}
+
+1. Tool、BGC category 与 recovery state 使用固定、色盲友好色板；图内全部使用英文。
+2. Yield 图同时写清输入 context，不把 complete genome 与 metagenome fragment 当同一 denominator。
+3. Fragmentation 图以完整 regions 为分母，图注给出 fragment size 和 recovery threshold。
+4. Type composition 使用 fractional allocation，避免一个 hybrid PKS/NRPS region 被重复计数两次。
+5. Similarity–abundance 图的 y 轴取 log scale，并保留零 abundance（`reads + 1`）；MIBiG score 不改名为 novelty score。
+6. 所有主图同时导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。
+
+## 回到最初的问题
+
+BGC 不是单基因清单：用完整基因组、确定性碎片和真实共组装，拆开工具边界、碎片化、MIBiG 相似度与 read-weighted abundance。
+
+## 参考文献 {#sec-references}
 
 - *S. tropica* CNB-440 complete genome 与 secondary metabolome [@udwary2007salinispora]
 - *Nostoc* PCC 7120 complete genome [@kaneko2001nostoc]

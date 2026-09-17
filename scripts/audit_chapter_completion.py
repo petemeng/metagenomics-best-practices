@@ -22,16 +22,10 @@ from tutorial_automation.manifest import load_manifest
 
 
 REQUIRED_SECTIONS = (
-    "这一步对应论文里的哪张图",
-    "理论",
-    "准备工作",
-    "可复制代码",
-    "审计与升级",
-    "出版级美化",
-    "常见坑",
-    "这段 Methods 怎么写",
-    "换成你自己的数据怎么做",
-    "参考",
+    "Key Takeaways",
+    "附录 A：Methods / Results 模板",
+    "附录 B：换成你自己的数据",
+    "参考文献",
 )
 PROHIBITED_PATTERNS = (
     "作者代码通常长这样",
@@ -100,6 +94,14 @@ def main() -> int:
         missing_sections = [
             section for section in REQUIRED_SECTIONS if section not in text
         ]
+        if number != 71:
+            missing_sections.extend(
+                token
+                for token in ("#sec-theory", "#sec-code", "#sec-audit", ".callout-caution")
+                if token not in text
+            )
+        if number != 75 and "## 附录 C：" not in text:
+            missing_sections.append("## 附录 C：")
         prohibited = [
             pattern for pattern in PROHIBITED_PATTERNS if pattern in text
         ]

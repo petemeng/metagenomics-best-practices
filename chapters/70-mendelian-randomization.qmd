@@ -1,7 +1,7 @@
 ---
-title: "第 70 篇 · 孟德尔随机化：工具变量、水平多效性与敏感性分析"
+title: "孟德尔随机化：工具变量、水平多效性与敏感性分析"
 description: "用官方 TwoSampleMR BMI→冠心病真实汇总统计示例，完成等位基因协调、工具强度、IVW/稳健估计、异质性、MR-PRESSO、leave-one-out 与 Steiger 方向性审计，并说明微生物组 MR 还需要哪些外部 GWAS"
-author: "宏基因组分析最佳实践 · Shotgun 系列"
+author: "Peter"
 date: last-modified
 draft: false
 bibliography: ../references.bib
@@ -12,7 +12,7 @@ format:
     code-fold: true
     code-tools: true
     code-copy: true
-    number-sections: true
+    number-sections: false
 execute:
   eval: true
   freeze: auto
@@ -35,6 +35,7 @@ wechat:
     - {label: "自己的微生物 MR", value: "External mGWAS + outcome GWAS required"}
   code_heading: "从汇总统计到可辩护的两样本 MR"
   expected_images: 9
+reader-mode: analysis
 ---
 
 ::: {.callout-important title="你还需要什么数据"}
@@ -47,7 +48,13 @@ wechat:
 
 MR-PRESSO 标记 rs6713510 与 rs7903146，剔除后 OR 为 1.62（1.46–1.79），distortion test $P=0.566$；leave-one-out 的 79 个估计均为正。MR-Egger intercept $P=0.667$ 只能说明没有检测到平均定向多效性，不能证明所有工具满足 exclusion restriction。聚合 Steiger test 在 CHD prevalence 3%–20% 的假设范围内都支持 BMI → CHD，但单 SNP 仍有 1/79 不支持该方向，且测量误差会影响此检验。
 
-## 这一步对应论文里的哪张图 {#sec-target}
+::: {.callout-tip title="先确定这一点"}
+
+强度、等位基因协调、多效性和方向性都要检查；BMI 示例的方法结果不能直接外推为微生物因果效应。
+
+:::
+
+## 工具变量能否支持所声称的因果方向？ {#sec-target}
 
 MR-Base 论文 Figure 1 把三个工具变量假设与四类 estimator 的行为画在一起 [@hemani2018mrbase]：relevance 要求 SNP 与 exposure 相关；independence 要求 SNP 不受 exposure–outcome confounder 影响；exclusion restriction 要求 SNP 只能经 exposure 改变 outcome。只有第一条能被 exposure GWAS 直接量化。
 
@@ -57,49 +64,28 @@ MR-Base 论文 Figure 1 把三个工具变量假设与四类 estimator 的行为
 
 ![A：API-free 的锁定示例只使用公开 GWAS 汇总统计。B：三个假设中，只有 relevance 在本数据里直接得到 minimum F=29.9 的支持。](../figures/70-study-design-assumptions.png){#fig-70-design}
 
-## 理论：MR 估计的是遗传代理暴露效应，不是“相关升级版” {#sec-theory}
+## 下载本例数据与分析代码 {#sec-reader-inputs}
 
-### 1. 三个工具变量假设缺一不可
+[数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/70/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 1.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
 
-令 $G_j$ 为第 $j$ 个遗传工具，$X$ 为 exposure，$Y$ 为 outcome。单 SNP Wald ratio 为：
+在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用[带完整性检查的下载脚本](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/54d211859b240c610f61d1a2ae72e605ea96f7f3/examples/70/download.R)。
 
-$$
-\widehat\beta_j^{MR}=\frac{\widehat\beta_{Yj}}{\widehat\beta_{Xj}}.
-$$
+```{r}
+#| label: reader-input-download-70
+#| eval: false
+options(timeout = 600)
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+files <- read.delim(paste0(base_url, "examples/70/files.tsv"))
+for (i in seq_len(nrow(files))) {
+  path <- files$path[i]
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  if (!file.exists(path)) {
+    download.file(paste0(base_url, files$source[i]), path, mode = "wb")
+  }
+}
+```
 
-它只有在以下条件下才对应 exposure effect：
-
-1. **Relevance（相关性）**：$G_j\rightarrow X$；常用 $F_j=(\widehat\beta_{Xj}/SE_{Xj})^2$ 检查弱工具；
-2. **Independence（独立性）**：$G_j$ 不与 $X$--$Y$ 混杂因素关联；
-3. **Exclusion restriction（排除限制）**：$G_j$ 不通过 $X$ 之外的路径影响 $Y$。
-
-第二、三条是因果结构假设，不会被“GWAS P<5e-8”“F>10”或 Egger intercept 不显著证明 [@sanderson2022mr]。垂直多效性（variant → exposure 下游 mediator → outcome）可以属于目标通路；绕过 exposure 的水平多效性才违反 exclusion restriction。
-
-### 2. 两样本设计还增加了兼容性假设
-
-Two-sample MR 使用 exposure GWAS 的 $\widehat\beta_X$ 与 outcome GWAS 的 $\widehat\beta_Y$。两份研究还需在 ancestry、LD、allele coding、trait definition 和效应尺度上可比。若同一参与者同时进入两份 GWAS，弱工具时估计可能向 observational association 偏移；样本完全独立时，弱工具通常向零偏移 [@burgess2016overlap]。
-
-本例 exposure 来自 Locke 等人的 BMI GWAS，研究最大样本量 339,224 [@locke2015bmi]；outcome 来自 Nikpay 等人的 CHD meta-analysis，60,801 cases 与 123,504 controls [@nikpay2015cad]。官方缓存没有 ancestry、participant overlap、LD reference/release 和 clumping 细节，因此这些项不能在分析后“推断为已验证”。
-
-### 3. 五种估计器解决的不是同一个问题
-
-| Estimator | 核心有效性条件 | 主要弱点 |
-|---|---|---|
-| IVW | balanced pleiotropy；或所有工具有效 | 一个强 invalid instrument 即可造成偏倚 |
-| Weighted median | 至少 50% 的权重来自有效工具 [@bowden2016median] | 多数权重失效时仍偏倚 |
-| MR-Egger | InSIDE；NOME 近似成立 [@bowden2015egger] | 功效低、对 leverage 与 measurement error 敏感 |
-| Mode-based | 最大加权簇来自有效工具（ZEMPA）[@hartwig2017mode] | bandwidth 选择影响结果 |
-| MR-PRESSO corrected | horizontal pleiotropy 工具少于约 50% [@verbanck2018presso] | outlier removal 不能修复共享生物通路或系统性偏倚 |
-
-方向一致值得报告，但“每种方法都显著”不是有效性证明。更有信息量的问题是：不同假设下效应是否仍同向、异质性由谁贡献、结论是否被单一位点驱动、方向性是否依赖 prevalence 或 measurement error。
-
-### 4. 微生物 mGWAS 的 instrument validity 尤其脆弱
-
-微生物 phenotype 会随测序技术、zero handling、taxonomic database、药物、饮食与地理环境改变。MiBioGen 在 18,340 人、24 个队列中进行大规模宿主遗传–肠道微生物关联分析，但经过严格 study-wide threshold 后最突出的可复现信号集中在 LCT–Bifidobacterium 轴 [@kurilshikov2021mibiogen]。这说明很多 taxon 的工具少、弱或跨队列不稳定。
-
-一个宿主位点也可能通过乳糖消化、黏膜免疫、肠道运动或药物代谢直接改变结局，而不必经目标 taxon。微生物 MR 因而更需要 bidirectional MR、negative controls、locus-level colocalization、独立 mGWAS replication 和实验三角验证 [@wade2020microbiomemr; @giambartolomei2014coloc]。
-
-## 准备工作 {#sec-preparation}
+## 先锁定输入、版本和算力边界 {#sec-preparation}
 
 ### 数据谱系、estimand 与算力
 
@@ -119,7 +105,7 @@ Two-sample MR 使用 exposure GWAS 的 $\widehat\beta_X$ 与 outcome GWAS 的 $\
 
 冻结结果复核约需 **2 CPU、4 GB RAM、<1 分钟**；重新运行 2,000 次 MR-PRESSO 与全套诊断约需 **2 CPU、8 GB RAM、3–8 分钟**。这不是 shotgun 上游计算，主要门槛是获得合规、可追溯且样本足够大的 mGWAS/outcome GWAS。若本地资源不足，普通实验室服务器、HPC 登录节点的短作业或小型云实例即可。
 
-<details>
+<details class="wechat-omit">
 <summary><strong>安装锁定依赖、获取真实缓存，并内联统一作图函数</strong></summary>
 
 ```{bash}
@@ -177,7 +163,7 @@ save_pub <- function(plot, file_base, width = 210, height = 150,
 
 </details>
 
-### 先验收 checksum 与输入合同
+### 先结果核对 checksum 与输入约定
 
 ```{bash}
 #| eval: false
@@ -225,9 +211,29 @@ knitr::kable(
 
 在线重取 OpenGWAS 可用 `extract_instruments("ieu-a-2")` 与 `extract_outcome_data()`，但当前服务可能需要 JWT，catalog 与 harmonisation behavior 也会更新。可复现分析应先把合法取得的原始 associations、study metadata、checksum 与提取日期固化；API 只负责取数，不应成为每次 render 的隐性依赖。
 
-## 可复制代码：从汇总统计到可辩护的两样本 MR {#sec-code}
+## 先按 effect allele 协调，不按 SNP 名直接合并 {#sec-code}
 
-### 第 1 步：先按 effect allele 协调，不按 SNP 名直接合并
+### 三个工具变量假设缺一不可 {#sec-theory}
+
+令 $G_j$ 为第 $j$ 个遗传工具，$X$ 为 exposure，$Y$ 为 outcome。单 SNP Wald ratio 为：
+
+$$
+\widehat\beta_j^{MR}=\frac{\widehat\beta_{Yj}}{\widehat\beta_{Xj}}.
+$$
+
+它只有在以下条件下才对应 exposure effect：
+
+1. **Relevance（相关性）**：$G_j\rightarrow X$；常用 $F_j=(\widehat\beta_{Xj}/SE_{Xj})^2$ 检查弱工具；
+2. **Independence（独立性）**：$G_j$ 不与 $X$--$Y$ 混杂因素关联；
+3. **Exclusion restriction（排除限制）**：$G_j$ 不通过 $X$ 之外的路径影响 $Y$。
+
+第二、三条是因果结构假设，不会被“GWAS P<5e-8”“F>10”或 Egger intercept 不显著证明 [@sanderson2022mr]。垂直多效性（variant → exposure 下游 mediator → outcome）可以属于目标通路；绕过 exposure 的水平多效性才违反 exclusion restriction。
+
+### 微生物 mGWAS 的 instrument validity 尤其脆弱
+
+微生物 phenotype 会随测序技术、zero handling、taxonomic database、药物、饮食与地理环境改变。MiBioGen 在 18,340 人、24 个队列中进行大规模宿主遗传–肠道微生物关联分析，但经过严格 study-wide threshold 后最突出的可复现信号集中在 LCT–Bifidobacterium 轴 [@kurilshikov2021mibiogen]。这说明很多 taxon 的工具少、弱或跨队列不稳定。
+
+一个宿主位点也可能通过乳糖消化、黏膜免疫、肠道运动或药物代谢直接改变结局，而不必经目标 taxon。微生物 MR 因而更需要 bidirectional MR、negative controls、locus-level colocalization、独立 mGWAS replication 和实验三角验证 [@wade2020microbiomemr; @giambartolomei2014coloc]。
 
 同一 SNP 在两份 GWAS 中可能使用相反 effect allele。A/T 或 C/G palindromic SNP 还会在 strand flip 后保持字母集合不变；只有 effect-allele frequency 足够明确时才能判断方向。`action=2` 使用 allele frequency 处理可判定 palindrome，并删除 ambiguous variants。
 
@@ -264,7 +270,21 @@ stopifnot(
 
 ![A：79 个 exposure hits 都有 outcome association 且全部保留。B：minimum F=29.9，未见 F<10。C：79 个工具合计近似解释 1.58% BMI variance；强度不等于有效性。](../figures/70-instrument-harmonisation.png){#fig-70-harmonisation}
 
-### 第 2 步：同时报告 per-SNP F 与 $I^2_{GX}$
+### 为什么这个 BMI 结果仍不是模板化“因果证明”
+
+强工具、一致方向和 leave-one-out 稳定提高了可信度；显著 Q 与 PRESSO global test 又表明工具间不一致不能忽略。更关键的是，GWAS 缓存没有独立编码 population structure、assortative mating、dynastic effect、selection bias、sample overlap 或每个位点的生物路径。MR 改变的是混杂结构，不会让 observational assumptions 消失。
+
+对 microbiome 暴露，宿主变异往往首先改变饮食偏好、消化、免疫或肠道生理，再改变测得的 taxon。若同一宿主通路也直接影响 disease，exclusion restriction 失败。应把 MR 与 longitudinal cohort、diet/antibiotic negative controls、metabolomics、randomized intervention、gnotobiotic experiment 和 locus colocalization 组合，而不是让 MR 单独承担机制结论。
+
+::: {.callout-caution title="F>10，所以工具一定有效"}
+F 只检查 relevance。population stratification、horizontal pleiotropy、dynastic effects 与 assortative mating 仍可违反 independence 或 exclusion restriction。
+:::
+
+::: {.callout-caution title="Palindromic SNP 统一翻转或统一删除"}
+A/T、C/G 是否可定向取决于两边 EAF 与频率差。保留/删除规则、ambiguous 数与 sign flips 都应进 harmonisation ledger。
+:::
+
+## 同时报告 per-SNP F 与 $I^2_{GX}$
 
 ```{r}
 strength <- read.delim(
@@ -296,7 +316,17 @@ Isq(dat$beta.exposure, dat$se.exposure)
 sum(dat$R2Exposure)
 ```
 
-### 第 3 步：主估计与稳健估计必须并排
+### 先忠实复现官方范式 {#sec-audit}
+
+TwoSampleMR 官方缓存给出 79 个 BMI instruments 与对应 CHD associations；本分析保留原始 effect sizes、alleles、EAF 和 per-SNP sample size，使用 `harmonise_data(action=2)`、IVW/weighted median/MR-Egger/mode estimators、Q、Egger intercept、single-SNP 与 leave-one-out。所有随机过程固定 seed；MR-PRESSO 的 null distributions 固定为 2,000。
+
+## 主估计与稳健估计必须并排
+
+### 两样本设计还增加了兼容性假设
+
+Two-sample MR 使用 exposure GWAS 的 $\widehat\beta_X$ 与 outcome GWAS 的 $\widehat\beta_Y$。两份研究还需在 ancestry、LD、allele coding、trait definition 和效应尺度上可比。若同一参与者同时进入两份 GWAS，弱工具时估计可能向 observational association 偏移；样本完全独立时，弱工具通常向零偏移 [@burgess2016overlap]。
+
+本例 exposure 来自 Locke 等人的 BMI GWAS，研究最大样本量 339,224 [@locke2015bmi]；outcome 来自 Nikpay 等人的 CHD meta-analysis，60,801 cases 与 123,504 controls [@nikpay2015cad]。官方缓存没有 ancestry、participant overlap、LD reference/release 和 clumping 细节，因此这些项不能在分析后“推断为已验证”。
 
 ```{r}
 mr_results <- read.delim(
@@ -335,7 +365,7 @@ Allele-oriented scatter 保留每个 Wald ratio，同时用点面积表达 outco
 
 ![79 个工具的 exposure 与 outcome association。橙色菱形为 MR-PRESSO outliers；orientation 只让 exposure beta 为正，不改变 Wald ratio。](../figures/70-mr-scatter.png){#fig-70-scatter}
 
-### 第 4 步：异质性、Egger intercept 与 funnel plot 回答不同问题
+## 异质性、Egger intercept 与 funnel plot 回答不同问题
 
 ```{r}
 heterogeneity <- read.delim(
@@ -367,7 +397,40 @@ IVW $I^2$ 为 45.7%，说明 SNP-specific ratios 超出 sampling error 所能解
 
 ![A：funnel symmetry 只能作诊断。B：Q 与 PRESSO global test 明显，而 Egger intercept 和 PRESSO distortion 不显著；后两者不能覆盖前两者。](../figures/70-heterogeneity-pleiotropy.png){#fig-70-heterogeneity}
 
-### 第 5 步：离群分析要展示“删前—删后”，不能只保留好看的版本
+### 今天需要加上的检查
+
+1. **输入 lineage**：锁定原始 RData、release、commit 与 checksum；不让在线 API 更新悄悄改变 instruments。
+2. **LD 可追溯性**：官方缓存没有 clumping reference/release，Methods 只能写“preselected instruments”，不能声称已重建 independence。
+3. **工具强度**：同时报告 minimum/median F、$I^2_{GX}$ 与 exposure $R^2$，不只写 P<5e-8。
+4. **等位基因账本**：报告 palindrome、ambiguous、removed、sign flips 与 proxies，不能只写“harmonized”。
+5. **多假设 triangulation**：IVW、median、Egger、mode 和 outlier-corrected estimate 并排，说明各自条件。
+6. **异质性定位**：Q、funnel、PRESSO、radial contribution 与 leave-one-out 同时保留；不得只呈现删点后结果。
+7. **方向性审计**：binary outcome 用 prevalence grid；明确 Steiger 对 measurement error 的敏感性。
+8. **样本兼容性**：核对 ancestry、participant overlap、case definition、genome build 与 sample overlap；本缓存未编码的项目标为 unknown。
+9. **微生物特异验证**：mGWAS discovery/replication、trait definition、profiler/database、host-pathway pleiotropy、reverse MR 和 colocalization。
+10. **多重检验**：若扫描数百 taxa × outcomes，应对整个 analysis family 控制 FDR/Bonferroni，并外部复制；不能把 relaxed P<1e-5 instruments 当作与 genome-wide hits 等价。
+
+::: {.callout-caution title="Egger intercept 不显著，所以没有多效性"}
+Egger intercept 对少数离群点和低功效不敏感，也无法证明 balanced pleiotropy 不存在。本例 intercept P=0.667，但 Q 与 PRESSO global test 明显异常。
+:::
+
+::: {.callout-caution title="用 relaxed P<1e-5 给每个 taxon 凑工具"}
+这会放大 weak-instrument bias 与 winner's curse。若因 mGWAS 功效有限必须放宽阈值，应预注册、报告 F、使用独立 replication、校正全局多重检验，并把结论降级为探索性。
+:::
+
+## 离群分析要展示“删前—删后”，不能只保留好看的版本
+
+### 五种估计器解决的不是同一个问题
+
+| Estimator | 核心有效性条件 | 主要弱点 |
+|---|---|---|
+| IVW | balanced pleiotropy；或所有工具有效 | 一个强 invalid instrument 即可造成偏倚 |
+| Weighted median | 至少 50% 的权重来自有效工具 [@bowden2016median] | 多数权重失效时仍偏倚 |
+| MR-Egger | InSIDE；NOME 近似成立 [@bowden2015egger] | 功效低、对 leverage 与 measurement error 敏感 |
+| Mode-based | 最大加权簇来自有效工具（ZEMPA）[@hartwig2017mode] | bandwidth 选择影响结果 |
+| MR-PRESSO corrected | horizontal pleiotropy 工具少于约 50% [@verbanck2018presso] | outlier removal 不能修复共享生物通路或系统性偏倚 |
+
+方向一致值得报告，但“每种方法都显著”不是有效性证明。更有信息量的问题是：不同假设下效应是否仍同向、异质性由谁贡献、结论是否被单一位点驱动、方向性是否依赖 prevalence 或 measurement error。
 
 ```{r}
 presso <- read.delim(
@@ -421,7 +484,11 @@ radial_fit <- ivw_radial(
 
 ![A：所有 79 个工具与排除两个 PRESSO outliers 后的估计。B：radial-IVW 对 Q 的主要贡献；两个诊断回答的问题不同。](../figures/70-outlier-sensitivity.png){#fig-70-outliers}
 
-### 第 6 步：leave-one-out 查单点支配，不查“所有多效性”
+::: {.callout-caution title="自动删掉所有 radial/PRESSO outliers"}
+不同方法在本例分别标记 2 与 10 个工具。先查 LD、phenome 与生物路径，报告删前删后；不要把使结果更显著作为删除标准。
+:::
+
+## leave-one-out 查单点支配，不查“所有多效性”
 
 ```{r}
 leave <- read.delim(
@@ -440,7 +507,11 @@ stopifnot(
 
 ![A：79 个 leave-one-out estimates 均为正。B：影响最大的八次省略；虚线是全部工具的 IVW estimate。](../figures/70-leave-one-out.png){#fig-70-loo}
 
-### 第 7 步：二分类结局的 Steiger test 要审计 prevalence
+::: {.callout-caution title="MR estimate 显著，就写成个体干预效应"}
+MR 反映终生遗传代理 exposure 的局部效应尺度，不必等于短期益生菌、饮食或药物干预效应，也不自动满足 linearity 与 homogeneity。
+:::
+
+## 二分类结局的 Steiger test 要检查 prevalence
 
 Steiger directionality 比较工具对 exposure 与 outcome 的解释度 [@hemani2017steiger]。CHD 是 case-control trait，outcome $R^2$ 应换算到 liability scale；population prevalence 未写在缓存中，因此不能只代入一个看似精确的数。
 
@@ -466,68 +537,6 @@ table(per_snp$ExposureExplainsMore)
 
 ![A：aggregate direction 在四个 prevalence assumptions 下稳定。B：78/79 SNP 支持 exposure R² 更大；一处反例提醒方向性并非逐位点一致。](../figures/70-steiger-directionality.png){#fig-70-steiger}
 
-## 从主效应到多效性：审计与升级 {#sec-audit}
-
-### 先忠实复现官方范式
-
-TwoSampleMR 官方缓存给出 79 个 BMI instruments 与对应 CHD associations；本分析保留原始 effect sizes、alleles、EAF 和 per-SNP sample size，使用 `harmonise_data(action=2)`、IVW/weighted median/MR-Egger/mode estimators、Q、Egger intercept、single-SNP 与 leave-one-out。所有随机过程固定 seed；MR-PRESSO 的 null distributions 固定为 2,000。
-
-### 今天需要加上的审计
-
-1. **输入 lineage**：锁定原始 RData、release、commit 与 checksum；不让在线 API 更新悄悄改变 instruments。
-2. **LD 可追溯性**：官方缓存没有 clumping reference/release，Methods 只能写“preselected instruments”，不能声称已重建 independence。
-3. **工具强度**：同时报告 minimum/median F、$I^2_{GX}$ 与 exposure $R^2$，不只写 P<5e-8。
-4. **等位基因账本**：报告 palindrome、ambiguous、removed、sign flips 与 proxies，不能只写“harmonized”。
-5. **多假设 triangulation**：IVW、median、Egger、mode 和 outlier-corrected estimate 并排，说明各自条件。
-6. **异质性定位**：Q、funnel、PRESSO、radial contribution 与 leave-one-out 同时保留；不得只呈现删点后结果。
-7. **方向性审计**：binary outcome 用 prevalence grid；明确 Steiger 对 measurement error 的敏感性。
-8. **样本兼容性**：核对 ancestry、participant overlap、case definition、genome build 与 sample overlap；本缓存未编码的项目标为 unknown。
-9. **微生物特异验证**：mGWAS discovery/replication、trait definition、profiler/database、host-pathway pleiotropy、reverse MR 和 colocalization。
-10. **多重检验**：若扫描数百 taxa × outcomes，应对整个 analysis family 控制 FDR/Bonferroni，并外部复制；不能把 relaxed P<1e-5 instruments 当作与 genome-wide hits 等价。
-
-### 为什么这个 BMI 结果仍不是模板化“因果证明”
-
-强工具、一致方向和 leave-one-out 稳定提高了可信度；显著 Q 与 PRESSO global test 又表明工具间不一致不能忽略。更关键的是，GWAS 缓存没有独立编码 population structure、assortative mating、dynastic effect、selection bias、sample overlap 或每个位点的生物路径。MR 改变的是混杂结构，不会让 observational assumptions 消失。
-
-对 microbiome 暴露，宿主变异往往首先改变饮食偏好、消化、免疫或肠道生理，再改变测得的 taxon。若同一宿主通路也直接影响 disease，exclusion restriction 失败。应把 MR 与 longitudinal cohort、diet/antibiotic negative controls、metabolomics、randomized intervention、gnotobiotic experiment 和 locus colocalization 组合，而不是让 MR 单独承担机制结论。
-
-## 出版级美化 {#sec-publication}
-
-MR 主图应让读者同时看到 effect、uncertainty 与假设边界：
-
-- forest plot 用同一效应尺度，本例统一为 CHD OR per genetically predicted 1-SD higher BMI；
-- 0 效应在 beta scale、1 在 OR scale，二者不能混画；
-- scatter plot 标出 allele orientation 与 outliers，点面积只表达一种 precision；
-- heterogeneity、Egger intercept、PRESSO global/distortion 分开命名，避免把不同诊断画成同一“多效性分数”；
-- leave-one-out 按 estimate 排序，同时给 all-instrument reference；
-- Steiger 图显示 prevalence sensitivity 与逐 SNP 例外；
-- 图注写清 genome-wide threshold、instrument count、outlier rule 与是否 correction；
-- 所有图内文字用英文，输出 vector PDF、360 dpi PNG 与 LZW TIFF。
-
-不要用绿色勾号表示“causal”。本章蓝色表示 primary estimate、橙色表示警报或 outlier、灰色表示未验证项；颜色编码的是分析状态，不是结论真假。
-
-## 常见坑 {#sec-pitfalls}
-
-::: {.callout-caution title="F>10，所以工具一定有效"}
-F 只检查 relevance。population stratification、horizontal pleiotropy、dynastic effects 与 assortative mating 仍可违反 independence 或 exclusion restriction。
-:::
-
-::: {.callout-caution title="Egger intercept 不显著，所以没有多效性"}
-Egger intercept 对少数离群点和低功效不敏感，也无法证明 balanced pleiotropy 不存在。本例 intercept P=0.667，但 Q 与 PRESSO global test 明显异常。
-:::
-
-::: {.callout-caution title="自动删掉所有 radial/PRESSO outliers"}
-不同方法在本例分别标记 2 与 10 个工具。先查 LD、phenome 与生物路径，报告删前删后；不要把使结果更显著作为删除标准。
-:::
-
-::: {.callout-caution title="Palindromic SNP 统一翻转或统一删除"}
-A/T、C/G 是否可定向取决于两边 EAF 与频率差。保留/删除规则、ambiguous 数与 sign flips 都应进 harmonisation ledger。
-:::
-
-::: {.callout-caution title="用 relaxed P<1e-5 给每个 taxon 凑工具"}
-这会放大 weak-instrument bias 与 winner's curse。若因 mGWAS 功效有限必须放宽阈值，应预注册、报告 F、使用独立 replication、校正全局多重检验，并把结论降级为探索性。
-:::
-
 ::: {.callout-caution title="Steiger forward=true 就证明方向"}
 Steiger 比较解释度，受 trait measurement error、case-control prevalence 与 winner's curse 影响。它是方向诊断，不替代 bidirectional MR、时间证据或实验验证。
 :::
@@ -536,11 +545,7 @@ Steiger 比较解释度，受 trait measurement error、case-control prevalence 
 LCT 等位基因可能同时改变饮食、乳糖消化与菌群。需要 locus-level colocalization、phenome-wide audit 和下游机制实验，不能只凭 taxon GWAS 标签解释路径。
 :::
 
-::: {.callout-caution title="MR estimate 显著，就写成个体干预效应"}
-MR 反映终生遗传代理 exposure 的局部效应尺度，不必等于短期益生菌、饮食或药物干预效应，也不自动满足 linearity 与 homogeneity。
-:::
-
-## 这段 Methods 怎么写 {#sec-methods}
+## 完整报告工具变量与稳健性检查 {#sec-methods}
 
 > We performed summary-data two-sample Mendelian randomization using the 79 preselected genome-wide significant body-mass-index (BMI) variants and corresponding coronary-heart-disease (CHD) associations stored in the TwoSampleMR 0.7.9 official vignette dataset. BMI associations originated from Locke et al. (maximum N=339,224), and CHD associations originated from Nikpay et al. (60,801 cases and 123,504 controls). Effect alleles were harmonized with allele-frequency-assisted handling of palindromic variants (`action=2`); all 79 variants were retained, including four non-ambiguous palindromic variants. Instrument strength was assessed using per-variant F statistics, approximate exposure R², and I²GX. The primary estimator was multiplicative random-effects inverse-variance weighting; weighted-median, MR-Egger, simple-mode, and weighted-mode estimates were prespecified sensitivity analyses. Heterogeneity and horizontal pleiotropy were evaluated using Cochran's Q, the MR-Egger intercept, MR-PRESSO with 2,000 null distributions, radial-IVW contributions to Q, single-variant estimates, and leave-one-out analysis. Steiger directionality for the binary outcome was assessed on the liability scale across assumed CHD prevalences of 3%, 6%, 10%, and 20%. Analyses used R 4.4.1, TwoSampleMR 0.7.9, ieugwasr 1.1.0, MRPRESSO 1.0, RadialMR 1.1, and seed 70001. The locked source file had SHA-256 `7a13b142...d63502`. Because the cached vignette did not encode the LD reference release, ancestry audit, or participant overlap, these design attributes were treated as unresolved rather than reconstructed retrospectively.
 
@@ -550,7 +555,7 @@ MR 反映终生遗传代理 exposure 的局部效应尺度，不必等于短期�
 
 最后一句应保留：它准确区分 effect estimate、diagnostic 与不可检验假设，也符合 STROBE-MR 对数据源、assumptions、sensitivity analyses 和 limitations 的报告要求 [@skrivankova2021strobemr]。
 
-## 换成你自己的数据怎么做 {#sec-own-data}
+## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}
 
 ### 最低输入结构
 
@@ -587,7 +592,26 @@ MR 反映终生遗传代理 exposure 的局部效应尺度，不必等于短期�
 
 若缺少可重复的 mGWAS instruments，正确结论往往是“当前数据不足以做有信息量的 MR”，而不是降低 threshold 直到每个 taxon 都有 SNP。MR 的价值来自工具变量设计，不来自软件能输出一个 P 值。
 
-## 参考 {#sec-references}
+## 图中应该保留哪些信息？ {#sec-publication}
+
+MR 主图应让读者同时看到 effect、uncertainty 与假设边界：
+
+- forest plot 用同一效应尺度，本例统一为 CHD OR per genetically predicted 1-SD higher BMI；
+- 0 效应在 beta scale、1 在 OR scale，二者不能混画；
+- scatter plot 标出 allele orientation 与 outliers，点面积只表达一种 precision；
+- heterogeneity、Egger intercept、PRESSO global/distortion 分开命名，避免把不同诊断画成同一“多效性分数”；
+- leave-one-out 按 estimate 排序，同时给 all-instrument reference；
+- Steiger 图显示 prevalence sensitivity 与逐 SNP 例外；
+- 图注写清 genome-wide threshold、instrument count、outlier rule 与是否 correction；
+- 所有图内文字用英文，输出 vector PDF、360 dpi PNG 与 LZW TIFF。
+
+不要用绿色勾号表示“causal”。本章蓝色表示 primary estimate、橙色表示警报或 outlier、灰色表示未验证项；颜色编码的是分析状态，不是结论真假。
+
+## 回到最初的问题
+
+MR 不是把微生物丰度换成 SNP 就能谈因果。用真实 BMI→冠心病汇总统计，把工具强度、等位基因协调、多效性、离群位点、方向性与报告边界一次审清。
+
+## 参考文献 {#sec-references}
 
 - MR-Base 平台、三个工具变量假设与 estimator patterns：[@hemani2018mrbase]
 - BMI 与 CHD source GWAS：[@locke2015bmi; @nikpay2015cad]
