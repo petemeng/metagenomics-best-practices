@@ -1,0 +1,2252 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Peter">
+<meta name="description" content="对真实冗余 MAG 重建池做 95% ANI 物种级去冗余，并用 99.9% ANI、alignment fraction、质量分数与来源保留率审计代表基因组">
+
+<title>去冗余：dRep、ANI 与代表基因组 – 宏基因组分析最佳实践 · Shotgun</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/46-gtdbtk-taxonomy.html" rel="next">
+<link href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-38ae79c2eabdcd4850b93d23314887c4.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/45-drep-dereplication.html"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="搜索" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">宏基因组分析最佳实践 · Shotgun</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/petemeng/metagenomics-best-practices" title="源代码" class="quarto-navigation-tool px-1" aria-label="源代码"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="切换深色模式"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 0 部分 · 导论</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-three-analysis-layers.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一条主干、三个分析层级：read profiling / gene-contig-centric / genome-resolved 如何取舍</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 1 部分 · 实验设计与样本</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-study-design-power.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">研究设计、样本量与统计效力</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-sequencing-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组到底要测多深：决策框架与饱和曲线</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-library-prep-absolute-quantification.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">从样本到文库：DNA 提取、建库偏差与定量宏基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-host-depletion-low-biomass.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宿主去除与低生物量：湿实验宿主耗竭与计算去宿主</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-contamination-controls.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">污染与对照：blank、kitome、index hopping、decontam</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-fastq-short-long-reads.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">认识数据与平台：FASTQ、短读与长读对全流程的影响</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 2 部分 · 环境搭建与算力</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-wsl2-conda.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">WSL2 + conda/mamba（Windows 用户主线）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-computing-hpc-cloud.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">算力现实：内存、磁盘、HPC、云、Apptainer 与 SLURM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-install-biobakery-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 bioBakery、组装分箱工具链与数据库</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-install-r-cmd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 R、curatedMetagenomicData 与关键包生态</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 3 部分 · 上游 QC 与预处理</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-read-qc-fastp.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">读长质控与修剪：FastQC、MultiQC 与 fastp</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-host-removal-complexity-duplicates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去宿主、复杂度评估与重复 reads 的识别和处理</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 4 部分 · Reference-based read profiling（物种）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-metaphlan4.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MetaPhlAn4：marker 基因、SGB 与物种级组成分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-kraken2-bracken.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Kraken2 + Bracken：k-mer 分类与丰度重估</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-kraken2-database-confidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-profiler-benchmark.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 5 部分 · Reference-based read profiling（功能）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-humann3.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">HUMAnN3：gene family、pathway abundance 与 pathway coverage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-functional-profile-normalization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">功能谱归一化与解读：CPM、relative abundance、coverage 与特殊行</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 6 部分 · 下游统计与跨队列</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-metagenomic-table-semantics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-alpha-beta-diversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">多样性：Alpha / Beta（物种谱、MAG 表、基因谱）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-pcoa-cap-permanova.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">排序与检验：PCoA / CAP + PERMANOVA + betadisper</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-differential-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-composition-core-microbiome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组成与多分类级可视化、核心微生物组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-curated-metagenomic-data-lineage.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">curatedMetagenomicData 深用与数据谱系卡片</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-machine-learning-roc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">随机森林 / 梯度提升分类 + ROC + 重要性 + 防过拟合规范</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-cross-cohort-validation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">跨队列 meta 分析 + 外部验证</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-cooccurrence-network.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">共现网络 + 网络进阶（鲁棒性 / keystone / Zi-Pi）</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 7 部分 · 组装</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-short-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">短读长组装：MEGAHIT vs metaSPAdes、单样本 vs 混合组装</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-long-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">长读长组装：Nanopore / PacBio HiFi 与长读特有问题</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-hybrid-assembly-polishing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Hybrid assembly 与 polishing：何时混合，何时直接 HiFi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-assembly-qc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组装质控：QUAST、N50、contig 统计与可用性</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 8 部分 · Gene / contig-centric 分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-nonredundant-gene-catalog.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">非冗余基因目录：Prodigal + MMseqs2 / CD-HIT</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-gene-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因丰度谱：reads 回比基因目录与功能汇总</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-eggnog-functional-annotation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Gene-centric 功能注释：eggNOG-mapper 与功能暗物质</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-cazymes-dbcan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">CAZymes 碳水活性酶：dbCAN 共识、底物与 CGC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-resistome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-virulome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-bgc-natural-products.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">BGC 与天然产物：antiSMASH / GECCO / DeepBGC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 9 部分 · 分箱与 MAG</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/41-read-mapping-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/42-binning.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/43-bin-refinement.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/45-drep-dereplication.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/46-gtdbtk-taxonomy.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/47-novel-mag-phylogenomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/48-mag-abundance-coverm.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 丰度定量：CoverM 的 depth、breadth 与 relative abundance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/49-mag-curation-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 人工校正、命名、数据库提交与补充材料</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 10 部分 · 菌株与种内变异</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/50-instrain-microdiversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">inStrain：SNV、微多样性与同株证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/51-strainphlan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">StrainPhlAn：marker 基因菌株系统发育</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/52-pangenome-accessory-genes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">种内功能差异：泛基因组、附属基因与菌株功能型</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/53-strain-transmission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 11 部分 · 病毒 / 质粒 / 真核</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/54-virus-discovery-quality.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/55-virus-taxonomy-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/56-virus-host-evidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/57-plasmids-mobile-elements.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/58-microbial-eukaryotes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 12 部分 · 代谢建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/59-dram-metabolic.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组解析代谢：DRAM / METABOLIC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/60-genome-scale-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组尺度代谢模型：gapseq / CarveMe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/61-community-metabolism.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">群落代谢与流量：MICOM / SMETANA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/62-element-cycling.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">元素循环与功能类群：C / N / S 循环</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 13 部分 · 多组学整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/63-metabolomics-integration.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">与代谢组整合：Procrustes / Mantel / HAllA / sPLS-DIABLO</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/64-metatranscriptomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏转录组联动：功能有没有 vs 表达没表达</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/65-metaproteomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏蛋白组：从 PSM、蛋白推断到多组学功能对齐</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/66-mag-metabolite-phenotype.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG × 代谢物 / 表型：从基因组代谢潜力到可验证的功能读出</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 14 部分 · 纵向与因果</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-15" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/67-longitudinal-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">纵向：线性混合模型、轨迹与定植稳定性</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/68-survival-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">微生物组与生存结局：Cox / Kaplan–Meier / 时间依赖 ROC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/69-mediation-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">中介分析：暴露 → 微生物 → 结局</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/70-mendelian-randomization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">孟德尔随机化：工具变量、水平多效性与敏感性分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/71-structural-equation-model.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">环境因子 → 微生物 → 表型：这条路径能被数据识别吗？</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/72-causal-evidence-ladder.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">因果证据阶梯：从关联到可干预机制</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 15 部分 · 公共数据资源</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-16" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/73-public-metagenome-resources.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 16 部分 · 工程化与发表</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-17" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/74-nfcore-mag-workflows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">用 nf-core/mag 等 Nextflow / Snakemake 流程复现全上游</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/75-paper-figure-organization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一篇宏基因组论文的主图和补图如何组织</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/76-reporting-standards.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">报告标准：STORMS / STREAMS / MIMAG / MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/77-data-code-genome-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据、代码与基因组提交</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">去冗余之后，一个代表基因组代表了什么？</a></li>
+  <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
+  <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先确认系统环境与版本来源</a>
+  <ul class="collapse">
+  <li><a href="#真实输入与-lineage" id="toc-真实输入与-lineage" class="nav-link" data-scroll-target="#真实输入与-lineage">真实输入与 lineage</a></li>
+  </ul></li>
+  <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">重建输入并固定质量表</a></li>
+  <li><a href="#ani-物种级主分析" id="toc-ani-物种级主分析" class="nav-link" data-scroll-target="#ani-物种级主分析">95% ANI 物种级主分析</a>
+  <ul class="collapse">
+  <li><a href="#与-99.9-回答不同问题" id="toc-与-99.9-回答不同问题" class="nav-link" data-scroll-target="#与-99.9-回答不同问题">95% 与 99.9% 回答不同问题</a></li>
+  </ul></li>
+  <li><a href="#ani-敏感性分支" id="toc-ani-敏感性分支" class="nav-link" data-scroll-target="#ani-敏感性分支">99.9% ANI 敏感性分支</a>
+  <ul class="collapse">
+  <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">ANI 与 alignment fraction 是一对门槛</a></li>
+  <li><a href="#从单一-ani-数字升级为双门槛与阈值敏感性" id="toc-从单一-ani-数字升级为双门槛与阈值敏感性" class="nav-link" data-scroll-target="#从单一-ani-数字升级为双门槛与阈值敏感性">从单一 ANI 数字升级为双门槛与阈值敏感性</a></li>
+  </ul></li>
+  <li><a href="#汇总-representative-ledger" id="toc-汇总-representative-ledger" class="nav-link" data-scroll-target="#汇总-representative-ledger">汇总 representative ledger</a>
+  <ul class="collapse">
+  <li><a href="#primary-clustering-是加速层不是最终物种证据" id="toc-primary-clustering-是加速层不是最终物种证据" class="nav-link" data-scroll-target="#primary-clustering-是加速层不是最终物种证据">Primary clustering 是加速层，不是最终物种证据</a></li>
+  <li><a href="#representative-是计算角色不是质量等级" id="toc-representative-是计算角色不是质量等级" class="nav-link" data-scroll-target="#representative-是计算角色不是质量等级">Representative 是计算角色，不是质量等级</a></li>
+  <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">从“把所有 HQ MAG 放一起”升级为统一 gate 后聚类</a></li>
+  <li><a href="#从只交-fasta-升级为-membership-ledger" id="toc-从只交-fasta-升级为-membership-ledger" class="nav-link" data-scroll-target="#从只交-fasta-升级为-membership-ledger">从只交 FASTA 升级为 membership ledger</a></li>
+  <li><a href="#从-representative-崇拜升级为角色分离" id="toc-从-representative-崇拜升级为角色分离" class="nav-link" data-scroll-target="#从-representative-崇拜升级为角色分离">从 representative 崇拜升级为角色分离</a></li>
+  </ul></li>
+  <li><a href="#保存出图和结果核对" id="toc-保存出图和结果核对" class="nav-link" data-scroll-target="#保存出图和结果核对">保存、出图和结果核对</a></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods">注明 ANI、覆盖阈值和代表选择</a>
+  <ul class="collapse">
+  <li><a href="#methods-template" id="toc-methods-template" class="nav-link" data-scroll-target="#methods-template">Methods template</a></li>
+  <li><a href="#results-template" id="toc-results-template" class="nav-link" data-scroll-target="#results-template">Results template</a></li>
+  </ul></li>
+  <li><a href="#sec-own-data" id="toc-sec-own-data" class="nav-link" data-scroll-target="#sec-own-data">换到自己的研究中，先检查哪些条件？</a></li>
+  <li><a href="#sec-publication" id="toc-sec-publication" class="nav-link" data-scroll-target="#sec-publication">图中应该保留哪些信息？</a></li>
+  <li><a href="#回到最初的问题" id="toc-回到最初的问题" class="nav-link" data-scroll-target="#回到最初的问题">回到最初的问题</a></li>
+  <li><a href="#sec-references" id="toc-sec-references" class="nav-link" data-scroll-target="#sec-references">参考文献</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/45-drep-dereplication.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/45-drep-dereplication.html"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> 代码</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">作者</div>
+    <div class="quarto-title-meta-contents">
+             <p>Peter </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>先给结论：</strong>去冗余不是删除“低质量重复文件”，而是在预先定义的 ANI（average nucleotide identity，平均核苷酸一致性）与 alignment fraction（可比对比例）下，把同一生物学单位的多个重建归为一簇，再选一个代表基因组。124 个通过相同 CheckM2 &gt;=50%、contamination &lt;10% 与 GUNC gate 的真实重建结果，用 dRep 3.6.2、Mash 2.3 和 fastANI 1.34 在 95% ANI、&gt;=30% alignment fraction 下得到 <strong>24 个物种级簇</strong>，移除 100 个重建冗余；99.9% ANI 敏感性分支得到 25 个近克隆簇，仅拆分 1 个物种簇。代表基因组仍需保留 MIMAG 等级、污染、嵌合和分类证据，不能把“被 dRep 选中”自动写成 high-quality MAG。</p>
+</blockquote>
+<div class="callout callout-style-default callout-important callout-titled" title="算力与数据边界">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">重要</span>算力与数据边界
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>本次使用 <strong>24 CPU cores</strong>，124 个 genomes 共约 301 MB；两条 dRep 分支各耗时 188–191 秒，实测峰值内存 0.325 GiB，完整工作区约 437 MB。复现这组数据建议 <strong>8 cores、8 GB RAM、2 GB 可用磁盘，预计 5–15 分钟</strong>。数千个跨队列 MAG 的 all-vs-all 比较会显著放大临时文件与计算量，建议使用 16–32 cores、64 GB RAM 和高速本地盘，并先按生态位/host/project 分层。没有服务器时，可直接读取 <code>data/small/45-drep-dereplication-frozen/</code> 中 checksum-covered 的 Cdb/Wdb/Ndb、代表表、ANI 审计和资源记录。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>先确定这一点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>聚类边界和代表选择规则都要写清楚；代表基因组不能代替簇内菌株差异。</p>
+</div>
+</div>
+<section id="sec-target" class="level2">
+<h2 class="anchored" data-anchor-id="sec-target">去冗余之后，一个代表基因组代表了什么？</h2>
+<p>锚定图是 genome-resolved 研究中的 non-redundant MAG catalog summary：输入 MAG 数、物种级 genome bins 数、代表基因组质量分布，以及 ANI cluster size。dRep 把快速 primary clustering 与精确 secondary clustering 组合起来，并以质量、连续性与 cluster centrality 选择代表 <span class="citation" data-cites="olm2017drep">(<a href="02-three-analysis-layers.html#ref-olm2017drep" role="doc-biblioref">Olm 等 2017年</a>)</span>。</p>
+<div id="fig-45-yield" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-45-yield-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/45-dereplication-yield.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-45-yield-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;45.1: 同一批 124 个输入在 95% ANI 与 99.9% ANI 下的保留和去除数量。阈值改变的是被代表的生物学单位。
+</figcaption>
+</figure>
+</div>
+<p>95% ANI 主分析保留 24 个 representatives，其中 16 个来自第 44 篇完整 MIMAG 审计后的 selected set；其余 8 个来自第 42 篇通过最小 CheckM2+GUNC gate、但尚未重做完整 rRNA/tRNA MIMAG 审计的分箱结果。因此，“24 个 species representatives”与“24 个 high-quality MAGs”是两种完全不同的陈述。</p>
+</section>
+<section id="sec-reader-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
+<p><a href="https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/45/files.tsv">数据与代码清单</a>列出了本例的输入表、分析脚本和环境文件（约 17.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</p>
+<p>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<a href="https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/45/download.R">带完整性检查的下载脚本</a>。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/45/files.tsv"</span>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="sec-setup" class="level2">
+<h2 class="anchored" data-anchor-id="sec-setup">先确认系统环境与版本来源</h2>
+<section id="真实输入与-lineage" class="level3">
+<h3 class="anchored" data-anchor-id="真实输入与-lineage">真实输入与 lineage</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 23%">
+<col style="width: 30%">
+<col style="width: 23%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>输入</th>
+<th style="text-align: right;">数量</th>
+<th>进入规则</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Article 42 candidate bins</td>
+<td style="text-align: right;">101</td>
+<td>CheckM2 completeness &gt;=50%、contamination &lt;10%、GUNC pass</td>
+<td>PRJEB52977 的 ERR9765746/ERR9765747 共组装，多分箱分支</td>
+</tr>
+<tr class="even">
+<td>Article 44 selected MAGs</td>
+<td style="text-align: right;">23</td>
+<td>同一 minimum gate；已做完整 MIMAG 与 graph audit</td>
+<td>truth-blind Binette selected set</td>
+</tr>
+<tr class="odd">
+<td>合计</td>
+<td style="text-align: right;">124</td>
+<td>FASTA basename 唯一、SHA-256 固定</td>
+<td>真实 uneven microbial mocks <span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span></td>
+</tr>
+</tbody>
+</table>
+<p>这组 pool 表示同一组生物对象被不同分箱/精炼分支重复重建的场景，适合讲 catalog 去冗余；不同 branch 不是独立生物样本，因此 source retention 只作来源审计，不用于比较算法优劣。已知 mock references 不参与聚类、阈值或 representative selection。</p>
+<details class="wechat-omit">
+<summary>
+环境配置与完整运行说明
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-drep-2026.07 <span class="at">--file</span> env/drep-linux-64.lock</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">"import importlib.metadata as m; print(m.version('drep'))"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 mash <span class="at">--version</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 fastANI <span class="at">--version</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260745</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Representatives"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Clustered duplicates"</span> <span class="ot">=</span> <span class="st">"#999999"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Same near-clone cluster"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Split at 99.9% ANI"</span> <span class="ot">=</span> <span class="st">"#999999"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</details>
+</section>
+</section>
+<section id="sec-code" class="level2">
+<h2 class="anchored" data-anchor-id="sec-code">重建输入并固定质量表</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article45"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article45_drep.py <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/input-genomes.tsv"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span>/inputs/genomes/<span class="pp">*</span>.fna <span class="op">&gt;</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/input-genomes.sha256"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>genome-info.csv</code> 只把 release-matched CheckM2 completeness/contamination 交给 dRep，避免 dRep 再下载另一套 CheckM 数据库后混用版本。输入按 FASTA basename 字典序固定；随机分箱已在来源步骤用 seed 固定，本步的 Mash/fastANI/dRep 对固定输入没有随机抽样。</p>
+</section>
+<section id="ani-物种级主分析" class="level2">
+<h2 class="anchored" data-anchor-id="ani-物种级主分析">95% ANI 物种级主分析</h2>
+<section id="与-99.9-回答不同问题" class="level3">
+<h3 class="anchored" data-anchor-id="与-99.9-回答不同问题">95% 与 99.9% 回答不同问题</h3>
+<ul>
+<li><strong>95% ANI</strong>：常用于构建 species-level genome bins（SGBs），适合物种级 catalog、分类和群落 abundance matrix。</li>
+<li><strong>99.9% ANI</strong>：本篇作为 near-clone sensitivity branch，用于检查一个物种簇内是否存在明显不同的高相似重建；它不是完整 strain typing。</li>
+<li><strong>菌株结论</strong>：还需 SNV、shared genome fraction、recombination、样本内多态性与纵向/传播设计；不能由 dRep 的一个阈值代替。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PYTHONHASHSEED</span><span class="op">=</span>0</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 dRep dereplicate <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${WORK}</span><span class="st">/drep/species95"</span> <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-g</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genomes.txt"</span> <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeInfo</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span> <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-comp</span> 50 <span class="at">-con</span> 10 <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--S_algorithm</span> fastANI <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-pa</span> 0.90 <span class="at">-sa</span> 0.95 <span class="at">-nc</span> 0.30 <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--gen_warnings</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>关键 native tables 是：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>文件</th>
+<th>回答的问题</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>data_tables/Cdb.csv</code></td>
+<td>每个 genome 属于哪个 primary/secondary cluster</td>
+</tr>
+<tr class="even">
+<td><code>data_tables/Wdb.csv</code></td>
+<td>每个 cluster 选中了哪个 representative</td>
+</tr>
+<tr class="odd">
+<td><code>data_tables/Ndb.csv</code></td>
+<td>fastANI 与 alignment coverage 的 pairwise evidence</td>
+</tr>
+<tr class="even">
+<td><code>data_tables/genomeInformation.csv</code></td>
+<td>进入评分的 completeness/contamination 与长度信息</td>
+</tr>
+<tr class="odd">
+<td><code>dereplicated_genomes/</code></td>
+<td>24 个 representative FASTA；不是唯一证据源</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-caution callout-titled" title="2. 在污染/嵌合质控前去冗余">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>在污染/嵌合质控前去冗余
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>污染较高的 chimera 可能连接原本无关的 genomes，改变 primary cluster 和 representative。先做 CheckM2+GUNC gate，再聚类；失败 genome 单独留档。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="3. 把 99% 或 99.9% cluster 直接叫 strain">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>把 99% 或 99.9% cluster 直接叫 strain
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>ANI threshold 不包含样本内混合、SNV support、重组或传播时间尺度。可写 near-clone cluster，菌株结论留给 strain-resolved workflow。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="ani-敏感性分支" class="level2">
+<h2 class="anchored" data-anchor-id="ani-敏感性分支">99.9% ANI 敏感性分支</h2>
+<section id="sec-theory" class="level3">
+<h3 class="anchored" data-anchor-id="sec-theory">ANI 与 alignment fraction 是一对门槛</h3>
+<p>ANI 只在可比较的序列片段上计算。如果两个不完整 MAG 仅有很小的共享片段，即使那段 ANI 很高，也不足以证明它们属于同一 genome cluster。因此主分析同时要求 secondary ANI &gt;=95% 和 minimum alignment fraction &gt;=30%。阈值必须与 Methods 一起报告，不能只写“按 95% ANI 去冗余”。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 dRep dereplicate <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${WORK}</span><span class="st">/drep/nearclone999"</span> <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-g</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genomes.txt"</span> <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeInfo</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span> <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-comp</span> 50 <span class="at">-con</span> 10 <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--S_algorithm</span> fastANI <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-pa</span> 0.90 <span class="at">-sa</span> 0.999 <span class="at">-nc</span> 0.30 <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--gen_warnings</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-45-ani" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-45-ani-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/45-ani-alignment-audit.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-45-ani-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;45.2: 99.9% 敏感性分支中的 fastANI 与 alignment fraction；灰点是被拆到不同 near-clone clusters 的比较。
+</figcaption>
+</figure>
+</div>
+<p>同一 95% ANI species cluster 中只有 cluster <code>24_1</code> 在 99.9% 时拆成两个 near-clone clusters；跨拆分边界的四个 fastANI comparisons 为 99.4902%–99.8251%，alignment fraction 为 59.83%–60.43%。这个结果支持“阈值敏感性可控”，不支持传播或菌株同一性结论。</p>
+</section>
+<section id="从单一-ani-数字升级为双门槛与阈值敏感性" class="level3">
+<h3 class="anchored" data-anchor-id="从单一-ani-数字升级为双门槛与阈值敏感性">从单一 ANI 数字升级为双门槛与阈值敏感性</h3>
+<p>主分析同时报告 <code>-sa 0.95</code> 与 <code>-nc 0.30</code>，再用 99.9% 分支回答 cluster stability。若自己的数据中大量 95% clusters 在 99%–99.9% 被拆分，应单独展示 cluster-size distribution，并在物种 abundance 与 strain analysis 之间明确切换单位。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="1. 只写 95% ANI，不写 alignment fraction">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>只写 95% ANI，不写 alignment fraction
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>不完整 MAG 的共享区域可能很小。Methods 至少同时报告 primary ANI、secondary ANI、secondary algorithm 与 minimum alignment fraction。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="汇总-representative-ledger" class="level2">
+<h2 class="anchored" data-anchor-id="汇总-representative-ledger">汇总 representative ledger</h2>
+<section id="primary-clustering-是加速层不是最终物种证据" class="level3">
+<h3 class="anchored" data-anchor-id="primary-clustering-是加速层不是最终物种证据">Primary clustering 是加速层，不是最终物种证据</h3>
+<p>dRep 先用 Mash 2.3 在 <code>-pa 0.90</code> 形成 primary clusters，再只在 primary cluster 内用 fastANI 1.34 做 secondary comparison。这样避免全体精确两两比较，但也意味着 primary cutoff 过严时，原本应进入同一 secondary cluster 的 genomes 可能永远不会相遇。主分析因此保留 native Cdb、Ndb 和命令，便于审计 primary/secondary 两层。</p>
+</section>
+<section id="representative-是计算角色不是质量等级" class="level3">
+<h3 class="anchored" data-anchor-id="representative-是计算角色不是质量等级">Representative 是计算角色，不是质量等级</h3>
+<p>dRep 的 representative score综合 completeness、contamination、N50、genome size 与 centrality。高分 genome 更适合作为 cluster 的索引与展示对象，但仍可能是 medium-quality、嵌合、分类未定或缺少 rRNA。下游 GTDB-Tk、CoverM 与提交表必须继续携带原始 QC 字段。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article45_drep.py <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-drep-2026.07 <span class="at">--threads</span> 24</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article45_drep.py <span class="dt">\</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/threshold-summary.tsv"</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/representative-genomes.tsv"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>representative-genomes.tsv</code> 同时保存 cluster、member list、代表来源、CheckM2、MIMAG status 与 dRep score。主分支的 24 个代表中，4 个已经是完整 MIMAG high-quality、12 个是 medium-quality、8 个只通过 minimum gate 而尚未补做完整 marker audit。</p>
+<div id="fig-45-quality" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-45-quality-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/45-representative-quality.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-45-quality-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;45.3: 代表选择叠加 CheckM2 landscape。实心点为代表；绿色区域只表示 &gt;90% completeness 与 &lt;5% contamination。
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="sec-audit" class="level3">
+<h3 class="anchored" data-anchor-id="sec-audit">从“把所有 HQ MAG 放一起”升级为统一 gate 后聚类</h3>
+<p>不同分支若使用不同 CheckM/database release 或不同 contamination inequality，representative ranking 会混入测量批次。本篇统一使用 Article 42/44 release-matched estimates，并锁定 <code>completeness &gt;=50</code>、<code>contamination &lt;10</code>、GUNC pass；完整 MIMAG status 作为审计字段，不偷偷改变 cluster membership。</p>
+</section>
+<section id="从只交-fasta-升级为-membership-ledger" class="level3">
+<h3 class="anchored" data-anchor-id="从只交-fasta-升级为-membership-ledger">从只交 FASTA 升级为 membership ledger</h3>
+<p>只保存 <code>dereplicated_genomes/</code> 会丢失每个 representative 代表了谁。Cdb、Wdb、Ndb、input SHA-256、quality table、版本与命令缺一不可；后续 taxonomy/abundance 表必须用稳定的 cluster ID 或 representative checksum join，不能凭文件顺序合并。</p>
+</section>
+<section id="从-representative-崇拜升级为角色分离" class="level3">
+<h3 class="anchored" data-anchor-id="从-representative-崇拜升级为角色分离">从 representative 崇拜升级为角色分离</h3>
+<p>GTDB-Tk 分类和 CoverM 索引可以用 24 个 representatives；完整 MIMAG 质量表、潜在 plasmid/virus、strain-resolved variants 与异常 members 仍保留。被聚为 duplicate 不代表“错误”，它仍可能有更完整的 accessory sequence 或更适合特定样本的局部重建。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="4. 用 dRep representative 代替 MIMAG high-quality">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>用 dRep representative 代替 MIMAG high-quality
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>本篇 24 个物种代表中只有 4 个已经满足完整 MIMAG high-quality。代表身份与质量等级必须分列。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="5. 丢掉 cluster membership">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>丢掉 cluster membership
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>后续 read recruitment、功能注释或跨队列 prevalence 若只拿 representative FASTA，就无法追溯被合并的原始 MAG。保存 Cdb/Wdb 和 checksum ledger。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="保存出图和结果核对" class="level2">
+<h2 class="anchored" data-anchor-id="保存出图和结果核对">保存、出图和结果核对</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article45_drep.py <span class="dt">\</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/45-drep-dereplication-frozen</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article45_drep.R <span class="dt">\</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/45-drep-dereplication-frozen <span class="dt">\</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article45_drep.py <span class="dt">\</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/45-drep-dereplication-frozen <span class="dt">\</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/45-drep-dereplication <span class="dt">\</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/45-drep-dereplication.qmd</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-45-source" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-45-source-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/45-source-retention.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-45-source-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;45.4: 各重建来源的输入与代表数量。该图审计冗余去向，不用于给分箱算法排名。
+</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="6. 用分箱分支保留率宣称算法优劣">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>用分箱分支保留率宣称算法优劣
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>这些 branches 在同一 mock 共组装上高度依赖，且 Article 44 selected set 已经过精炼。retention 只说明 representative 来源，不是独立 benchmark。</p>
+</div>
+</div>
+</section>
+<section id="sec-methods" class="level2">
+<h2 class="anchored" data-anchor-id="sec-methods">注明 ANI、覆盖阈值和代表选择</h2>
+<section id="methods-template" class="level3">
+<h3 class="anchored" data-anchor-id="methods-template">Methods template</h3>
+<blockquote class="blockquote">
+<p>A checksum-identified pool of 124 genome reconstructions derived from a MEGAHIT v1.2.9 co-assembly of PRJEB52977 runs ERR9765746 and ERR9765747 was dereplicated without access to the known mock references. The pool comprised 101 bins from five reconstruction branches and 23 independently refined MAGs; all inputs met the prespecified CheckM2 v1.1.0 database-v3 completeness &gt;=50% and contamination &lt;10% criterion and passed GUNC v1.1.0 with ProGenomes 2.1. Dereplication was performed with dRep v3.6.2 using Mash v2.3 primary clustering at 90% ANI, fastANI v1.34 secondary comparisons at 95% ANI, a minimum alignment fraction of 30%, and 24 threads. Release-matched completeness and contamination estimates were supplied through <code>--genomeInfo</code>; no reference identity or mock taxonomy was used for clustering or representative selection. A prespecified 99.9% secondary-ANI branch assessed near-clone cluster sensitivity. Input FASTA SHA-256 values, cluster membership (Cdb), representatives (Wdb), pairwise ANI evidence (Ndb), quality metadata, commands, versions, and GNU-time resource measurements were retained.</p>
+</blockquote>
+</section>
+<section id="results-template" class="level3">
+<h3 class="anchored" data-anchor-id="results-template">Results template</h3>
+<blockquote class="blockquote">
+<p>The 124 reconstructions formed 24 species-level clusters at 95% ANI, yielding 24 representatives and removing 100 reconstruction duplicates. Sixteen representatives originated from the complete-MIMAG-audited refined set. The 99.9% sensitivity branch yielded 25 near-clone clusters and split one of the 24 species-level clusters. Representative status was reported separately from MIMAG quality, and source-branch retention was treated as provenance rather than a comparison of binning performance.</p>
+</blockquote>
+</section>
+</section>
+<section id="sec-own-data" class="level2">
+<h2 class="anchored" data-anchor-id="sec-own-data">换到自己的研究中，先检查哪些条件？</h2>
+<ol type="1">
+<li>统一 genome FASTA 命名，去掉空格和碰撞；为每个文件计算 SHA-256。</li>
+<li>用同一 CheckM2 与 GUNC database release 建 quality ledger，预先写死 completeness/contamination/GUNC gate。</li>
+<li>明确目标单位：species catalog 用约 95% ANI；near-clone sensitivity 可用更高阈值；strain typing 另起流程。</li>
+<li>把 <code>genomes.txt</code> 与 <code>genome-info.csv</code> 按 genome basename 固定排序，记录 dRep/Mash/fastANI 版本。</li>
+<li>主分析至少保存 Cdb、Wdb、Ndb、genomeInformation、代表 FASTA、commands 与资源日志。</li>
+<li>在 taxonomy 与 abundance 章节用 representative checksum join；不要用行号或临时 basename 连接表。</li>
+<li>若一个 cohort 内有多时间点/多部位，先决定是全队列统一 catalog，还是按生态位建立子 catalog 后再做 cross-catalog reconciliation，并在 Methods 中说明。</li>
+</ol>
+</section>
+<section id="sec-publication" class="level2">
+<h2 class="anchored" data-anchor-id="sec-publication">图中应该保留哪些信息？</h2>
+<ol type="1">
+<li>数量图同时显示保留与删除，不用只报“减少 80.6%”掩盖绝对数。</li>
+<li>quality landscape 用色盲友好的蓝/橙区分输入阶段，代表状态再用空心/实心形状编码，避免只靠颜色。</li>
+<li>ANI 图同时画 vertical ANI 与 horizontal alignment-fraction cutoff；标题、轴、图例和注释全部使用英文。</li>
+<li>source-retention 图明确写成 audit，不把非独立 reconstruction branches 画成性能排行榜。</li>
+<li>每张图导出 PDF、350 dpi PNG 和 LZW TIFF；正文引用 PNG，投稿优先 PDF/TIFF。</li>
+</ol>
+</section>
+<section id="回到最初的问题" class="level2">
+<h2 class="anchored" data-anchor-id="回到最初的问题">回到最初的问题</h2>
+<p>用 ANI 与 alignment fraction 定义生物学单位，再按质量分数选代表；被 dRep 选中不自动等于高质量 MAG。</p>
+</section>
+<section id="sec-references" class="level2">
+<h2 class="anchored" data-anchor-id="sec-references">参考文献</h2>
+<ul>
+<li>dRep 方法与设计 <span class="citation" data-cites="olm2017drep">(<a href="02-three-analysis-layers.html#ref-olm2017drep" role="doc-biblioref">Olm 等 2017年</a>)</span></li>
+<li>MIMAG quality reporting <span class="citation" data-cites="bowers2017mimag">(<a href="02-three-analysis-layers.html#ref-bowers2017mimag" role="doc-biblioref"><span class="nocase">Bowers 等</span> 2017年</a>)</span></li>
+<li>CheckM2 genome-quality estimation <span class="citation" data-cites="chklovski2023checkm2">(<a href="02-three-analysis-layers.html#ref-chklovski2023checkm2" role="doc-biblioref">Chklovski 等 2023年</a>)</span></li>
+<li>GUNC chimerism detection <span class="citation" data-cites="orakov2021gunc">(<a href="02-three-analysis-layers.html#ref-orakov2021gunc" role="doc-biblioref"><span class="nocase">Orakov 等</span> 2021年</a>)</span></li>
+<li>PRJEB52977 多平台不均一 microbial mocks <span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span></li>
+</ul>
+
+
+<!-- -->
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-bowers2017mimag" class="csl-entry" role="listitem">
+<span class="nocase">Bowers, Robert M., Nikos C. Kyrpides, Ramunas Stepanauskas, 等</span>. 2017年. <span>《Minimum information about a single amplified genome and a metagenome-assembled genome of bacteria and archaea》</span>. <em>Nature Biotechnology</em> 35: 725～31. <a href="https://doi.org/10.1038/nbt.3893">https://doi.org/10.1038/nbt.3893</a>.
+</div>
+<div id="ref-chklovski2023checkm2" class="csl-entry" role="listitem">
+Chklovski, Alex, Donovan H. Parks, Ben J. Woodcroft, 和 Gene W. Tyson. 2023年. <span>《<span>CheckM2</span>: a rapid, scalable and accurate tool for assessing microbial genome quality using machine learning》</span>. <em>Nature Methods</em> 20: 1203～12. <a href="https://doi.org/10.1038/s41592-023-01940-w">https://doi.org/10.1038/s41592-023-01940-w</a>.
+</div>
+<div id="ref-meslier2022platforms" class="csl-entry" role="listitem">
+Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benchmarking second and third-generation sequencing platforms for microbial metagenomics》</span>. <em>Scientific Data</em> 9: 694. <a href="https://doi.org/10.1038/s41597-022-01762-z">https://doi.org/10.1038/s41597-022-01762-z</a>.
+</div>
+<div id="ref-olm2017drep" class="csl-entry" role="listitem">
+Olm, Matthew R., Christopher T. Brown, Brandon Brooks, 和 Jillian F. Banfield. 2017年. <span>《<span>dRep</span>: a tool for fast and accurate genomic comparisons that enables improved genome recovery from metagenomes through de-replication》</span>. <em>The ISME Journal</em> 11 (12): 2864～68. <a href="https://doi.org/10.1038/ismej.2017.126">https://doi.org/10.1038/ismej.2017.126</a>.
+</div>
+<div id="ref-orakov2021gunc" class="csl-entry" role="listitem">
+<span class="nocase">Orakov, Askarbek, Anthony Fullam, Luis Pedro Coelho, 等</span>. 2021年. <span>《<span>GUNC</span>: detection of chimerism and contamination in prokaryotic genomes》</span>. <em>Genome Biology</em> 22: 178. <a href="https://doi.org/10.1186/s13059-021-02393-0">https://doi.org/10.1186/s13059-021-02393-0</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/petemeng\.github\.io\/metagenomics-best-practices\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="pagination-link" aria-label="MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/46-gtdbtk-taxonomy.html" class="pagination-link" aria-label="MAG 分类：GTDB-Tk 与数据库 release">
+        <span class="nav-page-text"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">源代码</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Peter"</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "去冗余：dRep、ANI 与代表基因组"</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "对真实冗余 MAG 重建池做 95% ANI 物种级去冗余，并用 99.9% ANI、alignment fraction、质量分数与来源保留率审计代表基因组"</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="an">draft:</span><span class="co"> false</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> ../references.bib</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="co">  freeze: auto</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="an">fig-cap-location:</span><span class="co"> bottom</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> ../figures/45-dereplication-yield.png</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="an">wechat:</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co">  deck: "用 ANI 与 alignment fraction 定义生物学单位，再按质量分数选代表；被 dRep 选中不自动等于高质量 MAG。"</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="co">  facts:</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "输入重建", value: "124 genomes"}</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "95% ANI", value: "24 species-level clusters"}</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "去除冗余", value: "100 reconstructions"}</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "99.9% ANI", value: "25 near-clone clusters"}</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="co">  resources:</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "锁定工具", value: "dRep 3.6.2 · Mash 2.3 · fastANI 1.34"}</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "主阈值", value: "95% ANI · AF ≥30%"}</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "建议节点", value: "24 cores · 64 GB RAM"}</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co">  code_heading: "从质量门控 MAG 池到 ANI 聚类、代表选择和来源保留审计"</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">  expected_images: 4</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> upstream</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**去冗余不是删除“低质量重复文件”，而是在预先定义的 ANI（average nucleotide identity，平均核苷酸一致性）与 alignment fraction（可比对比例）下，把同一生物学单位的多个重建归为一簇，再选一个代表基因组。124 个通过相同 CheckM2 &gt;=50%、contamination &lt;10% 与 GUNC gate 的真实重建结果，用 dRep 3.6.2、Mash 2.3 和 fastANI 1.34 在 95% ANI、&gt;=30% alignment fraction 下得到 **24 个物种级簇**，移除 100 个重建冗余；99.9% ANI 敏感性分支得到 25 个近克隆簇，仅拆分 1 个物种簇。代表基因组仍需保留 MIMAG 等级、污染、嵌合和分类证据，不能把“被 dRep 选中”自动写成 high-quality MAG。</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据边界"}</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>本次使用 **24 CPU cores**，124 个 genomes 共约 301 MB；两条 dRep 分支各耗时 188--191 秒，实测峰值内存 0.325 GiB，完整工作区约 437 MB。复现这组数据建议 **8 cores、8 GB RAM、2 GB 可用磁盘，预计 5--15 分钟**。数千个跨队列 MAG 的 all-vs-all 比较会显著放大临时文件与计算量，建议使用 16--32 cores、64 GB RAM 和高速本地盘，并先按生态位/host/project 分层。没有服务器时，可直接读取 <span class="in">`data/small/45-drep-dereplication-frozen/`</span> 中 checksum-covered 的 Cdb/Wdb/Ndb、代表表、ANI 审计和资源记录。</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>聚类边界和代表选择规则都要写清楚；代表基因组不能代替簇内菌株差异。</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## 去冗余之后，一个代表基因组代表了什么？ {#sec-target}</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>锚定图是 genome-resolved 研究中的 non-redundant MAG catalog summary：输入 MAG 数、物种级 genome bins 数、代表基因组质量分布，以及 ANI cluster size。dRep 把快速 primary clustering 与精确 secondary clustering 组合起来，并以质量、连续性与 cluster centrality 选择代表 <span class="co">[</span><span class="ot">@olm2017drep</span><span class="co">]</span>。</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a><span class="al">![同一批 124 个输入在 95% ANI 与 99.9% ANI 下的保留和去除数量。阈值改变的是被代表的生物学单位。](../figures/45-dereplication-yield.png)</span>{#fig-45-yield}</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>95% ANI 主分析保留 24 个 representatives，其中 16 个来自第 44 篇完整 MIMAG 审计后的 selected set；其余 8 个来自第 42 篇通过最小 CheckM2+GUNC gate、但尚未重做完整 rRNA/tRNA MIMAG 审计的分箱结果。因此，“24 个 species representatives”与“24 个 high-quality MAGs”是两种完全不同的陈述。</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/45/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 17.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/45/download.R)</span>。</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-45</span></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/45/files.tsv"</span>))</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实输入与 lineage</span></span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 数量 <span class="pp">|</span> 进入规则 <span class="pp">|</span> 来源 <span class="pp">|</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|---|</span></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Article 42 candidate bins <span class="pp">|</span> 101 <span class="pp">|</span> CheckM2 completeness &gt;=50%、contamination &lt;10%、GUNC pass <span class="pp">|</span> PRJEB52977 的 ERR9765746/ERR9765747 共组装，多分箱分支 <span class="pp">|</span></span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Article 44 selected MAGs <span class="pp">|</span> 23 <span class="pp">|</span> 同一 minimum gate；已做完整 MIMAG 与 graph audit <span class="pp">|</span> truth-blind Binette selected set <span class="pp">|</span></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 合计 <span class="pp">|</span> 124 <span class="pp">|</span> FASTA basename 唯一、SHA-256 固定 <span class="pp">|</span> 真实 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>这组 pool 表示同一组生物对象被不同分箱/精炼分支重复重建的场景，适合讲 catalog 去冗余；不同 branch 不是独立生物样本，因此 source retention 只作来源审计，不用于比较算法优劣。已知 mock references 不参与聚类、阈值或 representative selection。</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-drep-2026.07 <span class="at">--file</span> env/drep-linux-64.lock</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">"import importlib.metadata as m; print(m.version('drep'))"</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 mash <span class="at">--version</span></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 fastANI <span class="at">--version</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260745</span>)</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Representatives"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Clustered duplicates"</span> <span class="ot">=</span> <span class="st">"#999999"</span>,</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Same near-clone cluster"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Split at 99.9% ANI"</span> <span class="ot">=</span> <span class="st">"#999999"</span>)</span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重建输入并固定质量表 {#sec-code}</span></span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article45"</span></span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article45_drep.py <span class="dt">\</span></span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/input-genomes.tsv"</span></span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span></span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span>/inputs/genomes/<span class="pp">*</span>.fna <span class="op">&gt;</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/input-genomes.sha256"</span></span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a><span class="in">`genome-info.csv`</span> 只把 release-matched CheckM2 completeness/contamination 交给 dRep，避免 dRep 再下载另一套 CheckM 数据库后混用版本。输入按 FASTA basename 字典序固定；随机分箱已在来源步骤用 seed 固定，本步的 Mash/fastANI/dRep 对固定输入没有随机抽样。</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a><span class="fu">## 95% ANI 物种级主分析</span></span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a><span class="fu">### 95% 与 99.9% 回答不同问题</span></span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**95% ANI**：常用于构建 species-level genome bins（SGBs），适合物种级 catalog、分类和群落 abundance matrix。</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**99.9% ANI**：本篇作为 near-clone sensitivity branch，用于检查一个物种簇内是否存在明显不同的高相似重建；它不是完整 strain typing。</span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**菌株结论**：还需 SNV、shared genome fraction、recombination、样本内多态性与纵向/传播设计；不能由 dRep 的一个阈值代替。</span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PYTHONHASHSEED</span><span class="op">=</span>0</span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 dRep dereplicate <span class="dt">\</span></span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${WORK}</span><span class="st">/drep/species95"</span> <span class="dt">\</span></span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a>  <span class="at">-g</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genomes.txt"</span> <span class="dt">\</span></span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeInfo</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span> <span class="dt">\</span></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a>  <span class="at">-comp</span> 50 <span class="at">-con</span> 10 <span class="dt">\</span></span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a>  <span class="at">--S_algorithm</span> fastANI <span class="dt">\</span></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">-pa</span> 0.90 <span class="at">-sa</span> 0.95 <span class="at">-nc</span> 0.30 <span class="dt">\</span></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--gen_warnings</span></span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>关键 native tables 是：</span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 文件 <span class="pp">|</span> 回答的问题 <span class="pp">|</span></span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`data_tables/Cdb.csv`</span> <span class="pp">|</span> 每个 genome 属于哪个 primary/secondary cluster <span class="pp">|</span></span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`data_tables/Wdb.csv`</span> <span class="pp">|</span> 每个 cluster 选中了哪个 representative <span class="pp">|</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`data_tables/Ndb.csv`</span> <span class="pp">|</span> fastANI 与 alignment coverage 的 pairwise evidence <span class="pp">|</span></span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`data_tables/genomeInformation.csv`</span> <span class="pp">|</span> 进入评分的 completeness/contamination 与长度信息 <span class="pp">|</span></span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`dereplicated_genomes/`</span> <span class="pp">|</span> 24 个 representative FASTA；不是唯一证据源 <span class="pp">|</span></span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 在污染/嵌合质控前去冗余"}</span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a>污染较高的 chimera 可能连接原本无关的 genomes，改变 primary cluster 和 representative。先做 CheckM2+GUNC gate，再聚类；失败 genome 单独留档。</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 99% 或 99.9% cluster 直接叫 strain"}</span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>ANI threshold 不包含样本内混合、SNV support、重组或传播时间尺度。可写 near-clone cluster，菌株结论留给 strain-resolved workflow。</span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a><span class="fu">## 99.9% ANI 敏感性分支</span></span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a><span class="fu">### ANI 与 alignment fraction 是一对门槛 {#sec-theory}</span></span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>ANI 只在可比较的序列片段上计算。如果两个不完整 MAG 仅有很小的共享片段，即使那段 ANI 很高，也不足以证明它们属于同一 genome cluster。因此主分析同时要求 secondary ANI &gt;=95% 和 minimum alignment fraction &gt;=30%。阈值必须与 Methods 一起报告，不能只写“按 95% ANI 去冗余”。</span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 dRep dereplicate <span class="dt">\</span></span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${WORK}</span><span class="st">/drep/nearclone999"</span> <span class="dt">\</span></span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>  <span class="at">-g</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genomes.txt"</span> <span class="dt">\</span></span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomeInfo</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-info.csv"</span> <span class="dt">\</span></span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>  <span class="at">-comp</span> 50 <span class="at">-con</span> 10 <span class="dt">\</span></span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>  <span class="at">--S_algorithm</span> fastANI <span class="dt">\</span></span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>  <span class="at">-pa</span> 0.90 <span class="at">-sa</span> 0.999 <span class="at">-nc</span> 0.30 <span class="dt">\</span></span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--gen_warnings</span></span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a><span class="al">![99.9% 敏感性分支中的 fastANI 与 alignment fraction；灰点是被拆到不同 near-clone clusters 的比较。](../figures/45-ani-alignment-audit.png)</span>{#fig-45-ani}</span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a>同一 95% ANI species cluster 中只有 cluster <span class="in">`24_1`</span> 在 99.9% 时拆成两个 near-clone clusters；跨拆分边界的四个 fastANI comparisons 为 99.4902%--99.8251%，alignment fraction 为 59.83%--60.43%。这个结果支持“阈值敏感性可控”，不支持传播或菌株同一性结论。</span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单一 ANI 数字升级为双门槛与阈值敏感性</span></span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>主分析同时报告 <span class="in">`-sa 0.95`</span> 与 <span class="in">`-nc 0.30`</span>，再用 99.9% 分支回答 cluster stability。若自己的数据中大量 95% clusters 在 99%--99.9% 被拆分，应单独展示 cluster-size distribution，并在物种 abundance 与 strain analysis 之间明确切换单位。</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 只写 95% ANI，不写 alignment fraction"}</span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>不完整 MAG 的共享区域可能很小。Methods 至少同时报告 primary ANI、secondary ANI、secondary algorithm 与 minimum alignment fraction。</span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总 representative ledger</span></span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a><span class="fu">### Primary clustering 是加速层，不是最终物种证据</span></span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>dRep 先用 Mash 2.3 在 <span class="in">`-pa 0.90`</span> 形成 primary clusters，再只在 primary cluster 内用 fastANI 1.34 做 secondary comparison。这样避免全体精确两两比较，但也意味着 primary cutoff 过严时，原本应进入同一 secondary cluster 的 genomes 可能永远不会相遇。主分析因此保留 native Cdb、Ndb 和命令，便于审计 primary/secondary 两层。</span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a><span class="fu">### Representative 是计算角色，不是质量等级</span></span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>dRep 的 representative score综合 completeness、contamination、N50、genome size 与 centrality。高分 genome 更适合作为 cluster 的索引与展示对象，但仍可能是 medium-quality、嵌合、分类未定或缺少 rRNA。下游 GTDB-Tk、CoverM 与提交表必须继续携带原始 QC 字段。</span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article45_drep.py <span class="dt">\</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-drep-2026.07 <span class="at">--threads</span> 24</span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article45_drep.py <span class="dt">\</span></span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/threshold-summary.tsv"</span></span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/representative-genomes.tsv"</span></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a><span class="in">`representative-genomes.tsv`</span> 同时保存 cluster、member list、代表来源、CheckM2、MIMAG status 与 dRep score。主分支的 24 个代表中，4 个已经是完整 MIMAG high-quality、12 个是 medium-quality、8 个只通过 minimum gate 而尚未补做完整 marker audit。</span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a><span class="al">![代表选择叠加 CheckM2 landscape。实心点为代表；绿色区域只表示 &gt;90% completeness 与 &lt;5% contamination。](../figures/45-representative-quality.png)</span>{#fig-45-quality}</span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“把所有 HQ MAG 放一起”升级为统一 gate 后聚类 {#sec-audit}</span></span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a>不同分支若使用不同 CheckM/database release 或不同 contamination inequality，representative ranking 会混入测量批次。本篇统一使用 Article 42/44 release-matched estimates，并锁定 <span class="in">`completeness &gt;=50`</span>、<span class="in">`contamination &lt;10`</span>、GUNC pass；完整 MIMAG status 作为审计字段，不偷偷改变 cluster membership。</span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从只交 FASTA 升级为 membership ledger</span></span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a>只保存 <span class="in">`dereplicated_genomes/`</span> 会丢失每个 representative 代表了谁。Cdb、Wdb、Ndb、input SHA-256、quality table、版本与命令缺一不可；后续 taxonomy/abundance 表必须用稳定的 cluster ID 或 representative checksum join，不能凭文件顺序合并。</span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 representative 崇拜升级为角色分离</span></span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a>GTDB-Tk 分类和 CoverM 索引可以用 24 个 representatives；完整 MIMAG 质量表、潜在 plasmid/virus、strain-resolved variants 与异常 members 仍保留。被聚为 duplicate 不代表“错误”，它仍可能有更完整的 accessory sequence 或更适合特定样本的局部重建。</span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 用 dRep representative 代替 MIMAG high-quality"}</span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>本篇 24 个物种代表中只有 4 个已经满足完整 MIMAG high-quality。代表身份与质量等级必须分列。</span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 丢掉 cluster membership"}</span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a>后续 read recruitment、功能注释或跨队列 prevalence 若只拿 representative FASTA，就无法追溯被合并的原始 MAG。保存 Cdb/Wdb 和 checksum ledger。</span>
+<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、出图和结果核对</span></span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article45_drep.py <span class="dt">\</span></span>
+<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/45-drep-dereplication-frozen</span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article45_drep.R <span class="dt">\</span></span>
+<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/45-drep-dereplication-frozen <span class="dt">\</span></span>
+<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
+<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article45_drep.py <span class="dt">\</span></span>
+<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/45-drep-dereplication-frozen <span class="dt">\</span></span>
+<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/45-drep-dereplication <span class="dt">\</span></span>
+<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/45-drep-dereplication.qmd</span>
+<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a><span class="al">![各重建来源的输入与代表数量。该图审计冗余去向，不用于给分箱算法排名。](../figures/45-source-retention.png)</span>{#fig-45-source}</span>
+<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 用分箱分支保留率宣称算法优劣"}</span>
+<span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a>这些 branches 在同一 mock 共组装上高度依赖，且 Article 44 selected set 已经过精炼。retention 只说明 representative 来源，不是独立 benchmark。</span>
+<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a><span class="fu">## 注明 ANI、覆盖阈值和代表选择 {#sec-methods}</span></span>
+<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
+<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; A checksum-identified pool of 124 genome reconstructions derived from a MEGAHIT v1.2.9 co-assembly of PRJEB52977 runs ERR9765746 and ERR9765747 was dereplicated without access to the known mock references. The pool comprised 101 bins from five reconstruction branches and 23 independently refined MAGs; all inputs met the prespecified CheckM2 v1.1.0 database-v3 completeness &gt;=50% and contamination &lt;10% criterion and passed GUNC v1.1.0 with ProGenomes 2.1. Dereplication was performed with dRep v3.6.2 using Mash v2.3 primary clustering at 90% ANI, fastANI v1.34 secondary comparisons at 95% ANI, a minimum alignment fraction of 30%, and 24 threads. Release-matched completeness and contamination estimates were supplied through </span><span class="in">`--genomeInfo`</span><span class="at">; no reference identity or mock taxonomy was used for clustering or representative selection. A prespecified 99.9% secondary-ANI branch assessed near-clone cluster sensitivity. Input FASTA SHA-256 values, cluster membership (Cdb), representatives (Wdb), pairwise ANI evidence (Ndb), quality metadata, commands, versions, and GNU-time resource measurements were retained.</span></span>
+<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; The 124 reconstructions formed 24 species-level clusters at 95% ANI, yielding 24 representatives and removing 100 reconstruction duplicates. Sixteen representatives originated from the complete-MIMAG-audited refined set. The 99.9% sensitivity branch yielded 25 near-clone clusters and split one of the 24 species-level clusters. Representative status was reported separately from MIMAG quality, and source-branch retention was treated as provenance rather than a comparison of binning performance.</span></span>
+<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>统一 genome FASTA 命名，去掉空格和碰撞；为每个文件计算 SHA-256。</span>
+<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用同一 CheckM2 与 GUNC database release 建 quality ledger，预先写死 completeness/contamination/GUNC gate。</span>
+<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>明确目标单位：species catalog 用约 95% ANI；near-clone sensitivity 可用更高阈值；strain typing 另起流程。</span>
+<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>把 <span class="in">`genomes.txt`</span> 与 <span class="in">`genome-info.csv`</span> 按 genome basename 固定排序，记录 dRep/Mash/fastANI 版本。</span>
+<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>主分析至少保存 Cdb、Wdb、Ndb、genomeInformation、代表 FASTA、commands 与资源日志。</span>
+<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>在 taxonomy 与 abundance 章节用 representative checksum join；不要用行号或临时 basename 连接表。</span>
+<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>若一个 cohort 内有多时间点/多部位，先决定是全队列统一 catalog，还是按生态位建立子 catalog 后再做 cross-catalog reconciliation，并在 Methods 中说明。</span>
+<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>数量图同时显示保留与删除，不用只报“减少 80.6%”掩盖绝对数。</span>
+<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>quality landscape 用色盲友好的蓝/橙区分输入阶段，代表状态再用空心/实心形状编码，避免只靠颜色。</span>
+<span id="cb9-307"><a href="#cb9-307" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>ANI 图同时画 vertical ANI 与 horizontal alignment-fraction cutoff；标题、轴、图例和注释全部使用英文。</span>
+<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>source-retention 图明确写成 audit，不把非独立 reconstruction branches 画成性能排行榜。</span>
+<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>每张图导出 PDF、350 dpi PNG 和 LZW TIFF；正文引用 PNG，投稿优先 PDF/TIFF。</span>
+<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-311"><a href="#cb9-311" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-313"><a href="#cb9-313" aria-hidden="true" tabindex="-1"></a>用 ANI 与 alignment fraction 定义生物学单位，再按质量分数选代表；被 dRep 选中不自动等于高质量 MAG。</span>
+<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-317"><a href="#cb9-317" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>dRep 方法与设计 <span class="co">[</span><span class="ot">@olm2017drep</span><span class="co">]</span></span>
+<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG quality reporting <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span></span>
+<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 genome-quality estimation <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
+<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GUNC chimerism detection <span class="co">[</span><span class="ot">@orakov2021gunc</span><span class="co">]</span></span>
+<span id="cb9-321"><a href="#cb9-321" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台不均一 microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+</code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/45-drep-dereplication.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></div></div></footer><script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

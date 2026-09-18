@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Peter">
+<meta name="description" content="用 CheckV 官方 46 条回归序列实跑 geNomad、VirSorter2 与 CheckV，区分病毒发现、前病毒边界、完整度、vOTU 聚类和 MIUViG 报告，并审计 total metagenome 与 virus-enriched virome 的实验偏倚">
+
+<title>病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG – 宏基因组分析最佳实践 · Shotgun</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/55-virus-taxonomy-abundance.html" rel="next">
+<link href="../chapters/53-strain-transmission.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-38ae79c2eabdcd4850b93d23314887c4.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html">第 11 部分 · 病毒 / 质粒 / 真核</a></li><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="搜索" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">宏基因组分析最佳实践 · Shotgun</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/petemeng/metagenomics-best-practices" title="源代码" class="quarto-navigation-tool px-1" aria-label="源代码"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="切换深色模式"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 0 部分 · 导论</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-three-analysis-layers.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一条主干、三个分析层级：read profiling / gene-contig-centric / genome-resolved 如何取舍</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 1 部分 · 实验设计与样本</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-study-design-power.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">研究设计、样本量与统计效力</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-sequencing-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组到底要测多深：决策框架与饱和曲线</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-library-prep-absolute-quantification.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">从样本到文库：DNA 提取、建库偏差与定量宏基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-host-depletion-low-biomass.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宿主去除与低生物量：湿实验宿主耗竭与计算去宿主</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-contamination-controls.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">污染与对照：blank、kitome、index hopping、decontam</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-fastq-short-long-reads.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">认识数据与平台：FASTQ、短读与长读对全流程的影响</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 2 部分 · 环境搭建与算力</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-wsl2-conda.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">WSL2 + conda/mamba（Windows 用户主线）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-computing-hpc-cloud.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">算力现实：内存、磁盘、HPC、云、Apptainer 与 SLURM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-install-biobakery-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 bioBakery、组装分箱工具链与数据库</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-install-r-cmd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 R、curatedMetagenomicData 与关键包生态</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 3 部分 · 上游 QC 与预处理</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-read-qc-fastp.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">读长质控与修剪：FastQC、MultiQC 与 fastp</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-host-removal-complexity-duplicates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去宿主、复杂度评估与重复 reads 的识别和处理</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 4 部分 · Reference-based read profiling（物种）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-metaphlan4.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MetaPhlAn4：marker 基因、SGB 与物种级组成分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-kraken2-bracken.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Kraken2 + Bracken：k-mer 分类与丰度重估</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-kraken2-database-confidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-profiler-benchmark.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 5 部分 · Reference-based read profiling（功能）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-humann3.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">HUMAnN3：gene family、pathway abundance 与 pathway coverage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-functional-profile-normalization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">功能谱归一化与解读：CPM、relative abundance、coverage 与特殊行</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 6 部分 · 下游统计与跨队列</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-metagenomic-table-semantics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-alpha-beta-diversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">多样性：Alpha / Beta（物种谱、MAG 表、基因谱）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-pcoa-cap-permanova.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">排序与检验：PCoA / CAP + PERMANOVA + betadisper</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-differential-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-composition-core-microbiome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组成与多分类级可视化、核心微生物组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-curated-metagenomic-data-lineage.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">curatedMetagenomicData 深用与数据谱系卡片</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-machine-learning-roc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">随机森林 / 梯度提升分类 + ROC + 重要性 + 防过拟合规范</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-cross-cohort-validation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">跨队列 meta 分析 + 外部验证</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-cooccurrence-network.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">共现网络 + 网络进阶（鲁棒性 / keystone / Zi-Pi）</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 7 部分 · 组装</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-short-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">短读长组装：MEGAHIT vs metaSPAdes、单样本 vs 混合组装</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-long-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">长读长组装：Nanopore / PacBio HiFi 与长读特有问题</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-hybrid-assembly-polishing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Hybrid assembly 与 polishing：何时混合，何时直接 HiFi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-assembly-qc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组装质控：QUAST、N50、contig 统计与可用性</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 8 部分 · Gene / contig-centric 分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-nonredundant-gene-catalog.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">非冗余基因目录：Prodigal + MMseqs2 / CD-HIT</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-gene-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因丰度谱：reads 回比基因目录与功能汇总</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-eggnog-functional-annotation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Gene-centric 功能注释：eggNOG-mapper 与功能暗物质</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-cazymes-dbcan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">CAZymes 碳水活性酶：dbCAN 共识、底物与 CGC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-resistome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-virulome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-bgc-natural-products.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">BGC 与天然产物：antiSMASH / GECCO / DeepBGC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 9 部分 · 分箱与 MAG</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/41-read-mapping-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/42-binning.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/43-bin-refinement.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/45-drep-dereplication.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/46-gtdbtk-taxonomy.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/47-novel-mag-phylogenomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/48-mag-abundance-coverm.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 丰度定量：CoverM 的 depth、breadth 与 relative abundance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/49-mag-curation-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 人工校正、命名、数据库提交与补充材料</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 10 部分 · 菌株与种内变异</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/50-instrain-microdiversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">inStrain：SNV、微多样性与同株证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/51-strainphlan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">StrainPhlAn：marker 基因菌株系统发育</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/52-pangenome-accessory-genes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">种内功能差异：泛基因组、附属基因与菌株功能型</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/53-strain-transmission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 11 部分 · 病毒 / 质粒 / 真核</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/54-virus-discovery-quality.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/55-virus-taxonomy-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/56-virus-host-evidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/57-plasmids-mobile-elements.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/58-microbial-eukaryotes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 12 部分 · 代谢建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/59-dram-metabolic.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组解析代谢：DRAM / METABOLIC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/60-genome-scale-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组尺度代谢模型：gapseq / CarveMe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/61-community-metabolism.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">群落代谢与流量：MICOM / SMETANA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/62-element-cycling.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">元素循环与功能类群：C / N / S 循环</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 13 部分 · 多组学整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/63-metabolomics-integration.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">与代谢组整合：Procrustes / Mantel / HAllA / sPLS-DIABLO</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/64-metatranscriptomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏转录组联动：功能有没有 vs 表达没表达</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/65-metaproteomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏蛋白组：从 PSM、蛋白推断到多组学功能对齐</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/66-mag-metabolite-phenotype.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG × 代谢物 / 表型：从基因组代谢潜力到可验证的功能读出</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 14 部分 · 纵向与因果</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-15" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/67-longitudinal-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">纵向：线性混合模型、轨迹与定植稳定性</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/68-survival-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">微生物组与生存结局：Cox / Kaplan–Meier / 时间依赖 ROC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/69-mediation-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">中介分析：暴露 → 微生物 → 结局</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/70-mendelian-randomization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">孟德尔随机化：工具变量、水平多效性与敏感性分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/71-structural-equation-model.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">环境因子 → 微生物 → 表型：这条路径能被数据识别吗？</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/72-causal-evidence-ladder.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">因果证据阶梯：从关联到可干预机制</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 15 部分 · 公共数据资源</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-16" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/73-public-metagenome-resources.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 16 部分 · 工程化与发表</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-17" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/74-nfcore-mag-workflows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">用 nf-core/mag 等 Nextflow / Snakemake 流程复现全上游</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/75-paper-figure-organization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一篇宏基因组论文的主图和补图如何组织</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/76-reporting-standards.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">报告标准：STORMS / STREAMS / MIMAG / MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/77-data-code-genome-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据、代码与基因组提交</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">病毒候选、质量与分类，为什么要分别判断？</a></li>
+  <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">下载并校验三份小型公开输入</a>
+  <ul class="collapse">
+  <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">这不是 detector benchmark 的 sensitivity/specificity</a></li>
+  </ul></li>
+  <li><a href="#对同一-fasta-跑两个发现工具与-checkv" id="toc-对同一-fasta-跑两个发现工具与-checkv" class="nav-link" data-scroll-target="#对同一-fasta-跑两个发现工具与-checkv">对同一 FASTA 跑两个发现工具与 CheckV</a>
+  <ul class="collapse">
+  <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">发现工具回答“像不像病毒”，不是“有多完整”</a></li>
+  <li><a href="#total-metagenome-与-enriched-virome-的分母不同" id="toc-total-metagenome-与-enriched-virome-的分母不同" class="nav-link" data-scroll-target="#total-metagenome-与-enriched-virome-的分母不同">Total metagenome 与 enriched virome 的分母不同</a></li>
+  </ul></li>
+  <li><a href="#先比较发现集合再看各自证据列" id="toc-先比较发现集合再看各自证据列" class="nav-link" data-scroll-target="#先比较发现集合再看各自证据列">先比较发现集合，再看各自证据列</a>
+  <ul class="collapse">
+  <li><a href="#dtr-是闭合线索不是自动完整基因组" id="toc-dtr-是闭合线索不是自动完整基因组" class="nav-link" data-scroll-target="#dtr-是闭合线索不是自动完整基因组">DTR 是闭合线索，不是自动“完整基因组”</a></li>
+  <li><a href="#virsorter2-v0.4-数据库可复现但已老" id="toc-virsorter2-v0.4-数据库可复现但已老" class="nav-link" data-scroll-target="#virsorter2-v0.4-数据库可复现但已老">VirSorter2 v0.4 数据库可复现，但已老</a></li>
+  </ul></li>
+  <li><a href="#用-upstream-fixture-检查-checkv-是否精确复现" id="toc-用-upstream-fixture-检查-checkv-是否精确复现" class="nav-link" data-scroll-target="#用-upstream-fixture-检查-checkv-是否精确复现">用 upstream fixture 检查 CheckV 是否精确复现</a>
+  <ul class="collapse">
+  <li><a href="#checkv-假定输入已经是病毒候选" id="toc-checkv-假定输入已经是病毒候选" class="nav-link" data-scroll-target="#checkv-假定输入已经是病毒候选">CheckV 假定输入已经是病毒候选</a></li>
+  <li><a href="#checkv-的-not-determined-不是低质量同义词" id="toc-checkv-的-not-determined-不是低质量同义词" class="nav-link" data-scroll-target="#checkv-的-not-determined-不是低质量同义词">CheckV 的 <code>Not-determined</code> 不是低质量同义词</a></li>
+  <li><a href="#前病毒边界必须早于功能注释" id="toc-前病毒边界必须早于功能注释" class="nav-link" data-scroll-target="#前病毒边界必须早于功能注释">前病毒边界必须早于功能注释</a></li>
+  </ul></li>
+  <li><a href="#用-all-vs-all-blastn-计算-ani-与严格-votu" id="toc-用-all-vs-all-blastn-计算-ani-与严格-votu" class="nav-link" data-scroll-target="#用-all-vs-all-blastn-计算-ani-与严格-votu">用 all-vs-all BLASTN 计算 ANI 与严格 vOTU</a>
+  <ul class="collapse">
+  <li><a href="#votu-必须同时跨过-ani-和-alignment-fraction" id="toc-votu-必须同时跨过-ani-和-alignment-fraction" class="nav-link" data-scroll-target="#votu-必须同时跨过-ani-和-alignment-fraction">vOTU 必须同时跨过 ANI 和 alignment fraction</a></li>
+  <li><a href="#threshold-sensitivity-要围绕两个轴展开" id="toc-threshold-sensitivity-要围绕两个轴展开" class="nav-link" data-scroll-target="#threshold-sensitivity-要围绕两个轴展开">Threshold sensitivity 要围绕两个轴展开</a></li>
+  </ul></li>
+  <li><a href="#保存证据导出图并执行检查" id="toc-保存证据导出图并执行检查" class="nav-link" data-scroll-target="#保存证据导出图并执行检查">保存证据、导出图并执行检查</a>
+  <ul class="collapse">
+  <li><a href="#library-protocol-不是可以事后完全校正的-batch" id="toc-library-protocol-不是可以事后完全校正的-batch" class="nav-link" data-scroll-target="#library-protocol-不是可以事后完全校正的-batch">Library protocol 不是可以事后完全校正的 batch</a></li>
+  </ul></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods">分开报告病毒识别与质量证据</a>
+  <ul class="collapse">
+  <li><a href="#discoveryquality-与-votu-的英文模板" id="toc-discoveryquality-与-votu-的英文模板" class="nav-link" data-scroll-target="#discoveryquality-与-votu-的英文模板">Discovery、quality 与 vOTU 的英文模板</a></li>
+  <li><a href="#results-template当前固定结果" id="toc-results-template当前固定结果" class="nav-link" data-scroll-target="#results-template当前固定结果">Results template（当前固定结果）</a></li>
+  </ul></li>
+  <li><a href="#sec-own-data" id="toc-sec-own-data" class="nav-link" data-scroll-target="#sec-own-data">换到自己的研究中，先检查哪些条件？</a>
+  <ul class="collapse">
+  <li><a href="#最少需要四类输入" id="toc-最少需要四类输入" class="nav-link" data-scroll-target="#最少需要四类输入">最少需要四类输入</a></li>
+  <li><a href="#建议主流程" id="toc-建议主流程" class="nav-link" data-scroll-target="#建议主流程">建议主流程</a></li>
+  <li><a href="#total-metagenome-与-virome-的统计策略" id="toc-total-metagenome-与-virome-的统计策略" class="nav-link" data-scroll-target="#total-metagenome-与-virome-的统计策略">Total metagenome 与 virome 的统计策略</a></li>
+  </ul></li>
+  <li><a href="#sec-publication" id="toc-sec-publication" class="nav-link" data-scroll-target="#sec-publication">图中应该保留哪些信息？</a></li>
+  <li><a href="#回到最初的问题" id="toc-回到最初的问题" class="nav-link" data-scroll-target="#回到最初的问题">回到最初的问题</a></li>
+  <li><a href="#sec-references" id="toc-sec-references" class="nav-link" data-scroll-target="#sec-references">参考文献</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/54-virus-discovery-quality.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html">第 11 部分 · 病毒 / 质粒 / 真核</a></li><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> 代码</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">作者</div>
+    <div class="quarto-title-meta-contents">
+             <p>Peter </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>先给结论：</strong>病毒发现（virus discovery）、质量评估（quality assessment）和物种级去冗余（vOTU clustering）是三道不同的门。对 CheckV 软件仓库固定的 46 条真实回归序列，geNomad 检出 <strong>41</strong> 条，VirSorter2 默认 <code>score ≥ 0.5</code> 检出 <strong>43</strong> 条，二者交集 <strong>40</strong>、并集 <strong>44</strong>；VirSorter2 按官方 high-confidence 规则只保留 <strong>38</strong> 条。CheckV 随后给出 <strong>1 high-quality、4 medium-quality、33 low-quality、8 not-determined</strong>，并识别 <strong>3 条前病毒</strong>。它不能替代病毒发现工具。全长两两比较得到 10 对非自身可比序列，但没有一对同时满足 MIUViG 建议的 <strong>≥95% ANI + 较短序列 ≥85% alignment fraction</strong>；最靠近边界的一对为 <strong>95.16% ANI、84.76% AF</strong>，所以 46 条仍是 46 个 vOTU。实验端同样不能混为一谈：total metagenome 与经过 filtration、nuclease、WGA/MDA/SISPA 的 virus-enriched virome 观察的是不同抽样总体，尤其扩增型 virome 的 read depth 不是原始病毒颗粒丰度。</p>
+</blockquote>
+<div class="callout callout-style-default callout-important callout-titled" title="算力与数据门槛">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">重要</span>算力与数据门槛
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>同一台 Linux 服务器、同一批 46 条序列、16 threads 的 GNU <code>time -v</code> 实测：<strong>geNomad 1.12.0：131.88 秒、3.809 GiB 峰值 RAM；CheckV 1.1.1：37.18 秒、1.945 GiB；VirSorter2 2.2.4：881.50 秒、0.366 GiB</strong>。三个清理后结果目录分别约 2.1、10.9、24.0 MB。数据库才是磁盘大头：geNomad v1.9 安装后约 <strong>1.47 GB</strong>，CheckV v1.5 约 <strong>6.83 GB</strong>，VirSorter2 v0.4 核心文件约 <strong>10.52 GB</strong>，另需其 Snakemake 运行环境。真实百万级 contig 项目建议准备 <strong>16–32 CPU cores、64 GB RAM、至少 50 GB 数据库/临时磁盘空间</strong>；耗时取决于 contig 数、总 ORF 数和 HMM 拆分策略。没有服务器时，可从 <code>data/small/54-virus-discovery-quality-frozen/</code> 的逐 contig 证据矩阵重画统计图；不要把这个小规模回归集的资源消耗外推成大型队列承诺。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>先确定这一点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>识别结果不等于完整基因组；不同实验类型、质量证据和分类不确定性应分别报告。</p>
+</div>
+</div>
+<section id="sec-target" class="level2">
+<h2 class="anchored" data-anchor-id="sec-target">病毒候选、质量与分类，为什么要分别判断？</h2>
+<p>这一流程同时锚定四类论文结果：</p>
+<ul>
+<li>geNomad 的分类评估与 mobile genetic element 工作流，用于回答“这条序列是否具有病毒证据” <span class="citation" data-cites="camargo2024genomad">(<a href="02-three-analysis-layers.html#ref-camargo2024genomad" role="doc-biblioref">Camargo 等 2024年</a>)</span>；</li>
+<li>VirSorter2 的多分类器与 score/hallmark 证据，用于给第二条独立发现路径 <span class="citation" data-cites="guo2021virsorter2">(<a href="02-three-analysis-layers.html#ref-guo2021virsorter2" role="doc-biblioref">Guo 等 2021年</a>)</span>；</li>
+<li>CheckV 的完整度、前病毒宿主侧边界与 terminal-repeat 检查，用于回答“候选序列质量如何” <span class="citation" data-cites="nayfach2021checkv">(<a href="02-three-analysis-layers.html#ref-nayfach2021checkv" role="doc-biblioref">Nayfach 等 2021年</a>)</span>；</li>
+<li>MIUViG Figure 2、Figure 3 与 Table 2 的 UViG 来源、质量等级和报告清单，以及其 vOTU 物种级阈值 <span class="citation" data-cites="roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。</li>
+</ul>
+<p>先看两个发现工具的逐条交叉。VirSorter2 的默认阳性不自动等于 high confidence，geNomad 与 VirSorter2 的分数也不是同一概率标尺。</p>
+<div id="fig-54-discovery" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-54-discovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/54-discovery-consensus.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-54-discovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;54.1: Calls from geNomad and VirSorter2 on the same 46-sequence CheckV regression fixture. The lower matrix separates the VirSorter2 default and high-confidence rules.
+</figcaption>
+</figure>
+</div>
+<p>再看 CheckV。横轴完整度与纵轴宿主侧污染不能压成一个“质量分”；尤其前病毒必须先定边界，再做基因功能和聚类。</p>
+<div id="fig-54-checkv" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-54-checkv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/54-checkv-quality.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-54-checkv-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;54.2: CheckV quality tiers and the separate completeness/host-flank axes. UHGV-0000346 contains a high-quality proviral region within a host-contaminated contig.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="sec-code" class="level2">
+<h2 class="anchored" data-anchor-id="sec-code">下载并校验三份小型公开输入</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article54"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">RESULTS</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/54-virus-discovery-quality"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>脚本先验证 byte count 与 SHA-256，再允许 FASTA/XML 进入解析器。输出的 <code>input-lineage.tsv</code> 记录“哪个公开文件 → 哪个分析步骤”，防止以后把测试 fixture 误写成自然人群队列。</p>
+<section id="sec-audit" class="level3">
+<h3 class="anchored" data-anchor-id="sec-audit">这不是 detector benchmark 的 sensitivity/specificity</h3>
+<p>46 条输入来自 CheckV 的质量回归测试，不含设计好的 cellular/plasmid negatives，也没有 blind truth labels。因此能审计的是“两个当前版本对同一输入如何分歧”，不能声称 geNomad 灵敏度 89.1% 或 VirSorter2 灵敏度 93.5%。正式 benchmark 需要保留 taxonomically held-out viruses、近缘 plasmids/cellular regions、长度分层和 train/test 去泄漏设计。</p>
+</section>
+</section>
+<section id="对同一-fasta-跑两个发现工具与-checkv" class="level2">
+<h2 class="anchored" data-anchor-id="对同一-fasta-跑两个发现工具与-checkv">对同一 FASTA 跑两个发现工具与 CheckV</h2>
+<section id="sec-theory" class="level3">
+<h3 class="anchored" data-anchor-id="sec-theory">发现工具回答“像不像病毒”，不是“有多完整”</h3>
+<div id="fig-54-ladder" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-54-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/54-virus-evidence-ladder.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-54-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;54.3: Five decisions from discovery to MIUViG reporting. Each decision has a distinct evidence type and cannot be replaced by the next tool in the chain.
+</figcaption>
+</figure>
+</div>
+<p>geNomad 综合 marker enrichment、基因组成和神经网络分类，并同时区分 chromosome、plasmid 与 virus；VirSorter2 将不同病毒群的基因与 HMM 特征送入专门分类器。二者使用的训练集、特征、score calibration 和后处理不同，所以：</p>
+<ul>
+<li><code>geNomad score = 0.95</code> 与 <code>VirSorter2 score = 0.95</code> 不能直接相减或取平均；</li>
+<li>交集可作为更保守的候选集，并集可作为更敏感的人工审查集；</li>
+<li>“两个工具都阳性”是 evidence convergence，不是无条件真值；</li>
+<li>单工具阳性不能只因另一个工具阴性就删除，应回看 hallmark genes、cellular genes、长度、基因排列和数据库命中。</li>
+</ul>
+<p>VirSorter2 2.2.4 的默认门槛是 <code>max_score ≥ 0.5</code>。其 <code>--high-confidence-only</code> 等价于：</p>
+<p>[ = I(s);;I(s&nbsp;&nbsp;h), ]</p>
+<p>其中 <span class="math inline">\(s\)</span> 是最大分类分数，<span class="math inline">\(h\)</span> 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。</p>
+</section>
+<section id="total-metagenome-与-enriched-virome-的分母不同" class="level3">
+<h3 class="anchored" data-anchor-id="total-metagenome-与-enriched-virome-的分母不同">Total metagenome 与 enriched virome 的分母不同</h3>
+<p>Total metagenome 通常从完整样本提取核酸，能同时看到细胞内、细胞相关、整合前病毒和部分游离病毒，但低丰度病毒可能达不到组装深度。Virus-enriched virome 通过离心、过滤、核酸酶和/或颗粒富集提高 viral fraction，却主动改变了“谁能被看到”：</p>
+<ul>
+<li><code>0.22 µm</code> filtration 会损失一部分大病毒；filter material 也会影响回收；</li>
+<li>nuclease treatment 偏向保留被完整 capsid 保护的核酸，破损颗粒和游离病毒核酸可能消失；</li>
+<li>MDA 常过度扩增小型环状基因组，并受 GC 与模板量影响；SISPA 也会产生序列依赖的 coverage peaks；</li>
+<li>amplified dataset 的 coverage 不再与原样本粒子数成比例 <span class="citation" data-cites="parrasmolto2018viromebias conceicaoneto2015netovir roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-parrasmolto2018viromebias" role="doc-biblioref">Parras-Moltó 等 2018年</a>; <a href="02-three-analysis-layers.html#ref-conceicaoneto2015netovir" role="doc-biblioref"><span class="nocase">Conceição-Neto 等</span> 2015年</a>; <a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。</li>
+</ul>
+<div id="fig-54-library" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-54-library-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/54-library-design-bias.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-54-library-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;54.4: Methodological evidence map for total metagenomes, virus-enriched viromes, and amplified viromes. Rows describe sampling consequences rather than a quantitative ranking.
+</figcaption>
+</figure>
+</div>
+<p>因此，两类 library 的 raw richness、relative abundance、presence rate 和 assembly recovery 不能直接并表比较。配对 aliquot 设计可以估计 protocol effect，但仍须分层报告，并把 extraction、filter、nuclease、amplification 和 input mass 写入元数据。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/genomad_db"</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKV_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/checkv"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">VIRSORTER2_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/virsorter2"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkv-db</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--virsorter2-db</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>运行契约等价于下面三条核心命令：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="at">--restart</span> <span class="at">--threads</span> 16 <span class="at">--splits</span> 8 <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/genomad"</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">virsorter</span> run <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/virsorter2"</span> <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-length</span> 1500 <span class="at">--keep-original-seq</span> <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--include-groups</span> dsDNAphage,ssDNA <span class="dt">\</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-score</span> 0.5 <span class="at">-j</span> 16 all</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="ex">checkv</span> end_to_end <span class="dt">\</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv"</span> <span class="dt">\</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="at">-t</span> 16 <span class="at">--restart</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>这组输入以 DNA viruses 为主，VirSorter2 因而只启用 <code>dsDNAphage,ssDNA</code>。RNA virome / metatranscriptome 要在实验端保留 RNA、记录 reverse transcription，并启用相应 classifier；不能把这里的参数无修改套到 RNA 病毒研究。</p>
+</section>
+</section>
+<section id="先比较发现集合再看各自证据列" class="level2">
+<h2 class="anchored" data-anchor-id="先比较发现集合再看各自证据列">先比较发现集合，再看各自证据列</h2>
+<section id="dtr-是闭合线索不是自动完整基因组" class="level3">
+<h3 class="anchored" data-anchor-id="dtr-是闭合线索不是自动完整基因组">DTR 是闭合线索，不是自动“完整基因组”</h3>
+<p>重复序列可让不完整 contig 被错误环化。当前回归集里，geNomad 报告 3 个 DTR；CheckV <code>complete_genomes.tsv</code> 记录 5 个 DTR 候选，但 <strong>5 个全是 low confidence</strong>，原因都是 repeat 中存在过多 <code>N</code>。只有 3 条被两个工具同时标为 DTR。这个结果正好说明：</p>
+<ul>
+<li>topology prediction 与 completeness estimate 是不同字段；</li>
+<li>DTR 要结合 raw-read spanning、覆盖均匀性、重复序列质量、长度与基因模块人工检查；</li>
+<li>“circular contig”描述装配结构；许多生物学上为线性基因组的病毒也可在装配时呈现 terminal redundancy。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/discovery-overlap.tsv"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/virus-evidence-matrix.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>固定输出为：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Pattern</th>
+<th style="text-align: right;">Contigs</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Both</td>
+<td style="text-align: right;">40</td>
+</tr>
+<tr class="even">
+<td>geNomad only</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr class="odd">
+<td>VirSorter2 only</td>
+<td style="text-align: right;">3</td>
+</tr>
+<tr class="even">
+<td>Neither</td>
+<td style="text-align: right;">2</td>
+</tr>
+</tbody>
+</table>
+<p>geNomad-only 序列是 <code>2013338001_____MeugFOFF_C1475</code>；VirSorter2-only 有 3 条。<code>Neither</code> 的两条也不能标成“已证伪非病毒”，因为此 fixture 没有独立 gold-standard label，且两个模型共享病毒数据库知识。</p>
+</section>
+<section id="virsorter2-v0.4-数据库可复现但已老" class="level3">
+<h3 class="anchored" data-anchor-id="virsorter2-v0.4-数据库可复现但已老">VirSorter2 v0.4 数据库可复现，但已老</h3>
+<p>VirSorter2 2.2.4 的官方 v0.4 database 发布于 2020 年，适合复现其 classifier 行为，不适合把 <code>group</code> 列当 2026 年可靠 taxonomy；工具日志也明确提醒 <code>group</code> 不应作为可信分类。当前 taxonomy 应另用锁版本的 geNomad/ICTV 或专门病毒分类流程，并把数据库日期写进表头。旧数据库结果与新数据库结果应作为 sensitivity analysis，而不是覆盖旧文件。</p>
+</section>
+</section>
+<section id="用-upstream-fixture-检查-checkv-是否精确复现" class="level2">
+<h2 class="anchored" data-anchor-id="用-upstream-fixture-检查-checkv-是否精确复现">用 upstream fixture 检查 CheckV 是否精确复现</h2>
+<section id="checkv-假定输入已经是病毒候选" class="level3">
+<h3 class="anchored" data-anchor-id="checkv-假定输入已经是病毒候选">CheckV 假定输入已经是病毒候选</h3>
+<p>CheckV 解决三个问题：</p>
+<ol type="1">
+<li>用病毒参考基因组的 amino-acid identity（AAI）或病毒 HMM 推断 completeness；</li>
+<li>比较相邻窗口的 viral/host genes，寻找 integrated provirus 的宿主侧序列；</li>
+<li>检查 direct terminal repeat（DTR）、inverted terminal repeat（ITR）和其他闭合信号。</li>
+</ol>
+<p>它不会先证明输入一定是病毒。把全部 assembly contigs 丢给 CheckV，再按 <code>high-quality</code> 反向定义“病毒”，会把“质量模型有参考命中”偷换成“病毒发现”。正确顺序是发现 → 边界 → 质量。</p>
+<p>CheckV 的四级输出与 MIUViG 的三级标签也不能逐字互换：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>CheckV 输出</th>
+<th>常用解释</th>
+<th>MIUViG 允许的上限</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>High-quality</code></td>
+<td>estimated completeness ≥90% 或可信闭合证据</td>
+<td>high-quality draft；仍不自动是 finished</td>
+</tr>
+<tr class="even">
+<td><code>Medium-quality</code></td>
+<td>50%–&lt;90%</td>
+<td>genome fragment</td>
+</tr>
+<tr class="odd">
+<td><code>Low-quality</code></td>
+<td>&lt;50%</td>
+<td>genome fragment</td>
+</tr>
+<tr class="even">
+<td><code>Not-determined</code></td>
+<td>无可靠 completeness estimate</td>
+<td>genome fragment / 未定；不能当阴性</td>
+</tr>
+</tbody>
+</table>
+<p>MIUViG 的 <strong>finished genome</strong> 还要求单 contig（分节病毒每个 segment 一条）、广泛人工审查与注释，包括结构、复制/溶原模块和转录单元 <span class="citation" data-cites="roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。自动程序输出 <code>Complete</code>、<code>DTR</code> 或 <code>High-quality</code> 都不能跳过这一步。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">diff</span> <span class="at">-u</span> <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-upstream-ground-truth-quality-summary.tsv"</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv/quality_summary.tsv"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/checkv-quality-counts.tsv"</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/terminal-repeat-audit.tsv"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>diff</code> 无输出，两个文件逐字节一致。质量计数为 1/4/33/8；3 条 <code>provirus=Yes</code>。<code>UHGV-0000346</code> 的病毒区长度为 4,899 bp、completeness 100%，但原 contig 长 7,028 bp、host-flank contamination 30.29%。生产分析应使用 CheckV 切出的 viral region，而不是把 2,129 bp 宿主侧序列带入 AMGs、蛋白家族或 vOTU。</p>
+</section>
+<section id="checkv-的-not-determined-不是低质量同义词" class="level3">
+<h3 class="anchored" data-anchor-id="checkv-的-not-determined-不是低质量同义词">CheckV 的 <code>Not-determined</code> 不是低质量同义词</h3>
+<p>8 条 not-determined 表示模型不能给可靠 completeness；其中可能有高度新颖的病毒，也可能有非病毒候选。把它们全部删除会产生 reference bias。至少保留长度、viral/host genes、hallmarks、coverage、发现工具共识与 warning，必要时单列“quality unresolved”。</p>
+</section>
+<section id="前病毒边界必须早于功能注释" class="level3">
+<h3 class="anchored" data-anchor-id="前病毒边界必须早于功能注释">前病毒边界必须早于功能注释</h3>
+<p>若宿主 flank 保留到后面，宿主代谢基因会被错写成 auxiliary metabolic genes（AMGs），contig length 与 coverage 也会被污染。这里 <code>UHGV-0000346</code> 直接展示了“病毒区完整但母 contig 污染高”的组合；一个总 quality label 无法表达它。</p>
+</section>
+</section>
+<section id="用-all-vs-all-blastn-计算-ani-与严格-votu" class="level2">
+<h2 class="anchored" data-anchor-id="用-all-vs-all-blastn-计算-ani-与严格-votu">用 all-vs-all BLASTN 计算 ANI 与严格 vOTU</h2>
+<section id="votu-必须同时跨过-ani-和-alignment-fraction" class="level3">
+<h3 class="anchored" data-anchor-id="votu-必须同时跨过-ani-和-alignment-fraction">vOTU 必须同时跨过 ANI 和 alignment fraction</h3>
+<p>MIUViG 建议以 <strong>95% average nucleotide identity（ANI）覆盖较短序列的 85%</strong> 作为病毒物种级 operational taxonomic unit（vOTU）阈值 <span class="citation" data-cites="roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。对序列 <span class="math inline">\((i,j)\)</span>，令 <span class="math inline">\(A_{ij}\)</span> 为去重后的对齐碱基数，<span class="math inline">\(L_s=\min(L_i,L_j)\)</span>，则：</p>
+<p>[ AF_{short}=, =I(ANI%)I(AF_{short}%). ]</p>
+<p>只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 <code>UHGV-0001702</code> 与 <code>UHGV-0001715</code> 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。</p>
+<div id="fig-54-votu" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-54-votu-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/54-votu-threshold.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-54-votu-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;54.5: Pairwise ANI and shorter-sequence alignment fraction. The boundary UHGV pair passes ANI but misses the alignment-fraction gate.
+</figcaption>
+</figure>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu"</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">makeblastdb</span> <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> nucl <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">blastn</span> <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">-query</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-db</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span> <span class="dt">\</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">-outfmt</span> <span class="st">'6 std qlen slen'</span> <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">-max_target_seqs</span> 10000 <span class="dt">\</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-num_threads</span> 16</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="ex">anicalc</span> <span class="dt">\</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="ex">aniclust</span> <span class="dt">\</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fna</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span> <span class="dt">\</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/votu-clusters.tsv"</span> <span class="dt">\</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_ani</span> 95 <span class="dt">\</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_tcov</span> 85</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>这里故意在原始 46 条 fixture sequences 上展示阈值边界；生产数据应先用 CheckV 切除前病毒宿主侧序列，再对 cleaned viral sequences 聚类。<code>--min_tcov 85</code> 在 <code>aniclust</code> 中对应较短序列 coverage gate；汇总表同时保留 ANI、shorter-sequence AF 和两个独立 pass flags。</p>
+</section>
+<section id="threshold-sensitivity-要围绕两个轴展开" class="level3">
+<h3 class="anchored" data-anchor-id="threshold-sensitivity-要围绕两个轴展开">Threshold sensitivity 要围绕两个轴展开</h3>
+<p>对 95% ANI 附近的 pair，只做 <code>94/95/96% ANI</code> 敏感性还不够；应同时报告 AF 的 <code>80/85/90%</code>。<code>UHGV-0001702</code>/<code>UHGV-0001715</code> 在 85% AF 处只差 0.24 percentage point，适合人工检查 alignment fragmentation、低复杂区、N-rich regions 与 assembler breakpoints。</p>
+</section>
+</section>
+<section id="保存证据导出图并执行检查" class="level2">
+<h2 class="anchored" data-anchor-id="保存证据导出图并执行检查">保存证据、导出图并执行检查</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article54_virus_discovery.R <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/54-virus-discovery-quality-frozen</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/54-virus-discovery-quality-frozen <span class="dt">\</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/54-virus-discovery-quality/validation <span class="dt">\</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/54-virus-discovery-quality.qmd</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="library-protocol-不是可以事后完全校正的-batch" class="level3">
+<h3 class="anchored" data-anchor-id="library-protocol-不是可以事后完全校正的-batch">Library protocol 不是可以事后完全校正的 batch</h3>
+<p>Total metagenome 与 VLP virome 的差异包含 biological capture mechanism，不只是测序中心批次。把 <code>library_type</code> 放入线性模型不能恢复过滤掉的大病毒，也不能反推出 MDA 前的 particle counts。最稳方案是同一样本配对 aliquots、process blanks、mock virome、spike-ins 和 protocol-stratified primary analysis；跨 protocol 的丰度效应只能作受限探索。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="审稿人最常追问的五个证据缺口">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>审稿人最常追问的五个证据缺口
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>只报“用了 VirSorter2/CheckV”，未给 score、hallmark、长度、数据库 release 与筛选规则；</li>
+<li>把 CheckV 当 detector，或把 <code>Not-determined</code> 当非病毒；</li>
+<li>把 DTR/circular 自动写成 complete/finished，却没有 raw-read spanning 和人工注释；</li>
+<li>vOTU 只报 95% ANI，没有写 alignment fraction 是相对较短序列还是较长序列；</li>
+<li>合并 total metagenome 与 amplified virome 的 relative abundance，却未记录 filtration、nuclease、amplification 和 input mass。</li>
+</ol>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled" title="坑 1：把并集叫真值、把交集叫完整集">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>坑 1：把并集叫真值、把交集叫完整集
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>并集偏向 sensitivity，交集偏向 specificity，但方向不等于可量化性能。没有独立 negatives、held-out viruses 和 truth labels 时，只能写“consensus candidate”或“supported by both tools”。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled" title="坑 2：先 vOTU，后切前病毒">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>坑 2：先 vOTU，后切前病毒
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>宿主 flank 会降低 ANI/AF、制造虚假的 singleton vOTU，并污染功能。先固定 viral boundaries，再聚类、建库和回帖 reads。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled" title="坑 3：把 medium-quality 写成 MIUViG 中等质量">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>坑 3：把 medium-quality 写成 MIUViG 中等质量
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>MIUViG 质量类别不是 CheckV 四级标签的同名复制。当前 CheckV medium-quality 仍映射为 MIUViG genome fragment；表中应同时保留 <code>checkv_quality</code> 与 <code>miuvig_quality</code>。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled" title="坑 4：把 DTR 中的 N 当可靠 terminal repeat">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>坑 4：把 DTR 中的 N 当可靠 terminal repeat
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>本次 5 个 CheckV DTR 候选全部因 repeat 中 <code>N</code> 过多被标为 low confidence。只 grep <code>prediction_type=DTR</code> 会把软件 warning 丢掉。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled" title="坑 5：直接比较 total metagenome 与 WGA virome">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>坑 5：直接比较 total metagenome 与 WGA virome
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>WGA/MDA/SISPA 后的 coverage 是技术放大结果。可比较的是按相同 protocol 处理、通过 controls 的样本；跨 protocol 的原始 read count、RPM 或 relative abundance 没有共同分母。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="诊断顺序">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>诊断顺序
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>遇到异常候选时依次检查：原 contig 与 cleaned viral region 是否混用 → 两个 detector 的 score/hallmark/cellular genes → CheckV completeness method 与 confidence → provirus/DTR warning → raw-read coverage 与 spanning → ANI 和 shorter-sequence AF。这样能定位是哪一道门失败，而不是反复调一个总分阈值。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-methods" class="level2">
+<h2 class="anchored" data-anchor-id="sec-methods">分开报告病毒识别与质量证据</h2>
+<section id="discoveryquality-与-votu-的英文模板" class="level3">
+<h3 class="anchored" data-anchor-id="discoveryquality-与-votu-的英文模板">Discovery、quality 与 vOTU 的英文模板</h3>
+<blockquote class="blockquote">
+<p>Viral sequences were identified from assembled contigs (minimum length, 1,500 bp) using geNomad v1.12.0 with database v1.9 (ICTV MSL39) and VirSorter2 v2.2.4 with database v0.4. VirSorter2 was run for the dsDNAphage and ssDNA groups at a minimum score of 0.5; high-confidence calls were defined as a maximum score ≥0.9 or a score ≥0.7 with at least one hallmark gene. Candidate viral sequences were assessed with CheckV v1.1.1 and database v1.5. Proviral host flanks were removed before gene-content analysis and sequence clustering. Cleaned viral sequences were compared by all-versus-all BLASTN v2.17.0, and vOTUs were formed with CheckV <code>anicalc</code>/<code>aniclust</code> at ≥95% ANI across ≥85% of the shorter sequence. Genome origin, detection evidence, quality, completeness method, contamination, topology warnings, taxonomy, and abundance provenance were reported following MIUViG recommendations.</p>
+</blockquote>
+</section>
+<section id="results-template当前固定结果" class="level3">
+<h3 class="anchored" data-anchor-id="results-template当前固定结果">Results template（当前固定结果）</h3>
+<blockquote class="blockquote">
+<p>Among 46 sequences in the CheckV regression fixture, geNomad and VirSorter2 identified 41 and 43 viral candidates, respectively; 40 were supported by both tools and 44 by at least one tool. Thirty-eight VirSorter2 calls met its high-confidence rule. CheckV classified one sequence as high quality, four as medium quality, 33 as low quality, and eight as not determined, and identified three proviral contigs. Five direct-terminal-repeat candidates were low confidence because their repeats contained excessive ambiguous bases. Ten non-self sequence pairs yielded reportable nucleotide alignments, but none passed both vOTU gates. The closest boundary case showed 95.16% ANI across 84.76% of the shorter sequence and was therefore retained as two vOTUs.</p>
+</blockquote>
+<p>若研究使用 amplified virome，Methods 还必须增加一句：</p>
+<blockquote class="blockquote">
+<p>Read depth from amplified virome libraries was treated as nonquantitative and was not directly compared with relative abundance from unamplified total-metagenome libraries.</p>
+</blockquote>
+<p>工具版本不够；Methods 或 supplement 还应列出 database release、archive checksum、contig length gate、score gate、hallmark rule、前病毒是否切边界、ANI/AF 相对哪个序列，以及 DTR 的人工复核方法。</p>
+</section>
+</section>
+<section id="sec-own-data" class="level2">
+<h2 class="anchored" data-anchor-id="sec-own-data">换到自己的研究中，先检查哪些条件？</h2>
+<section id="最少需要四类输入" class="level3">
+<h3 class="anchored" data-anchor-id="最少需要四类输入">最少需要四类输入</h3>
+<ol type="1">
+<li><code>contigs.fna</code>：每样本或 co-assembly contigs；header 唯一且不能含会被下游截断的空格；</li>
+<li><code>samples.tsv</code>：至少含 <code>sample_id</code>、<code>subject_id</code>、<code>library_type</code>、<code>extraction_batch</code>、<code>sequencing_run</code>；</li>
+<li><code>wetlab_protocol.tsv</code>：记录 filter pore/material、centrifugation、nuclease、VLP enrichment、WGA/MDA/SISPA、input mass 与 cycle/time；</li>
+<li>raw-read alignment：用于 coverage、breadth、contig ends、DTR/ITR、污染与跨样本 abundance 审计。</li>
+</ol>
+</section>
+<section id="建议主流程" class="level3">
+<h3 class="anchored" data-anchor-id="建议主流程">建议主流程</h3>
+<pre class="text"><code>assembled contigs
+  -&gt; geNomad + VirSorter2 candidate ledger
+  -&gt; score / hallmark / cellular-gene review
+  -&gt; CheckV boundary trimming and quality
+  -&gt; raw-read coverage and terminal-repeat review
+  -&gt; cleaned viral FASTA
+  -&gt; 95% ANI + 85% shorter-sequence AF vOTUs
+  -&gt; representative catalog
+  -&gt; competitive read mapping and abundance filters
+  -&gt; protocol-stratified statistics and MIUViG table</code></pre>
+<p>每个候选保留一行 ledger，不要只留下最终 FASTA。建议字段至少包括 <code>original_contig_id</code>、<code>cleaned_viral_id</code>、两个 detector scores、hallmarks、viral/cellular genes、provirus coordinates、CheckV quality、completeness method/confidence、contamination、topology/warning、vOTU representative、library type、数据库 release 和软件 commit。</p>
+</section>
+<section id="total-metagenome-与-virome-的统计策略" class="level3">
+<h3 class="anchored" data-anchor-id="total-metagenome-与-virome-的统计策略">Total metagenome 与 virome 的统计策略</h3>
+<ul>
+<li>同 protocol 的样本：用统一代表序列库 competitive mapping，预注册 identity、breadth、minimum covered bases 和 multi-mapping 规则；</li>
+<li>配对 aliquots：在同一样本内估计 protocol-associated recovery，但分别展示两类 library 的 richness 与 abundance；</li>
+<li>非配对 protocol：primary analysis 分层，跨层只做 presence/absence 或经过 controls 支持的有限比较；</li>
+<li>amplified virome：不把 read depth 当 particle abundance；若研究目标必须定量，加入已知浓度 spike-ins、未扩增对照和 ddPCR/qPCR 校准。</li>
+</ul>
+<p>无法获得 wet-lab protocol 时，不能把缺失字段默认成“未过滤/未扩增”。把 protocol 标为 <code>unknown</code>，做敏感性分析，并在结论中降低丰度比较的证据等级。</p>
+</section>
+</section>
+<section id="sec-publication" class="level2">
+<h2 class="anchored" data-anchor-id="sec-publication">图中应该保留哪些信息？</h2>
+<p>五张图分别服务五个问题，不把全部字段塞进一张“总览”：</p>
+<ul>
+<li>discovery overlap 用同一 contig coordinate 展示两个 detector 和 VirSorter2 high-confidence 收缩；</li>
+<li>quality plot 把 completeness 与 host-flank contamination 分成两个轴；</li>
+<li>vOTU 图把 95% ANI 与 85% AF 画成二维 acceptance region；</li>
+<li>evidence ladder 约束发现、边界、质量、聚类与 MIUViG 的措辞；</li>
+<li>library map 明确它是 methodological evidence map，不伪装成定量效应图。</li>
+</ul>
+<p>颜色采用色觉友好的 Okabe–Ito 系列；图内全部英文。每张图同时导出 PDF、350 dpi PNG 和 LZW TIFF。正文图注写清分母是 <strong>46 regression sequences</strong> 或 <strong>10 non-self alignable pairs</strong>，避免读者误以为条形高度来自自然队列。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/virus-evidence-matrix.tsv"</span>,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>votu_pairs <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/votu-pairwise-threshold-audit.tsv"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(evidence) <span class="sc">==</span> <span class="dv">46</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(votu_pairs) <span class="sc">==</span> <span class="dv">10</span>)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(votu_pairs<span class="sc">$</span>SameVOTU) <span class="sc">==</span> <span class="dv">0</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="回到最初的问题" class="level2">
+<h2 class="anchored" data-anchor-id="回到最初的问题">回到最初的问题</h2>
+<p>病毒发现、CheckV 质量、前病毒边界和 vOTU 聚类是四道不同门；任何单一工具都不能包办整条证据链。</p>
+</section>
+<section id="sec-references" class="level2">
+<h2 class="anchored" data-anchor-id="sec-references">参考文献</h2>
+<ul>
+<li>geNomad 原理与评估：<span class="citation" data-cites="camargo2024genomad">Camargo 等 (<a href="02-three-analysis-layers.html#ref-camargo2024genomad" role="doc-biblioref">2024年</a>)</span>；软件版本：<span class="citation" data-cites="genomad2026software">Camargo (<a href="02-three-analysis-layers.html#ref-genomad2026software" role="doc-biblioref">2026年</a>)</span>。</li>
+<li>VirSorter2 多分类器：<span class="citation" data-cites="guo2021virsorter2">Guo 等 (<a href="02-three-analysis-layers.html#ref-guo2021virsorter2" role="doc-biblioref">2021年</a>)</span>；软件版本：<span class="citation" data-cites="virsorter22026software">VirSorter2 developers (<a href="02-three-analysis-layers.html#ref-virsorter22026software" role="doc-biblioref">2026年</a>)</span>。</li>
+<li>CheckV 完整度、宿主边界与质量：<span class="citation" data-cites="nayfach2021checkv">Nayfach 等 (<a href="02-three-analysis-layers.html#ref-nayfach2021checkv" role="doc-biblioref">2021年</a>)</span>；软件版本：<span class="citation" data-cites="checkv2026software">CheckV developers (<a href="02-three-analysis-layers.html#ref-checkv2026software" role="doc-biblioref">2026年</a>)</span>。</li>
+<li>MIUViG 质量类别、vOTU 与报告清单：<span class="citation" data-cites="roux2019miuvig"><span class="nocase">Roux 等</span> (<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref">2019年</a>)</span>。</li>
+<li>Virome filtration、nuclease 与 amplification 偏倚：<span class="citation" data-cites="parrasmolto2018viromebias">Parras-Moltó 等 (<a href="02-three-analysis-layers.html#ref-parrasmolto2018viromebias" role="doc-biblioref">2018年</a>)</span>；<span class="citation" data-cites="conceicaoneto2015netovir"><span class="nocase">Conceição-Neto 等</span> (<a href="02-three-analysis-layers.html#ref-conceicaoneto2015netovir" role="doc-biblioref">2015年</a>)</span>。</li>
+</ul>
+
+
+<!-- -->
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-genomad2026software" class="csl-entry" role="listitem">
+Camargo, Antonio Pedro. 2026年. <em><span>geNomad</span> Software, Version 1.12.0</em>. <a href="https://github.com/apcamargo/genomad">https://github.com/apcamargo/genomad</a>.
+</div>
+<div id="ref-camargo2024genomad" class="csl-entry" role="listitem">
+Camargo, Antonio Pedro, Simon Roux, Frederik Schulz, 等. 2024年. <span>《Identification of Mobile Genetic Elements with <span>geNomad</span>》</span>. <em>Nature Biotechnology</em> 42: 1303～12. <a href="https://doi.org/10.1038/s41587-023-01953-y">https://doi.org/10.1038/s41587-023-01953-y</a>.
+</div>
+<div id="ref-checkv2026software" class="csl-entry" role="listitem">
+CheckV developers. 2026年. <em><span>CheckV</span> Software, Version 1.1.1</em>. <a href="https://bitbucket.org/berkeleylab/checkv">https://bitbucket.org/berkeleylab/checkv</a>.
+</div>
+<div id="ref-conceicaoneto2015netovir" class="csl-entry" role="listitem">
+<span class="nocase">Conceição-Neto, Nádia, Mark Zeller, Hanne Lefrère, 等</span>. 2015年. <span>《Modular Approach to Customise Sample Preparation Procedures for Viral Metagenomics: a Reproducible Protocol for Virome Analysis》</span>. <em>Scientific Reports</em> 5: 16532. <a href="https://doi.org/10.1038/srep16532">https://doi.org/10.1038/srep16532</a>.
+</div>
+<div id="ref-guo2021virsorter2" class="csl-entry" role="listitem">
+Guo, Jiarong, Ben Bolduc, Ahmed A. Zayed, 等. 2021年. <span>《<span>VirSorter2</span>: a Multi-Classifier, Expert-Guided Approach to Detect Diverse <span>DNA</span> and <span>RNA</span> Viruses》</span>. <em>Microbiome</em> 9: 37. <a href="https://doi.org/10.1186/s40168-020-00990-y">https://doi.org/10.1186/s40168-020-00990-y</a>.
+</div>
+<div id="ref-nayfach2021checkv" class="csl-entry" role="listitem">
+Nayfach, Stephen, Antonio Pedro Camargo, Frederik Schulz, Emiley Eloe-Fadrosh, Simon Roux, 和 Nikos C. Kyrpides. 2021年. <span>《<span>CheckV</span> Assesses the Quality and Completeness of Metagenome-Assembled Viral Genomes》</span>. <em>Nature Biotechnology</em> 39: 578～85. <a href="https://doi.org/10.1038/s41587-020-00774-7">https://doi.org/10.1038/s41587-020-00774-7</a>.
+</div>
+<div id="ref-parrasmolto2018viromebias" class="csl-entry" role="listitem">
+Parras-Moltó, Marcos, Ana Rodríguez-Galet, Patricia Suárez-Rodríguez, 和 Alberto López-Bueno. 2018年. <span>《Evaluation of Bias Induced by Viral Enrichment and Random Amplification Protocols in Metagenomic Surveys of Saliva <span>DNA</span> Viruses》</span>. <em>Microbiome</em> 6: 119. <a href="https://doi.org/10.1186/s40168-018-0507-3">https://doi.org/10.1186/s40168-018-0507-3</a>.
+</div>
+<div id="ref-roux2019miuvig" class="csl-entry" role="listitem">
+<span class="nocase">Roux, Simon, Evelien M. Adriaenssens, Bas E. Dutilh, 等</span>. 2019年. <span>《Minimum Information about an Uncultivated Virus Genome (<span>MIUViG</span>)》</span>. <em>Nature Biotechnology</em> 37: 29～37. <a href="https://doi.org/10.1038/nbt.4306">https://doi.org/10.1038/nbt.4306</a>.
+</div>
+<div id="ref-virsorter22026software" class="csl-entry" role="listitem">
+VirSorter2 developers. 2026年. <em><span>VirSorter2</span> Software, Version 2.2.4</em>. <a href="https://github.com/jiarong/VirSorter2">https://github.com/jiarong/VirSorter2</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/petemeng\.github\.io\/metagenomics-best-practices\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/53-strain-transmission.html" class="pagination-link" aria-label="菌株传播与共享：母婴传播、FMT 定植与证据等级">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/55-virus-taxonomy-abundance.html" class="pagination-link" aria-label="病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle">
+        <span class="nav-page-text"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">源代码</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Peter"</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG"</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "用 CheckV 官方 46 条回归序列实跑 geNomad、VirSorter2 与 CheckV，区分病毒发现、前病毒边界、完整度、vOTU 聚类和 MIUViG 报告，并审计 total metagenome 与 virus-enriched virome 的实验偏倚"</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="an">draft:</span><span class="co"> false</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> ../references.bib</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">  freeze: auto</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="an">fig-cap-location:</span><span class="co"> bottom</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> ../figures/54-discovery-consensus.png</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="an">wechat:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">  deck: "病毒发现、CheckV 质量、前病毒边界和 vOTU 聚类是四道不同门；任何单一工具都不能包办整条证据链。"</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">  facts:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "回归序列", value: "46 real sequences"}</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "发现并集", value: "44 geNomad/VS2 calls"}</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "VS2 高置信", value: "38 sequences"}</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "CheckV 质量", value: "1 HQ · 4 MQ · 33 LQ · 8 ND"}</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="co">  resources:</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "发现工具", value: "geNomad + VirSorter2"}</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "质量工具", value: "CheckV"}</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "vOTU 门", value: "ANI ≥95% · AF ≥85%"}</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co">  code_heading: "从病毒候选共识到 CheckV、前病毒、vOTU 与 MIUViG 账本"</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co">  expected_images: 5</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> evidence</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**病毒发现（virus discovery）、质量评估（quality assessment）和物种级去冗余（vOTU clustering）是三道不同的门。对 CheckV 软件仓库固定的 46 条真实回归序列，geNomad 检出 **41** 条，VirSorter2 默认 `score ≥ 0.5` 检出 **43** 条，二者交集 **40**、并集 **44**；VirSorter2 按官方 high-confidence 规则只保留 **38** 条。CheckV 随后给出 **1 high-quality、4 medium-quality、33 low-quality、8 not-determined**，并识别 **3 条前病毒**。它不能替代病毒发现工具。全长两两比较得到 10 对非自身可比序列，但没有一对同时满足 MIUViG 建议的 **≥95% ANI + 较短序列 ≥85% alignment fraction**；最靠近边界的一对为 **95.16% ANI、84.76% AF**，所以 46 条仍是 46 个 vOTU。实验端同样不能混为一谈：total metagenome 与经过 filtration、nuclease、WGA/MDA/SISPA 的 virus-enriched virome 观察的是不同抽样总体，尤其扩增型 virome 的 read depth 不是原始病毒颗粒丰度。</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据门槛"}</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>同一台 Linux 服务器、同一批 46 条序列、16 threads 的 GNU <span class="in">`time -v`</span> 实测：**geNomad 1.12.0：131.88 秒、3.809 GiB 峰值 RAM；CheckV 1.1.1：37.18 秒、1.945 GiB；VirSorter2 2.2.4：881.50 秒、0.366 GiB**。三个清理后结果目录分别约 2.1、10.9、24.0 MB。数据库才是磁盘大头：geNomad v1.9 安装后约 **1.47 GB**，CheckV v1.5 约 **6.83 GB**，VirSorter2 v0.4 核心文件约 **10.52 GB**，另需其 Snakemake 运行环境。真实百万级 contig 项目建议准备 **16--32 CPU cores、64 GB RAM、至少 50 GB 数据库/临时磁盘空间**；耗时取决于 contig 数、总 ORF 数和 HMM 拆分策略。没有服务器时，可从 <span class="in">`data/small/54-virus-discovery-quality-frozen/`</span> 的逐 contig 证据矩阵重画统计图；不要把这个小规模回归集的资源消耗外推成大型队列承诺。</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>识别结果不等于完整基因组；不同实验类型、质量证据和分类不确定性应分别报告。</span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## 病毒候选、质量与分类，为什么要分别判断？ {#sec-target}</span></span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>这一流程同时锚定四类论文结果：</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 的分类评估与 mobile genetic element 工作流，用于回答“这条序列是否具有病毒证据” <span class="co">[</span><span class="ot">@camargo2024genomad</span><span class="co">]</span>；</span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>VirSorter2 的多分类器与 score/hallmark 证据，用于给第二条独立发现路径 <span class="co">[</span><span class="ot">@guo2021virsorter2</span><span class="co">]</span>；</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckV 的完整度、前病毒宿主侧边界与 terminal-repeat 检查，用于回答“候选序列质量如何” <span class="co">[</span><span class="ot">@nayfach2021checkv</span><span class="co">]</span>；</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG Figure 2、Figure 3 与 Table 2 的 UViG 来源、质量等级和报告清单，以及其 vOTU 物种级阈值 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>先看两个发现工具的逐条交叉。VirSorter2 的默认阳性不自动等于 high confidence，geNomad 与 VirSorter2 的分数也不是同一概率标尺。</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a><span class="al">![Calls from geNomad and VirSorter2 on the same 46-sequence CheckV regression fixture. The lower matrix separates the VirSorter2 default and high-confidence rules.](../figures/54-discovery-consensus.png)</span>{#fig-54-discovery}</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a>再看 CheckV。横轴完整度与纵轴宿主侧污染不能压成一个“质量分”；尤其前病毒必须先定边界，再做基因功能和聚类。</span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a><span class="al">![CheckV quality tiers and the separate completeness/host-flank axes. UHGV-0000346 contains a high-quality proviral region within a host-contaminated contig.](../figures/54-checkv-quality.png)</span>{#fig-54-checkv}</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载并校验三份小型公开输入 {#sec-code}</span></span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article54"</span></span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a><span class="va">RESULTS</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/54-virus-discovery-quality"</span></span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>脚本先验证 byte count 与 SHA-256，再允许 FASTA/XML 进入解析器。输出的 <span class="in">`input-lineage.tsv`</span> 记录“哪个公开文件 → 哪个分析步骤”，防止以后把测试 fixture 误写成自然人群队列。</span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a><span class="fu">### 这不是 detector benchmark 的 sensitivity/specificity {#sec-audit}</span></span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a>46 条输入来自 CheckV 的质量回归测试，不含设计好的 cellular/plasmid negatives，也没有 blind truth labels。因此能审计的是“两个当前版本对同一输入如何分歧”，不能声称 geNomad 灵敏度 89.1% 或 VirSorter2 灵敏度 93.5%。正式 benchmark 需要保留 taxonomically held-out viruses、近缘 plasmids/cellular regions、长度分层和 train/test 去泄漏设计。</span>
+<span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a><span class="fu">## 对同一 FASTA 跑两个发现工具与 CheckV</span></span>
+<span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a><span class="fu">### 发现工具回答“像不像病毒”，不是“有多完整” {#sec-theory}</span></span>
+<span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a><span class="al">![Five decisions from discovery to MIUViG reporting. Each decision has a distinct evidence type and cannot be replaced by the next tool in the chain.](../figures/54-virus-evidence-ladder.png)</span>{#fig-54-ladder}</span>
+<span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a>geNomad 综合 marker enrichment、基因组成和神经网络分类，并同时区分 chromosome、plasmid 与 virus；VirSorter2 将不同病毒群的基因与 HMM 特征送入专门分类器。二者使用的训练集、特征、score calibration 和后处理不同，所以：</span>
+<span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`geNomad score = 0.95`</span> 与 <span class="in">`VirSorter2 score = 0.95`</span> 不能直接相减或取平均；</span>
+<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>交集可作为更保守的候选集，并集可作为更敏感的人工审查集；</span>
+<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“两个工具都阳性”是 evidence convergence，不是无条件真值；</span>
+<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>单工具阳性不能只因另一个工具阴性就删除，应回看 hallmark genes、cellular genes、长度、基因排列和数据库命中。</span>
+<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的默认门槛是 <span class="in">`max_score ≥ 0.5`</span>。其 <span class="in">`--high-confidence-only`</span> 等价于：</span>
+<span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
+<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a>\text{high confidence}=</span>
+<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a>I(s\ge 0.9)\;\lor\;I(s\ge 0.7\ \land\ h\ge 1),</span>
+<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a>其中 $s$ 是最大分类分数，$h$ 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。</span>
+<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 enriched virome 的分母不同</span></span>
+<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a>Total metagenome 通常从完整样本提取核酸，能同时看到细胞内、细胞相关、整合前病毒和部分游离病毒，但低丰度病毒可能达不到组装深度。Virus-enriched virome 通过离心、过滤、核酸酶和/或颗粒富集提高 viral fraction，却主动改变了“谁能被看到”：</span>
+<span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`0.22 µm`</span> filtration 会损失一部分大病毒；filter material 也会影响回收；</span>
+<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>nuclease treatment 偏向保留被完整 capsid 保护的核酸，破损颗粒和游离病毒核酸可能消失；</span>
+<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MDA 常过度扩增小型环状基因组，并受 GC 与模板量影响；SISPA 也会产生序列依赖的 coverage peaks；</span>
+<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified dataset 的 coverage 不再与原样本粒子数成比例 <span class="co">[</span><span class="ot">@parrasmolto2018viromebias; @conceicaoneto2015netovir; @roux2019miuvig</span><span class="co">]</span>。</span>
+<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a><span class="al">![Methodological evidence map for total metagenomes, virus-enriched viromes, and amplified viromes. Rows describe sampling consequences rather than a quantitative ranking.](../figures/54-library-design-bias.png)</span>{#fig-54-library}</span>
+<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a>因此，两类 library 的 raw richness、relative abundance、presence rate 和 assembly recovery 不能直接并表比较。配对 aliquot 设计可以估计 protocol effect，但仍须分层报告，并把 extraction、filter、nuclease、amplification 和 input mass 写入元数据。</span>
+<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/genomad_db"</span></span>
+<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKV_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/checkv"</span></span>
+<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a><span class="va">VIRSORTER2_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/virsorter2"</span></span>
+<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkv-db</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a>  <span class="at">--virsorter2-db</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-126"><a href="#cb10-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span>
+<span id="cb10-127"><a href="#cb10-127" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-128"><a href="#cb10-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-129"><a href="#cb10-129" aria-hidden="true" tabindex="-1"></a>运行契约等价于下面三条核心命令：</span>
+<span id="cb10-130"><a href="#cb10-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-131"><a href="#cb10-131" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-132"><a href="#cb10-132" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb10-133"><a href="#cb10-133" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="at">--restart</span> <span class="at">--threads</span> 16 <span class="at">--splits</span> 8 <span class="dt">\</span></span>
+<span id="cb10-134"><a href="#cb10-134" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-135"><a href="#cb10-135" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/genomad"</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb10-136"><a href="#cb10-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-137"><a href="#cb10-137" aria-hidden="true" tabindex="-1"></a><span class="ex">virsorter</span> run <span class="dt">\</span></span>
+<span id="cb10-138"><a href="#cb10-138" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/virsorter2"</span> <span class="dt">\</span></span>
+<span id="cb10-139"><a href="#cb10-139" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-140"><a href="#cb10-140" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-141"><a href="#cb10-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-length</span> 1500 <span class="at">--keep-original-seq</span> <span class="dt">\</span></span>
+<span id="cb10-142"><a href="#cb10-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">--include-groups</span> dsDNAphage,ssDNA <span class="dt">\</span></span>
+<span id="cb10-143"><a href="#cb10-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-score</span> 0.5 <span class="at">-j</span> 16 all</span>
+<span id="cb10-144"><a href="#cb10-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-145"><a href="#cb10-145" aria-hidden="true" tabindex="-1"></a><span class="ex">checkv</span> end_to_end <span class="dt">\</span></span>
+<span id="cb10-146"><a href="#cb10-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-147"><a href="#cb10-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv"</span> <span class="dt">\</span></span>
+<span id="cb10-148"><a href="#cb10-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="at">-t</span> 16 <span class="at">--restart</span></span>
+<span id="cb10-149"><a href="#cb10-149" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-150"><a href="#cb10-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-151"><a href="#cb10-151" aria-hidden="true" tabindex="-1"></a>这组输入以 DNA viruses 为主，VirSorter2 因而只启用 <span class="in">`dsDNAphage,ssDNA`</span>。RNA virome / metatranscriptome 要在实验端保留 RNA、记录 reverse transcription，并启用相应 classifier；不能把这里的参数无修改套到 RNA 病毒研究。</span>
+<span id="cb10-152"><a href="#cb10-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-153"><a href="#cb10-153" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先比较发现集合，再看各自证据列</span></span>
+<span id="cb10-154"><a href="#cb10-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-155"><a href="#cb10-155" aria-hidden="true" tabindex="-1"></a><span class="fu">### DTR 是闭合线索，不是自动“完整基因组”</span></span>
+<span id="cb10-156"><a href="#cb10-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-157"><a href="#cb10-157" aria-hidden="true" tabindex="-1"></a>重复序列可让不完整 contig 被错误环化。当前回归集里，geNomad 报告 3 个 DTR；CheckV <span class="in">`complete_genomes.tsv`</span> 记录 5 个 DTR 候选，但 **5 个全是 low confidence**，原因都是 repeat 中存在过多 <span class="in">`N`</span>。只有 3 条被两个工具同时标为 DTR。这个结果正好说明：</span>
+<span id="cb10-158"><a href="#cb10-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-159"><a href="#cb10-159" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>topology prediction 与 completeness estimate 是不同字段；</span>
+<span id="cb10-160"><a href="#cb10-160" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DTR 要结合 raw-read spanning、覆盖均匀性、重复序列质量、长度与基因模块人工检查；</span>
+<span id="cb10-161"><a href="#cb10-161" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“circular contig”描述装配结构；许多生物学上为线性基因组的病毒也可在装配时呈现 terminal redundancy。</span>
+<span id="cb10-162"><a href="#cb10-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-163"><a href="#cb10-163" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-164"><a href="#cb10-164" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-165"><a href="#cb10-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-166"><a href="#cb10-166" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-167"><a href="#cb10-167" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span></span>
+<span id="cb10-168"><a href="#cb10-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-169"><a href="#cb10-169" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/discovery-overlap.tsv"</span></span>
+<span id="cb10-170"><a href="#cb10-170" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/virus-evidence-matrix.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb10-171"><a href="#cb10-171" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-172"><a href="#cb10-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-173"><a href="#cb10-173" aria-hidden="true" tabindex="-1"></a>固定输出为：</span>
+<span id="cb10-174"><a href="#cb10-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-175"><a href="#cb10-175" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Pattern <span class="pp">|</span> Contigs <span class="pp">|</span></span>
+<span id="cb10-176"><a href="#cb10-176" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb10-177"><a href="#cb10-177" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Both <span class="pp">|</span> 40 <span class="pp">|</span></span>
+<span id="cb10-178"><a href="#cb10-178" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> geNomad only <span class="pp">|</span> 1 <span class="pp">|</span></span>
+<span id="cb10-179"><a href="#cb10-179" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> VirSorter2 only <span class="pp">|</span> 3 <span class="pp">|</span></span>
+<span id="cb10-180"><a href="#cb10-180" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Neither <span class="pp">|</span> 2 <span class="pp">|</span></span>
+<span id="cb10-181"><a href="#cb10-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-182"><a href="#cb10-182" aria-hidden="true" tabindex="-1"></a>geNomad-only 序列是 <span class="in">`2013338001_____MeugFOFF_C1475`</span>；VirSorter2-only 有 3 条。<span class="in">`Neither`</span> 的两条也不能标成“已证伪非病毒”，因为此 fixture 没有独立 gold-standard label，且两个模型共享病毒数据库知识。</span>
+<span id="cb10-183"><a href="#cb10-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-184"><a href="#cb10-184" aria-hidden="true" tabindex="-1"></a><span class="fu">### VirSorter2 v0.4 数据库可复现，但已老</span></span>
+<span id="cb10-185"><a href="#cb10-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-186"><a href="#cb10-186" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的官方 v0.4 database 发布于 2020 年，适合复现其 classifier 行为，不适合把 <span class="in">`group`</span> 列当 2026 年可靠 taxonomy；工具日志也明确提醒 <span class="in">`group`</span> 不应作为可信分类。当前 taxonomy 应另用锁版本的 geNomad/ICTV 或专门病毒分类流程，并把数据库日期写进表头。旧数据库结果与新数据库结果应作为 sensitivity analysis，而不是覆盖旧文件。</span>
+<span id="cb10-187"><a href="#cb10-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-188"><a href="#cb10-188" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 upstream fixture 检查 CheckV 是否精确复现</span></span>
+<span id="cb10-189"><a href="#cb10-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-190"><a href="#cb10-190" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 假定输入已经是病毒候选</span></span>
+<span id="cb10-191"><a href="#cb10-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-192"><a href="#cb10-192" aria-hidden="true" tabindex="-1"></a>CheckV 解决三个问题：</span>
+<span id="cb10-193"><a href="#cb10-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-194"><a href="#cb10-194" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用病毒参考基因组的 amino-acid identity（AAI）或病毒 HMM 推断 completeness；</span>
+<span id="cb10-195"><a href="#cb10-195" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>比较相邻窗口的 viral/host genes，寻找 integrated provirus 的宿主侧序列；</span>
+<span id="cb10-196"><a href="#cb10-196" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>检查 direct terminal repeat（DTR）、inverted terminal repeat（ITR）和其他闭合信号。</span>
+<span id="cb10-197"><a href="#cb10-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-198"><a href="#cb10-198" aria-hidden="true" tabindex="-1"></a>它不会先证明输入一定是病毒。把全部 assembly contigs 丢给 CheckV，再按 <span class="in">`high-quality`</span> 反向定义“病毒”，会把“质量模型有参考命中”偷换成“病毒发现”。正确顺序是发现 → 边界 → 质量。</span>
+<span id="cb10-199"><a href="#cb10-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-200"><a href="#cb10-200" aria-hidden="true" tabindex="-1"></a>CheckV 的四级输出与 MIUViG 的三级标签也不能逐字互换：</span>
+<span id="cb10-201"><a href="#cb10-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-202"><a href="#cb10-202" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CheckV 输出 <span class="pp">|</span> 常用解释 <span class="pp">|</span> MIUViG 允许的上限 <span class="pp">|</span></span>
+<span id="cb10-203"><a href="#cb10-203" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`High-quality`</span> <span class="pp">|</span> estimated completeness ≥90% 或可信闭合证据 <span class="pp">|</span> high-quality draft；仍不自动是 finished <span class="pp">|</span></span>
+<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Medium-quality`</span> <span class="pp">|</span> 50%--&lt;90% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
+<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Low-quality`</span> <span class="pp">|</span> &lt;50% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
+<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Not-determined`</span> <span class="pp">|</span> 无可靠 completeness estimate <span class="pp">|</span> genome fragment / 未定；不能当阴性 <span class="pp">|</span></span>
+<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a>MIUViG 的 **finished genome** 还要求单 contig（分节病毒每个 segment 一条）、广泛人工审查与注释，包括结构、复制/溶原模块和转录单元 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。自动程序输出 <span class="in">`Complete`</span>、<span class="in">`DTR`</span> 或 <span class="in">`High-quality`</span> 都不能跳过这一步。</span>
+<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a><span class="fu">diff</span> <span class="at">-u</span> <span class="dt">\</span></span>
+<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-upstream-ground-truth-quality-summary.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv/quality_summary.tsv"</span></span>
+<span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/checkv-quality-counts.tsv"</span></span>
+<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/terminal-repeat-audit.tsv"</span></span>
+<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a><span class="in">`diff`</span> 无输出，两个文件逐字节一致。质量计数为 1/4/33/8；3 条 <span class="in">`provirus=Yes`</span>。<span class="in">`UHGV-0000346`</span> 的病毒区长度为 4,899 bp、completeness 100%，但原 contig 长 7,028 bp、host-flank contamination 30.29%。生产分析应使用 CheckV 切出的 viral region，而不是把 2,129 bp 宿主侧序列带入 AMGs、蛋白家族或 vOTU。</span>
+<span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 的 `Not-determined` 不是低质量同义词</span></span>
+<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a>8 条 not-determined 表示模型不能给可靠 completeness；其中可能有高度新颖的病毒，也可能有非病毒候选。把它们全部删除会产生 reference bias。至少保留长度、viral/host genes、hallmarks、coverage、发现工具共识与 warning，必要时单列“quality unresolved”。</span>
+<span id="cb10-225"><a href="#cb10-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-226"><a href="#cb10-226" aria-hidden="true" tabindex="-1"></a><span class="fu">### 前病毒边界必须早于功能注释</span></span>
+<span id="cb10-227"><a href="#cb10-227" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-228"><a href="#cb10-228" aria-hidden="true" tabindex="-1"></a>若宿主 flank 保留到后面，宿主代谢基因会被错写成 auxiliary metabolic genes（AMGs），contig length 与 coverage 也会被污染。这里 <span class="in">`UHGV-0000346`</span> 直接展示了“病毒区完整但母 contig 污染高”的组合；一个总 quality label 无法表达它。</span>
+<span id="cb10-229"><a href="#cb10-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-230"><a href="#cb10-230" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 all-vs-all BLASTN 计算 ANI 与严格 vOTU</span></span>
+<span id="cb10-231"><a href="#cb10-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-232"><a href="#cb10-232" aria-hidden="true" tabindex="-1"></a><span class="fu">### vOTU 必须同时跨过 ANI 和 alignment fraction</span></span>
+<span id="cb10-233"><a href="#cb10-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-234"><a href="#cb10-234" aria-hidden="true" tabindex="-1"></a>MIUViG 建议以 **95% average nucleotide identity（ANI）覆盖较短序列的 85%** 作为病毒物种级 operational taxonomic unit（vOTU）阈值 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。对序列 $(i,j)$，令 $A_{ij}$ 为去重后的对齐碱基数，$L_s=\min(L_i,L_j)$，则：</span>
+<span id="cb10-235"><a href="#cb10-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-236"><a href="#cb10-236" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
+<span id="cb10-237"><a href="#cb10-237" aria-hidden="true" tabindex="-1"></a>AF_{short}=\frac{A_{ij}}{L_s},\qquad</span>
+<span id="cb10-238"><a href="#cb10-238" aria-hidden="true" tabindex="-1"></a>\text{same vOTU}=I(ANI\ge95\%)I(AF_{short}\ge85\%).</span>
+<span id="cb10-239"><a href="#cb10-239" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb10-240"><a href="#cb10-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-241"><a href="#cb10-241" aria-hidden="true" tabindex="-1"></a>只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 <span class="in">`UHGV-0001702`</span> 与 <span class="in">`UHGV-0001715`</span> 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。</span>
+<span id="cb10-242"><a href="#cb10-242" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-243"><a href="#cb10-243" aria-hidden="true" tabindex="-1"></a><span class="al">![Pairwise ANI and shorter-sequence alignment fraction. The boundary UHGV pair passes ANI but misses the alignment-fraction gate.](../figures/54-votu-threshold.png)</span>{#fig-54-votu}</span>
+<span id="cb10-244"><a href="#cb10-244" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-245"><a href="#cb10-245" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-246"><a href="#cb10-246" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu"</span></span>
+<span id="cb10-247"><a href="#cb10-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-248"><a href="#cb10-248" aria-hidden="true" tabindex="-1"></a><span class="ex">makeblastdb</span> <span class="dt">\</span></span>
+<span id="cb10-249"><a href="#cb10-249" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-250"><a href="#cb10-250" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> nucl <span class="dt">\</span></span>
+<span id="cb10-251"><a href="#cb10-251" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span></span>
+<span id="cb10-252"><a href="#cb10-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-253"><a href="#cb10-253" aria-hidden="true" tabindex="-1"></a><span class="ex">blastn</span> <span class="dt">\</span></span>
+<span id="cb10-254"><a href="#cb10-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">-query</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-255"><a href="#cb10-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">-db</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span> <span class="dt">\</span></span>
+<span id="cb10-256"><a href="#cb10-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-257"><a href="#cb10-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">-outfmt</span> <span class="st">'6 std qlen slen'</span> <span class="dt">\</span></span>
+<span id="cb10-258"><a href="#cb10-258" aria-hidden="true" tabindex="-1"></a>  <span class="at">-max_target_seqs</span> 10000 <span class="dt">\</span></span>
+<span id="cb10-259"><a href="#cb10-259" aria-hidden="true" tabindex="-1"></a>  <span class="at">-num_threads</span> 16</span>
+<span id="cb10-260"><a href="#cb10-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-261"><a href="#cb10-261" aria-hidden="true" tabindex="-1"></a><span class="ex">anicalc</span> <span class="dt">\</span></span>
+<span id="cb10-262"><a href="#cb10-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-263"><a href="#cb10-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span></span>
+<span id="cb10-264"><a href="#cb10-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-265"><a href="#cb10-265" aria-hidden="true" tabindex="-1"></a><span class="ex">aniclust</span> <span class="dt">\</span></span>
+<span id="cb10-266"><a href="#cb10-266" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fna</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-267"><a href="#cb10-267" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-268"><a href="#cb10-268" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/votu-clusters.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-269"><a href="#cb10-269" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_ani</span> 95 <span class="dt">\</span></span>
+<span id="cb10-270"><a href="#cb10-270" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_tcov</span> 85</span>
+<span id="cb10-271"><a href="#cb10-271" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-272"><a href="#cb10-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-273"><a href="#cb10-273" aria-hidden="true" tabindex="-1"></a>这里故意在原始 46 条 fixture sequences 上展示阈值边界；生产数据应先用 CheckV 切除前病毒宿主侧序列，再对 cleaned viral sequences 聚类。<span class="in">`--min_tcov 85`</span> 在 <span class="in">`aniclust`</span> 中对应较短序列 coverage gate；汇总表同时保留 ANI、shorter-sequence AF 和两个独立 pass flags。</span>
+<span id="cb10-274"><a href="#cb10-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-275"><a href="#cb10-275" aria-hidden="true" tabindex="-1"></a><span class="fu">### Threshold sensitivity 要围绕两个轴展开</span></span>
+<span id="cb10-276"><a href="#cb10-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-277"><a href="#cb10-277" aria-hidden="true" tabindex="-1"></a>对 95% ANI 附近的 pair，只做 <span class="in">`94/95/96% ANI`</span> 敏感性还不够；应同时报告 AF 的 <span class="in">`80/85/90%`</span>。<span class="in">`UHGV-0001702`</span>/<span class="in">`UHGV-0001715`</span> 在 85% AF 处只差 0.24 percentage point，适合人工检查 alignment fragmentation、低复杂区、N-rich regions 与 assembler breakpoints。</span>
+<span id="cb10-278"><a href="#cb10-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-279"><a href="#cb10-279" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存证据、导出图并执行检查</span></span>
+<span id="cb10-280"><a href="#cb10-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-281"><a href="#cb10-281" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-282"><a href="#cb10-282" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article54_virus_discovery.R <span class="dt">\</span></span>
+<span id="cb10-283"><a href="#cb10-283" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb10-284"><a href="#cb10-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-285"><a href="#cb10-285" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-286"><a href="#cb10-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-287"><a href="#cb10-287" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-288"><a href="#cb10-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/54-virus-discovery-quality-frozen</span>
+<span id="cb10-289"><a href="#cb10-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-290"><a href="#cb10-290" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-291"><a href="#cb10-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-292"><a href="#cb10-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/54-virus-discovery-quality-frozen <span class="dt">\</span></span>
+<span id="cb10-293"><a href="#cb10-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/54-virus-discovery-quality/validation <span class="dt">\</span></span>
+<span id="cb10-294"><a href="#cb10-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb10-295"><a href="#cb10-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/54-virus-discovery-quality.qmd</span>
+<span id="cb10-296"><a href="#cb10-296" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-297"><a href="#cb10-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-298"><a href="#cb10-298" aria-hidden="true" tabindex="-1"></a><span class="fu">### Library protocol 不是可以事后完全校正的 batch</span></span>
+<span id="cb10-299"><a href="#cb10-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-300"><a href="#cb10-300" aria-hidden="true" tabindex="-1"></a>Total metagenome 与 VLP virome 的差异包含 biological capture mechanism，不只是测序中心批次。把 <span class="in">`library_type`</span> 放入线性模型不能恢复过滤掉的大病毒，也不能反推出 MDA 前的 particle counts。最稳方案是同一样本配对 aliquots、process blanks、mock virome、spike-ins 和 protocol-stratified primary analysis；跨 protocol 的丰度效应只能作受限探索。</span>
+<span id="cb10-301"><a href="#cb10-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-302"><a href="#cb10-302" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常追问的五个证据缺口"}</span>
+<span id="cb10-303"><a href="#cb10-303" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>只报“用了 VirSorter2/CheckV”，未给 score、hallmark、长度、数据库 release 与筛选规则；</span>
+<span id="cb10-304"><a href="#cb10-304" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 CheckV 当 detector，或把 <span class="in">`Not-determined`</span> 当非病毒；</span>
+<span id="cb10-305"><a href="#cb10-305" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>把 DTR/circular 自动写成 complete/finished，却没有 raw-read spanning 和人工注释；</span>
+<span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>vOTU 只报 95% ANI，没有写 alignment fraction 是相对较短序列还是较长序列；</span>
+<span id="cb10-307"><a href="#cb10-307" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>合并 total metagenome 与 amplified virome 的 relative abundance，却未记录 filtration、nuclease、amplification 和 input mass。</span>
+<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 1：把并集叫真值、把交集叫完整集"}</span>
+<span id="cb10-311"><a href="#cb10-311" aria-hidden="true" tabindex="-1"></a>并集偏向 sensitivity，交集偏向 specificity，但方向不等于可量化性能。没有独立 negatives、held-out viruses 和 truth labels 时，只能写“consensus candidate”或“supported by both tools”。</span>
+<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-313"><a href="#cb10-313" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-314"><a href="#cb10-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 2：先 vOTU，后切前病毒"}</span>
+<span id="cb10-315"><a href="#cb10-315" aria-hidden="true" tabindex="-1"></a>宿主 flank 会降低 ANI/AF、制造虚假的 singleton vOTU，并污染功能。先固定 viral boundaries，再聚类、建库和回帖 reads。</span>
+<span id="cb10-316"><a href="#cb10-316" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-317"><a href="#cb10-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-318"><a href="#cb10-318" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 3：把 medium-quality 写成 MIUViG 中等质量"}</span>
+<span id="cb10-319"><a href="#cb10-319" aria-hidden="true" tabindex="-1"></a>MIUViG 质量类别不是 CheckV 四级标签的同名复制。当前 CheckV medium-quality 仍映射为 MIUViG genome fragment；表中应同时保留 <span class="in">`checkv_quality`</span> 与 <span class="in">`miuvig_quality`</span>。</span>
+<span id="cb10-320"><a href="#cb10-320" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-321"><a href="#cb10-321" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-322"><a href="#cb10-322" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 4：把 DTR 中的 N 当可靠 terminal repeat"}</span>
+<span id="cb10-323"><a href="#cb10-323" aria-hidden="true" tabindex="-1"></a>本次 5 个 CheckV DTR 候选全部因 repeat 中 <span class="in">`N`</span> 过多被标为 low confidence。只 grep <span class="in">`prediction_type=DTR`</span> 会把软件 warning 丢掉。</span>
+<span id="cb10-324"><a href="#cb10-324" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-325"><a href="#cb10-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-326"><a href="#cb10-326" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 5：直接比较 total metagenome 与 WGA virome"}</span>
+<span id="cb10-327"><a href="#cb10-327" aria-hidden="true" tabindex="-1"></a>WGA/MDA/SISPA 后的 coverage 是技术放大结果。可比较的是按相同 protocol 处理、通过 controls 的样本；跨 protocol 的原始 read count、RPM 或 relative abundance 没有共同分母。</span>
+<span id="cb10-328"><a href="#cb10-328" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-329"><a href="#cb10-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-330"><a href="#cb10-330" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="诊断顺序"}</span>
+<span id="cb10-331"><a href="#cb10-331" aria-hidden="true" tabindex="-1"></a>遇到异常候选时依次检查：原 contig 与 cleaned viral region 是否混用 → 两个 detector 的 score/hallmark/cellular genes → CheckV completeness method 与 confidence → provirus/DTR warning → raw-read coverage 与 spanning → ANI 和 shorter-sequence AF。这样能定位是哪一道门失败，而不是反复调一个总分阈值。</span>
+<span id="cb10-332"><a href="#cb10-332" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-333"><a href="#cb10-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-334"><a href="#cb10-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## 分开报告病毒识别与质量证据 {#sec-methods}</span></span>
+<span id="cb10-335"><a href="#cb10-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-336"><a href="#cb10-336" aria-hidden="true" tabindex="-1"></a><span class="fu">### Discovery、quality 与 vOTU 的英文模板</span></span>
+<span id="cb10-337"><a href="#cb10-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-338"><a href="#cb10-338" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Viral sequences were identified from assembled contigs (minimum length, 1,500 bp) using geNomad v1.12.0 with database v1.9 (ICTV MSL39) and VirSorter2 v2.2.4 with database v0.4. VirSorter2 was run for the dsDNAphage and ssDNA groups at a minimum score of 0.5; high-confidence calls were defined as a maximum score ≥0.9 or a score ≥0.7 with at least one hallmark gene. Candidate viral sequences were assessed with CheckV v1.1.1 and database v1.5. Proviral host flanks were removed before gene-content analysis and sequence clustering. Cleaned viral sequences were compared by all-versus-all BLASTN v2.17.0, and vOTUs were formed with CheckV </span><span class="in">`anicalc`</span><span class="at">/</span><span class="in">`aniclust`</span><span class="at"> at ≥95% ANI across ≥85% of the shorter sequence. Genome origin, detection evidence, quality, completeness method, contamination, topology warnings, taxonomy, and abundance provenance were reported following MIUViG recommendations.</span></span>
+<span id="cb10-339"><a href="#cb10-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-340"><a href="#cb10-340" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template（当前固定结果）</span></span>
+<span id="cb10-341"><a href="#cb10-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-342"><a href="#cb10-342" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Among 46 sequences in the CheckV regression fixture, geNomad and VirSorter2 identified 41 and 43 viral candidates, respectively; 40 were supported by both tools and 44 by at least one tool. Thirty-eight VirSorter2 calls met its high-confidence rule. CheckV classified one sequence as high quality, four as medium quality, 33 as low quality, and eight as not determined, and identified three proviral contigs. Five direct-terminal-repeat candidates were low confidence because their repeats contained excessive ambiguous bases. Ten non-self sequence pairs yielded reportable nucleotide alignments, but none passed both vOTU gates. The closest boundary case showed 95.16% ANI across 84.76% of the shorter sequence and was therefore retained as two vOTUs.</span></span>
+<span id="cb10-343"><a href="#cb10-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-344"><a href="#cb10-344" aria-hidden="true" tabindex="-1"></a>若研究使用 amplified virome，Methods 还必须增加一句：</span>
+<span id="cb10-345"><a href="#cb10-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-346"><a href="#cb10-346" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Read depth from amplified virome libraries was treated as nonquantitative and was not directly compared with relative abundance from unamplified total-metagenome libraries.</span></span>
+<span id="cb10-347"><a href="#cb10-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-348"><a href="#cb10-348" aria-hidden="true" tabindex="-1"></a>工具版本不够；Methods 或 supplement 还应列出 database release、archive checksum、contig length gate、score gate、hallmark rule、前病毒是否切边界、ANI/AF 相对哪个序列，以及 DTR 的人工复核方法。</span>
+<span id="cb10-349"><a href="#cb10-349" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-350"><a href="#cb10-350" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb10-351"><a href="#cb10-351" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-352"><a href="#cb10-352" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最少需要四类输入</span></span>
+<span id="cb10-353"><a href="#cb10-353" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-354"><a href="#cb10-354" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`contigs.fna`</span>：每样本或 co-assembly contigs；header 唯一且不能含会被下游截断的空格；</span>
+<span id="cb10-355"><a href="#cb10-355" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`samples.tsv`</span>：至少含 <span class="in">`sample_id`</span>、<span class="in">`subject_id`</span>、<span class="in">`library_type`</span>、<span class="in">`extraction_batch`</span>、<span class="in">`sequencing_run`</span>；</span>
+<span id="cb10-356"><a href="#cb10-356" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`wetlab_protocol.tsv`</span>：记录 filter pore/material、centrifugation、nuclease、VLP enrichment、WGA/MDA/SISPA、input mass 与 cycle/time；</span>
+<span id="cb10-357"><a href="#cb10-357" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>raw-read alignment：用于 coverage、breadth、contig ends、DTR/ITR、污染与跨样本 abundance 审计。</span>
+<span id="cb10-358"><a href="#cb10-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-359"><a href="#cb10-359" aria-hidden="true" tabindex="-1"></a><span class="fu">### 建议主流程</span></span>
+<span id="cb10-360"><a href="#cb10-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-361"><a href="#cb10-361" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
+<span id="cb10-362"><a href="#cb10-362" aria-hidden="true" tabindex="-1"></a><span class="in">assembled contigs</span></span>
+<span id="cb10-363"><a href="#cb10-363" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; geNomad + VirSorter2 candidate ledger</span></span>
+<span id="cb10-364"><a href="#cb10-364" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; score / hallmark / cellular-gene review</span></span>
+<span id="cb10-365"><a href="#cb10-365" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; CheckV boundary trimming and quality</span></span>
+<span id="cb10-366"><a href="#cb10-366" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; raw-read coverage and terminal-repeat review</span></span>
+<span id="cb10-367"><a href="#cb10-367" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; cleaned viral FASTA</span></span>
+<span id="cb10-368"><a href="#cb10-368" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; 95% ANI + 85% shorter-sequence AF vOTUs</span></span>
+<span id="cb10-369"><a href="#cb10-369" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; representative catalog</span></span>
+<span id="cb10-370"><a href="#cb10-370" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; competitive read mapping and abundance filters</span></span>
+<span id="cb10-371"><a href="#cb10-371" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; protocol-stratified statistics and MIUViG table</span></span>
+<span id="cb10-372"><a href="#cb10-372" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-373"><a href="#cb10-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-374"><a href="#cb10-374" aria-hidden="true" tabindex="-1"></a>每个候选保留一行 ledger，不要只留下最终 FASTA。建议字段至少包括 <span class="in">`original_contig_id`</span>、<span class="in">`cleaned_viral_id`</span>、两个 detector scores、hallmarks、viral/cellular genes、provirus coordinates、CheckV quality、completeness method/confidence、contamination、topology/warning、vOTU representative、library type、数据库 release 和软件 commit。</span>
+<span id="cb10-375"><a href="#cb10-375" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-376"><a href="#cb10-376" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 virome 的统计策略</span></span>
+<span id="cb10-377"><a href="#cb10-377" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-378"><a href="#cb10-378" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>同 protocol 的样本：用统一代表序列库 competitive mapping，预注册 identity、breadth、minimum covered bases 和 multi-mapping 规则；</span>
+<span id="cb10-379"><a href="#cb10-379" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>配对 aliquots：在同一样本内估计 protocol-associated recovery，但分别展示两类 library 的 richness 与 abundance；</span>
+<span id="cb10-380"><a href="#cb10-380" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>非配对 protocol：primary analysis 分层，跨层只做 presence/absence 或经过 controls 支持的有限比较；</span>
+<span id="cb10-381"><a href="#cb10-381" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified virome：不把 read depth 当 particle abundance；若研究目标必须定量，加入已知浓度 spike-ins、未扩增对照和 ddPCR/qPCR 校准。</span>
+<span id="cb10-382"><a href="#cb10-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-383"><a href="#cb10-383" aria-hidden="true" tabindex="-1"></a>无法获得 wet-lab protocol 时，不能把缺失字段默认成“未过滤/未扩增”。把 protocol 标为 <span class="in">`unknown`</span>，做敏感性分析，并在结论中降低丰度比较的证据等级。</span>
+<span id="cb10-384"><a href="#cb10-384" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-385"><a href="#cb10-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb10-386"><a href="#cb10-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-387"><a href="#cb10-387" aria-hidden="true" tabindex="-1"></a>五张图分别服务五个问题，不把全部字段塞进一张“总览”：</span>
+<span id="cb10-388"><a href="#cb10-388" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-389"><a href="#cb10-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>discovery overlap 用同一 contig coordinate 展示两个 detector 和 VirSorter2 high-confidence 收缩；</span>
+<span id="cb10-390"><a href="#cb10-390" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>quality plot 把 completeness 与 host-flank contamination 分成两个轴；</span>
+<span id="cb10-391"><a href="#cb10-391" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>vOTU 图把 95% ANI 与 85% AF 画成二维 acceptance region；</span>
+<span id="cb10-392"><a href="#cb10-392" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>evidence ladder 约束发现、边界、质量、聚类与 MIUViG 的措辞；</span>
+<span id="cb10-393"><a href="#cb10-393" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>library map 明确它是 methodological evidence map，不伪装成定量效应图。</span>
+<span id="cb10-394"><a href="#cb10-394" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-395"><a href="#cb10-395" aria-hidden="true" tabindex="-1"></a>颜色采用色觉友好的 Okabe--Ito 系列；图内全部英文。每张图同时导出 PDF、350 dpi PNG 和 LZW TIFF。正文图注写清分母是 **46 regression sequences** 或 **10 non-self alignable pairs**，避免读者误以为条形高度来自自然队列。</span>
+<span id="cb10-396"><a href="#cb10-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-397"><a href="#cb10-397" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb10-398"><a href="#cb10-398" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb10-399"><a href="#cb10-399" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/virus-evidence-matrix.tsv"</span>,</span>
+<span id="cb10-400"><a href="#cb10-400" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-401"><a href="#cb10-401" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-402"><a href="#cb10-402" aria-hidden="true" tabindex="-1"></a>votu_pairs <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb10-403"><a href="#cb10-403" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/votu-pairwise-threshold-audit.tsv"</span>,</span>
+<span id="cb10-404"><a href="#cb10-404" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-405"><a href="#cb10-405" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-406"><a href="#cb10-406" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-407"><a href="#cb10-407" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(evidence) <span class="sc">==</span> <span class="dv">46</span>)</span>
+<span id="cb10-408"><a href="#cb10-408" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(votu_pairs) <span class="sc">==</span> <span class="dv">10</span>)</span>
+<span id="cb10-409"><a href="#cb10-409" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(votu_pairs<span class="sc">$</span>SameVOTU) <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb10-410"><a href="#cb10-410" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-411"><a href="#cb10-411" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-412"><a href="#cb10-412" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb10-413"><a href="#cb10-413" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-414"><a href="#cb10-414" aria-hidden="true" tabindex="-1"></a>病毒发现、CheckV 质量、前病毒边界和 vOTU 聚类是四道不同门；任何单一工具都不能包办整条证据链。</span>
+<span id="cb10-415"><a href="#cb10-415" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-416"><a href="#cb10-416" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb10-417"><a href="#cb10-417" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-418"><a href="#cb10-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 原理与评估：@camargo2024genomad；软件版本：@genomad2026software。</span>
+<span id="cb10-419"><a href="#cb10-419" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>VirSorter2 多分类器：@guo2021virsorter2；软件版本：@virsorter22026software。</span>
+<span id="cb10-420"><a href="#cb10-420" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckV 完整度、宿主边界与质量：@nayfach2021checkv；软件版本：@checkv2026software。</span>
+<span id="cb10-421"><a href="#cb10-421" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG 质量类别、vOTU 与报告清单：@roux2019miuvig。</span>
+<span id="cb10-422"><a href="#cb10-422" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Virome filtration、nuclease 与 amplification 偏倚：@parrasmolto2018viromebias；@conceicaoneto2015netovir。</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/54-virus-discovery-quality.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></div></div></footer><script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

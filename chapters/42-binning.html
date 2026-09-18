@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Peter">
+<meta name="description" content="在同一真实 mock 共组装与深度坐标上，以 truth-blind 设计比较五条分箱分支，并用 CheckM2、GUNC 和已知基因组做分层审计">
+
+<title>分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB – 宏基因组分析最佳实践 · Shotgun</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/43-bin-refinement.html" rel="next">
+<link href="../chapters/41-read-mapping-depth.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-38ae79c2eabdcd4850b93d23314887c4.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/42-binning.html"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="搜索" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">宏基因组分析最佳实践 · Shotgun</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/petemeng/metagenomics-best-practices" title="源代码" class="quarto-navigation-tool px-1" aria-label="源代码"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="切换深色模式"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 0 部分 · 导论</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-three-analysis-layers.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一条主干、三个分析层级：read profiling / gene-contig-centric / genome-resolved 如何取舍</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 1 部分 · 实验设计与样本</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-study-design-power.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">研究设计、样本量与统计效力</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-sequencing-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组到底要测多深：决策框架与饱和曲线</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-library-prep-absolute-quantification.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">从样本到文库：DNA 提取、建库偏差与定量宏基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-host-depletion-low-biomass.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宿主去除与低生物量：湿实验宿主耗竭与计算去宿主</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-contamination-controls.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">污染与对照：blank、kitome、index hopping、decontam</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-fastq-short-long-reads.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">认识数据与平台：FASTQ、短读与长读对全流程的影响</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 2 部分 · 环境搭建与算力</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-wsl2-conda.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">WSL2 + conda/mamba（Windows 用户主线）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-computing-hpc-cloud.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">算力现实：内存、磁盘、HPC、云、Apptainer 与 SLURM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-install-biobakery-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 bioBakery、组装分箱工具链与数据库</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-install-r-cmd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 R、curatedMetagenomicData 与关键包生态</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 3 部分 · 上游 QC 与预处理</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-read-qc-fastp.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">读长质控与修剪：FastQC、MultiQC 与 fastp</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-host-removal-complexity-duplicates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去宿主、复杂度评估与重复 reads 的识别和处理</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 4 部分 · Reference-based read profiling（物种）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-metaphlan4.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MetaPhlAn4：marker 基因、SGB 与物种级组成分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-kraken2-bracken.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Kraken2 + Bracken：k-mer 分类与丰度重估</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-kraken2-database-confidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-profiler-benchmark.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 5 部分 · Reference-based read profiling（功能）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-humann3.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">HUMAnN3：gene family、pathway abundance 与 pathway coverage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-functional-profile-normalization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">功能谱归一化与解读：CPM、relative abundance、coverage 与特殊行</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 6 部分 · 下游统计与跨队列</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-metagenomic-table-semantics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-alpha-beta-diversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">多样性：Alpha / Beta（物种谱、MAG 表、基因谱）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-pcoa-cap-permanova.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">排序与检验：PCoA / CAP + PERMANOVA + betadisper</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-differential-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-composition-core-microbiome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组成与多分类级可视化、核心微生物组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-curated-metagenomic-data-lineage.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">curatedMetagenomicData 深用与数据谱系卡片</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-machine-learning-roc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">随机森林 / 梯度提升分类 + ROC + 重要性 + 防过拟合规范</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-cross-cohort-validation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">跨队列 meta 分析 + 外部验证</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-cooccurrence-network.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">共现网络 + 网络进阶（鲁棒性 / keystone / Zi-Pi）</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 7 部分 · 组装</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-short-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">短读长组装：MEGAHIT vs metaSPAdes、单样本 vs 混合组装</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-long-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">长读长组装：Nanopore / PacBio HiFi 与长读特有问题</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-hybrid-assembly-polishing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Hybrid assembly 与 polishing：何时混合，何时直接 HiFi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-assembly-qc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组装质控：QUAST、N50、contig 统计与可用性</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 8 部分 · Gene / contig-centric 分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-nonredundant-gene-catalog.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">非冗余基因目录：Prodigal + MMseqs2 / CD-HIT</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-gene-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因丰度谱：reads 回比基因目录与功能汇总</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-eggnog-functional-annotation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Gene-centric 功能注释：eggNOG-mapper 与功能暗物质</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-cazymes-dbcan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">CAZymes 碳水活性酶：dbCAN 共识、底物与 CGC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-resistome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-virulome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-bgc-natural-products.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">BGC 与天然产物：antiSMASH / GECCO / DeepBGC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 9 部分 · 分箱与 MAG</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/41-read-mapping-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/42-binning.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/43-bin-refinement.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/45-drep-dereplication.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/46-gtdbtk-taxonomy.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/47-novel-mag-phylogenomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/48-mag-abundance-coverm.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 丰度定量：CoverM 的 depth、breadth 与 relative abundance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/49-mag-curation-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 人工校正、命名、数据库提交与补充材料</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 10 部分 · 菌株与种内变异</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/50-instrain-microdiversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">inStrain：SNV、微多样性与同株证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/51-strainphlan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">StrainPhlAn：marker 基因菌株系统发育</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/52-pangenome-accessory-genes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">种内功能差异：泛基因组、附属基因与菌株功能型</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/53-strain-transmission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 11 部分 · 病毒 / 质粒 / 真核</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/54-virus-discovery-quality.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/55-virus-taxonomy-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/56-virus-host-evidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/57-plasmids-mobile-elements.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/58-microbial-eukaryotes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 12 部分 · 代谢建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/59-dram-metabolic.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组解析代谢：DRAM / METABOLIC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/60-genome-scale-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组尺度代谢模型：gapseq / CarveMe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/61-community-metabolism.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">群落代谢与流量：MICOM / SMETANA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/62-element-cycling.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">元素循环与功能类群：C / N / S 循环</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 13 部分 · 多组学整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/63-metabolomics-integration.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">与代谢组整合：Procrustes / Mantel / HAllA / sPLS-DIABLO</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/64-metatranscriptomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏转录组联动：功能有没有 vs 表达没表达</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/65-metaproteomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏蛋白组：从 PSM、蛋白推断到多组学功能对齐</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/66-mag-metabolite-phenotype.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG × 代谢物 / 表型：从基因组代谢潜力到可验证的功能读出</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 14 部分 · 纵向与因果</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-15" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/67-longitudinal-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">纵向：线性混合模型、轨迹与定植稳定性</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/68-survival-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">微生物组与生存结局：Cox / Kaplan–Meier / 时间依赖 ROC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/69-mediation-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">中介分析：暴露 → 微生物 → 结局</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/70-mendelian-randomization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">孟德尔随机化：工具变量、水平多效性与敏感性分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/71-structural-equation-model.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">环境因子 → 微生物 → 表型：这条路径能被数据识别吗？</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/72-causal-evidence-ladder.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">因果证据阶梯：从关联到可干预机制</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 15 部分 · 公共数据资源</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-16" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/73-public-metagenome-resources.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 16 部分 · 工程化与发表</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-17" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/74-nfcore-mag-workflows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">用 nf-core/mag 等 Nextflow / Snakemake 流程复现全上游</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/75-paper-figure-organization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一篇宏基因组论文的主图和补图如何组织</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/76-reporting-standards.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">报告标准：STORMS / STREAMS / MIMAG / MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/77-data-code-genome-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据、代码与基因组提交</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">多个分箱器，怎样比较才公平？</a></li>
+  <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
+  <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先确认系统环境与版本来源</a>
+  <ul class="collapse">
+  <li><a href="#真实数据与固定坐标" id="toc-真实数据与固定坐标" class="nav-link" data-scroll-target="#真实数据与固定坐标">真实数据与固定坐标</a></li>
+  </ul></li>
+  <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">准备 common-coordinate inputs</a>
+  <ul class="collapse">
+  <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">从“每个工具默认跑一次”升级为 matched benchmark</a></li>
+  </ul></li>
+  <li><a href="#运行五条确定性分支" id="toc-运行五条确定性分支" class="nav-link" data-scroll-target="#运行五条确定性分支">运行五条确定性分支</a></li>
+  <li><a href="#先建立-truth-free-candidate-qc" id="toc-先建立-truth-free-candidate-qc" class="nav-link" data-scroll-target="#先建立-truth-free-candidate-qc">先建立 truth-free candidate QC</a>
+  <ul class="collapse">
+  <li><a href="#单样本与多样本深度回答不同问题" id="toc-单样本与多样本深度回答不同问题" class="nav-link" data-scroll-target="#单样本与多样本深度回答不同问题">单样本与多样本深度回答不同问题</a></li>
+  <li><a href="#从单一-quality-score-升级为三张记录表" id="toc-从单一-quality-score-升级为三张记录表" class="nav-link" data-scroll-target="#从单一-quality-score-升级为三张记录表">从单一 quality score 升级为三张记录表</a></li>
+  </ul></li>
+  <li><a href="#加入-post-hoc-known-truth-audit" id="toc-加入-post-hoc-known-truth-audit" class="nav-link" data-scroll-target="#加入-post-hoc-known-truth-audit">加入 post-hoc known-truth audit</a>
+  <ul class="collapse">
+  <li><a href="#checkm2gunc-与-known-truth-是互补记录表" id="toc-checkm2gunc-与-known-truth-是互补记录表" class="nav-link" data-scroll-target="#checkm2gunc-与-known-truth-是互补记录表">CheckM2/GUNC 与 known truth 是互补记录表</a></li>
+  <li><a href="#post-hoc-truth-proxy-不等于-mimag" id="toc-post-hoc-truth-proxy-不等于-mimag" class="nav-link" data-scroll-target="#post-hoc-truth-proxy-不等于-mimag">Post-hoc truth proxy 不等于 MIMAG</a></li>
+  <li><a href="#从-taxonomy-有无升级为-coverage-audit" id="toc-从-taxonomy-有无升级为-coverage-audit" class="nav-link" data-scroll-target="#从-taxonomy-有无升级为-coverage-audit">从 taxonomy “有/无”升级为 coverage audit</a></li>
+  </ul></li>
+  <li><a href="#检查-single-与-multisample-design" id="toc-检查-single-与-multisample-design" class="nav-link" data-scroll-target="#检查-single-与-multisample-design">检查 single 与 multisample design</a></li>
+  <li><a href="#汇总质量结果并检查图表" id="toc-汇总质量结果并检查图表" class="nav-link" data-scroll-target="#汇总质量结果并检查图表">汇总质量结果并检查图表</a>
+  <ul class="collapse">
+  <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">Composition、coverage 与 taxonomy 的信息并不等价</a></li>
+  <li><a href="#从两份-mock-升级到真实队列" id="toc-从两份-mock-升级到真实队列" class="nav-link" data-scroll-target="#从两份-mock-升级到真实队列">从两份 mock 升级到真实队列</a></li>
+  </ul></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods">交代分箱策略与质量筛选</a>
+  <ul class="collapse">
+  <li><a href="#methods-template" id="toc-methods-template" class="nav-link" data-scroll-target="#methods-template">Methods template</a></li>
+  <li><a href="#results-template" id="toc-results-template" class="nav-link" data-scroll-target="#results-template">Results template</a></li>
+  </ul></li>
+  <li><a href="#sec-own-data" id="toc-sec-own-data" class="nav-link" data-scroll-target="#sec-own-data">换到自己的研究中，先检查哪些条件？</a></li>
+  <li><a href="#sec-publication" id="toc-sec-publication" class="nav-link" data-scroll-target="#sec-publication">图中应该保留哪些信息？</a></li>
+  <li><a href="#回到最初的问题" id="toc-回到最初的问题" class="nav-link" data-scroll-target="#回到最初的问题">回到最初的问题</a></li>
+  <li><a href="#sec-references" id="toc-sec-references" class="nav-link" data-scroll-target="#sec-references">参考文献</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/42-binning.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/42-binning.html"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> 代码</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">作者</div>
+    <div class="quarto-title-meta-contents">
+             <p>Peter </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>先给结论：</strong>分箱器没有脱离数据设计的“总冠军”。本篇把 MOCK1/MOCK2 的同一份 MEGAHIT 共组装限制到 10,203 条 &gt;=1.5 kb contigs（74,932,939 bp），让 MetaBAT2 单样本、MetaBAT2 多样本、SemiBin2 self-supervised、VAMB taxonomy-free 与 TaxVAMB+Kraken2 消费完全相同的序列坐标。方法选择只看 CheckM2 completeness/contamination 与 GUNC；87 个已知输入基因组在运行结束后才用于 recovery/purity 审计。这个 <strong>truth-blind</strong> 边界比“哪个方法找回的真值最多”更接近真实项目。</p>
+</blockquote>
+<div class="callout callout-style-default callout-important callout-titled" title="算力与数据边界">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">重要</span>算力与数据边界
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>五条分支使用 <strong>24 CPU cores</strong>；建议 <strong>128 GB RAM、100 GB 临时磁盘，预留 2–4 小时</strong>。MetaBAT2 很快，SemiBin2/VAMB 的 CPU 训练占主要耗时，Kraken2 Standard-8 安装后为 8.64 GB。自然群落的 assembly、样本数和 bin 数更大，应为深度矩阵、模型中间文件与候选 FASTA 预留额外磁盘。没有服务器时，可直接读取 <code>data/small/42-binning-comparison-frozen/</code> 中的 membership、CheckM2/GUNC、truth audit、日志和环境锁。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>先确定这一点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>在同一输入和质量标准下比较分箱结果；产出数量不能替代完整度、污染和嵌合检查。</p>
+</div>
+</div>
+<section id="sec-target" class="level2">
+<h2 class="anchored" data-anchor-id="sec-target">多个分箱器，怎样比较才公平？</h2>
+<p>锚定图不是一张单独的 UMAP，而是分箱论文常见的“quality yield + recovery/purity”组合：MetaBAT2 以 tetranucleotide frequency 和跨样本 abundance distance 聚类 contigs <span class="citation" data-cites="kang2019metabat2">(<a href="02-three-analysis-layers.html#ref-kang2019metabat2" role="doc-biblioref"><span class="nocase">Kang 等</span> 2019年</a>)</span>；SemiBin2 加入自监督表示学习 <span class="citation" data-cites="pan2023semibin2">(<a href="02-three-analysis-layers.html#ref-pan2023semibin2" role="doc-biblioref">Pan 等 2023年</a>)</span>；VAMB 用 variational autoencoder 联合组成与 abundance <span class="citation" data-cites="nissen2021vamb">(<a href="02-three-analysis-layers.html#ref-nissen2021vamb" role="doc-biblioref"><span class="nocase">Nissen 等</span> 2021年</a>)</span>；TaxVAMB 再引入不完整的 taxonomy signal <span class="citation" data-cites="kutuzova2026taxvamb">(<a href="02-three-analysis-layers.html#ref-kutuzova2026taxvamb" role="doc-biblioref"><span class="nocase">Kutuzova 等</span> 2026年</a>)</span>。</p>
+<p>第一张图把“已知真值等级”和“reference-free minimum QC”并排，明确两套评价不能混称。第二张图再展开 dominant-genome recovery 与 aligned contamination proxy。</p>
+<div id="fig-42-yield" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-42-yield-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/42-binner-quality-yield.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-42-yield-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;42.1: 同一坐标、同一最小 bin 大小下，五条分箱分支的质量产出。mock 真值只用于运行后的左侧审计。
+</figcaption>
+</figure>
+</div>
+<p>五条分支依次产生 33、34、43、26 和 35 个 candidates；其中 CheckM2+GUNC minimum-pass 分别为 22、22、24、15 和 18 个。SemiBin2 的 candidate 与 minimum-pass 产出最高，但也有 19 个 candidates 未过 minimum gate；因此“总 bin 数更多”不能直接写成“MAG 回收更好”。MetaBAT2 加入第二列 depth 后，多分出 216 条 contigs、少量独有分配由 92 增至 308 条；在 8,052 条共同分箱 contigs 上 ARI 为 0.981。</p>
+</section>
+<section id="sec-reader-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
+<p><a href="https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/42/files.tsv">数据与代码清单</a>列出了本例的输入表、分析脚本和环境文件（约 121.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</p>
+<p>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<a href="https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/42/download.R">带完整性检查的下载脚本</a>。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/42/files.tsv"</span>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="sec-setup" class="level2">
+<h2 class="anchored" data-anchor-id="sec-setup">先确认系统环境与版本来源</h2>
+<section id="真实数据与固定坐标" class="level3">
+<h3 class="anchored" data-anchor-id="真实数据与固定坐标">真实数据与固定坐标</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>输入</th>
+<th>标识符</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MOCK1 clean reads</td>
+<td>PRJEB52977 / ERR9765746</td>
+<td>MetaBAT2 single depth；两样本模型 depth</td>
+</tr>
+<tr class="even">
+<td>MOCK2 clean reads</td>
+<td>PRJEB52977 / ERR9765747</td>
+<td>第二列 depth；共组装真值范围扩展到 87 genomes</td>
+</tr>
+<tr class="odd">
+<td>MEGAHIT co-assembly</td>
+<td>10,203 contigs &gt;=1.5 kb；74,932,939 bp</td>
+<td>五个分箱器共同坐标</td>
+</tr>
+<tr class="even">
+<td>Kraken2 Standard-8</td>
+<td>Standard-8-20260626；8,638,898,739 bytes</td>
+<td>只输入 TaxVAMB，不输入其他分支</td>
+</tr>
+</tbody>
+</table>
+<p>两份真实不均一 mock 来自同一研究 <span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span>。分箱前不读取 reference genomes、MetaQUAST coordinates 或 organism labels。</p>
+<details class="wechat-omit">
+<summary>
+环境配置与完整运行说明
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-binning-2026.07 <span class="at">--file</span> env/binning-linux-64.lock</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-mag-qc-2026.07 <span class="at">--file</span> env/mag-qc-linux-64.lock</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gunc-2026.07 <span class="at">--file</span> env/gunc-linux-64.lock</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Kraken2 Standard-8: 5.95-GB archive, 8.64-GB installed database.</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PROJECT_ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-kraken2</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/16-database-manifest.tsv</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download kraken2-standard8-20260626</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> verify kraken2-standard8-20260626</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_ARCHIVE</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/kraken2-standard8-20260626/k2_standard_08_GB_20260626.tar.gz"</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_DB</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/standard-8-20260626"</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${KRAKEN_ARCHIVE}</span><span class="st">"</span> <span class="at">-C</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">md5sum</span> <span class="at">--check</span> <span class="st">"</span><span class="va">${PROJECT_ROOT}</span><span class="st">/data/small/16-standard8-files.md5"</span><span class="kw">)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># CheckM2 v3 与 GUNC ProGenomes 2.1。</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-mag-qc</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/44-mag-qc-database-manifest.tsv</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download checkm2-v3</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download gunc-progenomes2.1</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1"</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/checkm2-v3/checkm2_database.tar.gz"</span> <span class="dt">\</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd.gz"</span> <span class="dt">\</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="fu">md5sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260742</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#0072B2"</span>, <span class="st">"#D55E00"</span>, <span class="st">"#009E73"</span>, <span class="st">"#CC79A7"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>             <span class="st">"#E69F00"</span>, <span class="st">"#56B4E9"</span>, <span class="st">"#F0E442"</span>, <span class="st">"#999999"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</details>
+</section>
+</section>
+<section id="sec-code" class="level2">
+<h2 class="anchored" data-anchor-id="sec-code">准备 common-coordinate inputs</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article42"</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">BINNING_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-binning-2026.07"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_QC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-mag-qc-2026.07"</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gunc-2026.07"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_DB</span><span class="op">=</span><span class="st">"/db/metagenome-kraken2/standard-8-20260626"</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKM2_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article42_binning.py <span class="dt">\</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="at">--binning-env</span> <span class="st">"</span><span class="va">${BINNING_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kraken-db</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="at">--minimum-contig</span> 1500</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>准备器从 <code>data/small/30-short-read-assembly-frozen/</code> 的 assembly 与 <code>data/small/41-read-mapping-depth-frozen/</code> 的 JGI depth 按 contig ID 严格连接，生成 two-sample VAMB abundance 和 MOCK1-only MetaBAT2 depth。任何缺行、重名或长度漂移都会停止。</p>
+<section id="sec-audit" class="level3">
+<h3 class="anchored" data-anchor-id="sec-audit">从“每个工具默认跑一次”升级为 matched benchmark</h3>
+<p>五条分支必须使用同一 FASTA、最短 contig、最小输出 bin、depth columns 与线程预算。比较不同坐标或不同最小 bin 大小，只能说明预处理不同，不能说明算法优劣。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="1. 用真值调完参数再声称 blind benchmark">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>用真值调完参数再声称 blind benchmark
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>只要看过 reference recovery 再改 seed、minfasta、taxonomy confidence 或模型分支，主结果就不再是盲法。参数合同必须先冻结。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="运行五条确定性分支" class="level2">
+<h2 class="anchored" data-anchor-id="运行五条确定性分支">运行五条确定性分支</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article42_binning.py <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="at">--binning-env</span> <span class="st">"</span><span class="va">${BINNING_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kraken-db</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="at">--article41-work-dir</span> work/article41 <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 24</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>关键参数展开如下：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">metabat2</span> <span class="at">-i</span> contigs.ge1500.fna <span class="at">-a</span> depth.tsv <span class="at">-m</span> 1500 <span class="at">-s</span> 200000 <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 24 <span class="at">--seed</span> 20260742 <span class="at">--saveCls</span> <span class="at">-o</span> bins/bin</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">SemiBin2</span> single_easy_bin <span class="at">--input-fasta</span> contigs.ge1500.fna <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-bam</span> MOCK1.bam MOCK2.bam <span class="at">--min-len</span> 1500 <span class="at">--minfasta-kbs</span> 200 <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--self-supervised</span> <span class="at">--engine</span> cpu <span class="at">--random-seed</span> 20260742 <span class="at">--threads</span> 24</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">vamb</span> bin default <span class="at">--fasta</span> contigs.ge1500.fna <span class="at">--abundance_tsv</span> abundance.tsv <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> vamb-taxonomy-free <span class="at">-m</span> 1500 <span class="at">--minfasta</span> 200000 <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--seed</span> 20260742 <span class="at">-o</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ex">vamb</span> bin taxvamb <span class="at">--fasta</span> contigs.ge1500.fna <span class="at">--abundance_tsv</span> abundance.tsv <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--taxonomy</span> taxvamb-taxonomy.tsv <span class="at">--outdir</span> taxvamb-kraken2 <span class="dt">\</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> 1500 <span class="at">--minfasta</span> 200000 <span class="at">-p</span> 24 <span class="at">--seed</span> 20260742 <span class="at">-o</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Kraken2 用 <code>--confidence 0.05 --minimum-hit-groups 2</code>；每条 contig 的 taxonomy 必须从 domain 开始连续，不能把缺失 rank 人工补成一个真实类群。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="2. 不同工具使用不同 contig cutoff">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>不同工具使用不同 contig cutoff
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>VAMB/SemiBin2 默认值与 MetaBAT2 不同。必须显式固定 &gt;=1.5 kb 与 &gt;=200 kb output，否则短 contig 和小 bin 造成结构性偏差。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="4. 把 Kraken unclassified contig 丢掉">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>把 Kraken unclassified contig 丢掉
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>TaxVAMB 输入应保留全部 contigs；未知 taxonomy 用缺失值表示，而不是删行或伪造 <code>unknown</code> domain。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="6. 只保存 bins，不保存 membership">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>只保存 bins，不保存 membership
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>每个 FASTA 都应有 <code>contig -&gt; candidate</code> 表和 SHA-256。没有 membership，后续无法精炼、追踪 contig 或复核重复分配。</p>
+</div>
+</div>
+</section>
+<section id="先建立-truth-free-candidate-qc" class="level2">
+<h2 class="anchored" data-anchor-id="先建立-truth-free-candidate-qc">先建立 truth-free candidate QC</h2>
+<section id="单样本与多样本深度回答不同问题" class="level3">
+<h3 class="anchored" data-anchor-id="单样本与多样本深度回答不同问题">单样本与多样本深度回答不同问题</h3>
+<p>MetaBAT2-MOCK1-only 只看 MOCK1 depth；multisample 同时看 MOCK1/MOCK2。两条分支使用同一 FASTA 和同一参数，差异才能归因于第二列 abundance。比较使用 jointly binned contigs 上的 adjusted Rand index，同时保留 single-only 与 multi-only contigs，避免只看 bin 数。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article42_binning.py <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article42_candidate_qc.py <span class="dt">\</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gunc-env</span> <span class="st">"</span><span class="va">${GUNC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--gunc-db</span> <span class="st">"</span><span class="va">${GUNC_DB}</span><span class="st">"</span> <span class="at">--threads</span> 24</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>CheckM2 1.1.0 使用 database version 3；GUNC 1.1.0 使用 ProGenomes 2.1。minimum pass 固定为 completeness &gt;=50%、contamination &lt;10% 且 <code>pass.GUNC=TRUE</code>。</p>
+</section>
+<section id="从单一-quality-score-升级为三张记录表" class="level3">
+<h3 class="anchored" data-anchor-id="从单一-quality-score-升级为三张记录表">从单一 quality score 升级为三张记录表</h3>
+<ol type="1">
+<li>reference-free：CheckM2、GUNC、bin size、contig count；</li>
+<li>known truth：recovery、aligned purity、dominant genome duplication；</li>
+<li>resource：wall time、peak RAM、磁盘与失败状态。</li>
+</ol>
+<p>主方法选择使用第一张账本；第二张用于解释偏差；第三张决定队列规模能否承受。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="3. 把 CheckM2 pass 当作分类正确">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>把 CheckM2 pass 当作分类正确
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>CheckM2/GUNC 不知道 bin 是否对应预期 species。reference-free pass 与 truth recovery/purity 必须分列。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="加入-post-hoc-known-truth-audit" class="level2">
+<h2 class="anchored" data-anchor-id="加入-post-hoc-known-truth-audit">加入 post-hoc known-truth audit</h2>
+<section id="checkm2gunc-与-known-truth-是互补记录表" class="level3">
+<h3 class="anchored" data-anchor-id="checkm2gunc-与-known-truth-是互补记录表">CheckM2/GUNC 与 known truth 是互补记录表</h3>
+<p>CheckM2 用标记和机器学习估 completeness/contamination <span class="citation" data-cites="chklovski2023checkm2">(<a href="02-three-analysis-layers.html#ref-chklovski2023checkm2" role="doc-biblioref">Chklovski 等 2023年</a>)</span>，GUNC 检查 gene-level lineage dispersion 与 chimerism <span class="citation" data-cites="orakov2021gunc">(<a href="02-three-analysis-layers.html#ref-orakov2021gunc" role="doc-biblioref"><span class="nocase">Orakov 等</span> 2021年</a>)</span>。它们不需要 mock truth，因此可用于预注册选择。已知输入基因组则能回答：一个 bin 找回目标 genome 的多少、已比对部分有多纯、是否重复找回同一 genome。两者不一致时，应报告原因，不能挑更漂亮的一套。</p>
+</section>
+<section id="post-hoc-truth-proxy-不等于-mimag" class="level3">
+<h3 class="anchored" data-anchor-id="post-hoc-truth-proxy-不等于-mimag">Post-hoc truth proxy 不等于 MIMAG</h3>
+<p>每条 &gt;=1.5 kb contig 根据固化的 MetaQUAST coordinates 归到 aligned query span 最大的输入 genome；bin 的 recovery 用该 genome 上非重叠 reference intervals 计算，purity 只在可归属的 bin bp 内计算。<code>HQ proxy</code>/<code>MQ proxy</code> 只用于算法审计；完整 MIMAG 分级还需要 rRNA、tRNA、chimerism 与更严格的 genome QC。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_MAXCSS</span><span class="op">=</span><span class="va">$(</span><span class="fu">find</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/qc/gunc"</span> <span class="at">-name</span> <span class="st">'GUNC.*.maxCSS_level.tsv'</span><span class="va">)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article42_binning.py <span class="dt">\</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-quality</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/qc/checkm2/quality_report.tsv"</span> <span class="dt">\</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gunc-maxcss</span> <span class="st">"</span><span class="va">${GUNC_MAXCSS}</span><span class="st">"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>bin-quality-truth-audit.tsv</code> 同时保留 CheckM2/GUNC 与 recovery/purity，但任何 binner 命令都没有 reference FASTA 参数。<code>truth-contig-assignment.tsv.gz</code> 记录 10,203 条 contigs 的归属、aligned fraction 与 ambiguous flag。</p>
+<div id="fig-42-recovery" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-42-recovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/42-recovery-purity.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-42-recovery-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;42.2: Dominant-genome recovery 与 aligned contamination proxy 显示遗漏、合并和碎片化；形状标记独立的 CheckM2+GUNC minimum pass。
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="从-taxonomy-有无升级为-coverage-audit" class="level3">
+<h3 class="anchored" data-anchor-id="从-taxonomy-有无升级为-coverage-audit">从 taxonomy “有/无”升级为 coverage audit</h3>
+<p>10,203 条 contigs 必须闭合到 classified/unclassified 与 deepest canonical rank。TaxVAMB 优于 VAMB 时，也要确认优势是否集中在 reference-rich taxa；若 unclassified 或高 rank contigs 被系统性丢弃，结果可能对 novel genomes 不公平。</p>
+</section>
+</section>
+<section id="检查-single-与-multisample-design" class="level2">
+<h2 class="anchored" data-anchor-id="检查-single-与-multisample-design">检查 single 与 multisample design</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/42-binning-comparison-frozen"</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"single-vs-multisample.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(design<span class="sc">$</span>SharedBinnedContigs <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(dplyr<span class="sc">::</span><span class="fu">between</span>(design<span class="sc">$</span>AdjustedRandOnSharedBinnedContigs, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-42-design" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-42-design-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/42-single-vs-multisample.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-42-design-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;42.3: 第二列 depth 会改变哪些 contigs 被分箱，以及 jointly binned contigs 上的 partition agreement。
+</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="5. 将一个 mock 的结果推广到所有生态位">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>将一个 mock 的结果推广到所有生态位
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>reference-rich DNA mock 对 taxonomy-guided 方法更友好；土壤、海洋、病毒富集或宿主关联群落的 ranking 可能完全不同。</p>
+</div>
+</div>
+</section>
+<section id="汇总质量结果并检查图表" class="level2">
+<h2 class="anchored" data-anchor-id="汇总质量结果并检查图表">汇总质量结果并检查图表</h2>
+<section id="sec-theory" class="level3">
+<h3 class="anchored" data-anchor-id="sec-theory">Composition、coverage 与 taxonomy 的信息并不等价</h3>
+<ul>
+<li><strong>Composition</strong>：k-mer/tetranucleotide pattern 随 genome 演化，但短 contig 方差很大，近缘菌株也可能相似。</li>
+<li><strong>Coverage</strong>：同一 genome 的 contigs 在多个样本上应共同升降；只有一个样本时，向量退化为一个数。</li>
+<li><strong>Taxonomy</strong>：高置信分类可以约束不合理合并，但未培养谱系、水平转移和分类数据库偏倚会制造错误先验。</li>
+</ul>
+<p>因此，本篇保留 VAMB taxonomy-free 与 TaxVAMB 两条分支。taxonomy 有帮助时两者会分开；taxonomy 不可靠时，TaxVAMB 也可能退化。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article42_binning.py <span class="dt">\</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/42-binning-comparison-frozen</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article42_binning.R <span class="dt">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/42-binning-comparison-frozen <span class="at">--output-dir</span> figures</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article42_binning.py <span class="dt">\</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--frozen-dir</span> data/small/42-binning-comparison-frozen <span class="dt">\</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/42-binning-comparison <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/42-binning.qmd</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-42-taxonomy" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-42-taxonomy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/42-taxonomy-coverage.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-42-taxonomy-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;42.4: Kraken2 taxonomy 在 species、genus、较高 rank 与 unclassified 之间的真实覆盖；TaxVAMB 收到的是不完整证据。
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="从两份-mock-升级到真实队列" class="level3">
+<h3 class="anchored" data-anchor-id="从两份-mock-升级到真实队列">从两份 mock 升级到真实队列</h3>
+<p>自然样本至少增加多个独立 abundance profiles、低丰度 genome sensitivity、strain mixture、plasmid/virus exclusion policy 与 contamination controls。病人样本可用 CAMI-style synthetic spike-ins 或部分 isolate references 做盲法 benchmark，但不能把所有结果参数都调到已知真值最优。</p>
+</section>
+</section>
+<section id="sec-methods" class="level2">
+<h2 class="anchored" data-anchor-id="sec-methods">交代分箱策略与质量筛选</h2>
+<section id="methods-template" class="level3">
+<h3 class="anchored" data-anchor-id="methods-template">Methods template</h3>
+<blockquote class="blockquote">
+<p>Checksum-identified Illumina data from two uneven synthetic microbial communities (PRJEB52977; ERR9765746 and ERR9765747) were co-assembled with MEGAHIT v1.2.9. A common coordinate set of 10,203 contigs &gt;=1,500 bp (74,932,939 bp) and a two-sample JGI depth matrix were used for all binners. Five prespecified branches were evaluated: MetaBAT2 v2.18 with MOCK1-only depth, MetaBAT2 v2.18 with both depth profiles, SemiBin2 v2.3.0 in self-supervised CPU mode, VAMB v5.0.4 without taxonomy, and TaxVAMB from Vamb v5.0.4 with Kraken2 v2.17.1 Standard-8 release 20260626 taxonomy (<code>--confidence 0.05 --minimum-hit-groups 2</code>). The minimum contig and output-bin sizes were 1,500 and 200,000 bp, respectively, and stochastic branches used seed 20260742. Candidate quality was estimated independently with CheckM2 v1.1.0 database version 3 and GUNC v1.1.0 ProGenomes 2.1; minimum-pass bins required completeness &gt;=50%, contamination &lt;10%, and <code>pass.GUNC=TRUE</code>. Known reference genomes were withheld during binning and applied only post hoc to estimate dominant-genome recovery and aligned purity from MetaQUAST coordinates. Commands, memberships, versions, database checksums, resource use, and candidate checksums were retained.</p>
+</blockquote>
+</section>
+<section id="results-template" class="level3">
+<h3 class="anchored" data-anchor-id="results-template">Results template</h3>
+<blockquote class="blockquote">
+<p>All five prespecified branches completed on the same 10,203-contig coordinate set. MetaBAT2 with MOCK1-only and two-sample depth, SemiBin2, VAMB, and TaxVAMB produced 33, 34, 43, 26, and 35 candidates, of which 22, 22, 24, 15, and 18, respectively, met the independent CheckM2+GUNC minimum criterion. In the post-hoc reference audit, the corresponding HQ-proxy counts were 12, 15, 15, 9, and 9. The two MetaBAT2 partitions had an adjusted Rand index of 0.981 across 8,052 jointly binned contigs. Kraken2 assigned 4,000 contigs through species and 4,199 through genus, while 1,059 remained unclassified at the canonical-rank audit. MetaBAT2 required 3.59 s per branch, VAMB 367.12 s, TaxVAMB 1,520.77 s, and the default 15-epoch SemiBin2 workflow 5,046 s; SemiBin2 peak memory was not reported because its GNU-time record was lost during an isolated-session retry, and this missing measurement was retained explicitly. Known mock truth did not influence binner execution or primary quality selection.</p>
+</blockquote>
+</section>
+</section>
+<section id="sec-own-data" class="level2">
+<h2 class="anchored" data-anchor-id="sec-own-data">换到自己的研究中，先检查哪些条件？</h2>
+<ol type="1">
+<li>固定最终 assembly 和一个最短 contig cutoff，保存 SHA-256、contig 数、bp 与 N50。</li>
+<li>用同一组 coordinate-sorted BAM 一次性生成所有样本 depth；核对 row order、ID 与 length。</li>
+<li>预注册候选分支、min bin size、seed、taxonomy confidence、CPU/RAM ceiling 与 primary selection rule。</li>
+<li>至少保留一个 taxonomy-free branch；novel environment 不应只跑 taxonomy-guided 方法。</li>
+<li>对每个工具输出标准化 <code>candidate ID + contig membership + FASTA checksum</code>，并检查分支内 contig 不重复。</li>
+<li>用 CheckM2+GUNC 建 reference-free ledger；如果有 mock/isolate truth，再增加 post-hoc recovery/purity，不改变主方法。</li>
+<li>报告 failed runs、wall time、peak RAM 和数据库版本，避免 survivorship bias。</li>
+<li>最终候选不要直接进入功能结论；先做多分箱器精炼与完整 MIMAG 审计。</li>
+</ol>
+</section>
+<section id="sec-publication" class="level2">
+<h2 class="anchored" data-anchor-id="sec-publication">图中应该保留哪些信息？</h2>
+<ol type="1">
+<li>quality yield 用 paired panels：known truth 与 reference-free QC 不共用图例名称。</li>
+<li>recovery/purity 图用阈值参考线而非背景色断言；点大小表示 bin bp，形状表示 GUNC/CheckM2 pass。</li>
+<li>single/multisample 图同时标 shared 与 unique contigs，并在 subtitle 报 adjusted Rand index 的分母。</li>
+<li>taxonomy coverage 按 canonical rank 堆叠，保留 <code>Unclassified</code>；图内文字全部英文。</li>
+<li>五条分支颜色固定，使用色盲友好的 blue/green/orange/magenta 系列。</li>
+<li>每图导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿。</li>
+</ol>
+</section>
+<section id="回到最初的问题" class="level2">
+<h2 class="anchored" data-anchor-id="回到最初的问题">回到最初的问题</h2>
+<p>把五个分箱分支放在同一 contig 与多样本深度坐标上，以 CheckM2/GUNC 做 truth-blind 选择，再用已知基因组事后审计。</p>
+</section>
+<section id="sec-references" class="level2">
+<h2 class="anchored" data-anchor-id="sec-references">参考文献</h2>
+<ul>
+<li>真实 uneven microbial mocks <span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span></li>
+<li>MetaBAT2 <span class="citation" data-cites="kang2019metabat2">(<a href="02-three-analysis-layers.html#ref-kang2019metabat2" role="doc-biblioref"><span class="nocase">Kang 等</span> 2019年</a>)</span></li>
+<li>SemiBin2 <span class="citation" data-cites="pan2023semibin2">(<a href="02-three-analysis-layers.html#ref-pan2023semibin2" role="doc-biblioref">Pan 等 2023年</a>)</span></li>
+<li>VAMB <span class="citation" data-cites="nissen2021vamb">(<a href="02-three-analysis-layers.html#ref-nissen2021vamb" role="doc-biblioref"><span class="nocase">Nissen 等</span> 2021年</a>)</span></li>
+<li>TaxVAMB <span class="citation" data-cites="kutuzova2026taxvamb">(<a href="02-three-analysis-layers.html#ref-kutuzova2026taxvamb" role="doc-biblioref"><span class="nocase">Kutuzova 等</span> 2026年</a>)</span></li>
+<li>CheckM2 <span class="citation" data-cites="chklovski2023checkm2">(<a href="02-three-analysis-layers.html#ref-chklovski2023checkm2" role="doc-biblioref">Chklovski 等 2023年</a>)</span></li>
+<li>GUNC <span class="citation" data-cites="orakov2021gunc">(<a href="02-three-analysis-layers.html#ref-orakov2021gunc" role="doc-biblioref"><span class="nocase">Orakov 等</span> 2021年</a>)</span></li>
+</ul>
+
+
+<!-- -->
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-chklovski2023checkm2" class="csl-entry" role="listitem">
+Chklovski, Alex, Donovan H. Parks, Ben J. Woodcroft, 和 Gene W. Tyson. 2023年. <span>《<span>CheckM2</span>: a rapid, scalable and accurate tool for assessing microbial genome quality using machine learning》</span>. <em>Nature Methods</em> 20: 1203～12. <a href="https://doi.org/10.1038/s41592-023-01940-w">https://doi.org/10.1038/s41592-023-01940-w</a>.
+</div>
+<div id="ref-kang2019metabat2" class="csl-entry" role="listitem">
+<span class="nocase">Kang, Dongwan D., Feng Li, Edward Kirton, 等</span>. 2019年. <span>《<span>MetaBAT</span> 2: an adaptive binning algorithm for robust and efficient genome reconstruction from metagenome assemblies》</span>. <em>PeerJ</em> 7: e7359. <a href="https://doi.org/10.7717/peerj.7359">https://doi.org/10.7717/peerj.7359</a>.
+</div>
+<div id="ref-kutuzova2026taxvamb" class="csl-entry" role="listitem">
+<span class="nocase">Kutuzova, S., P. Piera Líndez, L. S. Danielsen, 等</span>. 2026年. <span>《Improving metagenome binning by integrating intrinsic features and taxonomy》</span>. <em>Nature Biotechnology</em>, 网络首发. <a href="https://doi.org/10.1038/s41587-026-03098-0">https://doi.org/10.1038/s41587-026-03098-0</a>.
+</div>
+<div id="ref-meslier2022platforms" class="csl-entry" role="listitem">
+Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benchmarking second and third-generation sequencing platforms for microbial metagenomics》</span>. <em>Scientific Data</em> 9: 694. <a href="https://doi.org/10.1038/s41597-022-01762-z">https://doi.org/10.1038/s41597-022-01762-z</a>.
+</div>
+<div id="ref-nissen2021vamb" class="csl-entry" role="listitem">
+<span class="nocase">Nissen, Jakob Nybo, Joachim Johansen, Rosa Lundbye Allesøe, 等</span>. 2021年. <span>《Improved metagenome binning and assembly using deep variational autoencoders》</span>. <em>Nature Biotechnology</em> 39: 555～60. <a href="https://doi.org/10.1038/s41587-020-00777-4">https://doi.org/10.1038/s41587-020-00777-4</a>.
+</div>
+<div id="ref-orakov2021gunc" class="csl-entry" role="listitem">
+<span class="nocase">Orakov, Askarbek, Anthony Fullam, Luis Pedro Coelho, 等</span>. 2021年. <span>《<span>GUNC</span>: detection of chimerism and contamination in prokaryotic genomes》</span>. <em>Genome Biology</em> 22: 178. <a href="https://doi.org/10.1186/s13059-021-02393-0">https://doi.org/10.1186/s13059-021-02393-0</a>.
+</div>
+<div id="ref-pan2023semibin2" class="csl-entry" role="listitem">
+Pan, Shaojun, Xiaomei Zhao, 和 Luis Pedro Coelho. 2023年. <span>《<span>SemiBin2</span>: self-supervised contrastive learning leads to better <span>MAGs</span> for short- and long-read sequencing》</span>. <em>Bioinformatics</em> 39 (Supplement_1): i21～29. <a href="https://doi.org/10.1093/bioinformatics/btad209">https://doi.org/10.1093/bioinformatics/btad209</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/petemeng\.github\.io\/metagenomics-best-practices\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/41-read-mapping-depth.html" class="pagination-link" aria-label="回比与深度：reads 回比与 JGI 深度矩阵">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/43-bin-refinement.html" class="pagination-link" aria-label="Bin 精炼与整合：DAS Tool 与 Binette">
+        <span class="nav-page-text"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">源代码</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Peter"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB"</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "在同一真实 mock 共组装与深度坐标上，以 truth-blind 设计比较五条分箱分支，并用 CheckM2、GUNC 和已知基因组做分层审计"</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="an">draft:</span><span class="co"> false</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> ../references.bib</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">  freeze: auto</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="an">fig-cap-location:</span><span class="co"> bottom</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> ../figures/42-binner-quality-yield.png</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="an">wechat:</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co">  deck: "把五个分箱分支放在同一 contig 与多样本深度坐标上，以 CheckM2/GUNC 做 truth-blind 选择，再用已知基因组事后审计。"</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co">  facts:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "共同坐标", value: "10,203 contigs · 74.93 Mb"}</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "分箱分支", value: "5 methods"}</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "原始 bins", value: "33 · 34 · 43 · 26 · 35"}</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "质量门后", value: "22 · 22 · 24 · 15 · 18"}</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co">  resources:</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "工具", value: "MetaBAT2 · SemiBin2 · VAMB · TaxVAMB · MaxBin2"}</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "统一质控", value: "CheckM2 + GUNC"}</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "建议节点", value: "24 cores · 128 GB RAM · 100 GB disk"}</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="co">  code_heading: "从统一 contig/depth 输入到五分支分箱与 truth-blind 质量审计"</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co">  expected_images: 4</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> upstream</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**分箱器没有脱离数据设计的“总冠军”。本篇把 MOCK1/MOCK2 的同一份 MEGAHIT 共组装限制到 10,203 条 &gt;=1.5 kb contigs（74,932,939 bp），让 MetaBAT2 单样本、MetaBAT2 多样本、SemiBin2 self-supervised、VAMB taxonomy-free 与 TaxVAMB+Kraken2 消费完全相同的序列坐标。方法选择只看 CheckM2 completeness/contamination 与 GUNC；87 个已知输入基因组在运行结束后才用于 recovery/purity 审计。这个 **truth-blind** 边界比“哪个方法找回的真值最多”更接近真实项目。</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据边界"}</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>五条分支使用 **24 CPU cores**；建议 **128 GB RAM、100 GB 临时磁盘，预留 2--4 小时**。MetaBAT2 很快，SemiBin2/VAMB 的 CPU 训练占主要耗时，Kraken2 Standard-8 安装后为 8.64 GB。自然群落的 assembly、样本数和 bin 数更大，应为深度矩阵、模型中间文件与候选 FASTA 预留额外磁盘。没有服务器时，可直接读取 <span class="in">`data/small/42-binning-comparison-frozen/`</span> 中的 membership、CheckM2/GUNC、truth audit、日志和环境锁。</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>在同一输入和质量标准下比较分箱结果；产出数量不能替代完整度、污染和嵌合检查。</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## 多个分箱器，怎样比较才公平？ {#sec-target}</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>锚定图不是一张单独的 UMAP，而是分箱论文常见的“quality yield + recovery/purity”组合：MetaBAT2 以 tetranucleotide frequency 和跨样本 abundance distance 聚类 contigs <span class="co">[</span><span class="ot">@kang2019metabat2</span><span class="co">]</span>；SemiBin2 加入自监督表示学习 <span class="co">[</span><span class="ot">@pan2023semibin2</span><span class="co">]</span>；VAMB 用 variational autoencoder 联合组成与 abundance <span class="co">[</span><span class="ot">@nissen2021vamb</span><span class="co">]</span>；TaxVAMB 再引入不完整的 taxonomy signal <span class="co">[</span><span class="ot">@kutuzova2026taxvamb</span><span class="co">]</span>。</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>第一张图把“已知真值等级”和“reference-free minimum QC”并排，明确两套评价不能混称。第二张图再展开 dominant-genome recovery 与 aligned contamination proxy。</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="al">![同一坐标、同一最小 bin 大小下，五条分箱分支的质量产出。mock 真值只用于运行后的左侧审计。](../figures/42-binner-quality-yield.png)</span>{#fig-42-yield}</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>五条分支依次产生 33、34、43、26 和 35 个 candidates；其中 CheckM2+GUNC minimum-pass 分别为 22、22、24、15 和 18 个。SemiBin2 的 candidate 与 minimum-pass 产出最高，但也有 19 个 candidates 未过 minimum gate；因此“总 bin 数更多”不能直接写成“MAG 回收更好”。MetaBAT2 加入第二列 depth 后，多分出 216 条 contigs、少量独有分配由 92 增至 308 条；在 8,052 条共同分箱 contigs 上 ARI 为 0.981。</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/42/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 121.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/42/download.R)</span>。</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-42</span></span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/42/files.tsv"</span>))</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实数据与固定坐标</span></span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 标识符 <span class="pp">|</span> 用途 <span class="pp">|</span></span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK1 clean reads <span class="pp">|</span> PRJEB52977 / ERR9765746 <span class="pp">|</span> MetaBAT2 single depth；两样本模型 depth <span class="pp">|</span></span>
+<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK2 clean reads <span class="pp">|</span> PRJEB52977 / ERR9765747 <span class="pp">|</span> 第二列 depth；共组装真值范围扩展到 87 genomes <span class="pp">|</span></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEGAHIT co-assembly <span class="pp">|</span> 10,203 contigs &gt;=1.5 kb；74,932,939 bp <span class="pp">|</span> 五个分箱器共同坐标 <span class="pp">|</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Kraken2 Standard-8 <span class="pp">|</span> Standard-8-20260626；8,638,898,739 bytes <span class="pp">|</span> 只输入 TaxVAMB，不输入其他分支 <span class="pp">|</span></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a>两份真实不均一 mock 来自同一研究 <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。分箱前不读取 reference genomes、MetaQUAST coordinates 或 organism labels。</span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-binning-2026.07 <span class="at">--file</span> env/binning-linux-64.lock</span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-mag-qc-2026.07 <span class="at">--file</span> env/mag-qc-linux-64.lock</span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gunc-2026.07 <span class="at">--file</span> env/gunc-linux-64.lock</span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="co"># Kraken2 Standard-8: 5.95-GB archive, 8.64-GB installed database.</span></span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PROJECT_ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-kraken2</span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/16-database-manifest.tsv</span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download kraken2-standard8-20260626</span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> verify kraken2-standard8-20260626</span>
+<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_ARCHIVE</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/kraken2-standard8-20260626/k2_standard_08_GB_20260626.tar.gz"</span></span>
+<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_DB</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/standard-8-20260626"</span></span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span></span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${KRAKEN_ARCHIVE}</span><span class="st">"</span> <span class="at">-C</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span></span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="bu">cd</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a>  <span class="fu">md5sum</span> <span class="at">--check</span> <span class="st">"</span><span class="va">${PROJECT_ROOT}</span><span class="st">/data/small/16-standard8-files.md5"</span><span class="kw">)</span></span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a><span class="co"># CheckM2 v3 与 GUNC ProGenomes 2.1。</span></span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-mag-qc</span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/44-mag-qc-database-manifest.tsv</span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download checkm2-v3</span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download gunc-progenomes2.1</span>
+<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1"</span></span>
+<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/checkm2-v3/checkm2_database.tar.gz"</span> <span class="dt">\</span></span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span></span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd.gz"</span> <span class="dt">\</span></span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a><span class="fu">md5sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260742</span>)</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"#0072B2"</span>, <span class="st">"#D55E00"</span>, <span class="st">"#009E73"</span>, <span class="st">"#CC79A7"</span>,</span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>             <span class="st">"#E69F00"</span>, <span class="st">"#56B4E9"</span>, <span class="st">"#F0E442"</span>, <span class="st">"#999999"</span>)</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 common-coordinate inputs {#sec-code}</span></span>
+<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article42"</span></span>
+<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a><span class="va">BINNING_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-binning-2026.07"</span></span>
+<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_QC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-mag-qc-2026.07"</span></span>
+<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gunc-2026.07"</span></span>
+<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a><span class="va">KRAKEN_DB</span><span class="op">=</span><span class="st">"/db/metagenome-kraken2/standard-8-20260626"</span></span>
+<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKM2_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="at">--binning-env</span> <span class="st">"</span><span class="va">${BINNING_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kraken-db</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="at">--minimum-contig</span> 1500</span>
+<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a>准备器从 <span class="in">`data/small/30-short-read-assembly-frozen/`</span> 的 assembly 与 <span class="in">`data/small/41-read-mapping-depth-frozen/`</span> 的 JGI depth 按 contig ID 严格连接，生成 two-sample VAMB abundance 和 MOCK1-only MetaBAT2 depth。任何缺行、重名或长度漂移都会停止。</span>
+<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“每个工具默认跑一次”升级为 matched benchmark {#sec-audit}</span></span>
+<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a>五条分支必须使用同一 FASTA、最短 contig、最小输出 bin、depth columns 与线程预算。比较不同坐标或不同最小 bin 大小，只能说明预处理不同，不能说明算法优劣。</span>
+<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 用真值调完参数再声称 blind benchmark"}</span>
+<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a>只要看过 reference recovery 再改 seed、minfasta、taxonomy confidence 或模型分支，主结果就不再是盲法。参数合同必须先冻结。</span>
+<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行五条确定性分支</span></span>
+<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="at">--binning-env</span> <span class="st">"</span><span class="va">${BINNING_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kraken-db</span> <span class="st">"</span><span class="va">${KRAKEN_DB}</span><span class="st">"</span> <span class="at">--article41-work-dir</span> work/article41 <span class="dt">\</span></span>
+<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 24</span>
+<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a>关键参数展开如下：</span>
+<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="ex">metabat2</span> <span class="at">-i</span> contigs.ge1500.fna <span class="at">-a</span> depth.tsv <span class="at">-m</span> 1500 <span class="at">-s</span> 200000 <span class="dt">\</span></span>
+<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 24 <span class="at">--seed</span> 20260742 <span class="at">--saveCls</span> <span class="at">-o</span> bins/bin</span>
+<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a><span class="ex">SemiBin2</span> single_easy_bin <span class="at">--input-fasta</span> contigs.ge1500.fna <span class="dt">\</span></span>
+<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-bam</span> MOCK1.bam MOCK2.bam <span class="at">--min-len</span> 1500 <span class="at">--minfasta-kbs</span> 200 <span class="dt">\</span></span>
+<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a>  <span class="at">--self-supervised</span> <span class="at">--engine</span> cpu <span class="at">--random-seed</span> 20260742 <span class="at">--threads</span> 24</span>
+<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a><span class="ex">vamb</span> bin default <span class="at">--fasta</span> contigs.ge1500.fna <span class="at">--abundance_tsv</span> abundance.tsv <span class="dt">\</span></span>
+<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> vamb-taxonomy-free <span class="at">-m</span> 1500 <span class="at">--minfasta</span> 200000 <span class="dt">\</span></span>
+<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="at">--seed</span> 20260742 <span class="at">-o</span></span>
+<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a><span class="ex">vamb</span> bin taxvamb <span class="at">--fasta</span> contigs.ge1500.fna <span class="at">--abundance_tsv</span> abundance.tsv <span class="dt">\</span></span>
+<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a>  <span class="at">--taxonomy</span> taxvamb-taxonomy.tsv <span class="at">--outdir</span> taxvamb-kraken2 <span class="dt">\</span></span>
+<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> 1500 <span class="at">--minfasta</span> 200000 <span class="at">-p</span> 24 <span class="at">--seed</span> 20260742 <span class="at">-o</span></span>
+<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>Kraken2 用 <span class="in">`--confidence 0.05 --minimum-hit-groups 2`</span>；每条 contig 的 taxonomy 必须从 domain 开始连续，不能把缺失 rank 人工补成一个真实类群。</span>
+<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 不同工具使用不同 contig cutoff"}</span>
+<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a>VAMB/SemiBin2 默认值与 MetaBAT2 不同。必须显式固定 &gt;=1.5 kb 与 &gt;=200 kb output，否则短 contig 和小 bin 造成结构性偏差。</span>
+<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 把 Kraken unclassified contig 丢掉"}</span>
+<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a>TaxVAMB 输入应保留全部 contigs；未知 taxonomy 用缺失值表示，而不是删行或伪造 <span class="in">`unknown`</span> domain。</span>
+<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 只保存 bins，不保存 membership"}</span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>每个 FASTA 都应有 <span class="in">`contig -&gt; candidate`</span> 表和 SHA-256。没有 membership，后续无法精炼、追踪 contig 或复核重复分配。</span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先建立 truth-free candidate QC</span></span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a><span class="fu">### 单样本与多样本深度回答不同问题</span></span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>MetaBAT2-MOCK1-only 只看 MOCK1 depth；multisample 同时看 MOCK1/MOCK2。两条分支使用同一 FASTA 和同一参数，差异才能归因于第二列 abundance。比较使用 jointly binned contigs 上的 adjusted Rand index，同时保留 single-only 与 multi-only contigs，避免只看 bin 数。</span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article42_candidate_qc.py <span class="dt">\</span></span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gunc-env</span> <span class="st">"</span><span class="va">${GUNC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--gunc-db</span> <span class="st">"</span><span class="va">${GUNC_DB}</span><span class="st">"</span> <span class="at">--threads</span> 24</span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a>CheckM2 1.1.0 使用 database version 3；GUNC 1.1.0 使用 ProGenomes 2.1。minimum pass 固定为 completeness &gt;=50%、contamination &lt;10% 且 <span class="in">`pass.GUNC=TRUE`</span>。</span>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单一 quality score 升级为三张记录表</span></span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>reference-free：CheckM2、GUNC、bin size、contig count；</span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>known truth：recovery、aligned purity、dominant genome duplication；</span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>resource：wall time、peak RAM、磁盘与失败状态。</span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>主方法选择使用第一张账本；第二张用于解释偏差；第三张决定队列规模能否承受。</span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 CheckM2 pass 当作分类正确"}</span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a>CheckM2/GUNC 不知道 bin 是否对应预期 species。reference-free pass 与 truth recovery/purity 必须分列。</span>
+<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a><span class="fu">## 加入 post-hoc known-truth audit</span></span>
+<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckM2/GUNC 与 known truth 是互补记录表</span></span>
+<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a>CheckM2 用标记和机器学习估 completeness/contamination <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span>，GUNC 检查 gene-level lineage dispersion 与 chimerism <span class="co">[</span><span class="ot">@orakov2021gunc</span><span class="co">]</span>。它们不需要 mock truth，因此可用于预注册选择。已知输入基因组则能回答：一个 bin 找回目标 genome 的多少、已比对部分有多纯、是否重复找回同一 genome。两者不一致时，应报告原因，不能挑更漂亮的一套。</span>
+<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a><span class="fu">### Post-hoc truth proxy 不等于 MIMAG</span></span>
+<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a>每条 &gt;=1.5 kb contig 根据固化的 MetaQUAST coordinates 归到 aligned query span 最大的输入 genome；bin 的 recovery 用该 genome 上非重叠 reference intervals 计算，purity 只在可归属的 bin bp 内计算。<span class="in">`HQ proxy`</span>/<span class="in">`MQ proxy`</span> 只用于算法审计；完整 MIMAG 分级还需要 rRNA、tRNA、chimerism 与更严格的 genome QC。</span>
+<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_MAXCSS</span><span class="op">=</span><span class="va">$(</span><span class="fu">find</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/qc/gunc"</span> <span class="at">-name</span> <span class="st">'GUNC.*.maxCSS_level.tsv'</span><span class="va">)</span></span>
+<span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-quality</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/qc/checkm2/quality_report.tsv"</span> <span class="dt">\</span></span>
+<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gunc-maxcss</span> <span class="st">"</span><span class="va">${GUNC_MAXCSS}</span><span class="st">"</span></span>
+<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a><span class="in">`bin-quality-truth-audit.tsv`</span> 同时保留 CheckM2/GUNC 与 recovery/purity，但任何 binner 命令都没有 reference FASTA 参数。<span class="in">`truth-contig-assignment.tsv.gz`</span> 记录 10,203 条 contigs 的归属、aligned fraction 与 ambiguous flag。</span>
+<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a><span class="al">![Dominant-genome recovery 与 aligned contamination proxy 显示遗漏、合并和碎片化；形状标记独立的 CheckM2+GUNC minimum pass。](../figures/42-recovery-purity.png)</span>{#fig-42-recovery}</span>
+<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 taxonomy “有/无”升级为 coverage audit</span></span>
+<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a>10,203 条 contigs 必须闭合到 classified/unclassified 与 deepest canonical rank。TaxVAMB 优于 VAMB 时，也要确认优势是否集中在 reference-rich taxa；若 unclassified 或高 rank contigs 被系统性丢弃，结果可能对 novel genomes 不公平。</span>
+<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a><span class="fu">## 检查 single 与 multisample design</span></span>
+<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/42-binning-comparison-frozen"</span></span>
+<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a>design <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"single-vs-multisample.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(design<span class="sc">$</span>SharedBinnedContigs <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(dplyr<span class="sc">::</span><span class="fu">between</span>(design<span class="sc">$</span>AdjustedRandOnSharedBinnedContigs, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a><span class="al">![第二列 depth 会改变哪些 contigs 被分箱，以及 jointly binned contigs 上的 partition agreement。](../figures/42-single-vs-multisample.png)</span>{#fig-42-design}</span>
+<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 将一个 mock 的结果推广到所有生态位"}</span>
+<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a>reference-rich DNA mock 对 taxonomy-guided 方法更友好；土壤、海洋、病毒富集或宿主关联群落的 ranking 可能完全不同。</span>
+<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总质量结果并检查图表</span></span>
+<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### Composition、coverage 与 taxonomy 的信息并不等价 {#sec-theory}</span></span>
+<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Composition**：k-mer/tetranucleotide pattern 随 genome 演化，但短 contig 方差很大，近缘菌株也可能相似。</span>
+<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Coverage**：同一 genome 的 contigs 在多个样本上应共同升降；只有一个样本时，向量退化为一个数。</span>
+<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Taxonomy**：高置信分类可以约束不合理合并，但未培养谱系、水平转移和分类数据库偏倚会制造错误先验。</span>
+<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a>因此，本篇保留 VAMB taxonomy-free 与 TaxVAMB 两条分支。taxonomy 有帮助时两者会分开；taxonomy 不可靠时，TaxVAMB 也可能退化。</span>
+<span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/42-binning-comparison-frozen</span>
+<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article42_binning.R <span class="dt">\</span></span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/42-binning-comparison-frozen <span class="at">--output-dir</span> figures</span>
+<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article42_binning.py <span class="dt">\</span></span>
+<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--frozen-dir</span> data/small/42-binning-comparison-frozen <span class="dt">\</span></span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/42-binning-comparison <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/42-binning.qmd</span>
+<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a><span class="al">![Kraken2 taxonomy 在 species、genus、较高 rank 与 unclassified 之间的真实覆盖；TaxVAMB 收到的是不完整证据。](../figures/42-taxonomy-coverage.png)</span>{#fig-42-taxonomy}</span>
+<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从两份 mock 升级到真实队列</span></span>
+<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a>自然样本至少增加多个独立 abundance profiles、低丰度 genome sensitivity、strain mixture、plasmid/virus exclusion policy 与 contamination controls。病人样本可用 CAMI-style synthetic spike-ins 或部分 isolate references 做盲法 benchmark，但不能把所有结果参数都调到已知真值最优。</span>
+<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a><span class="fu">## 交代分箱策略与质量筛选 {#sec-methods}</span></span>
+<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
+<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Checksum-identified Illumina data from two uneven synthetic microbial communities (PRJEB52977; ERR9765746 and ERR9765747) were co-assembled with MEGAHIT v1.2.9. A common coordinate set of 10,203 contigs &gt;=1,500 bp (74,932,939 bp) and a two-sample JGI depth matrix were used for all binners. Five prespecified branches were evaluated: MetaBAT2 v2.18 with MOCK1-only depth, MetaBAT2 v2.18 with both depth profiles, SemiBin2 v2.3.0 in self-supervised CPU mode, VAMB v5.0.4 without taxonomy, and TaxVAMB from Vamb v5.0.4 with Kraken2 v2.17.1 Standard-8 release 20260626 taxonomy (</span><span class="in">`--confidence 0.05 --minimum-hit-groups 2`</span><span class="at">). The minimum contig and output-bin sizes were 1,500 and 200,000 bp, respectively, and stochastic branches used seed 20260742. Candidate quality was estimated independently with CheckM2 v1.1.0 database version 3 and GUNC v1.1.0 ProGenomes 2.1; minimum-pass bins required completeness &gt;=50%, contamination &lt;10%, and </span><span class="in">`pass.GUNC=TRUE`</span><span class="at">. Known reference genomes were withheld during binning and applied only post hoc to estimate dominant-genome recovery and aligned purity from MetaQUAST coordinates. Commands, memberships, versions, database checksums, resource use, and candidate checksums were retained.</span></span>
+<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; All five prespecified branches completed on the same 10,203-contig coordinate set. MetaBAT2 with MOCK1-only and two-sample depth, SemiBin2, VAMB, and TaxVAMB produced 33, 34, 43, 26, and 35 candidates, of which 22, 22, 24, 15, and 18, respectively, met the independent CheckM2+GUNC minimum criterion. In the post-hoc reference audit, the corresponding HQ-proxy counts were 12, 15, 15, 9, and 9. The two MetaBAT2 partitions had an adjusted Rand index of 0.981 across 8,052 jointly binned contigs. Kraken2 assigned 4,000 contigs through species and 4,199 through genus, while 1,059 remained unclassified at the canonical-rank audit. MetaBAT2 required 3.59 s per branch, VAMB 367.12 s, TaxVAMB 1,520.77 s, and the default 15-epoch SemiBin2 workflow 5,046 s; SemiBin2 peak memory was not reported because its GNU-time record was lost during an isolated-session retry, and this missing measurement was retained explicitly. Known mock truth did not influence binner execution or primary quality selection.</span></span>
+<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>固定最终 assembly 和一个最短 contig cutoff，保存 SHA-256、contig 数、bp 与 N50。</span>
+<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用同一组 coordinate-sorted BAM 一次性生成所有样本 depth；核对 row order、ID 与 length。</span>
+<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册候选分支、min bin size、seed、taxonomy confidence、CPU/RAM ceiling 与 primary selection rule。</span>
+<span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>至少保留一个 taxonomy-free branch；novel environment 不应只跑 taxonomy-guided 方法。</span>
+<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>对每个工具输出标准化 <span class="in">`candidate ID + contig membership + FASTA checksum`</span>，并检查分支内 contig 不重复。</span>
+<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>用 CheckM2+GUNC 建 reference-free ledger；如果有 mock/isolate truth，再增加 post-hoc recovery/purity，不改变主方法。</span>
+<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>报告 failed runs、wall time、peak RAM 和数据库版本，避免 survivorship bias。</span>
+<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>最终候选不要直接进入功能结论；先做多分箱器精炼与完整 MIMAG 审计。</span>
+<span id="cb11-352"><a href="#cb11-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-353"><a href="#cb11-353" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb11-354"><a href="#cb11-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-355"><a href="#cb11-355" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>quality yield 用 paired panels：known truth 与 reference-free QC 不共用图例名称。</span>
+<span id="cb11-356"><a href="#cb11-356" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>recovery/purity 图用阈值参考线而非背景色断言；点大小表示 bin bp，形状表示 GUNC/CheckM2 pass。</span>
+<span id="cb11-357"><a href="#cb11-357" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>single/multisample 图同时标 shared 与 unique contigs，并在 subtitle 报 adjusted Rand index 的分母。</span>
+<span id="cb11-358"><a href="#cb11-358" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>taxonomy coverage 按 canonical rank 堆叠，保留 <span class="in">`Unclassified`</span>；图内文字全部英文。</span>
+<span id="cb11-359"><a href="#cb11-359" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>五条分支颜色固定，使用色盲友好的 blue/green/orange/magenta 系列。</span>
+<span id="cb11-360"><a href="#cb11-360" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>每图导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿。</span>
+<span id="cb11-361"><a href="#cb11-361" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-362"><a href="#cb11-362" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb11-363"><a href="#cb11-363" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-364"><a href="#cb11-364" aria-hidden="true" tabindex="-1"></a>把五个分箱分支放在同一 contig 与多样本深度坐标上，以 CheckM2/GUNC 做 truth-blind 选择，再用已知基因组事后审计。</span>
+<span id="cb11-365"><a href="#cb11-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-366"><a href="#cb11-366" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-367"><a href="#cb11-367" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-368"><a href="#cb11-368" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真实 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb11-369"><a href="#cb11-369" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaBAT2 <span class="co">[</span><span class="ot">@kang2019metabat2</span><span class="co">]</span></span>
+<span id="cb11-370"><a href="#cb11-370" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>SemiBin2 <span class="co">[</span><span class="ot">@pan2023semibin2</span><span class="co">]</span></span>
+<span id="cb11-371"><a href="#cb11-371" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>VAMB <span class="co">[</span><span class="ot">@nissen2021vamb</span><span class="co">]</span></span>
+<span id="cb11-372"><a href="#cb11-372" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>TaxVAMB <span class="co">[</span><span class="ot">@kutuzova2026taxvamb</span><span class="co">]</span></span>
+<span id="cb11-373"><a href="#cb11-373" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
+<span id="cb11-374"><a href="#cb11-374" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GUNC <span class="co">[</span><span class="ot">@orakov2021gunc</span><span class="co">]</span></span>
+</code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/42-binning.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></div></div></footer><script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

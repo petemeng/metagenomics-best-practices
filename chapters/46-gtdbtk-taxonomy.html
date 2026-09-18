@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Peter">
+<meta name="description" content="用 GTDB-Tk 2.7.2 与锁定的 GTDB R232 为 24 个 95% ANI SGB 分类，并审计 ANI、reference-specific species radius、alignment fraction 与数据库完整性">
+
+<title>MAG 分类：GTDB-Tk 与数据库 release – 宏基因组分析最佳实践 · Shotgun</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/47-novel-mag-phylogenomics.html" rel="next">
+<link href="../chapters/45-drep-dereplication.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-38ae79c2eabdcd4850b93d23314887c4.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/46-gtdbtk-taxonomy.html"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="搜索" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">宏基因组分析最佳实践 · Shotgun</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/petemeng/metagenomics-best-practices" title="源代码" class="quarto-navigation-tool px-1" aria-label="源代码"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="切换深色模式"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 0 部分 · 导论</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-three-analysis-layers.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一条主干、三个分析层级：read profiling / gene-contig-centric / genome-resolved 如何取舍</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 1 部分 · 实验设计与样本</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-study-design-power.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">研究设计、样本量与统计效力</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-sequencing-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组到底要测多深：决策框架与饱和曲线</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-library-prep-absolute-quantification.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">从样本到文库：DNA 提取、建库偏差与定量宏基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-host-depletion-low-biomass.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宿主去除与低生物量：湿实验宿主耗竭与计算去宿主</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-contamination-controls.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">污染与对照：blank、kitome、index hopping、decontam</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-fastq-short-long-reads.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">认识数据与平台：FASTQ、短读与长读对全流程的影响</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 2 部分 · 环境搭建与算力</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-wsl2-conda.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">WSL2 + conda/mamba（Windows 用户主线）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-computing-hpc-cloud.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">算力现实：内存、磁盘、HPC、云、Apptainer 与 SLURM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-install-biobakery-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 bioBakery、组装分箱工具链与数据库</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-install-r-cmd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 R、curatedMetagenomicData 与关键包生态</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 3 部分 · 上游 QC 与预处理</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-read-qc-fastp.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">读长质控与修剪：FastQC、MultiQC 与 fastp</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-host-removal-complexity-duplicates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去宿主、复杂度评估与重复 reads 的识别和处理</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 4 部分 · Reference-based read profiling（物种）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-metaphlan4.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MetaPhlAn4：marker 基因、SGB 与物种级组成分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-kraken2-bracken.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Kraken2 + Bracken：k-mer 分类与丰度重估</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-kraken2-database-confidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-profiler-benchmark.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 5 部分 · Reference-based read profiling（功能）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-humann3.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">HUMAnN3：gene family、pathway abundance 与 pathway coverage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-functional-profile-normalization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">功能谱归一化与解读：CPM、relative abundance、coverage 与特殊行</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 6 部分 · 下游统计与跨队列</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-metagenomic-table-semantics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-alpha-beta-diversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">多样性：Alpha / Beta（物种谱、MAG 表、基因谱）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-pcoa-cap-permanova.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">排序与检验：PCoA / CAP + PERMANOVA + betadisper</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-differential-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-composition-core-microbiome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组成与多分类级可视化、核心微生物组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-curated-metagenomic-data-lineage.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">curatedMetagenomicData 深用与数据谱系卡片</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-machine-learning-roc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">随机森林 / 梯度提升分类 + ROC + 重要性 + 防过拟合规范</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-cross-cohort-validation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">跨队列 meta 分析 + 外部验证</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-cooccurrence-network.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">共现网络 + 网络进阶（鲁棒性 / keystone / Zi-Pi）</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 7 部分 · 组装</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-short-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">短读长组装：MEGAHIT vs metaSPAdes、单样本 vs 混合组装</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-long-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">长读长组装：Nanopore / PacBio HiFi 与长读特有问题</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-hybrid-assembly-polishing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Hybrid assembly 与 polishing：何时混合，何时直接 HiFi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-assembly-qc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组装质控：QUAST、N50、contig 统计与可用性</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 8 部分 · Gene / contig-centric 分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-nonredundant-gene-catalog.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">非冗余基因目录：Prodigal + MMseqs2 / CD-HIT</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-gene-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因丰度谱：reads 回比基因目录与功能汇总</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-eggnog-functional-annotation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Gene-centric 功能注释：eggNOG-mapper 与功能暗物质</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-cazymes-dbcan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">CAZymes 碳水活性酶：dbCAN 共识、底物与 CGC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-resistome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-virulome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-bgc-natural-products.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">BGC 与天然产物：antiSMASH / GECCO / DeepBGC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 9 部分 · 分箱与 MAG</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/41-read-mapping-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/42-binning.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/43-bin-refinement.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/45-drep-dereplication.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/46-gtdbtk-taxonomy.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/47-novel-mag-phylogenomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/48-mag-abundance-coverm.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 丰度定量：CoverM 的 depth、breadth 与 relative abundance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/49-mag-curation-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 人工校正、命名、数据库提交与补充材料</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 10 部分 · 菌株与种内变异</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/50-instrain-microdiversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">inStrain：SNV、微多样性与同株证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/51-strainphlan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">StrainPhlAn：marker 基因菌株系统发育</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/52-pangenome-accessory-genes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">种内功能差异：泛基因组、附属基因与菌株功能型</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/53-strain-transmission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 11 部分 · 病毒 / 质粒 / 真核</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/54-virus-discovery-quality.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/55-virus-taxonomy-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/56-virus-host-evidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/57-plasmids-mobile-elements.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/58-microbial-eukaryotes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 12 部分 · 代谢建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/59-dram-metabolic.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组解析代谢：DRAM / METABOLIC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/60-genome-scale-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组尺度代谢模型：gapseq / CarveMe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/61-community-metabolism.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">群落代谢与流量：MICOM / SMETANA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/62-element-cycling.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">元素循环与功能类群：C / N / S 循环</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 13 部分 · 多组学整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/63-metabolomics-integration.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">与代谢组整合：Procrustes / Mantel / HAllA / sPLS-DIABLO</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/64-metatranscriptomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏转录组联动：功能有没有 vs 表达没表达</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/65-metaproteomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏蛋白组：从 PSM、蛋白推断到多组学功能对齐</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/66-mag-metabolite-phenotype.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG × 代谢物 / 表型：从基因组代谢潜力到可验证的功能读出</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 14 部分 · 纵向与因果</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-15" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/67-longitudinal-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">纵向：线性混合模型、轨迹与定植稳定性</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/68-survival-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">微生物组与生存结局：Cox / Kaplan–Meier / 时间依赖 ROC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/69-mediation-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">中介分析：暴露 → 微生物 → 结局</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/70-mendelian-randomization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">孟德尔随机化：工具变量、水平多效性与敏感性分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/71-structural-equation-model.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">环境因子 → 微生物 → 表型：这条路径能被数据识别吗？</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/72-causal-evidence-ladder.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">因果证据阶梯：从关联到可干预机制</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 15 部分 · 公共数据资源</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-16" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/73-public-metagenome-resources.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 16 部分 · 工程化与发表</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-17" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/74-nfcore-mag-workflows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">用 nf-core/mag 等 Nextflow / Snakemake 流程复现全上游</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/75-paper-figure-organization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一篇宏基因组论文的主图和补图如何组织</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/76-reporting-standards.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">报告标准：STORMS / STREAMS / MIMAG / MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/77-data-code-genome-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据、代码与基因组提交</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">MAG 的分类名称，为什么必须带数据库版本？</a></li>
+  <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
+  <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先锁定输入、版本和算力边界</a>
+  <ul class="collapse">
+  <li><a href="#输入与-lineage" id="toc-输入与-lineage" class="nav-link" data-scroll-target="#输入与-lineage">输入与 lineage</a></li>
+  </ul></li>
+  <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">生成稳定 SGB 输入并验证数据库</a>
+  <ul class="collapse">
+  <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">先固定非冗余 genome coordinate，再谈分类</a></li>
+  </ul></li>
+  <li><a href="#运行-gtdb-tk" id="toc-运行-gtdb-tk" class="nav-link" data-scroll-target="#运行-gtdb-tk">运行 GTDB-Tk</a>
+  <ul class="collapse">
+  <li><a href="#release-是结果的一部分" id="toc-release-是结果的一部分" class="nav-link" data-scroll-target="#release-是结果的一部分">release 是结果的一部分</a></li>
+  <li><a href="#当前标准升级-1把-release-drift-变成可量化对象" id="toc-当前标准升级-1把-release-drift-变成可量化对象" class="nav-link" data-scroll-target="#当前标准升级-1把-release-drift-变成可量化对象">当前标准升级 1：把 release drift 变成可量化对象</a></li>
+  </ul></li>
+  <li><a href="#汇总-native-summary不从-taxonomy-字符串猜路径" id="toc-汇总-native-summary不从-taxonomy-字符串猜路径" class="nav-link" data-scroll-target="#汇总-native-summary不从-taxonomy-字符串猜路径">汇总 native summary，不从 taxonomy 字符串猜路径</a>
+  <ul class="collapse">
+  <li><a href="#ani_screen-与-marker-tree-placement-是两条证据路径" id="toc-ani_screen-与-marker-tree-placement-是两条证据路径" class="nav-link" data-scroll-target="#ani_screen-与-marker-tree-placement-是两条证据路径"><code>ani_screen</code> 与 marker-tree placement 是两条证据路径</a></li>
+  <li><a href="#ani-与-af-必须成对报告" id="toc-ani-与-af-必须成对报告" class="nav-link" data-scroll-target="#ani-与-af-必须成对报告">ANI 与 AF 必须成对报告</a></li>
+  <li><a href="#species-field-为空只是候选入口" id="toc-species-field-为空只是候选入口" class="nav-link" data-scroll-target="#species-field-为空只是候选入口">species field 为空只是候选入口</a></li>
+  <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">忠实复现：保留 native classification，不用 mock answer key 改名</a></li>
+  <li><a href="#当前标准升级-2区分工作流可做-marker-placement与本数据做了-marker-placement" id="toc-当前标准升级-2区分工作流可做-marker-placement与本数据做了-marker-placement" class="nav-link" data-scroll-target="#当前标准升级-2区分工作流可做-marker-placement与本数据做了-marker-placement">当前标准升级 2：区分“工作流可做 marker placement”与“本数据做了 marker placement”</a></li>
+  <li><a href="#当前标准升级-3species-assignment-不是新物种审稿终点" id="toc-当前标准升级-3species-assignment-不是新物种审稿终点" class="nav-link" data-scroll-target="#当前标准升级-3species-assignment-不是新物种审稿终点">当前标准升级 3：species assignment 不是新物种审稿终点</a></li>
+  </ul></li>
+  <li><a href="#保存可复核证据" id="toc-保存可复核证据" class="nav-link" data-scroll-target="#保存可复核证据">保存可复核证据</a></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods">记录 GTDB release 与分类支持</a></li>
+  <li><a href="#sec-own-data" id="toc-sec-own-data" class="nav-link" data-scroll-target="#sec-own-data">换到自己的研究中，先检查哪些条件？</a></li>
+  <li><a href="#sec-figure" id="toc-sec-figure" class="nav-link" data-scroll-target="#sec-figure">图中应该保留哪些信息？</a>
+  <ul class="collapse">
+  <li><a href="#rank-resolution不能只报-species-数" id="toc-rank-resolution不能只报-species-数" class="nav-link" data-scroll-target="#rank-resolution不能只报-species-数">rank resolution：不能只报 species 数</a></li>
+  <li><a href="#phylum-composition计数对象必须写清是-sgb" id="toc-phylum-composition计数对象必须写清是-sgb" class="nav-link" data-scroll-target="#phylum-composition计数对象必须写清是-sgb">phylum composition：计数对象必须写清是 SGB</a></li>
+  <li><a href="#classification-route只有真实执行过的路径才进入图" id="toc-classification-route只有真实执行过的路径才进入图" class="nav-link" data-scroll-target="#classification-route只有真实执行过的路径才进入图">classification route：只有真实执行过的路径才进入图</a></li>
+  </ul></li>
+  <li><a href="#回到最初的问题" id="toc-回到最初的问题" class="nav-link" data-scroll-target="#回到最初的问题">回到最初的问题</a></li>
+  <li><a href="#sec-references" id="toc-sec-references" class="nav-link" data-scroll-target="#sec-references">参考文献</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/46-gtdbtk-taxonomy.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/41-read-mapping-depth.html">第 9 部分 · 分箱与 MAG</a></li><li class="breadcrumb-item"><a href="../chapters/46-gtdbtk-taxonomy.html"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> 代码</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">作者</div>
+    <div class="quarto-title-meta-contents">
+             <p>Peter </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>先给结论：</strong>24 个 95% ANI species-level genome bins（SGBs）用 GTDB-Tk 2.7.2 和 GTDB R232 重新分类后，得到 <strong>16 个 Bacteria、8 个 Archaea，24/24 均解析到 species</strong>。这 24 个 SGB 全部在 <code>ani_screen</code> 阶段命中版本化 GTDB reference，ANI 为 97.21%–100.00%，alignment fraction（AF）为 82.4%–100.0%，且均超过各自 reference-specific species radius；因此本数据没有触发 marker-tree placement。这个结果说明“当前 catalog 与 R232 中已命名物种一致”，并不说明 GTDB-Tk 永远只做 ANI，也不允许把数据库中空的 species 字段直接改写成“新物种”。</p>
+</blockquote>
+<div class="callout callout-style-default callout-important callout-titled" title="算力与数据库边界">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">重要</span>算力与数据库边界
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>本次使用 <strong>24 CPU cores</strong>。数据库 <code>check_install</code> 耗时 189.14 秒；24 个 SGB 的 <code>classify_wf</code> 耗时 62.45 秒、峰值 RAM 14.611 GiB。R232 官方压缩包为 <strong>60,806,405,195 bytes</strong>，解压后 263 个文件共 <strong>100,482,230,310 bytes</strong>；同时保留压缩包与工作区时建议准备 <strong>220 GB 可用磁盘、24 cores、64 GB RAM，预计 5–30 分钟</strong>。本数据在 ANI prescreen 结束，不能用 14.6 GiB 外推陌生 MAG 的 pplacer 内存；大量未命中 reference 的细菌 MAG 应在大内存 HPC/云节点运行。没有服务器时，可读取 <code>data/small/46-gtdbtk-taxonomy-frozen/</code> 中的 native summary、ANI table、数据库审计、命令、版本和资源日志。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>先确定这一点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>分类结果依赖参考树与 release；未能细分的结果应保留不确定性，不用已知标签替代独立分类。</p>
+</div>
+</div>
+<section id="sec-target" class="level2">
+<h2 class="anchored" data-anchor-id="sec-target">MAG 的分类名称，为什么必须带数据库版本？</h2>
+<p>锚定的是 genome-resolved 论文中常见的 <strong>MAG phylogenomic annotation strip / taxonomic composition panel</strong>：每个非冗余 SGB 有一条完整 GTDB lineage，图中按 domain、phylum 或 genus 汇总，补充表同时给 species assignment、closest reference、ANI、AF、分类路径与数据库 release。GTDB 用统一的 genome phylogeny 和 rank normalization 维护细菌、古菌分类 <span class="citation" data-cites="parks2022gtdb">(<a href="02-three-analysis-layers.html#ref-parks2022gtdb" role="doc-biblioref">Parks 等 2022年</a>)</span>；GTDB-Tk 将 reference ANI screening 与 marker-tree placement 组织成可审计工作流 <span class="citation" data-cites="chaumeil2020gtdbtk chaumeil2022gtdbtkv2">(<a href="02-three-analysis-layers.html#ref-chaumeil2020gtdbtk" role="doc-biblioref">Chaumeil 等 2020年</a>, <a href="02-three-analysis-layers.html#ref-chaumeil2022gtdbtkv2" role="doc-biblioref">2022年</a>)</span>。</p>
+<div id="fig-46-ani-af" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-46-ani-af-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/46-ani-af-audit.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-46-ani-af-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;46.1: 24 个非冗余 SGB 在 GTDB R232 中的 reference-specific ANI margin 与 alignment fraction。虚线分别表示 species radius margin = 0 和本次预设 AF = 50%。
+</figcaption>
+</figure>
+</div>
+<p>横轴不是“ANI 减固定 95%”，而是 <code>observed ANI - closest reference radius</code>。例如 SGB_023 的 reference radius 为 95.31%，其判定不能被简化成所有物种都共享 95.00%。</p>
+</section>
+<section id="sec-reader-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
+<p><a href="https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/46/files.tsv">数据与代码清单</a>列出了本例的输入表、分析脚本和环境文件（约 0.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</p>
+<p>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<a href="https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/46/download.R">带完整性检查的下载脚本</a>。</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/46/files.tsv"</span>))</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="sec-setup" class="level2">
+<h2 class="anchored" data-anchor-id="sec-setup">先锁定输入、版本和算力边界</h2>
+<section id="输入与-lineage" class="level3">
+<h3 class="anchored" data-anchor-id="输入与-lineage">输入与 lineage</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>输入</th>
+<th>固定对象</th>
+<th>审计作用</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>SGB catalog</td>
+<td>PRJEB52977 两份真实 mock reads 经组装、分箱、质控、dRep 后的 24 个 95% ANI representatives</td>
+<td>避免 raw bins 重复计数</td>
+</tr>
+<tr class="even">
+<td>genome identity</td>
+<td>Article 45 representative FASTA 的 SHA-256</td>
+<td>防止 SGB ID 与序列错位</td>
+</tr>
+<tr class="odd">
+<td>taxonomy database</td>
+<td>GTDB R232 full package</td>
+<td>固定 taxonomy/reference/radius 坐标</td>
+</tr>
+<tr class="even">
+<td>database integrity</td>
+<td>MD5 <code>25a59e0352b1fd150c589f56559767d4</code>、精确字节数、<code>gtdbtk check_install</code></td>
+<td>防止不完整解压或 release 混装</td>
+</tr>
+<tr class="odd">
+<td>truth boundary</td>
+<td>mock reference identities</td>
+<td>只用于另存的 benchmark，不参与分类、参考基因组选择或物种判定</td>
+</tr>
+</tbody>
+</table>
+<p>R232 archive 与解压数据库不进入 Git；<code>data/small/46-gtdbtk-database-manifest.tsv</code> 保存官方 URL、release date、MD5、压缩/安装字节数和验证状态。24 个 FASTA 则从 checksum-covered Article 45 frozen bundle 解压到工作区。</p>
+<details class="wechat-omit">
+<summary>
+环境配置与完整运行说明
+</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gtdbtk-2026.07 <span class="at">--file</span> env/gtdbtk-linux-64.lock</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gtdbtk-2026.07 gtdbtk <span class="at">--version</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/46-gtdbtk-database-manifest.tsv</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/data/databases/gtdbtk-r232</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> db/download_db.sh download gtdbtk-r232</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted"</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">--use-compress-program</span><span class="op">=</span>pigz <span class="at">-xf</span> <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gtdbtk-r232/gtdbtk_r232_data.tar.gz"</span> <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted"</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GTDBTK_DATA_PATH</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted/release232"</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="ex">gtdbtk</span> check_install</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260746</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Bacteria"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Archaea"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Resolved"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Unresolved"</span> <span class="ot">=</span> <span class="st">"#999999"</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</details>
+</section>
+</section>
+<section id="sec-code" class="level2">
+<h2 class="anchored" data-anchor-id="sec-code">生成稳定 SGB 输入并验证数据库</h2>
+<section id="sec-theory" class="level3">
+<h3 class="anchored" data-anchor-id="sec-theory">先固定非冗余 genome coordinate，再谈分类</h3>
+<p>同一物种可能在多个样本、多个 binning branch 中重复出现。若直接给全部 raw bins 分类，phylum 数量和 species 数量都会被重复重建次数放大。本次输入是第 45 篇确定的 24 个 95% ANI representatives，并按 dRep cluster 的数值顺序赋予稳定 ID <code>SGB_001</code>–<code>SGB_024</code>。GTDB taxonomy 是这个固定 coordinate 的 annotation，不反过来决定哪个 genome 当 representative。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-dir</span> /data/databases/gtdbtk-r232/extracted/release232 <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--archive</span> /data/databases/gtdbtk-r232/archives/gtdbtk-r232/gtdbtk_r232_data.tar.gz</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>准备脚本先校验 Article 45 frozen manifest，再逐条解压 representative FASTA，并确认解压后 SHA-256 与 cluster ledger 一致。数据库侧必须同时满足：263 个文件、100,482,230,310 installed bytes、archive MD5/bytes sentinel 与 <code>VERIFIED_LOCAL_CHECK_INSTALL_PASS</code>。</p>
+</section>
+</section>
+<section id="运行-gtdb-tk" class="level2">
+<h2 class="anchored" data-anchor-id="运行-gtdb-tk">运行 GTDB-Tk</h2>
+<section id="release-是结果的一部分" class="level3">
+<h3 class="anchored" data-anchor-id="release-是结果的一部分">release 是结果的一部分</h3>
+<p>GTDB taxonomy、reference genomes、species radii 和树都会随 release 更新。同一条 MAG 在不同 release 中可能发生 genus 名称变化、reference 替换或 species assignment 改变。因此 Methods 不能只写“用 GTDB-Tk 分类”，至少要同时记录：</p>
+<ul>
+<li>GTDB-Tk version；</li>
+<li>GTDB release；</li>
+<li>数据库 archive checksum 与安装审计；</li>
+<li><code>classify_wf</code> 的关键阈值；</li>
+<li>每条 SGB 的原始 summary 行。</li>
+</ul>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GTDBTK_DATA_PATH</span><span class="op">=</span>/data/databases/gtdbtk-r232/extracted/release232</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TMPDIR</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/results/46-gtdbtk-taxonomy/tmp"</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gtdbtk-2026.07 <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  gtdbtk classify_wf <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genome_dir</span> results/46-gtdbtk-taxonomy/inputs/genomes <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out_dir</span> results/46-gtdbtk-taxonomy/gtdbtk <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--extension</span> fna <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prefix</span> article46 <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cpus</span> 24 <span class="dt">\</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pplacer_cpus</span> 1 <span class="dt">\</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_perc_aa</span> 10 <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_af</span> 0.5 <span class="dt">\</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--write_single_copy_genes</span> <span class="dt">\</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--keep_intermediates</span> <span class="dt">\</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tmpdir</span> <span class="st">"</span><span class="va">$TMPDIR</span><span class="st">"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>--pplacer_cpus 1</code> 是显式的内存控制选择；增加 pplacer threads 可能提高峰值 RAM。<code>--write_single_copy_genes</code> 只会在 marker branch 实际运行时产生对应文件。本次 24 个 SGB 均由 ANI prescreen 解决，因此没有伪造空 marker 产物来填补目录。</p>
+</section>
+<section id="当前标准升级-1把-release-drift-变成可量化对象" class="level3">
+<h3 class="anchored" data-anchor-id="当前标准升级-1把-release-drift-变成可量化对象">当前标准升级 1：把 release drift 变成可量化对象</h3>
+<p>升级数据库时，不要覆盖旧 summary 后只看最终名称。应以 <code>SGB + RepresentativeSHA256</code> 为 join key，对比两个 release 的 domain-to-species lineage、reference accession、ANI、AF、radius 和 classification method。名称变化不等于序列变化；reference 替换也不等于生物学变化。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="坑 1：只写 GTDB-Tk version，不写 GTDB release">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>坑 1：只写 GTDB-Tk version，不写 GTDB release
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>软件版本与数据库 release 是两个坐标。GTDB-Tk 2.7.2 可以读取 R232，但换成另一个 release 后 taxonomy、reference 和 radius 都可能改变；Methods 与补充表必须同时保存二者。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="坑 2：把 AF 当作百分比直接读">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>坑 2：把 AF 当作百分比直接读
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>R232 native <code>closest_genome_af</code> 是 0–1 fraction。本次汇总明确乘以 100 后命名 <code>FastANIAFPct</code>。若把 0.824 画在 0–100 轴上，会错误地落到阈值下方。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="坑 5：增加 pplacer CPUs 后只记录总核数">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>坑 5：增加 pplacer CPUs 后只记录总核数
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>pplacer 并行会改变内存需求。应单独报告 <code>--cpus</code>、<code>--pplacer_cpus</code>、是否 split-tree/full-tree，以及实测峰值 RAM；不要用 ANI-only 小数据的资源占用承诺陌生 catalog 的上限。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="汇总-native-summary不从-taxonomy-字符串猜路径" class="level2">
+<h2 class="anchored" data-anchor-id="汇总-native-summary不从-taxonomy-字符串猜路径">汇总 native summary，不从 taxonomy 字符串猜路径</h2>
+<section id="ani_screen-与-marker-tree-placement-是两条证据路径" class="level3">
+<h3 class="anchored" data-anchor-id="ani_screen-与-marker-tree-placement-是两条证据路径"><code>ani_screen</code> 与 marker-tree placement 是两条证据路径</h3>
+<p>GTDB-Tk 先用本次环境中的 skani 0.3.2 对 genome 做 reference ANI screening。若有 reference 同时满足 reference-specific radius 和 AF 要求，可直接在 <code>ani_screen</code> 路径完成 species assignment。未解决的 genome 才进入 marker identification、alignment、pplacer placement 和后续 ANI reconciliation。R232 本次 24 个 SGB 全部在第一条路径完成，因此 <code>msa_percent</code>、<code>pplacer_taxonomy</code> 和 single-copy marker 输出为空是<strong>符合分支逻辑的结果</strong>，不是漏跑。</p>
+</section>
+<section id="ani-与-af-必须成对报告" class="level3">
+<h3 class="anchored" data-anchor-id="ani-与-af-必须成对报告">ANI 与 AF 必须成对报告</h3>
+<p>ANI 只描述可比对片段的平均一致性；很短的 conserved region 也可能给出很高 ANI。AF 描述 query/reference 有多少 genome fraction 参与比较。本次命令固定 <code>--min_af 0.5</code>，也就是 AF 至少 50%；实际最低 AF 为 82.4%。图中把 ANI margin 和 AF 分开画，避免把二者压成一个不可解释的“相似度”。</p>
+</section>
+<section id="species-field-为空只是候选入口" class="level3">
+<h3 class="anchored" data-anchor-id="species-field-为空只是候选入口">species field 为空只是候选入口</h3>
+<p>空 species field 可能来自 reference sampling 不足、MAG 不完整、污染、marker recovery 低或真正的 taxonomic novelty。可靠的新物种论证还要结合 genome quality、ANI/AF、domain-specific phylogeny、reference sampling 和命名规范；第 47 篇会把这些证据放进同一棵树。GTDB 临时 species label 也不能自动转成正式 <code>Candidatus</code> 名称。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>R232 native output 使用这些关键字段：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>native field</th>
+<th>规范化列</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>classification</code></td>
+<td><code>GTDBTaxonomy</code></td>
+<td>七级 GTDB lineage</td>
+</tr>
+<tr class="even">
+<td><code>closest_genome_reference</code></td>
+<td><code>FastANIReference</code></td>
+<td>ANI prescreen 命中的版本化 reference</td>
+</tr>
+<tr class="odd">
+<td><code>closest_genome_reference_radius</code></td>
+<td><code>FastANIReferenceRadiusPct</code></td>
+<td>reference-specific species radius</td>
+</tr>
+<tr class="even">
+<td><code>closest_genome_ani</code></td>
+<td><code>FastANIANI</code></td>
+<td>query/reference ANI</td>
+</tr>
+<tr class="odd">
+<td><code>closest_genome_af</code></td>
+<td><code>FastANIAFPct</code></td>
+<td>native fraction 转为百分比</td>
+</tr>
+<tr class="even">
+<td><code>classification_method</code></td>
+<td><code>ClassificationMethod</code></td>
+<td><code>ani_screen</code> 或 marker/tree 相关路径</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"../data/small/46-gtdbtk-taxonomy-frozen"</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"taxonomy-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>taxonomy <span class="sc">|&gt;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(SGB, Domain, Phylum, Genus, Species, ClassificationMethod,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>         FastANIReference, FastANIANI, FastANIAFPct) <span class="sc">|&gt;</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">8</span>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>本次结果坐标如下：</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>审计项</th>
+<th style="text-align: right;">结果</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>input / classified SGBs</td>
+<td style="text-align: right;">24 / 24</td>
+</tr>
+<tr class="even">
+<td>Bacteria / Archaea</td>
+<td style="text-align: right;">16 / 8</td>
+</tr>
+<tr class="odd">
+<td>species field resolved</td>
+<td style="text-align: right;">24 / 24</td>
+</tr>
+<tr class="even">
+<td><code>ani_screen</code></td>
+<td style="text-align: right;">24 / 24</td>
+</tr>
+<tr class="odd">
+<td>marker-tree placement</td>
+<td style="text-align: right;">0 / 24</td>
+</tr>
+<tr class="even">
+<td>warning rows</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td>ANI range</td>
+<td style="text-align: right;">97.21%–100.00%</td>
+</tr>
+<tr class="even">
+<td>AF range</td>
+<td style="text-align: right;">82.4%–100.0%</td>
+</tr>
+<tr class="odd">
+<td>minimum ANI margin above reference radius</td>
+<td style="text-align: right;">2.21 percentage points</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="sec-audit" class="level3">
+<h3 class="anchored" data-anchor-id="sec-audit">忠实复现：保留 native classification，不用 mock answer key 改名</h3>
+<p>PRJEB52977 是已知组成的 mock study，但 known organism identity 不进入 GTDB-Tk reference selection，也不用于把结果“纠正”成预期名称。每条 taxonomy 都来自 R232 native summary；truth 只能在独立 benchmark table 中评估，不得污染分类本身。</p>
+</section>
+<section id="当前标准升级-2区分工作流可做-marker-placement与本数据做了-marker-placement" class="level3">
+<h3 class="anchored" data-anchor-id="当前标准升级-2区分工作流可做-marker-placement与本数据做了-marker-placement">当前标准升级 2：区分“工作流可做 marker placement”与“本数据做了 marker placement”</h3>
+<p>GTDB-Tk 的完整工作流包含 marker tree，但本数据 24/24 在 <code>ani_screen</code> 结束。Methods 应写实际执行分支，不能因为命令叫 <code>classify_wf</code> 就宣称每条 MAG 都经过 pplacer。反过来，若陌生环境 MAG 未命中 reference，则要报告 marker recovery、MSA percentage、placement lineage、RED 和 warning。</p>
+</section>
+<section id="当前标准升级-3species-assignment-不是新物种审稿终点" class="level3">
+<h3 class="anchored" data-anchor-id="当前标准升级-3species-assignment-不是新物种审稿终点">当前标准升级 3：species assignment 不是新物种审稿终点</h3>
+<p>本次最接近边界的是 SGB_006：ANI 97.21%、reference radius 95.00%、AF 82.4%，仍明确越过 R232 species gate。第 47 篇仍会把全部 SGB 与版本化 closest references 放入 domain-specific genome trees，用来审计 tree context；但不会把“分支较长”单独当作 novel species 证据。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="坑 3：看到 species 名称就忽略 genome quality">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>坑 3：看到 species 名称就忽略 genome quality
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>低完整度或嵌合 MAG 也可能命中 reference。taxonomy annotation 不能替代 CheckM2、GUNC、MIMAG、coverage/GC 与 assembly-graph 审计；这些质量字段要沿 SGB ledger 一起进入补充表。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-caution callout-titled" title="坑 4：把空 species 写成 novel species">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>坑 4：把空 species 写成 novel species
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>空字段只触发候选审计。至少还要证明 quality 合格、没有满足 radius+AF 的近邻、domain tree 中位置稳定、reference sampling 足够，并完成命名与数据库提交前核查。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="保存可复核证据" class="level2">
+<h2 class="anchored" data-anchor-id="保存可复核证据">保存可复核证据</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy <span class="dt">\</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/46-gtdbtk-taxonomy-frozen</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>冻结包保留两个 native domain summary、两个 <code>ani_summary.tsv</code>、GTDB-Tk log/JSON、规范化 taxonomy/ANI tables、数据库审计、命令、工具版本、GNU time 资源记录和源码；60.8 GB archive、100.5 GB database 与临时索引不复制进仓库。</p>
+</section>
+<section id="sec-methods" class="level2">
+<h2 class="anchored" data-anchor-id="sec-methods">记录 GTDB release 与分类支持</h2>
+<p><strong>Methods template（可直接按本次分析使用）：</strong></p>
+<blockquote class="blockquote">
+<p>Species-level genome bin representatives were classified with GTDB-Tk 2.7.2 against GTDB release R232. The R232 full package (MD5: 25a59e0352b1fd150c589f56559767d4) was verified by archive byte count and <code>gtdbtk check_install</code>. We ran <code>classify_wf</code> with 24 CPUs, one pplacer CPU, <code>--min_perc_aa 10</code>, <code>--min_af 0.5</code>, <code>--write_single_copy_genes</code>, and retained intermediate files. Genome identifiers were assigned from the checksum-verified 95%-ANI representative catalog. Known mock-community identities were not used for reference selection or taxonomic assignment. GTDB lineage, classification route, closest reference, reference-specific species radius, ANI, alignment fraction, and warnings were retained from the native domain summary tables.</p>
+</blockquote>
+<p><strong>Results template（本次实跑结果）：</strong></p>
+<blockquote class="blockquote">
+<p>GTDB-Tk classified all 24 SGB representatives, including 16 bacterial and eight archaeal genomes. All SGBs were resolved to a GTDB species through the ANI-screening route; no marker-tree placement was invoked. Closest-reference ANI ranged from 97.21% to 100.00%, alignment fraction ranged from 82.4% to 100.0%, and every genome exceeded its reference-specific species radius. No GTDB-Tk warnings were reported. The classification run completed in 62.45 s with a peak resident memory of 14.611 GiB; database installation verification required 189.14 s.</p>
+</blockquote>
+</section>
+<section id="sec-own-data" class="level2">
+<h2 class="anchored" data-anchor-id="sec-own-data">换到自己的研究中，先检查哪些条件？</h2>
+<ol type="1">
+<li>先确定分类对象：使用固定的 non-redundant representative catalog，而不是把所有 sample bins 混在一起计数。</li>
+<li>为每个 genome 建立稳定 ID、FASTA SHA-256、completeness、contamination、GUNC、MIMAG、coverage 和 graph audit ledger。</li>
+<li>锁定 GTDB-Tk version 与兼容的 GTDB release；下载后验证 checksum、精确体积和 <code>check_install</code>。</li>
+<li>根据服务器内存选择 split-tree/default 工作流；记录 <code>--pplacer_cpus</code>，不要盲目增加。</li>
+<li>原样保留 <code>bac120.summary.tsv</code>、<code>ar53.summary.tsv</code>、ANI summary、warning 与 log；规范化表必须能回链到 native row。</li>
+<li>对每个 rank 分别统计 resolved/unresolved；对 species assignment 同时报 closest reference、radius、ANI、AF 和 method。</li>
+<li>对 unresolved genome 先审计质量与 marker recovery，再扩充近邻 references 做 domain-specific phylogenomics；不要直接命名。</li>
+<li>升级 release 时用 <code>RepresentativeSHA256</code> 对齐旧新结果，单独报告 taxonomy drift。</li>
+</ol>
+<p>最少需要四类输入：MAG FASTA、稳定 genome ledger、完整质量表、可用磁盘/内存预算。若数据涉及正式 genome 提交，还要额外准备 source metadata、BioProject/BioSample 和人工 curation 记录。</p>
+</section>
+<section id="sec-figure" class="level2">
+<h2 class="anchored" data-anchor-id="sec-figure">图中应该保留哪些信息？</h2>
+<section id="rank-resolution不能只报-species-数" class="level3">
+<h3 class="anchored" data-anchor-id="rank-resolution不能只报-species-数">rank resolution：不能只报 species 数</h3>
+<div id="fig-46-ranks" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-46-ranks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/46-rank-resolution.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-46-ranks-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;46.2: 每个 domain 从 domain 到 species 的解析数量。两个 domain 的七个 rank 均无空字段。
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="phylum-composition计数对象必须写清是-sgb" class="level3">
+<h3 class="anchored" data-anchor-id="phylum-composition计数对象必须写清是-sgb">phylum composition：计数对象必须写清是 SGB</h3>
+<div id="fig-46-phyla" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-46-phyla-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/46-phylum-composition.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-46-phyla-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;46.3: GTDB R232 phylum composition。计数单位是 24 个 95% ANI representatives，不是 124 个输入 MAG。
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="classification-route只有真实执行过的路径才进入图" class="level3">
+<h3 class="anchored" data-anchor-id="classification-route只有真实执行过的路径才进入图">classification route：只有真实执行过的路径才进入图</h3>
+<div id="fig-46-route" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-46-route-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/46-classification-route.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-46-route-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;46.4: 24 个 SGB 全部在 ANI prescreen 解析到 species；本数据未触发 marker-tree placement。
+</figcaption>
+</figure>
+</div>
+<p>图内 domain、rank、axis、legend 和 annotation 全部使用英文；Bacteria/Archaea 使用 Okabe–Ito 蓝/橙，resolved 使用色盲友好的绿色。矢量 PDF 用于排版，350 dpi PNG/TIFF 用于网页与期刊上传：</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p_ani, <span class="st">"figures/46-ani-af-audit"</span>, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">130</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># writes .pdf, .png and .tiff; TIFF uses compression = "lzw"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+</section>
+<section id="回到最初的问题" class="level2">
+<h2 class="anchored" data-anchor-id="回到最初的问题">回到最初的问题</h2>
+<p>GTDB-Tk 分类必须同时锁定 release、ANI、reference-specific species radius 与 alignment fraction，不能把空 species 字段直接叫新物种。</p>
+</section>
+<section id="sec-references" class="level2">
+<h2 class="anchored" data-anchor-id="sec-references">参考文献</h2>
+<ul>
+<li>GTDB-Tk 原始工作流与分类框架 <span class="citation" data-cites="chaumeil2020gtdbtk">(<a href="02-three-analysis-layers.html#ref-chaumeil2020gtdbtk" role="doc-biblioref">Chaumeil 等 2020年</a>)</span>。</li>
+<li>GTDB-Tk v2 的 memory-friendly classification <span class="citation" data-cites="chaumeil2022gtdbtkv2">(<a href="02-three-analysis-layers.html#ref-chaumeil2022gtdbtkv2" role="doc-biblioref">Chaumeil 等 2022年</a>)</span>。</li>
+<li>GTDB taxonomy、rank normalization 与持续更新原则 <span class="citation" data-cites="parks2022gtdb">(<a href="02-three-analysis-layers.html#ref-parks2022gtdb" role="doc-biblioref">Parks 等 2022年</a>)</span>。</li>
+<li>本次可复核数据：<code>data/small/46-gtdbtk-taxonomy-frozen/</code>；数据库 manifest：<code>data/small/46-gtdbtk-database-manifest.tsv</code>。</li>
+</ul>
+
+
+<!-- -->
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-chaumeil2020gtdbtk" class="csl-entry" role="listitem">
+Chaumeil, Pierre-Alain, Aaron J. Mussig, Philip Hugenholtz, 和 Donovan H. Parks. 2020年. <span>《<span>GTDB-Tk</span>: a toolkit to classify genomes with the Genome Database Taxonomy》</span>. <em>Bioinformatics</em> 36 (6): 1925～27. <a href="https://doi.org/10.1093/bioinformatics/btz848">https://doi.org/10.1093/bioinformatics/btz848</a>.
+</div>
+<div id="ref-chaumeil2022gtdbtkv2" class="csl-entry" role="listitem">
+Chaumeil, Pierre-Alain, Aaron J. Mussig, Philip Hugenholtz, 和 Donovan H. Parks. 2022年. <span>《<span>GTDB-Tk v2</span>: memory friendly classification with the Genome Taxonomy Database》</span>. <em>Bioinformatics</em> 38 (23): 5315～16. <a href="https://doi.org/10.1093/bioinformatics/btac672">https://doi.org/10.1093/bioinformatics/btac672</a>.
+</div>
+<div id="ref-parks2022gtdb" class="csl-entry" role="listitem">
+Parks, Donovan H., Maria Chuvochina, Christian Rinke, Aaron J. Mussig, Pierre-Alain Chaumeil, 和 Philip Hugenholtz. 2022年. <span>《<span>GTDB</span>: an ongoing census of bacterial and archaeal diversity through a phylogenetically consistent, rank normalized and complete genome-based taxonomy》</span>. <em>Nucleic Acids Research</em> 50 (D1): D785～94. <a href="https://doi.org/10.1093/nar/gkab776">https://doi.org/10.1093/nar/gkab776</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/petemeng\.github\.io\/metagenomics-best-practices\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/45-drep-dereplication.html" class="pagination-link" aria-label="去冗余：dRep、ANI 与代表基因组">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/47-novel-mag-phylogenomics.html" class="pagination-link" aria-label="新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE">
+        <span class="nav-page-text"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">源代码</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Peter"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "MAG 分类：GTDB-Tk 与数据库 release"</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "用 GTDB-Tk 2.7.2 与锁定的 GTDB R232 为 24 个 95% ANI SGB 分类，并审计 ANI、reference-specific species radius、alignment fraction 与数据库完整性"</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="an">draft:</span><span class="co"> false</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> ../references.bib</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">  freeze: auto</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="an">fig-cap-location:</span><span class="co"> bottom</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> ../figures/46-ani-af-audit.png</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="an">wechat:</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="co">  deck: "GTDB-Tk 分类必须同时锁定 release、ANI、reference-specific species radius 与 alignment fraction，不能把空 species 字段直接叫新物种。"</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co">  facts:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "非冗余 SGB", value: "24 genomes"}</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "Domain", value: "16 Bacteria · 8 Archaea"}</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "物种解析", value: "24 / 24"}</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "ANI 范围", value: "97.21%–100.00%"}</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co">  resources:</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "锁定版本", value: "GTDB-Tk 2.7.2 · GTDB R232"}</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "分类路径", value: "ANI screen + marker-tree fallback"}</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "建议节点", value: "24 cores · database-aware RAM/disk"}</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="co">  code_heading: "从数据库完整性门禁到 ANI/AF、rank resolution 与分类路径审计"</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="co">  expected_images: 4</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> upstream</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**24 个 95% ANI species-level genome bins（SGBs）用 GTDB-Tk 2.7.2 和 GTDB R232 重新分类后，得到 **16 个 Bacteria、8 个 Archaea，24/24 均解析到 species**。这 24 个 SGB 全部在 </span><span class="in">`ani_screen`</span><span class="at"> 阶段命中版本化 GTDB reference，ANI 为 97.21%--100.00%，alignment fraction（AF）为 82.4%--100.0%，且均超过各自 reference-specific species radius；因此本数据没有触发 marker-tree placement。这个结果说明“当前 catalog 与 R232 中已命名物种一致”，并不说明 GTDB-Tk 永远只做 ANI，也不允许把数据库中空的 species 字段直接改写成“新物种”。</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据库边界"}</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>本次使用 **24 CPU cores**。数据库 `check_install` 耗时 189.14 秒；24 个 SGB 的 `classify_wf` 耗时 62.45 秒、峰值 RAM 14.611 GiB。R232 官方压缩包为 **60,806,405,195 bytes**，解压后 263 个文件共 **100,482,230,310 bytes**；同时保留压缩包与工作区时建议准备 **220 GB 可用磁盘、24 cores、64 GB RAM，预计 5--30 分钟**。本数据在 ANI prescreen 结束，不能用 14.6 GiB 外推陌生 MAG 的 pplacer 内存；大量未命中 reference 的细菌 MAG 应在大内存 HPC/云节点运行。没有服务器时，可读取 <span class="in">`data/small/46-gtdbtk-taxonomy-frozen/`</span> 中的 native summary、ANI table、数据库审计、命令、版本和资源日志。</span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>分类结果依赖参考树与 release；未能细分的结果应保留不确定性，不用已知标签替代独立分类。</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## MAG 的分类名称，为什么必须带数据库版本？ {#sec-target}</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>锚定的是 genome-resolved 论文中常见的 **MAG phylogenomic annotation strip / taxonomic composition panel**：每个非冗余 SGB 有一条完整 GTDB lineage，图中按 domain、phylum 或 genus 汇总，补充表同时给 species assignment、closest reference、ANI、AF、分类路径与数据库 release。GTDB 用统一的 genome phylogeny 和 rank normalization 维护细菌、古菌分类 <span class="co">[</span><span class="ot">@parks2022gtdb</span><span class="co">]</span>；GTDB-Tk 将 reference ANI screening 与 marker-tree placement 组织成可审计工作流 <span class="co">[</span><span class="ot">@chaumeil2020gtdbtk; @chaumeil2022gtdbtkv2</span><span class="co">]</span>。</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="al">![24 个非冗余 SGB 在 GTDB R232 中的 reference-specific ANI margin 与 alignment fraction。虚线分别表示 species radius margin = 0 和本次预设 AF = 50%。](../figures/46-ani-af-audit.png)</span>{#fig-46-ani-af}</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>横轴不是“ANI 减固定 95%”，而是 <span class="in">`observed ANI - closest reference radius`</span>。例如 SGB_023 的 reference radius 为 95.31%，其判定不能被简化成所有物种都共享 95.00%。</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/46/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 0.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/46/download.R)</span>。</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-46</span></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/46/files.tsv"</span>))</span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-setup}</span></span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入与 lineage</span></span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 固定对象 <span class="pp">|</span> 审计作用 <span class="pp">|</span></span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB catalog <span class="pp">|</span> PRJEB52977 两份真实 mock reads 经组装、分箱、质控、dRep 后的 24 个 95% ANI representatives <span class="pp">|</span> 避免 raw bins 重复计数 <span class="pp">|</span></span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> genome identity <span class="pp">|</span> Article 45 representative FASTA 的 SHA-256 <span class="pp">|</span> 防止 SGB ID 与序列错位 <span class="pp">|</span></span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> taxonomy database <span class="pp">|</span> GTDB R232 full package <span class="pp">|</span> 固定 taxonomy/reference/radius 坐标 <span class="pp">|</span></span>
+<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> database integrity <span class="pp">|</span> MD5 <span class="in">`25a59e0352b1fd150c589f56559767d4`</span>、精确字节数、<span class="in">`gtdbtk check_install`</span> <span class="pp">|</span> 防止不完整解压或 release 混装 <span class="pp">|</span></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> truth boundary <span class="pp">|</span> mock reference identities <span class="pp">|</span> 只用于另存的 benchmark，不参与分类、参考基因组选择或物种判定 <span class="pp">|</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a>R232 archive 与解压数据库不进入 Git；<span class="in">`data/small/46-gtdbtk-database-manifest.tsv`</span> 保存官方 URL、release date、MD5、压缩/安装字节数和验证状态。24 个 FASTA 则从 checksum-covered Article 45 frozen bundle 解压到工作区。</span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gtdbtk-2026.07 <span class="at">--file</span> env/gtdbtk-linux-64.lock</span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gtdbtk-2026.07 gtdbtk <span class="at">--version</span></span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/46-gtdbtk-database-manifest.tsv</span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/data/databases/gtdbtk-r232</span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> db/download_db.sh download gtdbtk-r232</span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted"</span></span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">--use-compress-program</span><span class="op">=</span>pigz <span class="at">-xf</span> <span class="dt">\</span></span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gtdbtk-r232/gtdbtk_r232_data.tar.gz"</span> <span class="dt">\</span></span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted"</span></span>
+<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GTDBTK_DATA_PATH</span><span class="op">=</span><span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/extracted/release232"</span></span>
+<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="ex">gtdbtk</span> check_install</span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260746</span>)</span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Bacteria"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Archaea"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Resolved"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Unresolved"</span> <span class="ot">=</span> <span class="st">"#999999"</span>)</span>
+<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成稳定 SGB 输入并验证数据库 {#sec-code}</span></span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先固定非冗余 genome coordinate，再谈分类 {#sec-theory}</span></span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>同一物种可能在多个样本、多个 binning branch 中重复出现。若直接给全部 raw bins 分类，phylum 数量和 species 数量都会被重复重建次数放大。本次输入是第 45 篇确定的 24 个 95% ANI representatives，并按 dRep cluster 的数值顺序赋予稳定 ID <span class="in">`SGB_001`</span>--<span class="in">`SGB_024`</span>。GTDB taxonomy 是这个固定 coordinate 的 annotation，不反过来决定哪个 genome 当 representative。</span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy <span class="dt">\</span></span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-dir</span> /data/databases/gtdbtk-r232/extracted/release232 <span class="dt">\</span></span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a>  <span class="at">--archive</span> /data/databases/gtdbtk-r232/archives/gtdbtk-r232/gtdbtk_r232_data.tar.gz</span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a>准备脚本先校验 Article 45 frozen manifest，再逐条解压 representative FASTA，并确认解压后 SHA-256 与 cluster ledger 一致。数据库侧必须同时满足：263 个文件、100,482,230,310 installed bytes、archive MD5/bytes sentinel 与 <span class="in">`VERIFIED_LOCAL_CHECK_INSTALL_PASS`</span>。</span>
+<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 GTDB-Tk</span></span>
+<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a><span class="fu">### release 是结果的一部分</span></span>
+<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a>GTDB taxonomy、reference genomes、species radii 和树都会随 release 更新。同一条 MAG 在不同 release 中可能发生 genus 名称变化、reference 替换或 species assignment 改变。因此 Methods 不能只写“用 GTDB-Tk 分类”，至少要同时记录：</span>
+<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB-Tk version；</span>
+<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB release；</span>
+<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库 archive checksum 与安装审计；</span>
+<span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`classify_wf`</span> 的关键阈值；</span>
+<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>每条 SGB 的原始 summary 行。</span>
+<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">GTDBTK_DATA_PATH</span><span class="op">=</span>/data/databases/gtdbtk-r232/extracted/release232</span>
+<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">TMPDIR</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/results/46-gtdbtk-taxonomy/tmp"</span></span>
+<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gtdbtk-2026.07 <span class="dt">\</span></span>
+<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a>  gtdbtk classify_wf <span class="dt">\</span></span>
+<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genome_dir</span> results/46-gtdbtk-taxonomy/inputs/genomes <span class="dt">\</span></span>
+<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out_dir</span> results/46-gtdbtk-taxonomy/gtdbtk <span class="dt">\</span></span>
+<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a>  <span class="at">--extension</span> fna <span class="dt">\</span></span>
+<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prefix</span> article46 <span class="dt">\</span></span>
+<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cpus</span> 24 <span class="dt">\</span></span>
+<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pplacer_cpus</span> 1 <span class="dt">\</span></span>
+<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_perc_aa</span> 10 <span class="dt">\</span></span>
+<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_af</span> 0.5 <span class="dt">\</span></span>
+<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a>  <span class="at">--write_single_copy_genes</span> <span class="dt">\</span></span>
+<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a>  <span class="at">--keep_intermediates</span> <span class="dt">\</span></span>
+<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tmpdir</span> <span class="st">"</span><span class="va">$TMPDIR</span><span class="st">"</span></span>
+<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a><span class="in">`--pplacer_cpus 1`</span> 是显式的内存控制选择；增加 pplacer threads 可能提高峰值 RAM。<span class="in">`--write_single_copy_genes`</span> 只会在 marker branch 实际运行时产生对应文件。本次 24 个 SGB 均由 ANI prescreen 解决，因此没有伪造空 marker 产物来填补目录。</span>
+<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a><span class="fu">### 当前标准升级 1：把 release drift 变成可量化对象</span></span>
+<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a>升级数据库时，不要覆盖旧 summary 后只看最终名称。应以 <span class="in">`SGB + RepresentativeSHA256`</span> 为 join key，对比两个 release 的 domain-to-species lineage、reference accession、ANI、AF、radius 和 classification method。名称变化不等于序列变化；reference 替换也不等于生物学变化。</span>
+<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 1：只写 GTDB-Tk version，不写 GTDB release"}</span>
+<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a>软件版本与数据库 release 是两个坐标。GTDB-Tk 2.7.2 可以读取 R232，但换成另一个 release 后 taxonomy、reference 和 radius 都可能改变；Methods 与补充表必须同时保存二者。</span>
+<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 2：把 AF 当作百分比直接读"}</span>
+<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a>R232 native <span class="in">`closest_genome_af`</span> 是 0--1 fraction。本次汇总明确乘以 100 后命名 <span class="in">`FastANIAFPct`</span>。若把 0.824 画在 0--100 轴上，会错误地落到阈值下方。</span>
+<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 5：增加 pplacer CPUs 后只记录总核数"}</span>
+<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a>pplacer 并行会改变内存需求。应单独报告 <span class="in">`--cpus`</span>、<span class="in">`--pplacer_cpus`</span>、是否 split-tree/full-tree，以及实测峰值 RAM；不要用 ANI-only 小数据的资源占用承诺陌生 catalog 的上限。</span>
+<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总 native summary，不从 taxonomy 字符串猜路径</span></span>
+<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="fu">### `ani_screen` 与 marker-tree placement 是两条证据路径</span></span>
+<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a>GTDB-Tk 先用本次环境中的 skani 0.3.2 对 genome 做 reference ANI screening。若有 reference 同时满足 reference-specific radius 和 AF 要求，可直接在 <span class="in">`ani_screen`</span> 路径完成 species assignment。未解决的 genome 才进入 marker identification、alignment、pplacer placement 和后续 ANI reconciliation。R232 本次 24 个 SGB 全部在第一条路径完成，因此 <span class="in">`msa_percent`</span>、<span class="in">`pplacer_taxonomy`</span> 和 single-copy marker 输出为空是**符合分支逻辑的结果**，不是漏跑。</span>
+<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a><span class="fu">### ANI 与 AF 必须成对报告</span></span>
+<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a>ANI 只描述可比对片段的平均一致性；很短的 conserved region 也可能给出很高 ANI。AF 描述 query/reference 有多少 genome fraction 参与比较。本次命令固定 <span class="in">`--min_af 0.5`</span>，也就是 AF 至少 50%；实际最低 AF 为 82.4%。图中把 ANI margin 和 AF 分开画，避免把二者压成一个不可解释的“相似度”。</span>
+<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a><span class="fu">### species field 为空只是候选入口</span></span>
+<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>空 species field 可能来自 reference sampling 不足、MAG 不完整、污染、marker recovery 低或真正的 taxonomic novelty。可靠的新物种论证还要结合 genome quality、ANI/AF、domain-specific phylogeny、reference sampling 和命名规范；第 47 篇会把这些证据放进同一棵树。GTDB 临时 species label 也不能自动转成正式 <span class="in">`Candidatus`</span> 名称。</span>
+<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy</span>
+<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>R232 native output 使用这些关键字段：</span>
+<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> native field <span class="pp">|</span> 规范化列 <span class="pp">|</span> 含义 <span class="pp">|</span></span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`classification`</span> <span class="pp">|</span> <span class="in">`GTDBTaxonomy`</span> <span class="pp">|</span> 七级 GTDB lineage <span class="pp">|</span></span>
+<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`closest_genome_reference`</span> <span class="pp">|</span> <span class="in">`FastANIReference`</span> <span class="pp">|</span> ANI prescreen 命中的版本化 reference <span class="pp">|</span></span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`closest_genome_reference_radius`</span> <span class="pp">|</span> <span class="in">`FastANIReferenceRadiusPct`</span> <span class="pp">|</span> reference-specific species radius <span class="pp">|</span></span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`closest_genome_ani`</span> <span class="pp">|</span> <span class="in">`FastANIANI`</span> <span class="pp">|</span> query/reference ANI <span class="pp">|</span></span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`closest_genome_af`</span> <span class="pp">|</span> <span class="in">`FastANIAFPct`</span> <span class="pp">|</span> native fraction 转为百分比 <span class="pp">|</span></span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`classification_method`</span> <span class="pp">|</span> <span class="in">`ClassificationMethod`</span> <span class="pp">|</span> <span class="in">`ani_screen`</span> 或 marker/tree 相关路径 <span class="pp">|</span></span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"../data/small/46-gtdbtk-taxonomy-frozen"</span></span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a>taxonomy <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"taxonomy-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a>taxonomy <span class="sc">|&gt;</span></span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(SGB, Domain, Phylum, Genus, Species, ClassificationMethod,</span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>         FastANIReference, FastANIANI, FastANIAFPct) <span class="sc">|&gt;</span></span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="dv">8</span>)</span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a>本次结果坐标如下：</span>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 审计项 <span class="pp">|</span> 结果 <span class="pp">|</span></span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> input / classified SGBs <span class="pp">|</span> 24 / 24 <span class="pp">|</span></span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Bacteria / Archaea <span class="pp">|</span> 16 / 8 <span class="pp">|</span></span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> species field resolved <span class="pp">|</span> 24 / 24 <span class="pp">|</span></span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`ani_screen`</span> <span class="pp">|</span> 24 / 24 <span class="pp">|</span></span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> marker-tree placement <span class="pp">|</span> 0 / 24 <span class="pp">|</span></span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> warning rows <span class="pp">|</span> 0 <span class="pp">|</span></span>
+<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ANI range <span class="pp">|</span> 97.21%--100.00% <span class="pp">|</span></span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> AF range <span class="pp">|</span> 82.4%--100.0% <span class="pp">|</span></span>
+<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> minimum ANI margin above reference radius <span class="pp">|</span> 2.21 percentage points <span class="pp">|</span></span>
+<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实复现：保留 native classification，不用 mock answer key 改名 {#sec-audit}</span></span>
+<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a>PRJEB52977 是已知组成的 mock study，但 known organism identity 不进入 GTDB-Tk reference selection，也不用于把结果“纠正”成预期名称。每条 taxonomy 都来自 R232 native summary；truth 只能在独立 benchmark table 中评估，不得污染分类本身。</span>
+<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a><span class="fu">### 当前标准升级 2：区分“工作流可做 marker placement”与“本数据做了 marker placement”</span></span>
+<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a>GTDB-Tk 的完整工作流包含 marker tree，但本数据 24/24 在 <span class="in">`ani_screen`</span> 结束。Methods 应写实际执行分支，不能因为命令叫 <span class="in">`classify_wf`</span> 就宣称每条 MAG 都经过 pplacer。反过来，若陌生环境 MAG 未命中 reference，则要报告 marker recovery、MSA percentage、placement lineage、RED 和 warning。</span>
+<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a><span class="fu">### 当前标准升级 3：species assignment 不是新物种审稿终点</span></span>
+<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a>本次最接近边界的是 SGB_006：ANI 97.21%、reference radius 95.00%、AF 82.4%，仍明确越过 R232 species gate。第 47 篇仍会把全部 SGB 与版本化 closest references 放入 domain-specific genome trees，用来审计 tree context；但不会把“分支较长”单独当作 novel species 证据。</span>
+<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 3：看到 species 名称就忽略 genome quality"}</span>
+<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a>低完整度或嵌合 MAG 也可能命中 reference。taxonomy annotation 不能替代 CheckM2、GUNC、MIMAG、coverage/GC 与 assembly-graph 审计；这些质量字段要沿 SGB ledger 一起进入补充表。</span>
+<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 4：把空 species 写成 novel species"}</span>
+<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a>空字段只触发候选审计。至少还要证明 quality 合格、没有满足 radius+AF 的近邻、domain tree 中位置稳定、reference sampling 足够，并完成命名与数据库提交前核查。</span>
+<span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存可复核证据</span></span>
+<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article46_gtdbtk.py <span class="dt">\</span></span>
+<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> . <span class="dt">\</span></span>
+<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> results/46-gtdbtk-taxonomy <span class="dt">\</span></span>
+<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/46-gtdbtk-taxonomy-frozen</span>
+<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>冻结包保留两个 native domain summary、两个 <span class="in">`ani_summary.tsv`</span>、GTDB-Tk log/JSON、规范化 taxonomy/ANI tables、数据库审计、命令、工具版本、GNU time 资源记录和源码；60.8 GB archive、100.5 GB database 与临时索引不复制进仓库。</span>
+<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录 GTDB release 与分类支持 {#sec-methods}</span></span>
+<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a>**Methods template（可直接按本次分析使用）：**</span>
+<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Species-level genome bin representatives were classified with GTDB-Tk 2.7.2 against GTDB release R232. The R232 full package (MD5: 25a59e0352b1fd150c589f56559767d4) was verified by archive byte count and </span><span class="in">`gtdbtk check_install`</span><span class="at">. We ran </span><span class="in">`classify_wf`</span><span class="at"> with 24 CPUs, one pplacer CPU, </span><span class="in">`--min_perc_aa 10`</span><span class="at">, </span><span class="in">`--min_af 0.5`</span><span class="at">, </span><span class="in">`--write_single_copy_genes`</span><span class="at">, and retained intermediate files. Genome identifiers were assigned from the checksum-verified 95%-ANI representative catalog. Known mock-community identities were not used for reference selection or taxonomic assignment. GTDB lineage, classification route, closest reference, reference-specific species radius, ANI, alignment fraction, and warnings were retained from the native domain summary tables.</span></span>
+<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a>**Results template（本次实跑结果）：**</span>
+<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; GTDB-Tk classified all 24 SGB representatives, including 16 bacterial and eight archaeal genomes. All SGBs were resolved to a GTDB species through the ANI-screening route; no marker-tree placement was invoked. Closest-reference ANI ranged from 97.21% to 100.00%, alignment fraction ranged from 82.4% to 100.0%, and every genome exceeded its reference-specific species radius. No GTDB-Tk warnings were reported. The classification run completed in 62.45 s with a peak resident memory of 14.611 GiB; database installation verification required 189.14 s.</span></span>
+<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先确定分类对象：使用固定的 non-redundant representative catalog，而不是把所有 sample bins 混在一起计数。</span>
+<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>为每个 genome 建立稳定 ID、FASTA SHA-256、completeness、contamination、GUNC、MIMAG、coverage 和 graph audit ledger。</span>
+<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>锁定 GTDB-Tk version 与兼容的 GTDB release；下载后验证 checksum、精确体积和 <span class="in">`check_install`</span>。</span>
+<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>根据服务器内存选择 split-tree/default 工作流；记录 <span class="in">`--pplacer_cpus`</span>，不要盲目增加。</span>
+<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>原样保留 <span class="in">`bac120.summary.tsv`</span>、<span class="in">`ar53.summary.tsv`</span>、ANI summary、warning 与 log；规范化表必须能回链到 native row。</span>
+<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>对每个 rank 分别统计 resolved/unresolved；对 species assignment 同时报 closest reference、radius、ANI、AF 和 method。</span>
+<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>对 unresolved genome 先审计质量与 marker recovery，再扩充近邻 references 做 domain-specific phylogenomics；不要直接命名。</span>
+<span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>升级 release 时用 <span class="in">`RepresentativeSHA256`</span> 对齐旧新结果，单独报告 taxonomy drift。</span>
+<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a>最少需要四类输入：MAG FASTA、稳定 genome ledger、完整质量表、可用磁盘/内存预算。若数据涉及正式 genome 提交，还要额外准备 source metadata、BioProject/BioSample 和人工 curation 记录。</span>
+<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-figure}</span></span>
+<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a><span class="fu">### rank resolution：不能只报 species 数</span></span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 domain 从 domain 到 species 的解析数量。两个 domain 的七个 rank 均无空字段。](../figures/46-rank-resolution.png)</span>{#fig-46-ranks}</span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a><span class="fu">### phylum composition：计数对象必须写清是 SGB</span></span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a><span class="al">![GTDB R232 phylum composition。计数单位是 24 个 95% ANI representatives，不是 124 个输入 MAG。](../figures/46-phylum-composition.png)</span>{#fig-46-phyla}</span>
+<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a><span class="fu">### classification route：只有真实执行过的路径才进入图</span></span>
+<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a><span class="al">![24 个 SGB 全部在 ANI prescreen 解析到 species；本数据未触发 marker-tree placement。](../figures/46-classification-route.png)</span>{#fig-46-route}</span>
+<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a>图内 domain、rank、axis、legend 和 annotation 全部使用英文；Bacteria/Archaea 使用 Okabe--Ito 蓝/橙，resolved 使用色盲友好的绿色。矢量 PDF 用于排版，350 dpi PNG/TIFF 用于网页与期刊上传：</span>
+<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p_ani, <span class="st">"figures/46-ani-af-audit"</span>, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">130</span>)</span>
+<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a><span class="co"># writes .pdf, .png and .tiff; TIFF uses compression = "lzw"</span></span>
+<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a>GTDB-Tk 分类必须同时锁定 release、ANI、reference-specific species radius 与 alignment fraction，不能把空 species 字段直接叫新物种。</span>
+<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB-Tk 原始工作流与分类框架 <span class="co">[</span><span class="ot">@chaumeil2020gtdbtk</span><span class="co">]</span>。</span>
+<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB-Tk v2 的 memory-friendly classification <span class="co">[</span><span class="ot">@chaumeil2022gtdbtkv2</span><span class="co">]</span>。</span>
+<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB taxonomy、rank normalization 与持续更新原则 <span class="co">[</span><span class="ot">@parks2022gtdb</span><span class="co">]</span>。</span>
+<span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>本次可复核数据：<span class="in">`data/small/46-gtdbtk-taxonomy-frozen/`</span>；数据库 manifest：<span class="in">`data/small/46-gtdbtk-database-manifest.tsv`</span>。</span>
+</code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/46-gtdbtk-taxonomy.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></div></div></footer><script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

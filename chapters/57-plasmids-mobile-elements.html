@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-Hans" xml:lang="zh-Hans"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Peter">
+<meta name="description" content="用真实 mock metagenome、完整参考复制子和 USA300 阳性对照，审计质粒识别、MGE 类型、ARG 共定位及可传播性结论">
+
+<title>质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据 – 宏基因组分析最佳实践 · Shotgun</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../chapters/58-microbial-eukaryotes.html" rel="next">
+<link href="../chapters/56-virus-host-evidence.html" rel="prev">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-38ae79c2eabdcd4850b93d23314887c4.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-1324421183408bc8171c599f3a52befe.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "没有结果",
+    "search-matching-documents-text": "匹配的文档",
+    "search-copy-link-title": "复制搜索链接",
+    "search-hide-matches-text": "隐藏其它匹配结果",
+    "search-more-match-text": "更多匹配结果",
+    "search-more-matches-text": "更多匹配结果",
+    "search-clear-button-title": "清除",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "取消",
+    "search-submit-button-title": "提交",
+    "search-label": "搜索"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="nav-sidebar floating quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html">第 11 部分 · 病毒 / 质粒 / 真核</a></li><li class="breadcrumb-item"><a href="../chapters/57-plasmids-mobile-elements.html"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="展开或折叠侧边栏导航" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="搜索" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="../">宏基因组分析最佳实践 · Shotgun</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/petemeng/metagenomics-best-practices" title="源代码" class="quarto-navigation-tool px-1" aria-label="源代码"><i class="bi bi-github"></i></a>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="切换深色模式"><i class="bi"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="搜索"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">开篇：宏基因组能回答什么、回答不了什么（vs 16S / 宏转录 / 其他组学）</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 0 部分 · 导论</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/02-three-analysis-layers.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一条主干、三个分析层级：read profiling / gene-contig-centric / genome-resolved 如何取舍</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 1 部分 · 实验设计与样本</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/03-study-design-power.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">研究设计、样本量与统计效力</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/04-sequencing-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组到底要测多深：决策框架与饱和曲线</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/05-library-prep-absolute-quantification.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">从样本到文库：DNA 提取、建库偏差与定量宏基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/06-host-depletion-low-biomass.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宿主去除与低生物量：湿实验宿主耗竭与计算去宿主</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/07-contamination-controls.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">污染与对照：blank、kitome、index hopping、decontam</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/08-fastq-short-long-reads.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">认识数据与平台：FASTQ、短读与长读对全流程的影响</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 2 部分 · 环境搭建与算力</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/09-wsl2-conda.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">WSL2 + conda/mamba（Windows 用户主线）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/10-computing-hpc-cloud.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">算力现实：内存、磁盘、HPC、云、Apptainer 与 SLURM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/11-install-biobakery-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 bioBakery、组装分箱工具链与数据库</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/12-install-r-cmd.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">安装 R、curatedMetagenomicData 与关键包生态</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 3 部分 · 上游 QC 与预处理</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/13-read-qc-fastp.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">读长质控与修剪：FastQC、MultiQC 与 fastp</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/14-host-removal-complexity-duplicates.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去宿主、复杂度评估与重复 reads 的识别和处理</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 4 部分 · Reference-based read profiling（物种）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/15-metaphlan4.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MetaPhlAn4：marker 基因、SGB 与物种级组成分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/16-kraken2-bracken.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Kraken2 + Bracken：k-mer 分类与丰度重估</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/17-kraken2-database-confidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据库与置信阈值：Kraken2 库选择、confidence 与假阳性控制</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/18-profiler-benchmark.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">谱工具横评：MetaPhlAn vs Kraken2/Bracken vs mOTUs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 5 部分 · Reference-based read profiling（功能）</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/19-humann3.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">HUMAnN3：gene family、pathway abundance 与 pathway coverage</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/20-functional-profile-normalization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">功能谱归一化与解读：CPM、relative abundance、coverage 与特殊行</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 6 部分 · 下游统计与跨队列</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-7" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/21-metagenomic-table-semantics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏基因组表格到底是什么：counts、coverage、CPM、relative abundance 与 genome equivalents</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/22-alpha-beta-diversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">多样性：Alpha / Beta（物种谱、MAG 表、基因谱）</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/23-pcoa-cap-permanova.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">排序与检验：PCoA / CAP + PERMANOVA + betadisper</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/24-differential-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">差异分析：MaAsLin3 / ANCOM-BC2 / ALDEx2</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/25-composition-core-microbiome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组成与多分类级可视化、核心微生物组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/26-curated-metagenomic-data-lineage.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">curatedMetagenomicData 深用与数据谱系卡片</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/27-machine-learning-roc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">随机森林 / 梯度提升分类 + ROC + 重要性 + 防过拟合规范</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/28-cross-cohort-validation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">跨队列 meta 分析 + 外部验证</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/29-cooccurrence-network.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">共现网络 + 网络进阶（鲁棒性 / keystone / Zi-Pi）</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 7 部分 · 组装</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/30-short-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">短读长组装：MEGAHIT vs metaSPAdes、单样本 vs 混合组装</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/31-long-read-assembly.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">长读长组装：Nanopore / PacBio HiFi 与长读特有问题</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/32-hybrid-assembly-polishing.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Hybrid assembly 与 polishing：何时混合，何时直接 HiFi</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/33-assembly-qc.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">组装质控：QUAST、N50、contig 统计与可用性</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 8 部分 · Gene / contig-centric 分析</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/34-nonredundant-gene-catalog.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">非冗余基因目录：Prodigal + MMseqs2 / CD-HIT</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/35-gene-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因丰度谱：reads 回比基因目录与功能汇总</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/36-eggnog-functional-annotation.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Gene-centric 功能注释：eggNOG-mapper 与功能暗物质</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/37-cazymes-dbcan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">CAZymes 碳水活性酶：dbCAN 共识、底物与 CGC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/38-resistome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Resistome 专题：CARD-RGI / deepARG——证据分级与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/39-virulome.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Virulome 专题：VFDB / ABRicate——阈值、数据库与表型边界</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/40-bgc-natural-products.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">BGC 与天然产物：antiSMASH / GECCO / DeepBGC</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 9 部分 · 分箱与 MAG</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/41-read-mapping-depth.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">回比与深度：reads 回比与 JGI 深度矩阵</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/42-binning.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">分箱器：MetaBAT2、SemiBin2、VAMB 与 TaxVAMB</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/43-bin-refinement.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">Bin 精炼与整合：DAS Tool 与 Binette</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/44-mag-qc-checkm2-gunc-mimag.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 质控：CheckM2、GUNC、完整 MIMAG 与 assembly graph</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/45-drep-dereplication.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">去冗余：dRep、ANI 与代表基因组</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/46-gtdbtk-taxonomy.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 分类：GTDB-Tk 与数据库 release</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/47-novel-mag-phylogenomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">新物种与系统基因组：novel MAG、GToTree 与 IQ-TREE</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/48-mag-abundance-coverm.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 丰度定量：CoverM 的 depth、breadth 与 relative abundance</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/49-mag-curation-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG 人工校正、命名、数据库提交与补充材料</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 10 部分 · 菌株与种内变异</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/50-instrain-microdiversity.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">inStrain：SNV、微多样性与同株证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/51-strainphlan.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">StrainPhlAn：marker 基因菌株系统发育</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/52-pangenome-accessory-genes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">种内功能差异：泛基因组、附属基因与菌株功能型</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/53-strain-transmission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">菌株传播与共享：母婴传播、FMT 定植与证据等级</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 11 部分 · 病毒 / 质粒 / 真核</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/54-virus-discovery-quality.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒发现与质量标准：geNomad / VirSorter2、CheckV、vOTU 与 MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/55-virus-taxonomy-abundance.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒分类与丰度：vOTU、breadth、taxonomy 与 lifestyle</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/56-virus-host-evidence.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/57-plasmids-mobile-elements.html" class="sidebar-item-text sidebar-link active"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/58-microbial-eukaryotes.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 12 部分 · 代谢建模</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-13" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-13" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/59-dram-metabolic.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组解析代谢：DRAM / METABOLIC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/60-genome-scale-models.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">基因组尺度代谢模型：gapseq / CarveMe</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/61-community-metabolism.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">群落代谢与流量：MICOM / SMETANA</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/62-element-cycling.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">元素循环与功能类群：C / N / S 循环</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 13 部分 · 多组学整合</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-14" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-14" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/63-metabolomics-integration.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">与代谢组整合：Procrustes / Mantel / HAllA / sPLS-DIABLO</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/64-metatranscriptomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏转录组联动：功能有没有 vs 表达没表达</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/65-metaproteomics.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">宏蛋白组：从 PSM、蛋白推断到多组学功能对齐</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/66-mag-metabolite-phenotype.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">MAG × 代谢物 / 表型：从基因组代谢潜力到可验证的功能读出</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 14 部分 · 纵向与因果</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-15" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-15" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/67-longitudinal-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">纵向：线性混合模型、轨迹与定植稳定性</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/68-survival-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">微生物组与生存结局：Cox / Kaplan–Meier / 时间依赖 ROC</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/69-mediation-analysis.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">中介分析：暴露 → 微生物 → 结局</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/70-mendelian-randomization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">孟德尔随机化：工具变量、水平多效性与敏感性分析</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/71-structural-equation-model.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">环境因子 → 微生物 → 表型：这条路径能被数据识别吗？</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/72-causal-evidence-ladder.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">因果证据阶梯：从关联到可干预机制</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 15 部分 · 公共数据资源</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-16" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-16" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/73-public-metagenome-resources.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">公共宏基因组资源：MGnify、GEM、GTDB 与环境 MAG catalog</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true">
+ <span class="menu-text">第 16 部分 · 工程化与发表</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-17" role="navigation" aria-expanded="true" aria-label="展开或折叠此栏">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-17" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/74-nfcore-mag-workflows.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">用 nf-core/mag 等 Nextflow / Snakemake 流程复现全上游</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/75-paper-figure-organization.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">一篇宏基因组论文的主图和补图如何组织</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/76-reporting-standards.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">报告标准：STORMS / STREAMS / MIMAG / MIUViG</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../chapters/77-data-code-genome-submission.html" class="sidebar-item-text sidebar-link"><span class="chapter-title">数据、代码与基因组提交</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">目录</h2>
+   
+  <ul>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">同一段序列上的基因，能证明已经发生转移吗？</a></li>
+  <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">下载参考并验证上游身份</a>
+  <ul class="collapse">
+  <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">“MGE”不是“质粒”的同义词</a></li>
+  <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">从“跑一个分类器”升级为三层 benchmark</a></li>
+  </ul></li>
+  <li><a href="#运行-genomad-三条分支与精确参考检查" id="toc-运行-genomad-三条分支与精确参考检查" class="nav-link" data-scroll-target="#运行-genomad-三条分支与精确参考检查">运行 geNomad 三条分支与精确参考检查</a>
+  <ul class="collapse">
+  <li><a href="#genomad-score-是分类证据不是转移概率" id="toc-genomad-score-是分类证据不是转移概率" class="nav-link" data-scroll-target="#genomad-score-是分类证据不是转移概率">geNomad score 是分类证据，不是转移概率</a></li>
+  <li><a href="#把-score-calibration-当成分析设计不是装饰选项" id="toc-把-score-calibration-当成分析设计不是装饰选项" class="nav-link" data-scroll-target="#把-score-calibration-当成分析设计不是装饰选项">把 score calibration 当成分析设计，不是装饰选项</a></li>
+  </ul></li>
+  <li><a href="#用-card-rgi-独立识别-arg" id="toc-用-card-rgi-独立识别-arg" class="nav-link" data-scroll-target="#用-card-rgi-独立识别-arg">用 CARD-RGI 独立识别 ARG</a>
+  <ul class="collapse">
+  <li><a href="#同一-contig-提供物理共定位但不等于已经发生转移" id="toc-同一-contig-提供物理共定位但不等于已经发生转移" class="nav-link" data-scroll-target="#同一-contig-提供物理共定位但不等于已经发生转移">同一 contig 提供物理共定位，但不等于已经发生转移</a></li>
+  <li><a href="#arg-mobility-要区分六个等级" id="toc-arg-mobility-要区分六个等级" class="nav-link" data-scroll-target="#arg-mobility-要区分六个等级">ARG mobility 要区分六个等级</a></li>
+  </ul></li>
+  <li><a href="#合并候选arg转移标记和参考支持" id="toc-合并候选arg转移标记和参考支持" class="nav-link" data-scroll-target="#合并候选arg转移标记和参考支持">合并候选、ARG、转移标记和参考支持</a>
+  <ul class="collapse">
+  <li><a href="#transfer-related-marker-不等于完整-conjugation-system" id="toc-transfer-related-marker-不等于完整-conjugation-system" class="nav-link" data-scroll-target="#transfer-related-marker-不等于完整-conjugation-system">transfer-related marker 不等于完整 conjugation system</a></li>
+  </ul></li>
+  <li><a href="#让阳性对照检查整条证据链" id="toc-让阳性对照检查整条证据链" class="nav-link" data-scroll-target="#让阳性对照检查整条证据链">让阳性对照检查整条证据链</a>
+  <ul class="collapse">
+  <li><a href="#质粒重建不能只靠-contig-分类" id="toc-质粒重建不能只靠-contig-分类" class="nav-link" data-scroll-target="#质粒重建不能只靠-contig-分类">质粒重建不能只靠 contig 分类</a></li>
+  <li><a href="#transfer-module-要做系统级而非单基因判读" id="toc-transfer-module-要做系统级而非单基因判读" class="nav-link" data-scroll-target="#transfer-module-要做系统级而非单基因判读">transfer module 要做系统级而非单基因判读</a></li>
+  </ul></li>
+  <li><a href="#保存绘图并做-fail-closed-qa" id="toc-保存绘图并做-fail-closed-qa" class="nav-link" data-scroll-target="#保存绘图并做-fail-closed-qa">保存、绘图并做 fail-closed QA</a>
+  <ul class="collapse">
+  <li><a href="#有移动潜力与观察到转移之间还差实验" id="toc-有移动潜力与观察到转移之间还差实验" class="nav-link" data-scroll-target="#有移动潜力与观察到转移之间还差实验">“有移动潜力”与“观察到转移”之间还差实验</a></li>
+  </ul></li>
+  <li><a href="#sec-methods" id="toc-sec-methods" class="nav-link" data-scroll-target="#sec-methods">限定移动元件相关结论</a>
+  <ul class="collapse">
+  <li><a href="#methods-template" id="toc-methods-template" class="nav-link" data-scroll-target="#methods-template">Methods template</a></li>
+  <li><a href="#results-template" id="toc-results-template" class="nav-link" data-scroll-target="#results-template">Results template</a></li>
+  </ul></li>
+  <li><a href="#sec-own-data" id="toc-sec-own-data" class="nav-link" data-scroll-target="#sec-own-data">换到自己的研究中，先检查哪些条件？</a></li>
+  <li><a href="#sec-publication" id="toc-sec-publication" class="nav-link" data-scroll-target="#sec-publication">图中应该保留哪些信息？</a></li>
+  <li><a href="#回到最初的问题" id="toc-回到最初的问题" class="nav-link" data-scroll-target="#回到最初的问题">回到最初的问题</a></li>
+  <li><a href="#sec-references" id="toc-sec-references" class="nav-link" data-scroll-target="#sec-references">参考文献</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/57-plasmids-mobile-elements.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../chapters/54-virus-discovery-quality.html">第 11 部分 · 病毒 / 质粒 / 真核</a></li><li class="breadcrumb-item"><a href="../chapters/57-plasmids-mobile-elements.html"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title"><span class="chapter-title">质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据</span></h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> 代码</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">作者</div>
+    <div class="quarto-title-meta-contents">
+             <p>Peter </p>
+          </div>
+  </div>
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<blockquote class="blockquote">
+<p><strong>先给结论：</strong>geNomad 的 plasmid call 是候选生成器，不是“这条 DNA 已经在细菌间传播”的证明。可靠的 ARG 可移动性结论至少要分开回答四件事：序列像不像质粒、ARG 是否与该元件发生物理连接、元件是否具备完整转移模块、转移是否被实验观察。PRJEB52977 两个 mock 样本的共组装中，geNomad 给出 218 条候选，其中 42 条带 transfer-related marker；但 CARD-RGI 的 34 个 Perfect/Strict ARG 调用没有一个位于这些候选上。精确参考比对又显示，70 条候选由已标注质粒支持，120 条高覆盖匹配完整细胞复制子，28 条没有高覆盖参考支持。相反，USA300 阳性对照的 3 条已标注质粒全部被检出，且 pUSA02 上有 <code>tet(45)</code>，pUSA03 上有 <code>mupA</code>、<code>ErmC</code> 与 4 个 conjugation-related markers。阴性结果与阳性对照必须一起报告。</p>
+</blockquote>
+<div class="callout callout-style-default callout-important callout-titled" title="算力与数据门槛">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">重要</span>算力与数据门槛
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>只读取固化表并重画 5 组图，<strong>4 CPU、4 GB RAM、200 MB 磁盘、耗时约 1 分钟</strong>。本次 geNomad 实跑使用 <strong>16 CPU、16 splits</strong>：10.22 Mb 的匹配参考集耗时 186.63 s、峰值 2.75 GiB RAM；84.81 Mb 共组装耗时 1,092.21 s、峰值 2.83 GiB；USA300 对照耗时 182.64 s、峰值 2.71 GiB。geNomad database v1.9 解压后约 <strong>1.47 GB</strong>。正式队列建议预留 <strong>16–32 CPU、32–64 GB RAM、至少 30 GB 临时磁盘，单个中等共组装约几十分钟至数小时</strong>；样本数、contig 数和共享存储速度都会改变耗时。没有服务器时，直接读取 <code>data/small/57-plasmids-mobile-elements-frozen/</code> 完成审计和作图；全量发现任务放到 HPC 或云端。</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>先确定这一点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>物理共定位、可移动性推断和已观察到的转移是不同结论；没有直接证据时不宣称转移发生。</p>
+</div>
+</div>
+<section id="sec-target" class="level2">
+<h2 class="anchored" data-anchor-id="sec-target">同一段序列上的基因，能证明已经发生转移吗？</h2>
+<p>主要锚定两篇研究：</p>
+<ul>
+<li>geNomad 论文 <strong>Figure 1a</strong>：sequence branch、marker branch、聚合、score calibration 与输出表的完整框架；<strong>Figure 1d</strong> 展示 calibration 前后 score 与经验阳性比例的关系；<strong>Figure 3a</strong> 比较不同长度片段上的质粒分类性能 <span class="citation" data-cites="camargo2024genomad">(<a href="02-three-analysis-layers.html#ref-camargo2024genomad" role="doc-biblioref">Camargo 等 2024年</a>)</span>。</li>
+<li>Forster 等 2022 年研究的 <strong>Figure 1c</strong>：MGE 跨 genus、class 和 phylum 的共享范围；<strong>Figure 2</strong>：15 个 broad-host-range 元件的宿主分布、类型与 ARG；<strong>Figure 3c–e</strong>：ICE 与 plasmid 的体外 conjugation assay，把“序列预测”推进到“观察到转移” <span class="citation" data-cites="pike2022broadhostmge">(<a href="02-three-analysis-layers.html#ref-pike2022broadhostmge" role="doc-biblioref">Forster 等 2022年</a>)</span>。</li>
+</ul>
+<p>两篇论文承担不同任务：geNomad 回答“怎样从序列筛出 plasmid candidates”，Forster 等回答“怎样证明 ARG-bearing MGE 仍能跨宿主转移”。不能把前者的分类分数写成后者的实验结论。</p>
+<p>本次长度匹配基准由 43 条 GenBank header 明确含 <code>plasmid</code> 的参考复制子，以及 43 条按长度确定性一对一匹配的其他参考序列构成。geNomad 检出 33/43 条已标注质粒，同时在 43 条匹配序列中产生 1 个阳性调用：sensitivity 76.7%（Wilson 95% CI 62.3–86.8%）、precision 97.1%（85.1–99.5%）、specificity 97.7%（87.9–99.6%）。这些指标只适用于这 86 条、这一标签定义和当前数据库，不是自然群落的普适性能。</p>
+<div id="fig-57-reference" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-57-reference-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/57-reference-plasmid-audit.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-57-reference-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;57.1: Length-matched reference audit. Labels are literal GenBank sequence labels in a fixed public mock reference set.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="sec-code" class="level2">
+<h2 class="anchored" data-anchor-id="sec-code">下载参考并验证上游身份</h2>
+<section id="sec-theory" class="level3">
+<h3 class="anchored" data-anchor-id="sec-theory">“MGE”不是“质粒”的同义词</h3>
+<p>可移动遗传元件（mobile genetic element, MGE）至少包括 plasmid、insertion sequence、transposon、integron-associated cassette、integrative and conjugative element（ICE）、integrative and mobilizable element（IME）与 prophage。它们的复制位置、边界和移动机制不同 <span class="citation" data-cites="partridge2018mgeamr">(<a href="02-three-analysis-layers.html#ref-partridge2018mgeamr" role="doc-biblioref">Partridge 等 2018年</a>)</span>：</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>对象</th>
+<th>常见位置</th>
+<th>自主复制</th>
+<th>自主转移</th>
+<th>最低可主张结论</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Plasmid</td>
+<td>染色体外，也可能整合</td>
+<td>常见但非必然</td>
+<td>取决于完整 conjugation module</td>
+<td>predicted plasmid sequence</td>
+</tr>
+<tr class="even">
+<td>ICE</td>
+<td>染色体整合态</td>
+<td>否</td>
+<td>可编码完整 conjugation machinery</td>
+<td>putative ICE；需边界与模块</td>
+</tr>
+<tr class="odd">
+<td>IME</td>
+<td>染色体整合态</td>
+<td>否</td>
+<td>借用其他元件 machinery</td>
+<td>putative mobilizable element</td>
+</tr>
+<tr class="even">
+<td>Integron</td>
+<td>染色体或质粒</td>
+<td>否</td>
+<td>本身通常不自主移动</td>
+<td>integron-associated gene cassette</td>
+</tr>
+<tr class="odd">
+<td>IS/transposon</td>
+<td>多种复制子</td>
+<td>否</td>
+<td>在分子内或分子间转位</td>
+<td>transposition-associated context</td>
+</tr>
+<tr class="even">
+<td>Prophage</td>
+<td>染色体整合态</td>
+<td>随宿主复制</td>
+<td>诱导后可形成病毒粒子</td>
+<td>integrated provirus/prophage candidate</td>
+</tr>
+</tbody>
+</table>
+<p>IntegronFinder 识别 integrase、attC 与 cassette array <span class="citation" data-cites="cury2016integronfinder">(<a href="02-three-analysis-layers.html#ref-cury2016integronfinder" role="doc-biblioref">Cury 等 2016年</a>)</span>；它检测的是基因捕获系统，不应自动改写成“可接合质粒”。同样，看到一个 transposase 也只能说明局部移动相关标记，不能证明整条 contig 会跨细胞转移。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article57"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 下载固定 commit 的 PRJEB52977 reference repository</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE57_PLASMIDS</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 若要从 FASTQ 重建同一共组装，下载 ERR9765746/ERR9765747 后运行锁定流程</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE30_ASSEMBLY</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 四个输入均经过 bytes + SHA-256 gate；RGI 输入来自同一 co-assembly 和 USA300</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--benchmark-repo</span> data/raw/article57/benchmark_mock <span class="dt">\</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coassembly</span> data/small/30-short-read-assembly-frozen/contigs/megahit-coassembly.ge1000.fna.gz <span class="dt">\</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-coassembly</span> work/article38/coassembly/coassembly.txt <span class="dt">\</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-staphylococcus</span> work/article38/staphylococcus/staphylococcus.txt</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-benchmark-labels.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>准备脚本不会根据结果重抽 negatives。43 条已标注质粒先按长度、<code>SeqName</code> 排序，再对每条质粒选择尚未使用且绝对 log-length ratio 最小的 comparator；并列时依次按绝对 bp 差和 <code>SeqName</code> 决定。</p>
+</section>
+<section id="sec-audit" class="level3">
+<h3 class="anchored" data-anchor-id="sec-audit">从“跑一个分类器”升级为三层 benchmark</h3>
+<p>论文 Figure 3a 在严格训练/测试拆分和不同长度片段上比较工具；真实项目还要加两层：</p>
+<ol type="1">
+<li><strong>完整参考标签层</strong>：检查已知 plasmid 与 non-plasmid replicons；</li>
+<li><strong>fragmented assembly 层</strong>：检查短 contig 上的 label conflict 与 unresolved fraction；</li>
+<li><strong>生物阳性对照层</strong>：检查 ARG、plasmid 和 transfer marker 的 join 是否能成功。</li>
+</ol>
+<p>本次完整序列匹配基准 precision 为 97.1%，但共组装候选中 120/218 与完整细胞复制子冲突。两者不矛盾：前者测试完整/较长参考序列，后者暴露 fragment-level failure mode。</p>
+</section>
+</section>
+<section id="运行-genomad-三条分支与精确参考检查" class="level2">
+<h2 class="anchored" data-anchor-id="运行-genomad-三条分支与精确参考检查">运行 geNomad 三条分支与精确参考检查</h2>
+<section id="genomad-score-是分类证据不是转移概率" class="level3">
+<h3 class="anchored" data-anchor-id="genomad-score-是分类证据不是转移概率">geNomad score 是分类证据，不是转移概率</h3>
+<p>geNomad 把 nucleotide sequence model 与 marker-content model 聚合为 chromosome、plasmid 和 virus scores <span class="citation" data-cites="camargo2024genomad">(<a href="02-three-analysis-layers.html#ref-camargo2024genomad" role="doc-biblioref">Camargo 等 2024年</a>)</span>。短 contig 的基因少，marker branch 信息不足；重复、保守 housekeeping 区域、chromid 与染色体整合元件又会模糊类别边界。因此，分类结果要保留：</p>
+<ul>
+<li><code>plasmid_score</code>、候选长度和 topology；</li>
+<li>plasmid/chromosome/virus markers 与 hallmarks；</li>
+<li>是否启用 score calibration；</li>
+<li>数据库 release 与 filtering parameters；</li>
+<li>与完整参考、assembly graph 和 reads 的独立核验。</li>
+</ul>
+<p>这里固定默认 <code>score ≥ 0.7</code>，但没有启用 score calibration，所以输出中的 <code>FDR</code> 为 <code>NA</code>。未经 calibration 的 0.90 不能写成“90% 为真”，更不能写成“90% 可转移”。即使启用 calibration，FDR 也是特定输入批次与校准假设下的经验量，不是单条序列的实验成功率。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-virus-discovery-2026.07"</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/virus-discovery-cache/databases/genomad_db"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-env</span> <span class="st">"</span><span class="va">$GENOMAD_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimap2-exe</span> <span class="st">"</span><span class="va">$ASSEMBLY_ENV</span><span class="st">/bin/minimap2"</span> <span class="dt">\</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>核心 geNomad 命令为：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--restart</span> <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--disable-find-proviruses</span> <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16 <span class="dt">\</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  coassembly.fna.gz <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  results/coassembly <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>没有设置 <code>--enable-score-calibration</code>，所以主阈值是未校准的 score ≥ 0.7，<code>FDR=NA</code>。<code>--disable-find-proviruses</code> 只关闭病毒区段边界寻找，不关闭 plasmid classification。精确参考审计使用 <code>minimap2 -x asm5 --secondary=no</code>，并预注册 identity ≥95%、query coverage ≥80% 为高覆盖支持；best hit 的 label 来自固定参考 header。</p>
+</section>
+<section id="把-score-calibration-当成分析设计不是装饰选项" class="level3">
+<h3 class="anchored" data-anchor-id="把-score-calibration-当成分析设计不是装饰选项">把 score calibration 当成分析设计，不是装饰选项</h3>
+<p>若一个 batch 足够大且组成适合 calibration，可启用并用 maximum FDR 过滤；若 batch 很小或由人为挑选的候选构成，composition-based calibration 也可能失真。无论选择哪条路径，都要在 Methods 写出是否 calibration、score/FDR cutoff 和序列是否先按长度过滤。当前分析明确关闭 calibration，因此绝不从 <code>NA</code> 推断 FDR。</p>
+</section>
+</section>
+<section id="用-card-rgi-独立识别-arg" class="level2">
+<h2 class="anchored" data-anchor-id="用-card-rgi-独立识别-arg">用 CARD-RGI 独立识别 ARG</h2>
+<section id="同一-contig-提供物理共定位但不等于已经发生转移" class="level3">
+<h3 class="anchored" data-anchor-id="同一-contig-提供物理共定位但不等于已经发生转移">同一 contig 提供物理共定位，但不等于已经发生转移</h3>
+<p>ARG 与 plasmid call 位于同一 contig，比“同一样本同时检出 ARG 和质粒”强，因为至少有 assembly-level linkage；但它仍可能来自：</p>
+<ul>
+<li>短 contig 被错误分类；</li>
+<li>repeat 导致的 chimeric assembly；</li>
+<li>染色体整合的 plasmid/ICE 片段；</li>
+<li>chromid、secondary chromosome 或其他 cellular replicon；</li>
+<li>ARG 只落在元件边界外的宿主 flank；</li>
+<li>样本中存在该结构，却没有发生当下或跨宿主转移。</li>
+</ul>
+<p>因此，最稳妥的数据结构不是一列 <code>mobile = TRUE/FALSE</code>，而是一张 evidence ledger：分别记录 plasmid classifier、ARG caller、transfer module、element boundary、read support、host linkage 与 experimental validation。</p>
+<p>geNomad gene table 中的 AMR marker 适合提示局部功能，但不是完整 resistome 结果。ARG 主结果来自 RGI 6.0.8 + CARD 4.0.1 <span class="citation" data-cites="alcock2023card">(<a href="02-three-analysis-layers.html#ref-alcock2023card" role="doc-biblioref"><span class="nocase">Alcock 等</span> 2023年</a>)</span>，并只保留 model-specific threshold 已通过的 Perfect/Strict calls：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-resistome-2026.07"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">CARD_ROOT</span><span class="op">=</span>/data/db/card-4.0.1</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">COASSEMBLY</span><span class="op">=</span>work/article57/inputs/coassembly.fna.gz</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_OUT</span><span class="op">=</span>work/article57/rgi/coassembly</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$(</span><span class="fu">dirname</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> PATH=<span class="st">"</span><span class="va">$RGI_ENV</span><span class="st">/bin:/usr/bin:/bin"</span> <span class="dt">\</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    DATA_PATH=<span class="st">"</span><span class="va">$CARD_ROOT</span><span class="st">/rgi-db"</span> <span class="dt">\</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  rgi main <span class="dt">\</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">-i</span> <span class="st">"</span><span class="va">$COASSEMBLY</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> contig <span class="dt">\</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> DIAMOND <span class="dt">\</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">-n</span> 16 <span class="dt">\</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">--include_loose</span> <span class="dt">\</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">--clean</span> <span class="dt">\</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">--low_quality</span> <span class="dt">\</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> PYRODIGAL <span class="dt">\</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> wgs</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Loose 只留作 sensitivity ledger，不进入主 ARG 集</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">'NR==1 || $6=="Perfect" || $6=="Strict"'</span> <span class="dt">\</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.primary.tsv"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>RGI 的阈值是每个 CARD model 自己定义的规则，不应再用统一 identity 矩形取代。<code>--include_loose</code> 便于审计召回边界，但主图和主结论始终只用 Perfect/Strict。</p>
+</section>
+<section id="arg-mobility-要区分六个等级" class="level3">
+<h3 class="anchored" data-anchor-id="arg-mobility-要区分六个等级">ARG mobility 要区分六个等级</h3>
+<ul>
+<li><strong>Level 6</strong>：ARG 与 MGE 只在样本层共现；</li>
+<li><strong>Level 5</strong>：ARG 附近有 integrase/transposase/integron marker；</li>
+<li><strong>Level 4</strong>：ARG 与独立 plasmid call 在同一 contig；</li>
+<li><strong>Level 3</strong>：再加系统级 transfer marker；</li>
+<li><strong>Level 2</strong>：closed/boundary-resolved element、read support 与宿主连接齐全；</li>
+<li><strong>Level 1</strong>：mating、transformation 或 transduction 实验确认受体获得该元件。</li>
+</ul>
+<p>图表、Results 与摘要中的动词必须跟等级一致：<code>co-occurred</code>、<code>was located on a predicted plasmid contig</code>、<code>encoded a putative transfer module</code>、<code>was experimentally transferred</code> 不能互换。</p>
+<div class="callout callout-style-default callout-caution callout-titled" title="审稿人最常攻击的十二个点">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">注意</span>审稿人最常攻击的十二个点
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li>把每条 plasmid-positive contig 当成完整、独立质粒；</li>
+<li>把 geNomad score 当成转移概率；</li>
+<li>calibration 关闭却报告 FDR，或把 <code>NA</code> 当 0；</li>
+<li>只报默认 threshold，不报软件和 database release；</li>
+<li>用 <code>conjugation_genes</code> 单列宣称完整 conjugation system；</li>
+<li>ARG 与质粒仅在样本层共现，却写成 plasmid-borne ARG；</li>
+<li>同一 contig 就写“已经发生水平转移”；</li>
+<li>用 geNomad 内部 AMR marker 代替独立 CARD/AMRFinderPlus screen；</li>
+<li>只展示候选，不做完整 cellular replicon 负对照；</li>
+<li>没有 ARG-bearing plasmid 阳性对照，无法区分真阴性与 join/pipeline 失败；</li>
+<li>把 DTR、环状 assembly 或 replicon marker 等同于可接合；</li>
+<li>短读长无法解析 repeat 和宿主连接，却把宿主与 host range 写到种/菌株级。</li>
+</ol>
+</div>
+</div>
+</section>
+</section>
+<section id="合并候选arg转移标记和参考支持" class="level2">
+<h2 class="anchored" data-anchor-id="合并候选arg转移标记和参考支持">合并候选、ARG、转移标记和参考支持</h2>
+<section id="transfer-related-marker-不等于完整-conjugation-system" class="level3">
+<h3 class="anchored" data-anchor-id="transfer-related-marker-不等于完整-conjugation-system">transfer-related marker 不等于完整 conjugation system</h3>
+<p>geNomad 的 <code>conjugation_genes</code> 来自 marker 注释，可用于筛候选；官方输出说明也明确提醒，单凭这一列不足以判断元件是 conjugative 还是 mobilizable。正式分类应检查 relaxase、type IV coupling protein、mating-pair formation system 与 oriT 是否构成一致模块，可用 MacSyFinder/CONJscan 做系统级检测 <span class="citation" data-cites="abby2014macsyfinder">(<a href="02-three-analysis-layers.html#ref-abby2014macsyfinder" role="doc-biblioref">Abby 等 2014年</a>)</span>。质粒重建和 typing 可再用 MOB-suite <span class="citation" data-cites="robertson2018mobsuite">(<a href="02-three-analysis-layers.html#ref-robertson2018mobsuite" role="doc-biblioref">Robertson 和 Nash 2018年</a>)</span>，整合元件则结合 IntegronFinder、ICE/IME 边界与宿主染色体上下游。</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/reference-metrics.tsv"</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/arg-context-summary.tsv"</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/usa300-replicon-audit.tsv"</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/summary.json"</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>共组装的 218 条候选长 1,005–87,818 bp，中位数 3,459.5 bp；210 条无 terminal repeat，7 条 DTR，1 条 ITR。42 条有 conjugation-related marker，2 条有 geNomad 内部 AMR marker，但 <strong>0/34</strong> 个外部 CARD Perfect/Strict calls 位于 geNomad plasmid candidates 上。两套 AMR 注释不一致时，不能择一套更“好看”的结果；应保留 marker source、阈值和候选坐标，必要时人工复核蛋白域和 alignment。</p>
+<div id="fig-57-candidates" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-57-candidates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/57-coassembly-plasmid-evidence.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-57-candidates-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;57.2: Candidate length, geNomad score, transfer-related markers, and exact-reference audit. A triangle denotes high-coverage conflict with a complete cellular reference replicon.
+</figcaption>
+</figure>
+</div>
+<p>对 218 条候选与 399 条完整 mock 参考做精确比对后：</p>
+<ul>
+<li>70 条在 identity ≥95%、query coverage ≥80% 时 best-hit 到已标注质粒；</li>
+<li>120 条在同一阈值下 best-hit 到完整细胞复制子；</li>
+<li>28 条没有高覆盖参考支持。</li>
+</ul>
+<p>第二类是 <strong>complete-cellular-reference conflict</strong>，不是一句话判死刑：染色体可能含整合元件或与质粒共享区段；但在这个拥有精确组成参考的 mock 中，它是非常强的短片段误分类/边界混淆警报。主结果必须把它与“reference-plasmid supported”分开。</p>
+</section>
+</section>
+<section id="让阳性对照检查整条证据链" class="level2">
+<h2 class="anchored" data-anchor-id="让阳性对照检查整条证据链">让阳性对照检查整条证据链</h2>
+<p>USA300 <code>GCA_000013465.1</code> 有 4 条参考复制子，其中 3 条 header 标为 plasmid。geNomad 全部检出：pUSA01 score 0.9901，pUSA02 0.9942，pUSA03 0.9922。RGI 在 pUSA02 检出 <code>tet(45)</code>，在 pUSA03 检出 <code>mupA</code> 和 <code>ErmC</code>；pUSA03 同时有 4 个 transfer-related markers。</p>
+<div id="fig-57-positive" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-57-positive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/57-usa300-positive-control.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-57-positive-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;57.3: USA300 positive control. All three reference-labelled plasmids were detected; ARG and transfer-marker coordinates are shown separately.
+</figcaption>
+</figure>
+</div>
+<p>这个对照证明当前软件、数据库和 join key 能找回真实 plasmid-borne ARG；它不把 mock 共组装中的 0/34 自动解释成“样本里绝无移动 ARG”。短读长组装可能没有把 ARG 与 plasmid backbone 连在同一 contig，低丰度质粒也可能未组装出来。</p>
+<section id="质粒重建不能只靠-contig-分类" class="level3">
+<h3 class="anchored" data-anchor-id="质粒重建不能只靠-contig-分类">质粒重建不能只靠 contig 分类</h3>
+<p>对于 short-read metagenome，优先升级为：</p>
+<ul>
+<li>assembly graph + paired-read linkage，检查分支与重复；</li>
+<li>MOB-suite 做 plasmid reconstruction/typing，并报告 unresolved/novel replicons <span class="citation" data-cites="robertson2018mobsuite">(<a href="02-three-analysis-layers.html#ref-robertson2018mobsuite" role="doc-biblioref">Robertson 和 Nash 2018年</a>)</span>；</li>
+<li>long-read 或 hybrid assembly 跨越 repeat、ARG 与 backbone；</li>
+<li>coverage consistency、circularization junction 与 raw-read spanning；</li>
+<li>与宿主 MAG 的 differential coverage/Hi-C/long-read linkage 分开记录。</li>
+</ul>
+<p><code>DTR</code> 或 circular contig 是结构支持，不自动说明能 conjugate；没有 circular signal 也不排除线性 plasmid 或未闭合片段。</p>
+</section>
+<section id="transfer-module-要做系统级而非单基因判读" class="level3">
+<h3 class="anchored" data-anchor-id="transfer-module-要做系统级而非单基因判读">transfer module 要做系统级而非单基因判读</h3>
+<p>把 <code>conjugation_genes</code> 展开为 gene coordinates，随后用 CONJscan/MacSyFinder 检查模块是否完整、方向是否合理、是否跨 contig 断裂。只有 relaxase 而没有 mating-pair formation system 时，更适合写 mobilizable candidate；完整 conjugation machinery 也只说明 genetic capacity，不是 transfer rate。</p>
+</section>
+</section>
+<section id="保存绘图并做-fail-closed-qa" class="level2">
+<h2 class="anchored" data-anchor-id="保存绘图并做-fail-closed-qa">保存、绘图并做 fail-closed QA</h2>
+<section id="有移动潜力与观察到转移之间还差实验" class="level3">
+<h3 class="anchored" data-anchor-id="有移动潜力与观察到转移之间还差实验">“有移动潜力”与“观察到转移”之间还差实验</h3>
+<p>证据强度可以写成一个结论天花板：</p>
+<p>[ C_{max}=(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}). ]</p>
+<p>只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 <span class="citation" data-cites="pike2022broadhostmge">(<a href="02-three-analysis-layers.html#ref-pike2022broadhostmge" role="doc-biblioref">Forster 等 2022年</a>)</span>。这正是序列文章最容易漏掉的一层。</p>
+<div id="fig-57-ladder" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-57-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/57-mobility-evidence-ladder.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-57-ladder-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;57.4: Evidence hierarchy and maximum defensible mobility claim.
+</figcaption>
+</figure>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article57_plasmids.R <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/57-plasmids-mobile-elements-frozen</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/57-plasmids-mobile-elements-frozen <span class="dt">\</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article57-validation <span class="dt">\</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/57-plasmids-mobile-elements.qmd</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="fig-57-arg-context" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-57-arg-context-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="../figures/57-arg-mobility-context.png" class="img-fluid figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-57-arg-context-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+图&nbsp;57.5: All 34 co-assembly CARD Perfect/Strict calls occurred on contigs without a geNomad plasmid call. Co-location would still be prediction, not observed transfer.
+</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="最小结果表">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">提示</span>最小结果表
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>至少保留 <code>candidate_id, length_bp, plasmid_score, calibrated_fdr, topology, hallmark_count, reference_support, arg_caller, arg_model, arg_tier, arg_coordinates, transfer_system, element_boundary, read_support, host_evidence, evidence_level, claim_ceiling</code>。缺失值写 <code>NA/not tested</code>，不要默认为阴性。</p>
+</div>
+</div>
+</section>
+</section>
+<section id="sec-methods" class="level2">
+<h2 class="anchored" data-anchor-id="sec-methods">限定移动元件相关结论</h2>
+<section id="methods-template" class="level3">
+<h3 class="anchored" data-anchor-id="methods-template">Methods template</h3>
+<blockquote class="blockquote">
+<p>Plasmid candidates were identified from 18,354 ≥1-kb MEGAHIT v1.2.9 co-assembly contigs (84,811,518 bp) derived from deterministic two-million-pair subsets of PRJEB52977 runs ERR9765746 and ERR9765747. geNomad v1.12.0 was run with database v1.9 (ICTV MSL39), 16 threads, 16 splits, the default minimum plasmid score of 0.7, and score calibration disabled; consequently, calibrated FDR values were not available. Candidate contigs were aligned to the fixed MOCK2 reference inventory (benchmark repository commit a429a3724d4593f35b8d7323b20252a6be90e1cd) using minimap2 v2.31-r1302 (<code>asm5</code>, secondary alignments disabled). Reference support required ≥95% alignment identity and ≥80% query coverage. ARGs were independently called with RGI v6.0.8 and CARD v4.0.1, retaining Perfect and Strict calls. Transfer-related marker annotations were retained as candidate evidence and were not interpreted as complete conjugation systems or observed transfer. All input assets and frozen outputs were SHA-256 audited.</p>
+</blockquote>
+</section>
+<section id="results-template" class="level3">
+<h3 class="anchored" data-anchor-id="results-template">Results template</h3>
+<blockquote class="blockquote">
+<p>geNomad identified 218 plasmid-candidate contigs (1,005–87,818 bp), including 42 candidates with conjugation-related markers. Exact-reference auditing classified 70 candidates as reference-plasmid supported, 120 as conflicting with complete cellular reference replicons, and 28 as lacking high-coverage reference support. None of the 34 CARD Perfect/Strict calls occurred on a geNomad plasmid candidate. In the USA300 positive control (GCA_000013465.1), all three reference-labelled plasmids were detected; tet(45) occurred on pUSA02, whereas mupA and ErmC occurred on pUSA03, which also contained four transfer-related markers. These observations support candidate prioritization but do not demonstrate horizontal transfer.</p>
+</blockquote>
+</section>
+</section>
+<section id="sec-own-data" class="level2">
+<h2 class="anchored" data-anchor-id="sec-own-data">换到自己的研究中，先检查哪些条件？</h2>
+<p>需要准备五类输入：</p>
+<ol type="1">
+<li><strong>组装与 graph</strong>：每个样本组装或预注册的 co-assembly，保留 contig length、coverage、GFA 与 assembler version；</li>
+<li><strong>reads</strong>：原始 paired reads，最好再有 long reads，用于 junction、breadth、chimerism 与 circularization 检查；</li>
+<li><strong>独立 ARG 表</strong>：CARD-RGI 或 AMRFinderPlus 的 model、identity、coverage、coordinates 与 database release；</li>
+<li><strong>宿主证据</strong>：MAG/linkage/Hi-C/long-read 信息，缺失时不要填宿主；</li>
+<li><strong>对照</strong>：至少一个已知 plasmid-borne ARG 阳性对照和一组完整 cellular replicons 负对照。</li>
+</ol>
+<p>推荐的分析顺序是：</p>
+<ol type="1">
+<li>先锁定最小 contig length、geNomad score/FDR policy 与数据库；</li>
+<li>分别运行 plasmid classifier 和 ARG caller，不在第一次 join 前人工挑候选；</li>
+<li>用坐标连接同一 contig 上的 ARG、transfer marker 与 element boundary；</li>
+<li>对候选运行 MOB-suite、CONJscan 和 IntegronFinder，并查看 assembly graph；</li>
+<li>用 raw reads/long reads 验证物理连接与闭合；</li>
+<li>为每条候选赋 evidence level 和 claim ceiling；</li>
+<li>跨队列分析时按 study/library/assembler 分层，不直接比较 raw candidate counts；</li>
+<li>真正要写“transferable”或“broad host range”时，增加受体选择、空白对照和元件基因型确认的实验。</li>
+</ol>
+<div class="callout callout-style-default callout-warning callout-titled" title="短读长的结论边界">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">警告</span>短读长的结论边界
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>如果 ARG 和 transfer machinery 分落在不同 contigs，即使两者 coverage 高度相关，也只能写 sample-level co-occurrence 或待验证 linkage。优先补 long-read/hybrid assembly、Hi-C 或 targeted closure；不要用 abundance correlation 填补物理连接。</p>
+</div>
+</div>
+</section>
+<section id="sec-publication" class="level2">
+<h2 class="anchored" data-anchor-id="sec-publication">图中应该保留哪些信息？</h2>
+<p>候选图的视觉变量各承担一个问题：x 轴为长度、y 轴为 geNomad score、颜色为 contig 上附加证据、点形为 exact-reference audit。不要再用点大小编码第五个连续变量；读者会失去判读顺序。</p>
+<p>配色使用色盲友好的蓝、橙、绿、紫与中性灰；所有图内文字为英文。主图导出 vector PDF，同时保存 350 dpi PNG 和 LZW-compressed TIFF：</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>source_table <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/57-plasmids-mobile-elements-frozen/coassembly-plasmid-candidates.tsv"</span>,</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>ReferenceSupport)</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>EvidenceContext)</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整出版图由已冻结脚本生成</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Rscript"</span>,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen/scripts/plot_article57_plasmids.R"</span>,</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen"</span>,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">"figures"</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button"><i class="bi"></i></button></div>
+<p>图注应写清 denominator 与 unit。例如 <code>34 CARD Perfect/Strict gene calls</code> 不能缩写成 <code>34 ARGs</code>，因为同一 ARG 家族可能有多个调用；<code>218 candidate contigs</code> 也不能写成 218 个独立 plasmids。</p>
+</section>
+<section id="回到最初的问题" class="level2">
+<h2 class="anchored" data-anchor-id="回到最初的问题">回到最初的问题</h2>
+<p>质粒候选、ARG 共定位、完整转移模块与已观察传播必须分层；同一 contig 只证明物理上下文，不证明转移发生。</p>
+</section>
+<section id="sec-references" class="level2">
+<h2 class="anchored" data-anchor-id="sec-references">参考文献</h2>
+<ul>
+<li>geNomad 方法、marker/sequence 双分支、calibration 与 benchmark：<span class="citation" data-cites="camargo2024genomad genomad2026software">(<a href="02-three-analysis-layers.html#ref-camargo2024genomad" role="doc-biblioref">Camargo 等 2024年</a>; <a href="02-three-analysis-layers.html#ref-genomad2026software" role="doc-biblioref">Camargo 2026年</a>)</span></li>
+<li>PRJEB52977 真实 mock-community 平台与参考序列：<span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span></li>
+<li>ARG ontology、model-specific thresholds 与 CARD-RGI：<span class="citation" data-cites="alcock2023card">(<a href="02-three-analysis-layers.html#ref-alcock2023card" role="doc-biblioref"><span class="nocase">Alcock 等</span> 2023年</a>)</span></li>
+<li>ARG-associated MGE 类型与术语边界：<span class="citation" data-cites="partridge2018mgeamr">(<a href="02-three-analysis-layers.html#ref-partridge2018mgeamr" role="doc-biblioref">Partridge 等 2018年</a>)</span></li>
+<li>Broad-host-range MGE、完整结构与体外转移验证：<span class="citation" data-cites="pike2022broadhostmge">(<a href="02-three-analysis-layers.html#ref-pike2022broadhostmge" role="doc-biblioref">Forster 等 2022年</a>)</span></li>
+<li>Plasmid reconstruction/typing、integron 与 conjugation-system 检测：<span class="citation" data-cites="robertson2018mobsuite cury2016integronfinder abby2014macsyfinder">(<a href="02-three-analysis-layers.html#ref-robertson2018mobsuite" role="doc-biblioref">Robertson 和 Nash 2018年</a>; <a href="02-three-analysis-layers.html#ref-cury2016integronfinder" role="doc-biblioref">Cury 等 2016年</a>; <a href="02-three-analysis-layers.html#ref-abby2014macsyfinder" role="doc-biblioref">Abby 等 2014年</a>)</span></li>
+</ul>
+
+
+<!-- -->
+
+<div id="refs" class="references csl-bib-body hanging-indent" role="list" style="display: none">
+<div id="ref-abby2014macsyfinder" class="csl-entry" role="listitem">
+Abby, Sophie S., Bertrand Néron, Hervé Ménager, Marie Touchon, 和 Eduardo P. C. Rocha. 2014年. <span>《<span>MacSyFinder</span>: a Program to Mine Genomes for Molecular Systems with an Application to <span>CRISPR-Cas</span> Systems》</span>. <em>Nucleic Acids Research</em> 42 (8): e59. <a href="https://doi.org/10.1093/nar/gku181">https://doi.org/10.1093/nar/gku181</a>.
+</div>
+<div id="ref-alcock2023card" class="csl-entry" role="listitem">
+<span class="nocase">Alcock, Brian P. 等</span>. 2023年. <span>《<span>CARD</span> 2023: Expanded Curation, Support for Machine Learning, and Resistome Prediction at the Comprehensive Antibiotic Resistance Database》</span>. <em>Nucleic Acids Research</em> 51 (D1): D690～99. <a href="https://doi.org/10.1093/nar/gkac920">https://doi.org/10.1093/nar/gkac920</a>.
+</div>
+<div id="ref-genomad2026software" class="csl-entry" role="listitem">
+Camargo, Antonio Pedro. 2026年. <em><span>geNomad</span> Software, Version 1.12.0</em>. <a href="https://github.com/apcamargo/genomad">https://github.com/apcamargo/genomad</a>.
+</div>
+<div id="ref-camargo2024genomad" class="csl-entry" role="listitem">
+Camargo, Antonio Pedro, Simon Roux, Frederik Schulz, 等. 2024年. <span>《Identification of Mobile Genetic Elements with <span>geNomad</span>》</span>. <em>Nature Biotechnology</em> 42: 1303～12. <a href="https://doi.org/10.1038/s41587-023-01953-y">https://doi.org/10.1038/s41587-023-01953-y</a>.
+</div>
+<div id="ref-cury2016integronfinder" class="csl-entry" role="listitem">
+Cury, Jean, Thomas Jové, Marie Touchon, Bertrand Néron, 和 Eduardo P. C. Rocha. 2016年. <span>《Identification and Analysis of Integrons and Cassette Arrays in Bacterial Genomes》</span>. <em>Nucleic Acids Research</em> 44 (10): 4539～50. <a href="https://doi.org/10.1093/nar/gkw319">https://doi.org/10.1093/nar/gkw319</a>.
+</div>
+<div id="ref-pike2022broadhostmge" class="csl-entry" role="listitem">
+Forster, Samuel C., Junyan Liu, Nitin Kumar, 等. 2022年. <span>《Strain-Level Characterization of Broad Host Range Mobile Genetic Elements Transferring Antibiotic Resistance from the Human Microbiome》</span>. <em>Nature Communications</em> 13: 1445. <a href="https://doi.org/10.1038/s41467-022-29096-9">https://doi.org/10.1038/s41467-022-29096-9</a>.
+</div>
+<div id="ref-meslier2022platforms" class="csl-entry" role="listitem">
+Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benchmarking second and third-generation sequencing platforms for microbial metagenomics》</span>. <em>Scientific Data</em> 9: 694. <a href="https://doi.org/10.1038/s41597-022-01762-z">https://doi.org/10.1038/s41597-022-01762-z</a>.
+</div>
+<div id="ref-partridge2018mgeamr" class="csl-entry" role="listitem">
+Partridge, Sally R., Stephen M. Kwong, Neville Firth, 和 Slade O. Jensen. 2018年. <span>《Mobile Genetic Elements Associated with Antimicrobial Resistance》</span>. <em>Clinical Microbiology Reviews</em> 31 (4): e00088～17. <a href="https://doi.org/10.1128/CMR.00088-17">https://doi.org/10.1128/CMR.00088-17</a>.
+</div>
+<div id="ref-robertson2018mobsuite" class="csl-entry" role="listitem">
+Robertson, James, 和 John H. E. Nash. 2018年. <span>《<span>MOB-suite</span>: Software Tools for Clustering, Reconstruction and Typing of Plasmids from Draft Assemblies》</span>. <em>Microbial Genomics</em> 4 (8): e000206. <a href="https://doi.org/10.1099/mgen.0.000206">https://doi.org/10.1099/mgen.0.000206</a>.
+</div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "已复制");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "已复制");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+        for (let i=0; i<detailsSrc.length; i++) {
+          const details = detailsSrc[i].parentElement;
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/petemeng\.github\.io\/metagenomics-best-practices\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../chapters/56-virus-host-evidence.html" class="pagination-link" aria-label="病毒—宿主关联：证据等级、iPHoP 与假阳性审计">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-title">病毒—宿主关联：证据等级、iPHoP 与假阳性审计</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../chapters/58-microbial-eukaryotes.html" class="pagination-link" aria-label="真核微生物：EukDetect2 与 EukRep">
+        <span class="nav-page-text"><span class="chapter-title">真核微生物：EukDetect2 与 EukRep</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">源代码</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> "Peter"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "质粒与可移动元件：从 geNomad 命中到 ARG 可移动性证据"</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> "用真实 mock metagenome、完整参考复制子和 USA300 阳性对照，审计质粒识别、MGE 类型、ARG 共定位及可传播性结论"</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="an">draft:</span><span class="co"> false</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="an">bibliography:</span><span class="co"> ../references.bib</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">  eval: false</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">  freeze: auto</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">  warning: false</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="an">fig-cap-location:</span><span class="co"> bottom</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> ../figures/57-coassembly-plasmid-evidence.png</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="an">wechat:</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co">  deck: "质粒候选、ARG 共定位、完整转移模块与已观察传播必须分层；同一 contig 只证明物理上下文，不证明转移发生。"</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co">  facts:</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "共组装候选", value: "218 plasmid candidates"}</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "转移相关 marker", value: "42 candidates"}</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "主 ARG 共定位", value: "0 of 34 calls"}</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "USA300 阳性对照", value: "3 of 3 plasmids detected"}</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">  resources:</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "锁定工具", value: "geNomad 1.12.0 · RGI 6.0.8"}</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "数据库", value: "geNomad 1.9 · CARD 4.0.1"}</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - {label: "验证设计", value: "reference benchmark + positive control"}</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co">  code_heading: "从质粒候选和参考校准到 ARG 上下文与可移动性证据阶梯"</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co">  expected_images: 5</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> evidence</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**geNomad 的 plasmid call 是候选生成器，不是“这条 DNA 已经在细菌间传播”的证明。可靠的 ARG 可移动性结论至少要分开回答四件事：序列像不像质粒、ARG 是否与该元件发生物理连接、元件是否具备完整转移模块、转移是否被实验观察。PRJEB52977 两个 mock 样本的共组装中，geNomad 给出 218 条候选，其中 42 条带 transfer-related marker；但 CARD-RGI 的 34 个 Perfect/Strict ARG 调用没有一个位于这些候选上。精确参考比对又显示，70 条候选由已标注质粒支持，120 条高覆盖匹配完整细胞复制子，28 条没有高覆盖参考支持。相反，USA300 阳性对照的 3 条已标注质粒全部被检出，且 pUSA02 上有 </span><span class="in">`tet(45)`</span><span class="at">，pUSA03 上有 </span><span class="in">`mupA`</span><span class="at">、</span><span class="in">`ErmC`</span><span class="at"> 与 4 个 conjugation-related markers。阴性结果与阳性对照必须一起报告。</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据门槛"}</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>只读取固化表并重画 5 组图，**4 CPU、4 GB RAM、200 MB 磁盘、耗时约 1 分钟**。本次 geNomad 实跑使用 **16 CPU、16 splits**：10.22 Mb 的匹配参考集耗时 186.63 s、峰值 2.75 GiB RAM；84.81 Mb 共组装耗时 1,092.21 s、峰值 2.83 GiB；USA300 对照耗时 182.64 s、峰值 2.71 GiB。geNomad database v1.9 解压后约 **1.47 GB**。正式队列建议预留 **16--32 CPU、32--64 GB RAM、至少 30 GB 临时磁盘，单个中等共组装约几十分钟至数小时**；样本数、contig 数和共享存储速度都会改变耗时。没有服务器时，直接读取 <span class="in">`data/small/57-plasmids-mobile-elements-frozen/`</span> 完成审计和作图；全量发现任务放到 HPC 或云端。</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>物理共定位、可移动性推断和已观察到的转移是不同结论；没有直接证据时不宣称转移发生。</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## 同一段序列上的基因，能证明已经发生转移吗？ {#sec-target}</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>主要锚定两篇研究：</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 论文 **Figure 1a**：sequence branch、marker branch、聚合、score calibration 与输出表的完整框架；**Figure 1d** 展示 calibration 前后 score 与经验阳性比例的关系；**Figure 3a** 比较不同长度片段上的质粒分类性能 <span class="co">[</span><span class="ot">@camargo2024genomad</span><span class="co">]</span>。</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Forster 等 2022 年研究的 **Figure 1c**：MGE 跨 genus、class 和 phylum 的共享范围；**Figure 2**：15 个 broad-host-range 元件的宿主分布、类型与 ARG；**Figure 3c--e**：ICE 与 plasmid 的体外 conjugation assay，把“序列预测”推进到“观察到转移” <span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span>。</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>两篇论文承担不同任务：geNomad 回答“怎样从序列筛出 plasmid candidates”，Forster 等回答“怎样证明 ARG-bearing MGE 仍能跨宿主转移”。不能把前者的分类分数写成后者的实验结论。</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>本次长度匹配基准由 43 条 GenBank header 明确含 <span class="in">`plasmid`</span> 的参考复制子，以及 43 条按长度确定性一对一匹配的其他参考序列构成。geNomad 检出 33/43 条已标注质粒，同时在 43 条匹配序列中产生 1 个阳性调用：sensitivity 76.7%（Wilson 95% CI 62.3--86.8%）、precision 97.1%（85.1--99.5%）、specificity 97.7%（87.9--99.6%）。这些指标只适用于这 86 条、这一标签定义和当前数据库，不是自然群落的普适性能。</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a><span class="al">![Length-matched reference audit. Labels are literal GenBank sequence labels in a fixed public mock reference set.](../figures/57-reference-plasmid-audit.png)</span>{#fig-57-reference}</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载参考并验证上游身份 {#sec-code}</span></span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="fu">### “MGE”不是“质粒”的同义词 {#sec-theory}</span></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>可移动遗传元件（mobile genetic element, MGE）至少包括 plasmid、insertion sequence、transposon、integron-associated cassette、integrative and conjugative element（ICE）、integrative and mobilizable element（IME）与 prophage。它们的复制位置、边界和移动机制不同 <span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span>：</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 对象 <span class="pp">|</span> 常见位置 <span class="pp">|</span> 自主复制 <span class="pp">|</span> 自主转移 <span class="pp">|</span> 最低可主张结论 <span class="pp">|</span></span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|---|</span></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Plasmid <span class="pp">|</span> 染色体外，也可能整合 <span class="pp">|</span> 常见但非必然 <span class="pp">|</span> 取决于完整 conjugation module <span class="pp">|</span> predicted plasmid sequence <span class="pp">|</span></span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ICE <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 可编码完整 conjugation machinery <span class="pp">|</span> putative ICE；需边界与模块 <span class="pp">|</span></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IME <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 借用其他元件 machinery <span class="pp">|</span> putative mobilizable element <span class="pp">|</span></span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Integron <span class="pp">|</span> 染色体或质粒 <span class="pp">|</span> 否 <span class="pp">|</span> 本身通常不自主移动 <span class="pp">|</span> integron-associated gene cassette <span class="pp">|</span></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IS/transposon <span class="pp">|</span> 多种复制子 <span class="pp">|</span> 否 <span class="pp">|</span> 在分子内或分子间转位 <span class="pp">|</span> transposition-associated context <span class="pp">|</span></span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Prophage <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 随宿主复制 <span class="pp">|</span> 诱导后可形成病毒粒子 <span class="pp">|</span> integrated provirus/prophage candidate <span class="pp">|</span></span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>IntegronFinder 识别 integrase、attC 与 cassette array <span class="co">[</span><span class="ot">@cury2016integronfinder</span><span class="co">]</span>；它检测的是基因捕获系统，不应自动改写成“可接合质粒”。同样，看到一个 transposase 也只能说明局部移动相关标记，不能证明整条 contig 会跨细胞转移。</span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article57"</span></span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a><span class="co"># 下载固定 commit 的 PRJEB52977 reference repository</span></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE57_PLASMIDS</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="co"># 若要从 FASTQ 重建同一共组装，下载 ERR9765746/ERR9765747 后运行锁定流程</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE30_ASSEMBLY</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="co"># 四个输入均经过 bytes + SHA-256 gate；RGI 输入来自同一 co-assembly 和 USA300</span></span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">--benchmark-repo</span> data/raw/article57/benchmark_mock <span class="dt">\</span></span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coassembly</span> data/small/30-short-read-assembly-frozen/contigs/megahit-coassembly.ge1000.fna.gz <span class="dt">\</span></span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-coassembly</span> work/article38/coassembly/coassembly.txt <span class="dt">\</span></span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-staphylococcus</span> work/article38/staphylococcus/staphylococcus.txt</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-benchmark-labels.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>准备脚本不会根据结果重抽 negatives。43 条已标注质粒先按长度、<span class="in">`SeqName`</span> 排序，再对每条质粒选择尚未使用且绝对 log-length ratio 最小的 comparator；并列时依次按绝对 bp 差和 <span class="in">`SeqName`</span> 决定。</span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“跑一个分类器”升级为三层 benchmark {#sec-audit}</span></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a>论文 Figure 3a 在严格训练/测试拆分和不同长度片段上比较工具；真实项目还要加两层：</span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**完整参考标签层**：检查已知 plasmid 与 non-plasmid replicons；</span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**fragmented assembly 层**：检查短 contig 上的 label conflict 与 unresolved fraction；</span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**生物阳性对照层**：检查 ARG、plasmid 和 transfer marker 的 join 是否能成功。</span>
+<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>本次完整序列匹配基准 precision 为 97.1%，但共组装候选中 120/218 与完整细胞复制子冲突。两者不矛盾：前者测试完整/较长参考序列，后者暴露 fragment-level failure mode。</span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 geNomad 三条分支与精确参考检查</span></span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a><span class="fu">### geNomad score 是分类证据，不是转移概率</span></span>
+<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>geNomad 把 nucleotide sequence model 与 marker-content model 聚合为 chromosome、plasmid 和 virus scores <span class="co">[</span><span class="ot">@camargo2024genomad</span><span class="co">]</span>。短 contig 的基因少，marker branch 信息不足；重复、保守 housekeeping 区域、chromid 与染色体整合元件又会模糊类别边界。因此，分类结果要保留：</span>
+<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`plasmid_score`</span>、候选长度和 topology；</span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>plasmid/chromosome/virus markers 与 hallmarks；</span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>是否启用 score calibration；</span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库 release 与 filtering parameters；</span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与完整参考、assembly graph 和 reads 的独立核验。</span>
+<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>这里固定默认 <span class="in">`score ≥ 0.7`</span>，但没有启用 score calibration，所以输出中的 <span class="in">`FDR`</span> 为 <span class="in">`NA`</span>。未经 calibration 的 0.90 不能写成“90% 为真”，更不能写成“90% 可转移”。即使启用 calibration，FDR 也是特定输入批次与校准假设下的经验量，不是单条序列的实验成功率。</span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-virus-discovery-2026.07"</span></span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/virus-discovery-cache/databases/genomad_db"</span></span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-env</span> <span class="st">"</span><span class="va">$GENOMAD_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimap2-exe</span> <span class="st">"</span><span class="va">$ASSEMBLY_ENV</span><span class="st">/bin/minimap2"</span> <span class="dt">\</span></span>
+<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb8-132"><a href="#cb8-132" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16</span>
+<span id="cb8-133"><a href="#cb8-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-134"><a href="#cb8-134" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
+<span id="cb8-135"><a href="#cb8-135" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-136"><a href="#cb8-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-137"><a href="#cb8-137" aria-hidden="true" tabindex="-1"></a>核心 geNomad 命令为：</span>
+<span id="cb8-138"><a href="#cb8-138" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-139"><a href="#cb8-139" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-140"><a href="#cb8-140" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb8-141"><a href="#cb8-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="dt">\</span></span>
+<span id="cb8-142"><a href="#cb8-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">--restart</span> <span class="dt">\</span></span>
+<span id="cb8-143"><a href="#cb8-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">--disable-find-proviruses</span> <span class="dt">\</span></span>
+<span id="cb8-144"><a href="#cb8-144" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb8-145"><a href="#cb8-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16 <span class="dt">\</span></span>
+<span id="cb8-146"><a href="#cb8-146" aria-hidden="true" tabindex="-1"></a>  coassembly.fna.gz <span class="dt">\</span></span>
+<span id="cb8-147"><a href="#cb8-147" aria-hidden="true" tabindex="-1"></a>  results/coassembly <span class="dt">\</span></span>
+<span id="cb8-148"><a href="#cb8-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb8-149"><a href="#cb8-149" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-150"><a href="#cb8-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-151"><a href="#cb8-151" aria-hidden="true" tabindex="-1"></a>没有设置 <span class="in">`--enable-score-calibration`</span>，所以主阈值是未校准的 score ≥ 0.7，<span class="in">`FDR=NA`</span>。<span class="in">`--disable-find-proviruses`</span> 只关闭病毒区段边界寻找，不关闭 plasmid classification。精确参考审计使用 <span class="in">`minimap2 -x asm5 --secondary=no`</span>，并预注册 identity ≥95%、query coverage ≥80% 为高覆盖支持；best hit 的 label 来自固定参考 header。</span>
+<span id="cb8-152"><a href="#cb8-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-153"><a href="#cb8-153" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把 score calibration 当成分析设计，不是装饰选项</span></span>
+<span id="cb8-154"><a href="#cb8-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-155"><a href="#cb8-155" aria-hidden="true" tabindex="-1"></a>若一个 batch 足够大且组成适合 calibration，可启用并用 maximum FDR 过滤；若 batch 很小或由人为挑选的候选构成，composition-based calibration 也可能失真。无论选择哪条路径，都要在 Methods 写出是否 calibration、score/FDR cutoff 和序列是否先按长度过滤。当前分析明确关闭 calibration，因此绝不从 <span class="in">`NA`</span> 推断 FDR。</span>
+<span id="cb8-156"><a href="#cb8-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-157"><a href="#cb8-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 CARD-RGI 独立识别 ARG</span></span>
+<span id="cb8-158"><a href="#cb8-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-159"><a href="#cb8-159" aria-hidden="true" tabindex="-1"></a><span class="fu">### 同一 contig 提供物理共定位，但不等于已经发生转移</span></span>
+<span id="cb8-160"><a href="#cb8-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-161"><a href="#cb8-161" aria-hidden="true" tabindex="-1"></a>ARG 与 plasmid call 位于同一 contig，比“同一样本同时检出 ARG 和质粒”强，因为至少有 assembly-level linkage；但它仍可能来自：</span>
+<span id="cb8-162"><a href="#cb8-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-163"><a href="#cb8-163" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>短 contig 被错误分类；</span>
+<span id="cb8-164"><a href="#cb8-164" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>repeat 导致的 chimeric assembly；</span>
+<span id="cb8-165"><a href="#cb8-165" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>染色体整合的 plasmid/ICE 片段；</span>
+<span id="cb8-166"><a href="#cb8-166" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>chromid、secondary chromosome 或其他 cellular replicon；</span>
+<span id="cb8-167"><a href="#cb8-167" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG 只落在元件边界外的宿主 flank；</span>
+<span id="cb8-168"><a href="#cb8-168" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>样本中存在该结构，却没有发生当下或跨宿主转移。</span>
+<span id="cb8-169"><a href="#cb8-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-170"><a href="#cb8-170" aria-hidden="true" tabindex="-1"></a>因此，最稳妥的数据结构不是一列 <span class="in">`mobile = TRUE/FALSE`</span>，而是一张 evidence ledger：分别记录 plasmid classifier、ARG caller、transfer module、element boundary、read support、host linkage 与 experimental validation。</span>
+<span id="cb8-171"><a href="#cb8-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a>geNomad gene table 中的 AMR marker 适合提示局部功能，但不是完整 resistome 结果。ARG 主结果来自 RGI 6.0.8 + CARD 4.0.1 <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>，并只保留 model-specific threshold 已通过的 Perfect/Strict calls：</span>
+<span id="cb8-173"><a href="#cb8-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-resistome-2026.07"</span></span>
+<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a><span class="va">CARD_ROOT</span><span class="op">=</span>/data/db/card-4.0.1</span>
+<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a><span class="va">COASSEMBLY</span><span class="op">=</span>work/article57/inputs/coassembly.fna.gz</span>
+<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_OUT</span><span class="op">=</span>work/article57/rgi/coassembly</span>
+<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$(</span><span class="fu">dirname</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> PATH=<span class="st">"</span><span class="va">$RGI_ENV</span><span class="st">/bin:/usr/bin:/bin"</span> <span class="dt">\</span></span>
+<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>    DATA_PATH=<span class="st">"</span><span class="va">$CARD_ROOT</span><span class="st">/rgi-db"</span> <span class="dt">\</span></span>
+<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>  rgi main <span class="dt">\</span></span>
+<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>    <span class="at">-i</span> <span class="st">"</span><span class="va">$COASSEMBLY</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> contig <span class="dt">\</span></span>
+<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> DIAMOND <span class="dt">\</span></span>
+<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>    <span class="at">-n</span> 16 <span class="dt">\</span></span>
+<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">--include_loose</span> <span class="dt">\</span></span>
+<span id="cb8-190"><a href="#cb8-190" aria-hidden="true" tabindex="-1"></a>    <span class="at">--clean</span> <span class="dt">\</span></span>
+<span id="cb8-191"><a href="#cb8-191" aria-hidden="true" tabindex="-1"></a>    <span class="at">--low_quality</span> <span class="dt">\</span></span>
+<span id="cb8-192"><a href="#cb8-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> PYRODIGAL <span class="dt">\</span></span>
+<span id="cb8-193"><a href="#cb8-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> wgs</span>
+<span id="cb8-194"><a href="#cb8-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-195"><a href="#cb8-195" aria-hidden="true" tabindex="-1"></a><span class="co"># Loose 只留作 sensitivity ledger，不进入主 ARG 集</span></span>
+<span id="cb8-196"><a href="#cb8-196" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">'NR==1 || $6=="Perfect" || $6=="Strict"'</span> <span class="dt">\</span></span>
+<span id="cb8-197"><a href="#cb8-197" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.primary.tsv"</span></span>
+<span id="cb8-198"><a href="#cb8-198" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-199"><a href="#cb8-199" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-200"><a href="#cb8-200" aria-hidden="true" tabindex="-1"></a>RGI 的阈值是每个 CARD model 自己定义的规则，不应再用统一 identity 矩形取代。<span class="in">`--include_loose`</span> 便于审计召回边界，但主图和主结论始终只用 Perfect/Strict。</span>
+<span id="cb8-201"><a href="#cb8-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-202"><a href="#cb8-202" aria-hidden="true" tabindex="-1"></a><span class="fu">### ARG mobility 要区分六个等级</span></span>
+<span id="cb8-203"><a href="#cb8-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-204"><a href="#cb8-204" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 6**：ARG 与 MGE 只在样本层共现；</span>
+<span id="cb8-205"><a href="#cb8-205" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 5**：ARG 附近有 integrase/transposase/integron marker；</span>
+<span id="cb8-206"><a href="#cb8-206" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 4**：ARG 与独立 plasmid call 在同一 contig；</span>
+<span id="cb8-207"><a href="#cb8-207" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 3**：再加系统级 transfer marker；</span>
+<span id="cb8-208"><a href="#cb8-208" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 2**：closed/boundary-resolved element、read support 与宿主连接齐全；</span>
+<span id="cb8-209"><a href="#cb8-209" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 1**：mating、transformation 或 transduction 实验确认受体获得该元件。</span>
+<span id="cb8-210"><a href="#cb8-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a>图表、Results 与摘要中的动词必须跟等级一致：<span class="in">`co-occurred`</span>、<span class="in">`was located on a predicted plasmid contig`</span>、<span class="in">`encoded a putative transfer module`</span>、<span class="in">`was experimentally transferred`</span> 不能互换。</span>
+<span id="cb8-212"><a href="#cb8-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-213"><a href="#cb8-213" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常攻击的十二个点"}</span>
+<span id="cb8-214"><a href="#cb8-214" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>把每条 plasmid-positive contig 当成完整、独立质粒；</span>
+<span id="cb8-215"><a href="#cb8-215" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 geNomad score 当成转移概率；</span>
+<span id="cb8-216"><a href="#cb8-216" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>calibration 关闭却报告 FDR，或把 <span class="in">`NA`</span> 当 0；</span>
+<span id="cb8-217"><a href="#cb8-217" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>只报默认 threshold，不报软件和 database release；</span>
+<span id="cb8-218"><a href="#cb8-218" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 <span class="in">`conjugation_genes`</span> 单列宣称完整 conjugation system；</span>
+<span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>ARG 与质粒仅在样本层共现，却写成 plasmid-borne ARG；</span>
+<span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>同一 contig 就写“已经发生水平转移”；</span>
+<span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用 geNomad 内部 AMR marker 代替独立 CARD/AMRFinderPlus screen；</span>
+<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>只展示候选，不做完整 cellular replicon 负对照；</span>
+<span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>没有 ARG-bearing plasmid 阳性对照，无法区分真阴性与 join/pipeline 失败；</span>
+<span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a><span class="ss">11. </span>把 DTR、环状 assembly 或 replicon marker 等同于可接合；</span>
+<span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a><span class="ss">12. </span>短读长无法解析 repeat 和宿主连接，却把宿主与 host range 写到种/菌株级。</span>
+<span id="cb8-226"><a href="#cb8-226" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-227"><a href="#cb8-227" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-228"><a href="#cb8-228" aria-hidden="true" tabindex="-1"></a><span class="fu">## 合并候选、ARG、转移标记和参考支持</span></span>
+<span id="cb8-229"><a href="#cb8-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-230"><a href="#cb8-230" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer-related marker 不等于完整 conjugation system</span></span>
+<span id="cb8-231"><a href="#cb8-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-232"><a href="#cb8-232" aria-hidden="true" tabindex="-1"></a>geNomad 的 <span class="in">`conjugation_genes`</span> 来自 marker 注释，可用于筛候选；官方输出说明也明确提醒，单凭这一列不足以判断元件是 conjugative 还是 mobilizable。正式分类应检查 relaxase、type IV coupling protein、mating-pair formation system 与 oriT 是否构成一致模块，可用 MacSyFinder/CONJscan 做系统级检测 <span class="co">[</span><span class="ot">@abby2014macsyfinder</span><span class="co">]</span>。质粒重建和 typing 可再用 MOB-suite <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>，整合元件则结合 IntegronFinder、ICE/IME 边界与宿主染色体上下游。</span>
+<span id="cb8-233"><a href="#cb8-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-234"><a href="#cb8-234" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-235"><a href="#cb8-235" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-236"><a href="#cb8-236" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-237"><a href="#cb8-237" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb8-238"><a href="#cb8-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-239"><a href="#cb8-239" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/reference-metrics.tsv"</span></span>
+<span id="cb8-240"><a href="#cb8-240" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/arg-context-summary.tsv"</span></span>
+<span id="cb8-241"><a href="#cb8-241" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/usa300-replicon-audit.tsv"</span></span>
+<span id="cb8-242"><a href="#cb8-242" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/summary.json"</span></span>
+<span id="cb8-243"><a href="#cb8-243" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-244"><a href="#cb8-244" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-245"><a href="#cb8-245" aria-hidden="true" tabindex="-1"></a>共组装的 218 条候选长 1,005--87,818 bp，中位数 3,459.5 bp；210 条无 terminal repeat，7 条 DTR，1 条 ITR。42 条有 conjugation-related marker，2 条有 geNomad 内部 AMR marker，但 **0/34** 个外部 CARD Perfect/Strict calls 位于 geNomad plasmid candidates 上。两套 AMR 注释不一致时，不能择一套更“好看”的结果；应保留 marker source、阈值和候选坐标，必要时人工复核蛋白域和 alignment。</span>
+<span id="cb8-246"><a href="#cb8-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-247"><a href="#cb8-247" aria-hidden="true" tabindex="-1"></a><span class="al">![Candidate length, geNomad score, transfer-related markers, and exact-reference audit. A triangle denotes high-coverage conflict with a complete cellular reference replicon.](../figures/57-coassembly-plasmid-evidence.png)</span>{#fig-57-candidates}</span>
+<span id="cb8-248"><a href="#cb8-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-249"><a href="#cb8-249" aria-hidden="true" tabindex="-1"></a>对 218 条候选与 399 条完整 mock 参考做精确比对后：</span>
+<span id="cb8-250"><a href="#cb8-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-251"><a href="#cb8-251" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>70 条在 identity ≥95%、query coverage ≥80% 时 best-hit 到已标注质粒；</span>
+<span id="cb8-252"><a href="#cb8-252" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>120 条在同一阈值下 best-hit 到完整细胞复制子；</span>
+<span id="cb8-253"><a href="#cb8-253" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>28 条没有高覆盖参考支持。</span>
+<span id="cb8-254"><a href="#cb8-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-255"><a href="#cb8-255" aria-hidden="true" tabindex="-1"></a>第二类是 **complete-cellular-reference conflict**，不是一句话判死刑：染色体可能含整合元件或与质粒共享区段；但在这个拥有精确组成参考的 mock 中，它是非常强的短片段误分类/边界混淆警报。主结果必须把它与“reference-plasmid supported”分开。</span>
+<span id="cb8-256"><a href="#cb8-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-257"><a href="#cb8-257" aria-hidden="true" tabindex="-1"></a><span class="fu">## 让阳性对照检查整条证据链</span></span>
+<span id="cb8-258"><a href="#cb8-258" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-259"><a href="#cb8-259" aria-hidden="true" tabindex="-1"></a>USA300 <span class="in">`GCA_000013465.1`</span> 有 4 条参考复制子，其中 3 条 header 标为 plasmid。geNomad 全部检出：pUSA01 score 0.9901，pUSA02 0.9942，pUSA03 0.9922。RGI 在 pUSA02 检出 <span class="in">`tet(45)`</span>，在 pUSA03 检出 <span class="in">`mupA`</span> 和 <span class="in">`ErmC`</span>；pUSA03 同时有 4 个 transfer-related markers。</span>
+<span id="cb8-260"><a href="#cb8-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-261"><a href="#cb8-261" aria-hidden="true" tabindex="-1"></a><span class="al">![USA300 positive control. All three reference-labelled plasmids were detected; ARG and transfer-marker coordinates are shown separately.](../figures/57-usa300-positive-control.png)</span>{#fig-57-positive}</span>
+<span id="cb8-262"><a href="#cb8-262" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-263"><a href="#cb8-263" aria-hidden="true" tabindex="-1"></a>这个对照证明当前软件、数据库和 join key 能找回真实 plasmid-borne ARG；它不把 mock 共组装中的 0/34 自动解释成“样本里绝无移动 ARG”。短读长组装可能没有把 ARG 与 plasmid backbone 连在同一 contig，低丰度质粒也可能未组装出来。</span>
+<span id="cb8-264"><a href="#cb8-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-265"><a href="#cb8-265" aria-hidden="true" tabindex="-1"></a><span class="fu">### 质粒重建不能只靠 contig 分类</span></span>
+<span id="cb8-266"><a href="#cb8-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-267"><a href="#cb8-267" aria-hidden="true" tabindex="-1"></a>对于 short-read metagenome，优先升级为：</span>
+<span id="cb8-268"><a href="#cb8-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-269"><a href="#cb8-269" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>assembly graph + paired-read linkage，检查分支与重复；</span>
+<span id="cb8-270"><a href="#cb8-270" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MOB-suite 做 plasmid reconstruction/typing，并报告 unresolved/novel replicons <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>；</span>
+<span id="cb8-271"><a href="#cb8-271" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>long-read 或 hybrid assembly 跨越 repeat、ARG 与 backbone；</span>
+<span id="cb8-272"><a href="#cb8-272" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>coverage consistency、circularization junction 与 raw-read spanning；</span>
+<span id="cb8-273"><a href="#cb8-273" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与宿主 MAG 的 differential coverage/Hi-C/long-read linkage 分开记录。</span>
+<span id="cb8-274"><a href="#cb8-274" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-275"><a href="#cb8-275" aria-hidden="true" tabindex="-1"></a><span class="in">`DTR`</span> 或 circular contig 是结构支持，不自动说明能 conjugate；没有 circular signal 也不排除线性 plasmid 或未闭合片段。</span>
+<span id="cb8-276"><a href="#cb8-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-277"><a href="#cb8-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer module 要做系统级而非单基因判读</span></span>
+<span id="cb8-278"><a href="#cb8-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-279"><a href="#cb8-279" aria-hidden="true" tabindex="-1"></a>把 <span class="in">`conjugation_genes`</span> 展开为 gene coordinates，随后用 CONJscan/MacSyFinder 检查模块是否完整、方向是否合理、是否跨 contig 断裂。只有 relaxase 而没有 mating-pair formation system 时，更适合写 mobilizable candidate；完整 conjugation machinery 也只说明 genetic capacity，不是 transfer rate。</span>
+<span id="cb8-280"><a href="#cb8-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-281"><a href="#cb8-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、绘图并做 fail-closed QA</span></span>
+<span id="cb8-282"><a href="#cb8-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-283"><a href="#cb8-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### “有移动潜力”与“观察到转移”之间还差实验</span></span>
+<span id="cb8-284"><a href="#cb8-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-285"><a href="#cb8-285" aria-hidden="true" tabindex="-1"></a>证据强度可以写成一个结论天花板：</span>
+<span id="cb8-286"><a href="#cb8-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-287"><a href="#cb8-287" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
+<span id="cb8-288"><a href="#cb8-288" aria-hidden="true" tabindex="-1"></a>C_{max}=\min(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}).</span>
+<span id="cb8-289"><a href="#cb8-289" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb8-290"><a href="#cb8-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-291"><a href="#cb8-291" aria-hidden="true" tabindex="-1"></a>只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 <span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span>。这正是序列文章最容易漏掉的一层。</span>
+<span id="cb8-292"><a href="#cb8-292" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-293"><a href="#cb8-293" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence hierarchy and maximum defensible mobility claim.](../figures/57-mobility-evidence-ladder.png)</span>{#fig-57-ladder}</span>
+<span id="cb8-294"><a href="#cb8-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-295"><a href="#cb8-295" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-296"><a href="#cb8-296" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article57_plasmids.R <span class="dt">\</span></span>
+<span id="cb8-297"><a href="#cb8-297" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb8-298"><a href="#cb8-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-299"><a href="#cb8-299" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-300"><a href="#cb8-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-301"><a href="#cb8-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-302"><a href="#cb8-302" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/57-plasmids-mobile-elements-frozen</span>
+<span id="cb8-303"><a href="#cb8-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-304"><a href="#cb8-304" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-305"><a href="#cb8-305" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-306"><a href="#cb8-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/57-plasmids-mobile-elements-frozen <span class="dt">\</span></span>
+<span id="cb8-307"><a href="#cb8-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article57-validation <span class="dt">\</span></span>
+<span id="cb8-308"><a href="#cb8-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb8-309"><a href="#cb8-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/57-plasmids-mobile-elements.qmd</span>
+<span id="cb8-310"><a href="#cb8-310" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-311"><a href="#cb8-311" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-312"><a href="#cb8-312" aria-hidden="true" tabindex="-1"></a><span class="al">![All 34 co-assembly CARD Perfect/Strict calls occurred on contigs without a geNomad plasmid call. Co-location would still be prediction, not observed transfer.](../figures/57-arg-mobility-context.png)</span>{#fig-57-arg-context}</span>
+<span id="cb8-313"><a href="#cb8-313" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-314"><a href="#cb8-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="最小结果表"}</span>
+<span id="cb8-315"><a href="#cb8-315" aria-hidden="true" tabindex="-1"></a>至少保留 <span class="in">`candidate_id, length_bp, plasmid_score, calibrated_fdr, topology, hallmark_count, reference_support, arg_caller, arg_model, arg_tier, arg_coordinates, transfer_system, element_boundary, read_support, host_evidence, evidence_level, claim_ceiling`</span>。缺失值写 <span class="in">`NA/not tested`</span>，不要默认为阴性。</span>
+<span id="cb8-316"><a href="#cb8-316" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-317"><a href="#cb8-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-318"><a href="#cb8-318" aria-hidden="true" tabindex="-1"></a><span class="fu">## 限定移动元件相关结论 {#sec-methods}</span></span>
+<span id="cb8-319"><a href="#cb8-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-320"><a href="#cb8-320" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
+<span id="cb8-321"><a href="#cb8-321" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-322"><a href="#cb8-322" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Plasmid candidates were identified from 18,354 ≥1-kb MEGAHIT v1.2.9 co-assembly contigs (84,811,518 bp) derived from deterministic two-million-pair subsets of PRJEB52977 runs ERR9765746 and ERR9765747. geNomad v1.12.0 was run with database v1.9 (ICTV MSL39), 16 threads, 16 splits, the default minimum plasmid score of 0.7, and score calibration disabled; consequently, calibrated FDR values were not available. Candidate contigs were aligned to the fixed MOCK2 reference inventory (benchmark repository commit a429a3724d4593f35b8d7323b20252a6be90e1cd) using minimap2 v2.31-r1302 (</span><span class="in">`asm5`</span><span class="at">, secondary alignments disabled). Reference support required ≥95% alignment identity and ≥80% query coverage. ARGs were independently called with RGI v6.0.8 and CARD v4.0.1, retaining Perfect and Strict calls. Transfer-related marker annotations were retained as candidate evidence and were not interpreted as complete conjugation systems or observed transfer. All input assets and frozen outputs were SHA-256 audited.</span></span>
+<span id="cb8-323"><a href="#cb8-323" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-324"><a href="#cb8-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb8-325"><a href="#cb8-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-326"><a href="#cb8-326" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; geNomad identified 218 plasmid-candidate contigs (1,005--87,818 bp), including 42 candidates with conjugation-related markers. Exact-reference auditing classified 70 candidates as reference-plasmid supported, 120 as conflicting with complete cellular reference replicons, and 28 as lacking high-coverage reference support. None of the 34 CARD Perfect/Strict calls occurred on a geNomad plasmid candidate. In the USA300 positive control (GCA_000013465.1), all three reference-labelled plasmids were detected; tet(45) occurred on pUSA02, whereas mupA and ErmC occurred on pUSA03, which also contained four transfer-related markers. These observations support candidate prioritization but do not demonstrate horizontal transfer.</span></span>
+<span id="cb8-327"><a href="#cb8-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-328"><a href="#cb8-328" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb8-329"><a href="#cb8-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-330"><a href="#cb8-330" aria-hidden="true" tabindex="-1"></a>需要准备五类输入：</span>
+<span id="cb8-331"><a href="#cb8-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-332"><a href="#cb8-332" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**组装与 graph**：每个样本组装或预注册的 co-assembly，保留 contig length、coverage、GFA 与 assembler version；</span>
+<span id="cb8-333"><a href="#cb8-333" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**reads**：原始 paired reads，最好再有 long reads，用于 junction、breadth、chimerism 与 circularization 检查；</span>
+<span id="cb8-334"><a href="#cb8-334" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**独立 ARG 表**：CARD-RGI 或 AMRFinderPlus 的 model、identity、coverage、coordinates 与 database release；</span>
+<span id="cb8-335"><a href="#cb8-335" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**宿主证据**：MAG/linkage/Hi-C/long-read 信息，缺失时不要填宿主；</span>
+<span id="cb8-336"><a href="#cb8-336" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**对照**：至少一个已知 plasmid-borne ARG 阳性对照和一组完整 cellular replicons 负对照。</span>
+<span id="cb8-337"><a href="#cb8-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-338"><a href="#cb8-338" aria-hidden="true" tabindex="-1"></a>推荐的分析顺序是：</span>
+<span id="cb8-339"><a href="#cb8-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-340"><a href="#cb8-340" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先锁定最小 contig length、geNomad score/FDR policy 与数据库；</span>
+<span id="cb8-341"><a href="#cb8-341" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>分别运行 plasmid classifier 和 ARG caller，不在第一次 join 前人工挑候选；</span>
+<span id="cb8-342"><a href="#cb8-342" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用坐标连接同一 contig 上的 ARG、transfer marker 与 element boundary；</span>
+<span id="cb8-343"><a href="#cb8-343" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>对候选运行 MOB-suite、CONJscan 和 IntegronFinder，并查看 assembly graph；</span>
+<span id="cb8-344"><a href="#cb8-344" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 raw reads/long reads 验证物理连接与闭合；</span>
+<span id="cb8-345"><a href="#cb8-345" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>为每条候选赋 evidence level 和 claim ceiling；</span>
+<span id="cb8-346"><a href="#cb8-346" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>跨队列分析时按 study/library/assembler 分层，不直接比较 raw candidate counts；</span>
+<span id="cb8-347"><a href="#cb8-347" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>真正要写“transferable”或“broad host range”时，增加受体选择、空白对照和元件基因型确认的实验。</span>
+<span id="cb8-348"><a href="#cb8-348" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-349"><a href="#cb8-349" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="短读长的结论边界"}</span>
+<span id="cb8-350"><a href="#cb8-350" aria-hidden="true" tabindex="-1"></a>如果 ARG 和 transfer machinery 分落在不同 contigs，即使两者 coverage 高度相关，也只能写 sample-level co-occurrence 或待验证 linkage。优先补 long-read/hybrid assembly、Hi-C 或 targeted closure；不要用 abundance correlation 填补物理连接。</span>
+<span id="cb8-351"><a href="#cb8-351" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-352"><a href="#cb8-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-353"><a href="#cb8-353" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb8-354"><a href="#cb8-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-355"><a href="#cb8-355" aria-hidden="true" tabindex="-1"></a>候选图的视觉变量各承担一个问题：x 轴为长度、y 轴为 geNomad score、颜色为 contig 上附加证据、点形为 exact-reference audit。不要再用点大小编码第五个连续变量；读者会失去判读顺序。</span>
+<span id="cb8-356"><a href="#cb8-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-357"><a href="#cb8-357" aria-hidden="true" tabindex="-1"></a>配色使用色盲友好的蓝、橙、绿、紫与中性灰；所有图内文字为英文。主图导出 vector PDF，同时保存 350 dpi PNG 和 LZW-compressed TIFF：</span>
+<span id="cb8-358"><a href="#cb8-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-359"><a href="#cb8-359" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb8-360"><a href="#cb8-360" aria-hidden="true" tabindex="-1"></a>source_table <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb8-361"><a href="#cb8-361" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/57-plasmids-mobile-elements-frozen/coassembly-plasmid-candidates.tsv"</span>,</span>
+<span id="cb8-362"><a href="#cb8-362" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-363"><a href="#cb8-363" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-364"><a href="#cb8-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-365"><a href="#cb8-365" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>ReferenceSupport)</span>
+<span id="cb8-366"><a href="#cb8-366" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>EvidenceContext)</span>
+<span id="cb8-367"><a href="#cb8-367" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-368"><a href="#cb8-368" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整出版图由已冻结脚本生成</span></span>
+<span id="cb8-369"><a href="#cb8-369" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(</span>
+<span id="cb8-370"><a href="#cb8-370" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Rscript"</span>,</span>
+<span id="cb8-371"><a href="#cb8-371" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb8-372"><a href="#cb8-372" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen/scripts/plot_article57_plasmids.R"</span>,</span>
+<span id="cb8-373"><a href="#cb8-373" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen"</span>,</span>
+<span id="cb8-374"><a href="#cb8-374" aria-hidden="true" tabindex="-1"></a>    <span class="st">"figures"</span></span>
+<span id="cb8-375"><a href="#cb8-375" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-376"><a href="#cb8-376" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-377"><a href="#cb8-377" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-378"><a href="#cb8-378" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-379"><a href="#cb8-379" aria-hidden="true" tabindex="-1"></a>图注应写清 denominator 与 unit。例如 <span class="in">`34 CARD Perfect/Strict gene calls`</span> 不能缩写成 <span class="in">`34 ARGs`</span>，因为同一 ARG 家族可能有多个调用；<span class="in">`218 candidate contigs`</span> 也不能写成 218 个独立 plasmids。</span>
+<span id="cb8-380"><a href="#cb8-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-381"><a href="#cb8-381" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb8-382"><a href="#cb8-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-383"><a href="#cb8-383" aria-hidden="true" tabindex="-1"></a>质粒候选、ARG 共定位、完整转移模块与已观察传播必须分层；同一 contig 只证明物理上下文，不证明转移发生。</span>
+<span id="cb8-384"><a href="#cb8-384" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-385"><a href="#cb8-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb8-386"><a href="#cb8-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-387"><a href="#cb8-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 方法、marker/sequence 双分支、calibration 与 benchmark：<span class="co">[</span><span class="ot">@camargo2024genomad; @genomad2026software</span><span class="co">]</span></span>
+<span id="cb8-388"><a href="#cb8-388" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 真实 mock-community 平台与参考序列：<span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb8-389"><a href="#cb8-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG ontology、model-specific thresholds 与 CARD-RGI：<span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span></span>
+<span id="cb8-390"><a href="#cb8-390" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG-associated MGE 类型与术语边界：<span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span></span>
+<span id="cb8-391"><a href="#cb8-391" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Broad-host-range MGE、完整结构与体外转移验证：<span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span></span>
+<span id="cb8-392"><a href="#cb8-392" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Plasmid reconstruction/typing、integron 与 conjugation-system 检测：<span class="co">[</span><span class="ot">@robertson2018mobsuite; @cury2016integronfinder; @abby2014macsyfinder</span><span class="co">]</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/petemeng/metagenomics-best-practices/edit/main/chapters/57-plasmids-mobile-elements.qmd" class="toc-action"><i class="bi bi-github"></i>编辑该页面</a></li><li><a href="https://github.com/petemeng/metagenomics-best-practices/issues/new" class="toc-action"><i class="bi empty"></i>反馈问题</a></li></ul></div></div></div></footer><script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
