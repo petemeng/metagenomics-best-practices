@@ -1090,7 +1090,7 @@ interpretation_boundaries <- data.frame(
     "A presence log-odds coefficient reported only when each group has at least 10 present and 10 absent subjects",
     "Evidence that at least one estimable component departs from its declared null",
     "BH correction within the 212-species disease contrast and within each model component",
-    "Composition conditional on 493 annotated ordinary unstratified pathways",
+    "Composition after TSS within 394 retained ordinary pathways, filtered from 493 input rows",
     "Pseudo-count sensitivity using round(relative fraction x whole-metagenome reads)",
     "CLR sensitivity using the same reconstructed pseudo-count convention",
     "Direction concordance among methods with distinct assumptions and effect scales",
@@ -1172,7 +1172,7 @@ pal_direction <- c(
   Depleted = "#0072B2",
   Neutral = "#BDBDBD",
   Enriched = "#D55E00",
-  `Not estimable` = "#F2F2F2"
+  `No finite estimate` = "#F2F2F2"
 )
 theme_pub <- function(base_size = 10) {
   ggplot2::theme_bw(base_size = base_size, base_family = "sans") +
@@ -1314,7 +1314,7 @@ functional_figure <- ggplot2::ggplot(
     title = "Top MetaCyc pathway abundance associations",
     subtitle = "CRC versus Control, adjusted for age, gender, BMI and log10 read depth",
     x = "CRC coefficient (log2 relative pathway abundance)", y = NULL, colour = NULL,
-    caption = "Pathways are reclosed within 493 ordinary unstratified annotated rows. The dashed line is the pathway-coefficient median null."
+    caption = "TSS uses 394 retained pathways after filtering 493 ordinary rows. The dashed line is the pathway-coefficient median null."
   ) +
   theme_pub(9.6)
 save_pub(functional_figure, "24-functional-associations", 11.3, 8.8)
@@ -1360,10 +1360,10 @@ concordance_long <- rbind(
 concordance_long$Direction <- factor(
   ifelse(
     !is.finite(concordance_long$Coefficient),
-    "Not estimable",
+    "No finite estimate",
     ifelse(concordance_long$Coefficient > 0, "Enriched", ifelse(concordance_long$Coefficient < 0, "Depleted", "Neutral"))
   ),
-  levels = c("Depleted", "Neutral", "Enriched", "Not estimable")
+  levels = c("Depleted", "Neutral", "Enriched", "No finite estimate")
 )
 concordance_long$Evidence <- -log10(pmax(concordance_long$QValue, 1e-12))
 concordance_long$Evidence[!is.finite(concordance_long$Evidence)] <- 0
@@ -1386,7 +1386,7 @@ concordance_figure <- ggplot2::ggplot(
     x = NULL, y = NULL, fill = "Direction", shape = "Reported hit",
     caption = paste0(
       "Coefficient magnitudes are not compared across methods.\n",
-      "Pale grey denotes a coefficient that was not estimable.\n",
+      "Pale grey denotes no finite coefficient; circles may fail the reporting rule.\n",
       "ANCOM-BC2 and ALDEx2 use reconstructed pseudo-counts, so concordance is not independent replication."
     )
   ) +
