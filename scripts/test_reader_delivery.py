@@ -1,10 +1,20 @@
 import unittest
 from lxml import html
 from build_wechat_review_bundle import remove_wechat_bootstrap, remove_explicit_wechat_omissions
-from audit_reader_delivery import FORBIDDEN, PRIVATE
+from audit_reader_delivery import FORBIDDEN, PRIVATE, has_decision_recommendation
 
 
 class ReaderDeliveryTest(unittest.TestCase):
+    def test_topic_specific_recommendation_is_allowed(self):
+        body = '::: {.callout-important title="先决定要估计哪一种差异"}\n先确定比较对象和归一化分母；只在同一批受试者中比较调整方案。\n:::'
+        self.assertTrue(has_decision_recommendation(body))
+
+    def test_empty_title_or_code_example_does_not_pass(self):
+        self.assertFalse(has_decision_recommendation('先确定这一点'))
+        body = '::: {.callout-tip title="建议"}\n\n:::'
+        self.assertFalse(has_decision_recommendation(body))
+        self.assertFalse(has_decision_recommendation('```text\n::: {.callout-tip}\n' + '示例' * 20 + '\n:::\n```'))
+
     def test_setup_id_does_not_delete_data(self):
         root=html.fromstring('<main><section id="sec-setup"><h2>数据</h2><p>90 samples</p><pre>download.file(url, path)</pre></section></main>')
         remove_wechat_bootstrap(root)

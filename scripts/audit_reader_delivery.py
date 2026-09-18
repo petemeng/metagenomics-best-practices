@@ -23,6 +23,13 @@ def digest(p,kind='sha256'):
         for b in iter(lambda:f.read(1024*1024),b''):h.update(b)
     return h.hexdigest()
 
+def has_decision_recommendation(body):
+    prose = re.sub(r'^```.*?^```[ \t]*$', '', body, flags=re.M | re.S)
+    recommendations = re.findall(
+        r'::: \{\.callout-(?:tip|important)[^\n]*\}\n(.*?)\n:::',
+        prose, flags=re.S)
+    return any(len(re.sub(r'\s+', '', text)) >= 20 for text in recommendations)
+
 def audit(root,bundle=None,check_hashes=True):
     manifest=yaml.safe_load((root/'tutorial.yaml').read_text());errors=[];reports=[]
     chapters=manifest['series']['chapters']
@@ -34,7 +41,10 @@ def audit(root,bundle=None,check_hashes=True):
         if re.match(r'第\s*\d+\s*篇',fm['title']):bad.append('episode prefix in source title')
         if FORBIDDEN.search(body):bad.append('author/template narration')
         if PRIVATE.search(body):bad.append('private content')
-        if '先确定这一点' not in body:bad.append('missing decision recommendation')
+        # A topic-specific recommendation callout, not a mandatory stock title.
+        # Inspect prose (excluding code) so a literal in a script cannot satisfy it.
+        if not has_decision_recommendation(body):
+            bad.append('missing decision recommendation')
         if fm.get('reader-mode') not in {'analysis','upstream','evidence'}:bad.append('reader category')
         inv=root/f'examples/{n:02}/files.tsv';files=[]
         if fm.get('reader-mode')!='evidence':
