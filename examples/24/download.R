@@ -1,5 +1,5 @@
 options(timeout = max(600, getOption("timeout")))
-base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"
+base_url <- "https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/4f2f13152687d499a84f23133e32a8592e795b09/"
 files <- read.delim(paste0(base_url, "examples/24/files.tsv"),
                    stringsAsFactors = FALSE, check.names = FALSE)
 stopifnot(all(!grepl("(^/|(^|/)\\.\\.(/|$))", files$path)))
