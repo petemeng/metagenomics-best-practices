@@ -43,7 +43,7 @@ reader-mode: upstream
 > **真实数据：**盘点 Meslier 等 71-strain MOCK1 的同一样本 `SAMEA14435832` [@meslier2022platforms]。ENA 报告的 Illumina paired、历史 ONT R9 与 PacBio CCS 四个压缩 FASTQ 合计 `10,944,966,814` bytes；本地冒烟读取各平台前 5,000 条真实 records 的 15,000 行固化指标。三种平台用于资源合同示范，不会被合并成一个生物学分析输入。  
 > **本章验证资源：**约 2 核、4 GB RAM、5 GB 临时空间、1–2 分钟；实际本地任务远低于这个申请。完整 read profiling、组装、分箱、GTDB-Tk 或大型数据库任务不能沿用该 smoke 配置，必须在同一工具、数据库、参数和代表性输入上重新测量。没有服务器时，可在个人电脑完成 manifest、少量 reads 冒烟和下游表分析，把组装及 genome-resolved 任务送到机构 HPC；云端只用于预算、合规、持久化和失败恢复均已设计好的任务。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="并发上限应由最紧缺的资源决定"}
 
 用真实输入测峰值内存、磁盘和耗时；并发数应服从资源上限，失败续跑要检查输出完整性。
 
@@ -65,6 +65,12 @@ Zhang 等对 metagenome assemblers 的系统比较在 Figure 5 同时报告 real
 随后把资源申请变成闭环：代表性 pilot → 计量 → 显式余量 → 有上限的并发 → 保存 accounting 与环境指纹。
 
 ![文献资源数字只提供先验；实际申请应由同一分析合同下的代表性任务校准。](../figures/10-resource-control-loop.png){#fig-resource-control-loop}
+
+### 并发上限应由最紧缺的资源决定
+
+CPU 足够不代表能同时运行所有样本：每个任务都加载数据库时，内存或共享存储可能先达到上限。先测代表性任务的峰值，再为波动和临时文件留余量；压缩 FASTQ 大小既不是解压空间，也不是组装内存的固定倍数。任务数组的并发限制应反映这些实测约束。
+
+失败恢复还要区分“文件存在”与“结果完整”。进程被终止后留下的半个输出不能跳过重跑；应在成功检查后才生成完成标记，并把临时输出与正式结果分开。这里本地运行成功的任务不等于 SLURM 或 Apptainer 已在目标集群验证，调度器与容器边界需要各自的实际证据。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -304,11 +310,11 @@ compressed FASTQ
 
 因此 scratch 预算应逐项相加：
 
-\[
+$$
 S_{\text{request}} =
 (S_{\text{inputs}} + S_{\text{intermediates,peak}} + S_{\text{outputs}} +
 S_{\text{cache}})\times (1+h_S)
-\]
+$$
 
 `h_S` 是显式余量，不是隐藏的“经验倍数”。中间产物峰值必须由 pilot 或工具日志获得；不知道时就写 `unknown` 并先跑子集，不能拿 FASTQ 大小直接代入组装内存。
 
@@ -449,13 +455,13 @@ home quota 常小且 metadata 性能有限。查询项目、scratch 与 cache po
 
 对同一工具合同，初始申请可写成：
 
-\[
+$$
 M_{\text{request}} = \lceil M_{\text{peak,pilot}}\times(1+h_M)\rceil
-\]
+$$
 
-\[
+$$
 T_{\text{request}} = \lceil T_{\text{pilot}}\times r_{\text{scale}}\times(1+h_T)\rceil
-\]
+$$
 
 其中：
 
@@ -504,7 +510,7 @@ tool --threads "$SLURM_CPUS_PER_TASK"
 
 三个独立样本并不是 `--ntasks=3` 的同一个并行程序，而通常是三个 array elements。并发上限取四个瓶颈的最小值：
 
-\[
+$$
 C_{\max} =
 \min\left(
 \left\lfloor\frac{M_{\text{usable}}}{M_{\text{task}}}\right\rfloor,
@@ -512,7 +518,7 @@ C_{\max} =
 \left\lfloor\frac{S_{\text{usable}}}{S_{\text{task}}}\right\rfloor,
 C_{\text{scheduler}}
 \right)
-\]
+$$
 
 `--array=1-100%8` 的 `%8` 是 I/O 与公平性合同，不只是防止内存爆掉。
 
@@ -583,10 +589,10 @@ set -euo pipefail
 
 近似指标：
 
-\[
+$$
 E_{CPU} =
 \frac{TotalCPU}{Elapsed\times AllocCPUS}
-\]
+$$
 
 低效率可能来自：
 

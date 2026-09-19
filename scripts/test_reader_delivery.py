@@ -5,6 +5,17 @@ from audit_reader_delivery import FORBIDDEN, PRIVATE, has_decision_recommendatio
 
 
 class ReaderDeliveryTest(unittest.TestCase):
+    def test_series_contract_does_not_require_a_stock_title(self):
+        from validate_series import REQUIRED_SECTIONS
+        self.assertNotIn('先确定这一点', REQUIRED_SECTIONS)
+
+    def test_rendered_topic_guidance_on_web_and_wechat(self):
+        from audit_public_delivery import has_rendered_recommendation
+        body='<p>先确定比较对象和归一化分母；只在同一批受试者中比较调整方案。</p>'
+        for attr in ['class="callout-important"', 'style="border-left:4px solid #5f9a7d;"']:
+            self.assertTrue(has_rendered_recommendation('<section '+attr+'>'+body+'</section>'))
+            self.assertFalse(has_rendered_recommendation('<section '+attr+'><strong>只有标题</strong></section>'))
+
     def test_topic_specific_recommendation_is_allowed(self):
         body = '::: {.callout-important title="先决定要估计哪一种差异"}\n先确定比较对象和归一化分母；只在同一批受试者中比较调整方案。\n:::'
         self.assertTrue(has_decision_recommendation(body))

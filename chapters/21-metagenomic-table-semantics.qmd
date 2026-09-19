@@ -45,7 +45,7 @@ reader-mode: analysis
 > **真实数据：**分类证据来自同一份 <code>ERR9765746_MOCK1</code> clean library 的 MetaPhlAn 4.2.5 与 Kraken2 2.17.1 / Bracken 3.1p1 固化输出；功能证据来自同一文库的 HUMAnN 3.9，以及 curatedMetagenomicData 3.12.0 的 <code>AsnicarF_2017</code> pathway abundance / coverage 24 profiles。genome-equivalent 标尺使用 MicrobeCensus tag v1.1.1 的真实运行结果。  
 > **预计资源：**读取 checksum-locked 小表、重算全部账本并生成四张图，普通笔记本用 1–2 核、低于 2 GB RAM 和 50 MB 空间即可。MicrobeCensus 的两个一次性分支实测分别用时 49.73 s / 37.67 s，最大 RSS 约 625 / 583 MiB；从 FASTQ 重建 MetaPhlAn、Kraken2 或 HUMAnN 仍需对应数据库和服务器资源。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="数字像整数，也未必适合计数模型"}
 
 先区分观测计数、模型估计、长度校正值和相对丰度；单位没确认之前，不做求和、稀释或差异检验。
 
@@ -60,6 +60,12 @@ MicrobeCensus 论文用 average genome size（AGS）校正宏基因组之间的�
 
 
 这四张图给出一个实用顺序：**先识别数是什么，再识别除过什么，最后才选择统计方法。** 整数外观不能证明它是 raw count；列和等于 1 也不能证明它是绝对量；不闭合到 1 更不等于结果错误。
+
+### 数字像整数，也未必适合计数模型
+
+Bracken estimated reads、marker 推断数量和观测片段 counts 的随机生成过程不同。四舍五入只能改变外观，不能使模型估计恢复为原始采样计数；相对丰度乘任意常数也不会提供真实测序深度。选择模型时需要追溯数值来源，而不是检查是否有小数点。
+
+genome equivalents 由序列量与平均基因组大小估计，提供的是某种基因组尺度校正，不是每克样本的细胞数。若研究需要绝对负荷，还须有独立的样本量与定量参照。对同一表重复做长度或总量校正则可能改变目标，所以每次变换都应明确输入已经除过什么。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -381,25 +387,25 @@ HUMAnN stratified rows还要分两种关系：
 
 ### Correction：数值已经校正过什么
 
-设 feature \(i\) 的 alignment-derived quantity 为 \(n_i\)，参考长度为 \(L_i\) kb。概念上的 length correction 是
+设 feature $i$ 的 alignment-derived quantity 为 $n_i$，参考长度为 $L_i$ kb。概念上的 length correction 是
 
-\[
+$$
 RPK_i = \frac{n_i}{L_i}.
-\]
+$$
 
 HUMAnN native gene-family table已经提供 RPK-like value；不要再除一次基因长度。MetaPhlAn 的相对丰度已经包含 marker 与 genome 模型；也不能把百分比乘 processed reads 后称为原始 read counts。
 
 ### Denominator 与 closure：除数是什么
 
-对选定的 community gene-family RPK denominator \(D=\sum_j RPK_j\)：
+对选定的 community gene-family RPK denominator $D=\sum_j RPK_j$：
 
-\[
+$$
 CoPM_i = 10^6\frac{RPK_i}{D},
 \qquad
 RA_i = \frac{RPK_i}{D}.
-\]
+$$
 
-HUMAnN 文档中的 CPM 是 **copies per million（CoPM）**，不是 raw counts per million。本文真实表中 community gene-family CoPM 总和为 999,999.97064，relative abundance 总和为 0.99999997064，逐行满足 <code>CoPM = relative abundance × 1e6</code>，最大误差低于 \(10^{-12}\)。
+HUMAnN 文档中的 CPM 是 **copies per million（CoPM）**，不是 raw counts per million。本文真实表中 community gene-family CoPM 总和为 999,999.97064，relative abundance 总和为 0.99999997064，逐行满足 <code>CoPM = relative abundance × 1e6</code>，最大误差低于 $10^{-12}$。
 
 closure 总是相对于一个声明的 denominator：
 
@@ -643,17 +649,17 @@ MetaPhlAn percentages、Bracken fractions 与 HUMAnN relative abundance 都是 c
 
 MicrobeCensus 用保守单拷贝 marker 的覆盖估计 average genome size。对同一份 clean sequence universe：
 
-\[
+$$
 GE = \frac{\text{total sequenced bp}}{\widehat{AGS}},
 \qquad
 RPKG_i = \frac{RPK_i}{GE}.
-\]
+$$
 
-本次 150 bp 主分支得到 \(\widehat{AGS}=2{,}576{,}205.26\) bp，因而
+本次 150 bp 主分支得到 $\widehat{AGS}=2{,}576{,}205.26$ bp，因而
 
-\[
+$$
 GE=\frac{29{,}809{,}773}{2{,}576{,}205.26}=11.5711948566.
-\]
+$$
 
 这表示该文库含约 11.57 个“平均微生物基因组深度”等价的序列量，不是 11.57 个 cells、organisms、genomes per gram、biomass 或 absolute concentration。要做真正绝对定量，仍需 spike-in、flow cytometry、qPCR/ddPCR 或其他外部定量参照。
 
@@ -712,7 +718,7 @@ stopifnot(
 
 读法要保持两条分母线：
 
-- CoPM：每个 gene-family RPK 占 community gene-family RPK 总和的份额，乘 \(10^6\)；
+- CoPM：每个 gene-family RPK 占 community gene-family RPK 总和的份额，乘 $10^6$；
 - RPKG：每个 gene-family RPK 除以同一文库的 genome equivalents。
 
 二者都不是每克样本的绝对 copies。CoPM 是 closed composition；RPKG 引入 AGS calibration 后不要求 feature 总和闭合，但仍缺少采样体积、提取回收率和微生物负荷。

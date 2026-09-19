@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等的 71-strain 不均一 MOCK1 DNA，项目 `PRJEB52977`、样本 `SAMEA14435832`。Illumina `ERR9765746` 固定抽取 10,000,000 对 reads；完整历史 ONT R9 `ERR9765780` 含 696,944 reads，完整 PacBio CCS/HiFi `ERR9765783` 含 524,805 reads [@meslier2022platforms]。  
 > **结论边界：**同一份 DNA 没有把平台 yield、read length、chemistry、basecaller 与误差模型配平。这里比较的是**锁定输入与参数下的 assembly strategy**，不是平台单因素实验。`>=99% genome fraction` 是预先定义的操作性回收阈值，不是“无误差闭环基因组”的证明。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="纠错改善局部碱基，不一定修复结构错误"}
 
 在同一输入范围内比较纠错前后的一致性错误和结构错误；不要只以 N50 决定是否接受结果。
 
@@ -74,6 +74,12 @@ MetaQUAST 5.3.0 的 reference alignment 实际调用随 QUAST 源包提供的 mi
 ::: {.callout-important title="先说清楚 hybrid 的方向"}
 “同时有短读和长读”不足以描述方法。必须写清 assembly graph 由谁建立：SPAdes hybrid 是短读图优先、长读辅助跨越；Flye + Polypolish 是长读图优先、短读只修 consensus。二者对 strain collapse、重复区、结构连接和小变异的风险不同。
 :::
+
+### 纠错改善局部碱基，不一定修复结构错误
+
+polishing 使用回比证据修改共识序列，不能被视为所有组装错误的通用修复。近缘成员混合时，支持某个碱基的 reads 还可能来自不同来源；因此局部 mismatch 降低与整体结构正确性需要分别评价。N50 没变也不代表没有改善，N50 增加更不代表错误减少。
+
+本例七个策略应在相同真值范围内比较回收与错误，并保留输入预算。达到 99% genome fraction 只是操作性回收指标，不等于无错误闭环。选择是否接受纠错结果，应看目标分析是否受相关错误影响，并保留原始与纠错后版本，而不是覆盖掉无法回查的草稿。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

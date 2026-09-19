@@ -32,7 +32,7 @@ reader-mode: evidence
 只读取固化的 Supplementary Table S4 并重画 5 组图，**4 CPU、4 GB RAM、100 MB 可用磁盘、约 1 分钟**足够。重新下载三次 Illumina paired-end libraries 需要 **1.94 GiB 压缩 FASTQ**；建议预留 **8 CPU、8 GB RAM、15--20 GB 临时磁盘、约 1--2 小时**完成下载、校验、BBMap 与 BAM 汇总。15 条参考序列的 geNomad v1.12.0 实测为 **145.36 秒、2.654 GiB 峰值 RAM、16 threads**；geNomad DB v1.9 约 **1.4 GB**。BBMap v38.69 的实现烟雾测试使用 `-Xmx2g`，实测 **29.29 秒、1.395 GiB**。大型队列应按总 reads 与 vOTU 目录规模预留 32--64 GB RAM 和充足 BAM 空间；没有服务器时，从 `data/small/55-virus-taxonomy-abundance-frozen/` 的逐噬菌体 breadth/depth 表开始统计，不必下载 FASTQ。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="分类标签和丰度表并不描述同一件事"}
 
 目录覆盖、未检出和定量分母都会影响比较；相对丰度或分类标签不能证明生活史或活性。
 
@@ -54,6 +54,12 @@ reader-mode: evidence
 Figure 1 的核心不是“哪个平台柱子最高”，而是同一条参考序列有两个不同覆盖统计量：mean depth 很高仍可能只堆在局部，只有 breadth 说明多少基因组位置真正被 reads 覆盖。
 
 ![Sensitivity of detection counts to the breadth threshold and the occupancy distribution across three technical library replicates.](../figures/55-threshold-prevalence.png){#fig-55-sensitivity}
+
+### 分类标签和丰度表并不描述同一件事
+
+mock 数据中的 15 个预期成员，在三份文库里分别检出 9、11、10 个，另有 4 个在三份文库中都未检出。因此，一张只包含检出成员的相对丰度图同时受到检测缺失与闭合归一化影响；图中某个成员占比上升，未必表示其原始数量增加。
+
+分类标签回答参考框架中的归属，vOTU 聚类回答当前序列集合中的分组，二者都不能独立确定样本中的物理状态或生活史。去冗余前后的条目数量也不能直接比较为多样性变化。应先交代参考冗余、检出范围和丰度分母，再解释组间差异。
 
 ## 解析 supplement，校验来源与 accession {#sec-code}
 
@@ -265,16 +271,16 @@ done
 
 令病毒参考长度为 (L)，位置 (i) 的覆盖深度为 (d_i)，进入计数的 reads 已通过最小 alignment identity (q)。则：
 
-\[
+$$
 B_{1\times}=\frac{1}{L}\sum_{i=1}^{L}I(d_i\ge1),\qquad
 \bar d=\frac{1}{L}\sum_{i=1}^{L}d_i.
-\]
+$$
 
 - **identity gate** 防止远缘序列因局部相似而错误进入；
 - **breadth** (B_{1\times}) 防止 reads 只堆在保守基因或低复杂区；
 - **mean depth** (\bar d) 防止把零星单碱基覆盖叫稳定检出。
 
-本数据忠实采用论文的 `minimum identity = 90%`，再以 (\bar d\ge1\) 且 (B_{1\times}\ge75\%\) 定义 presence。`samtools coverage` 的 `coverage` 是 depth ≥1 的位置比例，`meandepth` 才是平均深度 [@li2009samtools]；两列不能拿错。
+本数据采用论文的 `minimum identity = 90%`，再以 $\bar d\ge1$ 且 $B_{1\times}\ge75\%$ 定义 presence。`samtools coverage` 的 `coverage` 是 depth ≥1 的位置比例，`meandepth` 才是平均深度 [@li2009samtools]；两列不能拿错。
 
 ### Presence gate 必须预注册，不能看图后挑
 

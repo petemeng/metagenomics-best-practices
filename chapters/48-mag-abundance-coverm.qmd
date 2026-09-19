@@ -32,7 +32,7 @@ reader-mode: upstream
 本次使用 **24 CPU cores**；95% 与 97% 两条 CoverM 分支分别耗时 39.10 与 41.67 秒，峰值 RAM 为 1.413 与 1.401 GiB。24 个代表基因组约 58 MB，四份 clean FASTQ.gz 共约 741 MB；四个未过滤 BAM 共约 1.18 GB。建议准备 **8 cores、8 GB RAM、5 GB 可用磁盘，预计 3--10 分钟**。大队列优先建立固定 catalog/index，将 BAM 放在高速临时盘；没有服务器时，可读取 `data/small/48-mag-abundance-coverm-frozen/` 的 raw CoverM tables、汇总表、命令、资源日志与校验记录，BAM 不进入冻结包。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="目录内百分比与整个群落的份额需要并列"}
 
 先报告目录回收范围，再解释目录内相对丰度；平均深度与检出需要不同的覆盖标准。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 ![24 个 95% ANI SGB 在两份真实 mock 中的 CoverM relative abundance；颜色与格内数值均为百分比。](../figures/48-mag-abundance-heatmap.png){#fig-48-heatmap}
 
 两份 abundance profile 的 Spearman 相关为 0.967，但 ERR9765746 与 ERR9765747 是 composition 不同的真实 uneven mocks，不是生物学重复；这个相关只描述 catalog 坐标上的排序相似性，不构成组间检验。
+
+### 目录内百分比与整个群落的份额需要并列
+
+本例 catalog 捕获约 70% reads，目录中的相对丰度只描述这个可回收范围。剩余部分可能来自未组装、未分箱、参考外成员或比对限制；不能把它们自动归成不存在的物种。跨样本比较时，capture 改变会影响条件分母，需与丰度图同时展示。
+
+mean depth 与 breadth 决定能否可靠检测，竞争性比对规则则影响近缘代表之间如何分配 reads。提高 identity 后总 capture 降低而主要相对丰度变化较小，是本例的敏感性结果，不是所有数据都稳健的保证。这里也没有独立细胞负荷，所以不能把覆盖度百分比解释为每克样本的数量。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

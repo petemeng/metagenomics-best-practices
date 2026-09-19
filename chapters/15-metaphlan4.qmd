@@ -44,7 +44,7 @@ reader-mode: upstream
 > **真实数据：**71-strain MOCK1 DNA 的 Illumina HiSeq 3000 run `ERR9765746`，ENA project `PRJEB52977`、sample `SAMEA14435832` [@meslier2022platforms]。输入为第 13 篇固定 fastp 分支保留的 99,991 个同步 pairs；R1/R2 的压缩与未压缩 SHA-256、records、bases 和 paired-ID hash 都与上游账本逐项相等。  
 > **预计资源：**官方文档给 MetaPhlAn 4 的最低内存为 30 GB，建议使用 8–16 核、48–64 GB RAM，并在数据库盘预留至少 120 GB。当前 release 分成 5.60 GiB marker-metadata archive 与 38.88 GiB Bowtie2-index archive；下载、归档、解包索引和 mapout 并存时，磁盘需求远高于环境本身。没有服务器时可用官方 toy 数据库检查命令语法，但 toy profile 不能替代完整数据库的生物学结果；正式分析应提交到机构 HPC 或合规云。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="零未分类比例不等于所有 reads 都已找到物种"}
 
 丰度来自 marker coverage，不是直接数比对命中；SGB 名称、未分类部分和 marker 支持要一起解释。
 
@@ -67,6 +67,12 @@ usable marker evidence
 ```
 
 论文 Figure 1 对应的是 2023 年发布时的数据库：26,970 个可 profiling 的 SGB 与约 5.1 million markers，其中 4,992 个为 uSGB。当前分析固定的是 2026 年发布的 `mpa_vJan26_CHOCOPhlAnSGB_202605`；其 PKL 中有 72,000 个 SGB（27,891 known、44,109 unknown）和 13,907,686 个 marker records。数据库规模已经变化，不能把论文旧 catalog 数字写成当前 release 的 manifest。
+
+### 零未分类比例不等于所有 reads 都已找到物种
+
+MetaPhlAn 的相对丰度由 marker 证据估计，不能用原始 marker hits 除以输入 reads 来重新定义同一个指标。本例估计未分类比例为零，同时只有部分 reads 命中 marker；这两个数字不矛盾，因为它们的估计对象与分母不同。
+
+31 个检出物种也不能直接与 mock 的 71 个 strains 相减计算漏检率。需要先统一 strain、species 与 SGB 的对应关系，再确认参考中哪些对象可被识别。低丰度名称应结合多个 marker 的支持和参数敏感性理解，而不是把一行非零值当作完整基因组已存在的证明。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

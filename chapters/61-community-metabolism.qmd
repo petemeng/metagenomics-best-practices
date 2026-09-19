@@ -37,7 +37,7 @@ reader-mode: upstream
 6 个个体化群落并行求解建议 **8 CPU、32 GB RAM、15 GB 可用磁盘和 1--4 小时**。命令固定 `--threads 6`，每个 worker 内部线性代数线程为 1，避免嵌套并行。没有服务器时，先只保留 `MV_FEM1_t1Q14` 跑通一个群落，或直接读取固化的模型审计、growth、exchange 和 interaction tables；大数据库解压与全样本求解放到 HPC 或云端临时磁盘。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="丰度加权模型会把测量误差带到哪里"}
 
 预测交换只在给定培养基、丰度权重和优化目标下成立；与实测代谢物或通量分开表述。
 
@@ -50,6 +50,12 @@ MICOM 原始论文的 **Figure 2** 展示 50% cooperative trade-off 下不同肠
 SMETANA 论文的 **Figure 3** 用 metabolic interaction potential（MIP）描述群落通过成员互补降低外界营养依赖的能力，**Figure 4** 进一步展示 co-occurring subcommunities 的 interaction potential、resource overlap 与候选交换物类别 [@zelezniak2015smetana]。这里忠实运行 global 与 detailed 两条分支，但只报告可审计的输出：global MIP/MRO 为 `not estimable`；detailed 分支有 7,853 行，MUS 1,330 行为正、MPS 395 行为正，而 SCS 与 composite score 全部为 0。由于跨方法比较的 SMETANA 端没有可用的正 composite score，MICOM--SMETANA overlap 不计算。
 
 ![每条细线是一位独立成人。完整曲线揭示“让更多成员保持正生长”与“保留较高群落 biomass objective”之间的约束权衡；虚线是预先固定的主分析值。](../figures/61-tradeoff-curves.png){#fig-61-tradeoff}
+
+### 丰度加权模型会把测量误差带到哪里？
+
+群落模型用测得的相对丰度给成员加权，结果因而同时依赖物种谱、模型覆盖和培养基约束。未进入模型的成员不再参与当前优化；覆盖后的权重若重新归一化，描述的是可建模子群落，而不是完整样本。observed 与 equal abundance 的比较用于判断权重影响，不能确定哪一组更接近真实通量。
+
+本例 global MIP/MRO 无法估计，不能以 detailed component rows 的数量或零分数代替。缺失结果首先是计算与接口层面的信息不足。对 MICOM 的正通量解也应保留同样边界：它描述指定约束下允许的交换，不证明成员在体内实际发生了该交换。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

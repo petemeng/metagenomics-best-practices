@@ -44,7 +44,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等公开的 `PRJEB52977` 不均一微生物 DNA mocks：MOCK1（ERR9765746）和 MOCK2（ERR9765747）。每个官方 ENA run 确定性取得 2,000,000 个同步 pairs，经 fastp 1.3.6（Q20、低质量碱基不超过 40%、N 不超过 5、最短 50 bp）后保留 1,999,853 与 1,999,888 clean pairs [@meslier2022platforms; @chen2018fastp]。参考是同一 mocks 的六套真实 short-read assemblies 经 Prodigal 2.6.3 与 MMseqs2 9.d36de 以 95% identity/95% coverage 建立的 93,782-gene MEGAHIT mix catalog [@hyatt2010prodigal; @steinegger2017mmseqs2]；全部 FASTQ 与 catalog 文件身份均在 `input-lineage.tsv` 固定。  
 > **结论边界：**两套 mock 用于技术校准，不是生物学重复；它们的 reads 参与过目录构建，因此高 mapping/detection 不能解释成独立预测性能，更不能外推为自然群落的生物效应。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="高 mapping rate 不等于每条 read 都可唯一计数"}
 
 区分多重比对分配、基因长度校正与样本内归一化；功能一对多映射不能解释为新增 reads。
 
@@ -67,6 +67,12 @@ reader-mode: upstream
 ::: {.callout-important title="先给结论：mapping rate 不是丰度矩阵的分母"}
 MOCK1/MOCK2 的 primary raw mapping rates 是 83.6705%/83.3977%，但通过 `MAPQ >= 10`、`identity >= 95%`、`query coverage >= 80%` 后，进入主计数表的只有 2,784,234/2,777,443 reads，即 69.6110%/69.4400% 的全部输入。报告一个“mapped percent”而不写过滤层，会把两个分母混成一个数字。
 :::
+
+### 高 mapping rate 不等于每条 read 都可唯一计数
+
+一条 read 可以比对到多个近缘基因；把所有命中都累加会制造新的计数质量。应先固定多重比对和配对规则，再区分 mapped、通过过滤与实际 assigned 的数量。基因长度校正和样本总量归一化是后续的不同步骤，不应混进原始 assignment 账本。
+
+本例 reads 已参与目录构建，因此高回比率不是外部泛化性能。功能一对多映射又会改变求和规则：多个标签不代表多条新增 reads。比较样本时应保留未分配与未注释部分，否则功能图的分母可能随样本而变化。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

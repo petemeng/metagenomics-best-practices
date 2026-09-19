@@ -46,11 +46,17 @@ reader-mode: analysis
 
 原研究 Figure 3 把 MGX、MTX、代谢组和蛋白组放进同一套纵向框架：同一受试者的群落组成相对稳定，而基因转录、蛋白和代谢物可以更快变化 [@lloydprice2019multiomics]。这正是 DNA 与 RNA 联动的核心——相似的功能潜力并不保证同样的当下活动。
 
-![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向多组学问题；文章采用 CC BY 4.0，图像 SHA-256 为 `4da31e607fcfbcd52a398185a26337c47c3f60dd84c633bea065fb7d0ec11766`。](../figures/64-lloyd-price-fig3-original.png){#fig-64-anchor}
+![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向多组学问题；文章采用 CC BY 4.0](../figures/64-lloyd-price-fig3-original.png){#fig-64-anchor}
 
 复现不先挑“最漂亮”的通路，而是从全部官方合并表开始记录样本损失。`_TR` 列是技术重复，不是额外患者；四个全零层也不能靠加 pseudocount 伪装成有效测量。
 
 ![从官方 assay profiles 到 104 名独立受试者的样本审计。图内计数单位明确区分 profiles、columns、samples 和 subjects。](../figures/64-pairing-audit.png){#fig-64-pairing}
+
+### 两个相对量相除，为什么还不是每细胞表达？
+
+RNA 与 DNA 表分别按各自总量归一化。某条通路的 RNA/DNA 指数升高，既可能来自该通路相对转录份额变化，也可能来自两层其他成员或总量的变化。低 DNA 分母与 pseudocount 还会放大比值的不稳定性，因此应同时查看原始两层信号，而不是只按比值排序。
+
+本例 173 条通路表现出相对转录分配差异，但疾病比较中 202 条可检验通路没有一条通过 BH 门槛。前者描述同一样本两层测量的关系，后者描述组间差异，两者不矛盾。“相对 RNA 富集”也不等于疾病特异性激活，更不等于单位细胞的绝对调控变化。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -107,7 +113,7 @@ stopifnot(
 )
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="两个相对量相除，为什么还不是每细胞表达"}
 
 先严格配对样本与特征；相对 RNA/DNA 指数不是绝对表达量，重复采样要按受试者处理。
 

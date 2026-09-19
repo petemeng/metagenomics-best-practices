@@ -32,7 +32,7 @@ reader-mode: upstream
 本次使用 **24 CPU cores**，124 个 genomes 共约 301 MB；两条 dRep 分支各耗时 188--191 秒，实测峰值内存 0.325 GiB，完整工作区约 437 MB。复现这组数据建议 **8 cores、8 GB RAM、2 GB 可用磁盘，预计 5--15 分钟**。数千个跨队列 MAG 的 all-vs-all 比较会显著放大临时文件与计算量，建议使用 16--32 cores、64 GB RAM 和高速本地盘，并先按生态位/host/project 分层。没有服务器时，可直接读取 `data/small/45-drep-dereplication-frozen/` 中 checksum-covered 的 Cdb/Wdb/Ndb、代表表、ANI 审计和资源记录。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="ANI 很高，也要看比较了多少序列"}
 
 聚类边界和代表选择规则都要写清楚；代表基因组不能代替簇内菌株差异。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 ![同一批 124 个输入在 95% ANI 与 99.9% ANI 下的保留和去除数量。阈值改变的是被代表的生物学单位。](../figures/45-dereplication-yield.png){#fig-45-yield}
 
 95% ANI 主分析保留 24 个 representatives，其中 16 个来自第 44 篇完整 MIMAG 审计后的 selected set；其余 8 个来自第 42 篇通过最小 CheckM2+GUNC gate、但尚未重做完整 rRNA/tRNA MIMAG 审计的分箱结果。因此，“24 个 species representatives”与“24 个 high-quality MAGs”是两种完全不同的陈述。
+
+### ANI 很高，也要看比较了多少序列
+
+短片段与完整基因组在共有区域可以有很高 ANI，却没有足够范围支持同一层级判断。alignment fraction 与聚类规则应和 ANI 一起报告；不同链接策略还可能因链式相似产生不同簇。95% 和 99.9% 代表不同操作性分辨率，不是两种可互换的“去重复”。
+
+代表基因组只用于减少重建冗余，不覆盖簇内全部附属基因与菌株变异。本例 24 个代表也并非全部已完成同一深度的 MIMAG 检查，因此不能把去冗余后的数量改写为高质量完整基因组数量。下游分析需要保留成员与代表的映射。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

@@ -32,7 +32,7 @@ reader-mode: upstream
 本次实跑使用 **24 CPU cores**。两个 `inStrain profile` 分别耗时 **432.32 秒**和 **418.05 秒**，峰值 RAM **3.721 GiB**；`inStrain compare` 耗时 **28.32 秒**、峰值 RAM **0.670 GiB**。工作目录约 **497 MB**，另有两份 306.6/329.2 MB BAM 和 58 MB reference catalog。建议准备 **16 GB RAM、24 cores、5 GB 可用磁盘、约 20 分钟**；4--8 cores 也能跑，但会更慢。没有服务器时，可直接读取 `data/small/50-instrain-microdiversity-frozen/` 的规范化表重画图；要重新调用 SNPs，建议使用 HPC 或云主机，并先在 1--2 个样本上核对 BAM/reference 坐标。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="相似度接近百分之百，仍可能需要拒绝判断"}
 
 相似度要与可比较的基因组范围一起解释；低覆盖或小重叠不能支持强同株结论。
 
@@ -45,6 +45,12 @@ inStrain 原始论文的 Figure 1 以 population-level nucleotide diversity、co
 ![达到 >=5x breadth 50% 门槛的 SGB，其 observed-depth nucleotide diversity 在两个样本间并不完全相同。](../figures/50-nucleotide-diversity.png){#fig-50-pi}
 
 ![SNV density 必须和 depth、被评估的 genome bases 一起报告。](../figures/50-snv-density.png){#fig-50-snv}
+
+### 相似度接近百分之百，仍可能需要拒绝判断
+
+高相似度只针对共同可比较的位置。本例某 SGB 的 popANI 很高但可比范围只有 35.87%，所以保留拒判比把它强行归入同株更符合证据。低覆盖位置没有观察到差异，不等于这些位置已经证明相同。
+
+样本内混合菌株还会影响共识与等位基因分布。应把微多样性、可比较范围及参考偏差一并解释；当前操作性同株支持不包含传播方向。不同深度下得到的差异数也不能直接按数量比较，因为被检验的位置集合不同。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -163,9 +169,9 @@ contig 名、长度或顺序版本错配会造成大批 `no_length`/missing-scaf
 对一个可比较位点，若等位基因频率为 (p_1,ldots,p_k)，其 nucleotide diversity 可写为
 
 
-\[
+$$
 \pi = 1 - \sum_{i=1}^{k} p_i^2.
-\]
+$$
 
 把通过 coverage、allele-frequency 与 FDR 条件的位点汇总到 genome，得到样本内群体的平均成对差异。它不是物种 abundance，也不是两个样本的距离；高值可来自真实多菌株共存，也可来自 cross-mapping、污染或重复区域。
 

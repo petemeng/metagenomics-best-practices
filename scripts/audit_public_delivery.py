@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 import yaml
+from lxml import html as lxml_html
 
 
 PRIVATE = ("/media/desk16/", "/home/tly9658/", "tly9658", "file://")
@@ -85,6 +86,17 @@ def local_asset(page: Path, root: Path, src: str) -> Path | None:
     return (page.parent / path).resolve()
 
 
+def has_rendered_recommendation(text: str) -> bool:
+    """Accept substantive topic-specific callouts on either public surface."""
+    document = lxml_html.fromstring(text)
+    candidates = document.xpath(
+        '//*[contains(@class,"callout-tip") or contains(@class,"callout-important") '
+        'or contains(@style,"border-left:4px solid #5f9a7d") '
+        'or contains(@style,"border-left:4px solid #8c6ca8")]')
+    return any(len(re.sub(r'\s+', '', ' '.join(
+        p.text_content() for p in node.xpath('.//p|.//li')))) >= 20 for node in candidates)
+
+
 def audit_html(page: Path, asset_root: Path, *, wechat: bool) -> list[str]:
     issues: list[str] = []
     if not page.is_file():
@@ -104,7 +116,7 @@ def audit_html(page: Path, asset_root: Path, *, wechat: bool) -> list[str]:
             issues.append(f"legacy heading {heading!r} in {page}")
     # Recommendations may be an early callout; do not require an English
     # slot heading or forbid a preparation ID that contains real input data.
-    if '先确定这一点' not in text and '选择组成图' not in text:
+    if not has_rendered_recommendation(text):
         issues.append(f"early decision recommendation missing in {page}")
     for source in parser.images:
         src = source.strip()

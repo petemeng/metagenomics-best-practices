@@ -3,6 +3,9 @@
 import re
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
+if any(re.search(r'^reader-mode:', p.read_text(), re.M)
+       for p in [root/'index.qmd']+list((root/'chapters').glob('*.qmd'))):
+    raise SystemExit('Historical migration already applied; current reader gates must not be reset.')
 for p in [root/'index.qmd']+list((root/'chapters').glob('*.qmd')):
     text=p.read_text()
     def dedup(m):

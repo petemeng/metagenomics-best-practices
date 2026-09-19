@@ -32,7 +32,7 @@ reader-mode: upstream
 本次实跑使用 **24 CPU cores**。PhyloPhlAn 配置生成耗时 **4.13 秒**；当前阈值和官方阈值两次 StrainPhlAn 分别耗时 **80.82 秒**与 **84.08 秒**，峰值 RAM 分别为 **2.076 GiB** 与 **2.083 GiB**。完整工作目录约 **131 MB**。从已生成 consensus marker profiles 起步，建议准备 **8 GB RAM、16--24 cores、2 GB 可用磁盘、约 5 分钟**；若从原始 FASTQ 运行 MetaPhlAn，耗时和磁盘取决于样本数与测序深度。没有服务器时，可读取 `data/small/51-strainphlan-frozen/` 的规范化表和树文件重画图。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="marker 树描述的是可见标记区的谱系关系"}
 
 树拓扑依赖 marker 覆盖与缺失模式；地理或分组聚集不自动证明传播方向。
 
@@ -45,6 +45,12 @@ StrainPhlAn 方法论文用物种特异 marker 的样本间变异重建菌株系
 ![25 个真实 stool metagenomes 与 5 个参考基因组的 marker-gene maximum-likelihood tree。颜色是作图后添加的 country metadata，没有参与建树。](../figures/51-strainphlan-tree.png){#fig-51-tree}
 
 ![由同一 gap-aware marker p-distance 矩阵得到的 additive PCoA。该图用于观察结构和离群点，不替代系统发育树。](../figures/51-marker-distance-pcoa.png){#fig-51-pcoa}
+
+### marker 树描述的是可见标记区的谱系关系
+
+25 个样本分属 13 项研究和 9 个国家，国家与研究高度重合。树上同国聚集可以来自真实群体结构，也可能包含研究与流程差异；不能仅靠颜色聚集解释为地理原因。样本对共享参与者和研究背景，距离点也不是全部独立重复。
+
+marker 缺失模式会改变共同可比较范围，物种内混合还可能让共识不代表单一克隆。应查看比对覆盖和分支支持，再解释局部聚类。树上的近距离关系提供共享线索，不提供方向、接触或具体传播事件证据。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -258,10 +264,10 @@ python3 scripts/run_article51_strainphlan.py \
 
 本次描述性距离只在两个样本都为 A/C/G/T 的位点上计算：
 
-\[
+$$
 d_{ij}=\frac{\text{nucleotide differences}_{ij}}
 {\text{comparable A/C/G/T sites}_{ij}}.
-\]
+$$
 
 这个未校正 p-distance 便于审计，但深分化时可能饱和，也没有利用位点替换模型。更重要的是，近邻可由共同来源、流行克隆、数据库偏倚、批次、cross-mapping 或样本污染造成。传播分析还需要纵向/接触设计、阴性样本对和更密集的全基因组 SNV 证据。
 

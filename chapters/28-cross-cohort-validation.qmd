@@ -51,11 +51,17 @@ reader-mode: analysis
 
 Wirbel 等人在 2019 年汇总 8 个地理和技术背景不同的 CRC shotgun 队列。Figure 3a 先逐一训练单队列模型：对角线是同队列交叉验证，非对角线是 study-to-study transfer；Figure 3b 再把其余 4 个 discovery studies 合并训练，在第 5 个完整队列上做 leave-one-study-out（LOSO）外测。原文报告，species-level LOSO AUROC 为 0.71–0.91，多队列训练相对单队列迁移平均提高约 0.076 [@wirbel2019crc]。
 
-![Wirbel et al. 2019 Figure 3。上半部比较物种与 eggNOG 模型的单队列迁移，下半部比较 study-to-study transfer 与 LOSO。原图 © Springer Nature 2019，权利归原权利人所有，仅用于学术评论，不属于本仓库 CC BY/MIT 授权内容；来源为 Nature Medicine，SHA-256 为 e430cb0afefaed0b1c33333350758fac74c1d165cfa484ef7984c15ed747f43f。](../figures/28-wirbel-fig3-original.png){#fig-28-anchor}
+![Wirbel et al. 2019 Figure 3。上半部比较物种与 eggNOG 模型的单队列迁移，下半部比较 study-to-study transfer 与 LOSO。原图 © Springer Nature 2019，权利归原权利人所有，仅用于学术评论，不属于本仓库 CC BY/MIT 授权内容；来源为 Nature Medicine，](../figures/28-wirbel-fig3-original.png){#fig-28-anchor}
 
 原研究用 MOCAT2 去宿主、mOTU profiler 2.0.0 建 species profile、SIAMCAT 1.1.0 训练 LASSO；5 个 discovery studies 共有 849 个过滤后物种，模型用 10 次重复 × 10 折 CV。当前冻结数据则是 cMD 2021-03-31 release 的 **MetaPhlAn 3 / CHOCOPhlAn 201901** 统一重处理谱 [@beghini2021biobakery; @manghi2026cmd3]。AT 与 DE 的样本口径也和历史论文略有不同，当前 8 队列合计 771 人，而非原论文 768 人。因此下面复现的是 Figure 3 的验证问题，并按当前标准升级；不宣称逐格复刻原数值。
 
 LOSO 的训练集应包含除测试队列以外的所有队列；两个队列互相预测只回答单来源迁移问题。这里主分析轮流留出 **8 个完整队列**：每轮用其余七个完整队列训练，只在第八个队列评估一次。这才是本文所说的真正的 N−1。
+
+### 留一队列外测回答的是哪一种未来场景？
+
+每轮七队列训练、一队列测试，估计的是迁移到一个未参与拟合的研究的能力。它比随机打散所有人更接近新队列场景，但八个已知队列仍不能代表所有未来人群。宏平均 AUC 让每个队列等权，按样本池计算的总体指标则会给大队列更多权重，两者对应不同目标。
+
+本例 I² 为 52.1%，应把研究间差异当作结果，而不是用一个平均数覆盖。若某个测试队列表现明显较低，先检查其病例定义、协变量分布和可检测特征，再决定是否需要重新校准。重新训练或调整后的性能需另行验证，不能沿用原来“完全未见”的称呼。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -123,7 +129,7 @@ validated_three28 <- sum(
 )
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="留一队列外测回答的是哪一种未来场景"}
 
 区分单队列迁移与多队列留一外测；报告每个队列及最差队列的表现，不能只给合并 AUC。
 
@@ -611,7 +617,7 @@ FR、AT、CN、US、DE、IT-B、JP 的 point AUROC 均高于 0.70；IT-A 只有 
 
 ![Each interval is computed inside one untouched cohort; the orange estimate pools logit AUROCs with REML.](../figures/28-lodo-forest.png){#fig-28-lodo-forest}
 
-Random-effects pooled AUROC 为 `r fmt28(performance_meta28$PooledAUROC)`（95% CI `r fmt28(performance_meta28$Lower95)`–`r fmt28(performance_meta28$Upper95)`），$I^2=`r fmt28(performance_meta28$I2Percent, 1)`%$，heterogeneity $P=`r fmt28(performance_meta28$HeterogeneityP)`$。未加权 macro AUROC 为 `r fmt28(bootstrap28$Estimate)`，2,000 次 hierarchical bootstrap 95% CI 为 `r fmt28(bootstrap28$Lower95)`–`r fmt28(bootstrap28$Upper95)`。两个 pooled number 接近，不代表可以省略逐队列结果。
+Random-effects pooled AUROC 为 `r fmt28(performance_meta28$PooledAUROC)`（95% CI `r fmt28(performance_meta28$Lower95)`–`r fmt28(performance_meta28$Upper95)`），$I^2=`r fmt28(performance_meta28$I2Percent, 1)`\%$，heterogeneity $P=`r fmt28(performance_meta28$HeterogeneityP)`$。未加权 macro AUROC 为 `r fmt28(bootstrap28$Estimate)`，2,000 次 hierarchical bootstrap 95% CI 为 `r fmt28(bootstrap28$Lower95)`–`r fmt28(bootstrap28$Upper95)`。两个 pooled number 接近，不代表可以省略逐队列结果。
 
 ![Every subject contributes exactly one outer prediction; curve construction does not pool subjects across cohorts.](../figures/28-lodo-roc.png){#fig-28-lodo-roc}
 

@@ -32,7 +32,7 @@ reader-mode: evidence
 同一台 Linux 服务器、同一批 46 条序列、16 threads 的 GNU `time -v` 实测：**geNomad 1.12.0：131.88 秒、3.809 GiB 峰值 RAM；CheckV 1.1.1：37.18 秒、1.945 GiB；VirSorter2 2.2.4：881.50 秒、0.366 GiB**。三个清理后结果目录分别约 2.1、10.9、24.0 MB。数据库才是磁盘大头：geNomad v1.9 安装后约 **1.47 GB**，CheckV v1.5 约 **6.83 GB**，VirSorter2 v0.4 核心文件约 **10.52 GB**，另需其 Snakemake 运行环境。真实百万级 contig 项目建议准备 **16--32 CPU cores、64 GB RAM、至少 50 GB 数据库/临时磁盘空间**；耗时取决于 contig 数、总 ORF 数和 HMM 拆分策略。没有服务器时，可从 `data/small/54-virus-discovery-quality-frozen/` 的逐 contig 证据矩阵重画统计图；不要把这个小规模回归集的资源消耗外推成大型队列承诺。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="基准集上的检出率能外推到环境样本吗"}
 
 识别结果不等于完整基因组；不同实验类型、质量证据和分类不确定性应分别报告。
 
@@ -54,6 +54,12 @@ reader-mode: evidence
 再看 CheckV。横轴完整度与纵轴宿主侧污染不能压成一个“质量分”；尤其前病毒必须先定边界，再做基因功能和聚类。
 
 ![CheckV quality tiers and the separate completeness/host-flank axes. UHGV-0000346 contains a high-quality proviral region within a host-contaminated contig.](../figures/54-checkv-quality.png){#fig-54-checkv}
+
+### 基准集上的检出率能外推到环境样本吗？
+
+46 条基准序列中，不同工具的并集包含 44 条，高置信结果包含 38 条。这两个数回答的是给定测试集和判定规则下保留了多少候选，而不是实际环境中有多少病毒。若测试集的长度、完整度或来源与目标样本不同，同一个阈值的表现也可能改变。
+
+检出、完整度评估与分类是不同证据层。CheckV 的质量分层不能替代候选发现的准确性评价，无法确定完整度也不等于没有生物学价值。报告时应保留每层的分母和未判定条目，不把筛选后的高置信集合当作环境中全部成员的无偏样本。
 
 ## 下载并校验三份小型公开输入 {#sec-code}
 
@@ -91,10 +97,10 @@ geNomad 综合 marker enrichment、基因组成和神经网络分类，并同时
 
 VirSorter2 2.2.4 的默认门槛是 `max_score ≥ 0.5`。其 `--high-confidence-only` 等价于：
 
-\[
+$$
 \text{high confidence}=
 I(s\ge 0.9)\;\lor\;I(s\ge 0.7\ \land\ h\ge 1),
-\]
+$$
 
 其中 $s$ 是最大分类分数，$h$ 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。
 
@@ -233,10 +239,10 @@ column -ts $'\t' "$WORK/summary/terminal-repeat-audit.tsv"
 
 MIUViG 建议以 **95% average nucleotide identity（ANI）覆盖较短序列的 85%** 作为病毒物种级 operational taxonomic unit（vOTU）阈值 [@roux2019miuvig]。对序列 $(i,j)$，令 $A_{ij}$ 为去重后的对齐碱基数，$L_s=\min(L_i,L_j)$，则：
 
-\[
+$$
 AF_{short}=\frac{A_{ij}}{L_s},\qquad
 \text{same vOTU}=I(ANI\ge95\%)I(AF_{short}\ge85\%).
-\]
+$$
 
 只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 `UHGV-0001702` 与 `UHGV-0001715` 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。
 

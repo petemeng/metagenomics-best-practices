@@ -36,7 +36,7 @@ reader-mode: upstream
 本次实跑中，fastp 的 100 万对/2000 万对分支分别耗时 88.09 s/121.56 s，峰值 1.27/1.37 GiB RAM；EukDetect2 耗时 59.32 s、峰值 3.25 GiB；MEGAHIT 使用 **32 CPU、显式 60 GB memory ceiling**，实际耗时 1,599.23 s、峰值 7.08 GiB。正式队列建议 **16--32 CPU、32--64 GB RAM、每样本或每共组装 100 GB 以上临时磁盘**。没有服务器时，先用固化证据表完成统计与作图；read-based 检出可在小型云主机跑子集，组装和大队列放到 HPC/云端批处理。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="真核 reads 检出与 contig 分类如何相互补充"}
 
 两种输入回答不同层级的问题；DNA 检出不等于活性或定植，也不能忽略参考库覆盖。
 
@@ -53,6 +53,12 @@ EukRep 论文以 k-mer composition 与 linear SVM 把 metagenomic scaffolds 分�
 本次复现把三类论文图合成一条可审计证据链：marker-read 物种证据、不同定量分母、EukRep 长度/模式基准、真实组装审计，以及“当前证据最多允许写到哪里”。
 
 ![Species-level marker evidence from the first one million read pairs. Point size is the total marker-read count; RPKSB is normalized by post-QC sequenced bases.](../figures/58-eukdetect-marker-evidence.png){#fig-58-marker-evidence}
+
+### 真核 reads 检出与 contig 分类如何相互补充？
+
+EukDetect 在 reads 层回答特定真核标记是否得到支持，EukRep 在组装片段层回答序列是否更符合真核来源。二者的输入、可见范围和输出单位不同，因此不能用 contig 数量补算某个真核物种的丰度，也不能把 reads 检出直接当作完整真核基因组恢复。
+
+本例 contig 基准的 sensitivity 为 73.76%、specificity 为 99.48%。高特异度与相当一部分真核片段漏检可以同时存在；仅展示“预测为真核”的集合会隐藏后者。解释新数据时，先判断它与基准在片段长度、组成和来源上是否相近，再讨论检出或未检出的意义。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -253,11 +259,11 @@ EukDetect2 把 reads 比对到真核 marker reference，去除低质量、低复
 
 三个丰度字段的分母不同。令 taxon 的 assigned marker reads 为 (r_t)，可用 marker 总长度为 (L_t) kb，样本质控后总测序碱基为 (B)：
 
-\[
+$$
 \mathrm{RPKS}_t = \frac{r_t}{L_t}, \qquad
 \mathrm{RPKSB}_t = \frac{\mathrm{RPKS}_t}{B/10^9}, \qquad
 \mathrm{RelEuk}_t = 100\frac{\mathrm{RPKSB}_t}{\sum_j \mathrm{RPKSB}_j}.
-\]
+$$
 
 RPKSB 适合在 library size 不同的样本间比较 marker signal；RelEuk 的分母只有通过过滤的真核 taxa。它们都不是细胞丰度：不同物种的 genome copy number、ploidy、marker recovery、裂解效率与 DNA 输入量不相同。
 

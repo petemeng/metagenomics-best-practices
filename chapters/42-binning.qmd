@@ -32,7 +32,7 @@ reader-mode: upstream
 五条分支使用 **24 CPU cores**；建议 **128 GB RAM、100 GB 临时磁盘，预留 2--4 小时**。MetaBAT2 很快，SemiBin2/VAMB 的 CPU 训练占主要耗时，Kraken2 Standard-8 安装后为 8.64 GB。自然群落的 assembly、样本数和 bin 数更大，应为深度矩阵、模型中间文件与候选 FASTA 预留额外磁盘。没有服务器时，可直接读取 `data/small/42-binning-comparison-frozen/` 中的 membership、CheckM2/GUNC、truth audit、日志和环境锁。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="候选 bin 更多，为什么最终可用基因组未必更多"}
 
 在同一输入和质量标准下比较分箱结果；产出数量不能替代完整度、污染和嵌合检查。
 
@@ -47,6 +47,12 @@ reader-mode: upstream
 ![同一坐标、同一最小 bin 大小下，五条分箱分支的质量产出。mock 真值只用于运行后的左侧审计。](../figures/42-binner-quality-yield.png){#fig-42-yield}
 
 五条分支依次产生 33、34、43、26 和 35 个 candidates；其中 CheckM2+GUNC minimum-pass 分别为 22、22、24、15 和 18 个。SemiBin2 的 candidate 与 minimum-pass 产出最高，但也有 19 个 candidates 未过 minimum gate；因此“总 bin 数更多”不能直接写成“MAG 回收更好”。MetaBAT2 加入第二列 depth 后，多分出 216 条 contigs、少量独有分配由 92 增至 308 条；在 8,052 条共同分箱 contigs 上 ARI 为 0.981。
+
+### 候选 bin 更多，为什么最终可用基因组未必更多？
+
+一个基因组可以被拆成多个不完整 bin，也可以与别的成员混成一个较大的 bin。五个工具产出数量不同，需要在共同序列范围与同一质量定义下比较，而不能把最大数量直接解释为最大回收。真值只在选择之后评价，避免把真实项目无法知道的答案用作调参依据。
+
+taxonomy-assisted 分箱还依赖参考覆盖：较熟悉的成员可能获益，未知谱系则未必具有相同信息。完整度、污染与嵌合度反映不同错误模式，应保留逐 bin 结果。即便通过最小质量门槛，也不意味着已经达到完整 MIMAG 高质量标准。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

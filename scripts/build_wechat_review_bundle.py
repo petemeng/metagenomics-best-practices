@@ -25,6 +25,7 @@ from urllib.parse import unquote, urlsplit
 import yaml
 from lxml import etree, html
 from PIL import Image, ImageOps
+from wechat_math import replace_math
 
 
 MAX_TITLE_CHARS = 64
@@ -515,7 +516,7 @@ def resolve_and_optimize_images(
             cache[source] = (relative, destination)
         relative, destination = cache[source]
         image_element.set("src", relative)
-        image_element.set("style", STYLES["img"])
+        image_element.set("style", image_element.get("data-math-style") or STYLES["img"])
         with Image.open(destination) as opened:
             width, height = opened.size
         record = {
@@ -526,6 +527,7 @@ def resolve_and_optimize_images(
             "size_bytes": destination.stat().st_size,
             "width": width,
             "height": height,
+            "is_equation": bool(image_element.get("data-math-style")),
         }
         if not any(item["local_path"] == record["local_path"] for item in records):
             records.append(record)
@@ -564,6 +566,7 @@ def sanitize_article(
     stripped_install_calls = flatten_code(main)
     transform_special_blocks(main)
     apply_inline_styles(main)
+    replace_math(main, article_dir.parent / ".math-cache")
     images = resolve_and_optimize_images(main, source_html, article_dir)
     strip_unsupported_attributes(main)
     main.set("style", ROOT_STYLE)
@@ -607,6 +610,9 @@ def digest_for(chapter: dict[str, Any]) -> str:
 
 def representative_cover_source(images: list[dict[str, Any]]) -> tuple[Path, str]:
     """Prefer an original analysis figure over a reproduced paper anchor."""
+    images = [item for item in images if not item.get("is_equation")]
+    if not images:
+        raise ValueError("A formula is not a representative result cover")
     reproduced_markers = {"original", "paper", "anchor", "source-figure"}
     for image in images:
         name = Path(str(image["source_path"])).name.lower()

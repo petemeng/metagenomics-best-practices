@@ -38,7 +38,7 @@ reader-mode: upstream
 这组小 MAG 的成功步骤中，单任务峰值常驻内存最高为 **1,444,584 KB**，最长 wall time 为 **1,161.3 s**；并行峰值取决于同时运行的 jobs。真实人群 MAG 更大、数据库缓存与 solver 行为也不同，部署时仍按上述保守门槛预留资源。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="一个可行的代谢解，能说明多少生物学"}
 
 培养基边界和补缺反应都会影响预测；模型可行不等于真实生长或通量已被测量。
 
@@ -51,6 +51,12 @@ CarveMe 原始论文的 **Figure 1** 对比 bottom-up reconstruction、top-down 
 gapseq 论文用 enzyme activity、carbon-source utilization、fermentation products 和 community interactions 的外部 phenotype 数据评估自动模型，并强调 sequence homology、pathway topology 与 reaction-score-aware gap filling 的联合贡献 [@zimmermann2021gapseq]。这里不复刻其中某个 benchmark 百分比，而是重建审稿时更常用的审计面板：model size、gap-fill burden、medium sensitivity、no-uptake leakage、MAG quality 和 controlled incompleteness。
 
 ![8 个真实 MAG 的固定 draft 与 gap-filled model 反应数。连线右侧的数字是增加的反应数；新增反应是模型修复假设。](../figures/60-model-size-gapfill.png){#fig-60-model-size}
+
+### 一个可行的代谢解，能说明多少生物学？
+
+FBA 给出的是满足当前反应、边界和目标函数的一组可行解，不是对真实细胞每条反应通量的直接测量。多个不同解可能达到相同目标值；求解成功与预测在实验中成立也不是同一件事。因此，本例的 168 次计算检查主要用于定位模型假设的影响，不是 168 次独立生物学验证。
+
+gap filling 可以恢复数学可行性，却也可能加入缺乏当前基因组支持的反应。比较完整与截短 MAG 时，应同时看保留的证据和补入的假设，不能只比较是否得到正的生长目标值。模型越依赖补全，结论越需要写成条件性预测。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -247,17 +253,17 @@ column -ts $'\t' "$WORK/protein-id-audit.tsv"
 
 若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 $A$，使修复后的网络可行，并最小化代价：
 
-\[
+$$
 \min_A \sum_{j\in A} w_j y_j,
-\]
+$$
 
 其中 $y_j$ 表示是否加入 reaction $j$，$w_j$ 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。
 
 本次定义：
 
-\[
+$$
 B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},
-\]
+$$
 
 并用 $B_g>10\%$ 作为需要人工复核的 **audit flag**，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。
 
@@ -322,21 +328,21 @@ Archaea 自动切换到 gapseq `-t Archaea -m Archaea -b Archaea` 与 CarveMe `-
 
 设 $S \in \mathbb{R}^{m\times r}$ 为 metabolite × reaction 的 stoichiometric matrix，$v$ 为 reaction flux，稳态近似为：
 
-\[
+$$
 Sv=0.
-\]
+$$
 
 培养基、反应方向和容量写进上下界：
 
-\[
+$$
 \ell_j \le v_j \le u_j,
-\]
+$$
 
 常见 FBA 以 biomass reaction 为目标 [@orth2010fba]：
 
-\[
+$$
 \max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.
-\]
+$$
 
 因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。
 

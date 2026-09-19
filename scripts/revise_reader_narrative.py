@@ -63,6 +63,9 @@ def polish_prose(text):
 
 
 def make_editorial(root, topics):
+    sources = [root/'index.qmd'] + sorted((root/'chapters').glob('*.qmd'))
+    if any(re.search(r'^reader-mode:', p.read_text(), re.M) for p in sources):
+        raise ValueError('One-time migration already applied; edit current chapters directly.')
     changes = []
     for source in [root/'index.qmd'] + sorted((root/'chapters').glob('*.qmd')):
         number = 1 if source.name == 'index.qmd' else int(source.name[:2])
@@ -82,7 +85,8 @@ def make_editorial(root, topics):
             if re.match(r'## Key Takeaways', h):
                 summaries.insert(0, body[a+len(h):b].strip())
                 body = body[:a] + body[b:]
-        takeaways = f'::: {{.callout-tip title="先确定这一点"}}\n\n{row["recommendation"]}\n\n:::\n\n'
+        takeaway_title = row['opening'].rstrip('？').replace('"', '')
+        takeaways = f'::: {{.callout-tip title="{takeaway_title}"}}\n\n{row["recommendation"]}\n\n:::\n\n'
         # Repeated metadata in a takeaway is already preserved in frontmatter
         # and worked results; keep non-duplicated narrative in a closing note.
         closing = '\n\n'.join(summaries)

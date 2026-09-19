@@ -32,7 +32,7 @@ reader-mode: upstream
 本次使用 **24 CPU cores**。数据库 `check_install` 耗时 189.14 秒；24 个 SGB 的 `classify_wf` 耗时 62.45 秒、峰值 RAM 14.611 GiB。R232 官方压缩包为 **60,806,405,195 bytes**，解压后 263 个文件共 **100,482,230,310 bytes**；同时保留压缩包与工作区时建议准备 **220 GB 可用磁盘、24 cores、64 GB RAM，预计 5--30 分钟**。本数据在 ANI prescreen 结束，不能用 14.6 GiB 外推陌生 MAG 的 pplacer 内存；大量未命中 reference 的细菌 MAG 应在大内存 HPC/云节点运行。没有服务器时，可读取 `data/small/46-gtdbtk-taxonomy-frozen/` 中的 native summary、ANI table、数据库审计、命令、版本和资源日志。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="已有物种匹配与树上放置是不同分类路径"}
 
 分类结果依赖参考树与 release；未能细分的结果应保留不确定性，不用已知标签替代独立分类。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 ![24 个非冗余 SGB 在 GTDB R232 中的 reference-specific ANI margin 与 alignment fraction。虚线分别表示 species radius margin = 0 和本次预设 AF = 50%。](../figures/46-ani-af-audit.png){#fig-46-ani-af}
 
 横轴不是“ANI 减固定 95%”，而是 `observed ANI - closest reference radius`。例如 SGB_023 的 reference radius 为 95.31%，其判定不能被简化成所有物种都共享 95.00%。
+
+### 已有物种匹配与树上放置是不同分类路径
+
+本例全部 24 个 SGB 在 ANI prescreen 即找到支持的参考归属，所以本次资源消耗没有涵盖陌生谱系的完整树放置。迁移到参考稀缺环境时，分类路径、运行成本与不确定性都可能改变，不能直接套用这次快速结束的表现。
+
+分类名称随 release 更新并不一定意味着序列改变，可能是参考范围或命名规则修订。比较研究时应同时保存稳定基因组身份和版本化 taxonomy。没有 species 标签时应报告未解析范围，而不是自动命名为新物种；已有标签也需要 ANI、可比范围与质量支持。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

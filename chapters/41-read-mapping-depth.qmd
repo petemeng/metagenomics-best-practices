@@ -26,13 +26,13 @@ wechat:
 reader-mode: upstream
 ---
 
-> **先给结论：**回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity >=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 `log1p(depth)` 的 Pearson (r=0.792)、Spearman \(\rho=0.483\)。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。
+> **先给结论：**回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity >=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 `log1p(depth)` 的 Pearson (r=0.792)、Spearman $\rho=0.483$。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。
 
 ::: {.callout-important title="算力与数据边界"}
 本次用 24 CPU cores 建索引、16 cores 比对，两个样本各约 200 万 read pairs。Bowtie2 建索引用时 45 秒、peak RAM 0.58 GiB；每个样本的比对与排序用时 59--63 秒、peak RAM 1.35 GiB；整个工作目录占 769 MB，其中两个 BAM 合计约 554 MB。建议预留 **16 GB RAM、24 CPU cores、20 GB 可用磁盘，预计耗时 30 分钟**。真实队列的 BAM 通常接近或超过压缩 FASTQ 体积，磁盘应按样本数线性预估；没有服务器时，可读取 `data/small/41-read-mapping-depth-frozen/` 中的完整 JGI 矩阵、paired-contig 证据、日志与汇总表。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="相同平均深度，为什么覆盖证据可能完全不同"}
 
 把 depth 与 breadth 分开看；多重比对和配对规则会影响深度矩阵，不能只靠均值筛选。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 本篇先把该 abundance vector 做成可审计的 `contig x sample` 深度矩阵。后续分箱只消费这个固定坐标系，不重新解释 BAM。
 
 ![同一共组装坐标系上的两样本 JGI 深度；相关但不完全相同的共丰度为分箱提供信息。](../figures/41-depth-concordance.png){#fig-41-depth}
+
+### 相同平均深度，为什么覆盖证据可能完全不同？
+
+平均值可以由少数高覆盖区域拉高；breadth 则说明有多少参考位置得到支持。多重比对或保守区域富集时，高 depth 与低 breadth 可以同时出现。因此检出、丰度和分箱输入要分别说明各自使用的覆盖统计，不能只保留一个均值。
+
+深度矩阵还必须使用同一个 contig 坐标与样本顺序。两个样本几乎所有 contigs 都有正深度，不意味着它们具有足够不同的共丰度轨迹来区分基因组。样本间信息相近时，分箱仍需要其他证据；增加矩阵列名并不等于增加独立的覆盖变化。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -249,13 +255,13 @@ Bowtie2 overall rate 与 concordant/properly paired 分母不同。至少同时�
 
 ### Mean depth 与 breadth 回答不同问题
 
-对长度为 \(L_c\) 的 contig \(c\)，碱基深度为 \(d_{ci}\)：
+对长度为 $L_c$ 的 contig $c$，碱基深度为 $d_{ci}$：
 
-\[
+$$
 \bar d_c=\frac{1}{L_c}\sum_{i=1}^{L_c}d_{ci},
 \qquad
 B_c=100\frac{\sum_i I(d_{ci}>0)}{L_c}.
-\]
+$$
 
 一个短重复区吸附大量 reads 时，mean depth 可以很高但 breadth 很低；一个低丰度 genome 的 contig 可能 breadth 很高而 mean depth 只有 1--2x。分箱常用 mean depth 形成多样本 abundance vector，污染审计则应同时看 breadth、MAPQ 和局部深度异常。
 

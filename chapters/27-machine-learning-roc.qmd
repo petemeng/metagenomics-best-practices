@@ -46,6 +46,12 @@ reader-mode: analysis
 > **真实数据：**curatedMetagenomicData 3.12.0 中 `ZellerG_2014` 的统一重处理物种谱；纳入 61 名 Control 与 53 名 CRC，排除 adenoma，合计 **114 名独立受试者、661 个物种特征**。分类谱来自 MetaPhlAn 3 / CHOCOPhlAn 201901 [@zeller2014crc]。  
 > **推断边界：**本章估计的是单队列、统一处理谱上的内部泛化误差。它不是独立队列验证，不是临床诊断性能，也不能证明高重要性物种具有因果作用。
 
+### 更高的内部 AUC，是否意味着更好的实际使用价值？
+
+两个模型必须在相同外层划分与相同样本上比较，否则性能差可能只是划分难度不同。重复交叉验证的预测并非新增独立病例；应按真实受试者汇总，并保留配对的不确定性。若根据外层测试结果不断改超参数网格，外层测试也会逐渐参与选择。
+
+114 人的病例–对照队列适合内部方法评估，不代表筛查人群的患病率。实际使用还需要外部校准、预定阈值及成本收益判断；AUC 不提供这些信息。高重要性物种可能是相关特征的代理，应连同稳定性、原始分布和合理基线模型解释。
+
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
 [数据与代码清单](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/27/files.tsv)列出了本例的输入表、分析脚本和环境文件（约 0.8 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。
@@ -93,7 +99,7 @@ metric27 <- function(model, column, digits = 3) {
 }
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="更高的内部 AUC，是否意味着更好的实际使用价值"}
 
 筛选、变换和调参都放进训练折；同时报告区分度、校准和测试折重要性，不只展示 ROC。
 
@@ -103,7 +109,7 @@ metric27 <- function(model, column, digits = 3) {
 
 Zeller 等人的 Figure 1 将德国发现队列、法国验证队列和粪便宏基因组分类器放在同一张图里。历史分析使用重复嵌套验证的 LASSO 模型；论文报告德国队列内部 AUROC 约 0.84，并在法国独立队列得到约 0.85 [@zeller2014crc]。这张图真正值得复现的不是一条漂亮 ROC，而是“特征构建、模型选择和误差估计必须分层”的验证结构。
 
-![Zeller et al. 2014 Figure 1。原研究用粪便宏基因组构建 CRC 分类器，并设置独立法国队列验证。原图按 CC BY 4.0 使用，SHA-256 为 6f0dbe5ca4ad7e9bc853fd6568efca093e30f8f46f02a0f090c282b16059ac43。](../figures/27-zeller-fig1-original.png){#fig-27-anchor}
+![Zeller et al. 2014 Figure 1。原研究用粪便宏基因组构建 CRC 分类器，并设置独立法国队列验证。原图按 CC BY 4.0 使用，](../figures/27-zeller-fig1-original.png){#fig-27-anchor}
 
 这里不把旧版作者谱和新版统一重处理谱混为一谈。冻结输入来自 2021-03-31 的 cMD 资源，使用 MetaPhlAn 3 / CHOCOPhlAn 201901；模型也改为两个预先指定的树集成：Random forest 与 XGBoost。因而下文是对 Figure 1 **验证逻辑**的当前标准复算，而不是对原论文数值或像素的逐项宣称。
 

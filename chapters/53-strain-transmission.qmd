@@ -32,7 +32,7 @@ reader-mode: evidence
 开放补充表重分析实测每次 **3.21--3.29 秒、峰值 RAM 0.073--0.074 GiB**，完整工作目录约 **4.4 MB**；准备 **1 CPU core、1 GB RAM、20 MB 磁盘、1 分钟**即可。若从 FASTQ 重新生成 SameStr SNV profiles，论文报告 SameStr 本身平均增加约 **4.3 CPU minutes/sample**，但前置 QC、去宿主和 MetaPhlAn marker alignment 才是主要 I/O；单批建议 **8--32 cores、32--64 GB RAM**，磁盘至少覆盖压缩 FASTQ、SAM/BAM 与临时文件总量，百样本项目通常需要数百 GB。没有服务器时，直接使用 <code>data/small/53-strain-transmission-frozen/</code> 中的校验表重画统计图；不要用低覆盖 laptop 结果放宽阈值后宣称传播。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="共享信号需要怎样的背景比较"}
 
 共享信号需要独立的时间和来源证据才能谈传播；共同暴露或共同来源仍可能解释相似性。
 
@@ -51,15 +51,21 @@ reader-mode: evidence
 SameStr 论文把“相关样本对”与“无关样本对”当作可检验目标。仅看 family、genus 或 species 都会产生较多背景共享；strain resolution 在 held-out controls 与独立 rCDI/FMT 数据上均有更高 AUROC/AUPR。
 
 
+### 共享信号需要怎样的背景比较？
+
+本例中，配对母婴与未配对样本的共享物种数中位数都是 2；在 7 个可比较家庭中，也只有 3 个婴儿与配对母亲的 Jaccard 相似度最高。单看“检出了相同物种”会忽略这些物种在背景人群中的常见程度。匹配关系必须与实际背景比较一起展示，不能只保留支持家庭共享的样本。
+
+即使更精细的序列证据支持共享谱系，采样时点、共同环境与未采集的接触者仍可能影响解释。相似性不能单独确定方向或接触链；多次比较也不会自动变成独立事件。这里能判断的是哪些观测与家庭共享相容，不能据此还原一次具体传播过程。
+
 ## 下载、按成员校验并登记来源 {#sec-code}
 
 ### 同种只说明两个样本进入了同一个粗坐标 {#sec-theory}
 
 若样本 `A` 与 `B` 检出的命名物种集合分别为 `S_A`、`S_B`，binary Jaccard similarity 为：
 
-\[
+$$
 J(A,B)=\frac{|S_A\cap S_B|}{|S_A\cup S_B|}.
-\]
+$$
 
 成年人之间本来就共享常见 gut species；同一物种又可包含大量彼此独立的 strains。Jaccard 高可以来自饮食、年龄、地理、药物和数据库覆盖，也可以仅因某些常见物种高丰度。它适合筛候选 source-recipient pairs，不足以指定传播者。
 
@@ -92,12 +98,12 @@ cat "$WORK/run-contract.json"
 
 SameStr 在物种特异 marker alignment 中保留达到最低 allele fraction 的多个等位基因。对两个样本 `i` 与 `j`，MVS 可写成：
 
-\[
+$$
 \mathrm{MVS}_{ij}
 =
 \frac{\sum_k I(\text{position }k\text{ is covered in both and shares at least one allele})}
 {\sum_k I(\text{position }k\text{ is covered in both})}.
-\]
+$$
 
 原论文用两道联合门槛调用 shared strain：
 
@@ -153,7 +159,7 @@ Threshold  Infant          Mother          Matched  SharedSpecies  Jaccard
 
 ### 同菌株仍不自动等于“由 A 传给 B”
 
-shared strain 是对称关系，\(A\leftrightarrow B\)；传播是带方向的事件，\(A\rightarrow B\)。方向至少要靠时间设计建立：
+shared strain 是对称关系，$A\leftrightarrow B$；传播是带方向的事件，$A\rightarrow B$。方向至少要靠时间设计建立：
 
 1. source 在 recipient 首次检出前已经携带该菌株；
 2. recipient 基线为阴性或携带不同菌株；

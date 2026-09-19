@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**第一条证据线使用第 19 篇固化的 `ERR9765746_MOCK1` HUMAnN 3.9 native tables：99,991 个 clean read pairs、11,776 个 ordinary gene families、1,402 个 ordinary reactions、147 个 ordinary pathways。第二条证据线使用 `curatedMetagenomicData 3.12.0` 的 `AsnicarF_2017.pathway_abundance`（ExperimentHub `EH7089`）和 `pathway_coverage`（`EH7090`）：11,173 rows × 24 longitudinal profiles，来自 15 个 subjects [@asnicar2017transmission; @pasolli2017cmd]。  
 > **预计资源：**从固化表复算建议 1–2 核、2 GB RAM、50 MB 可用空间，通常十几秒完成；四个代表性 `humann_renorm_table` 分支在本机不足 1 秒。只有从 FASTQ 重建第 19 篇功能谱时才需要约 64 GB RAM、200 GB SSD 和大型数据库。没有服务器时直接使用本文的 checksum-locked 小表即可。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="删除特殊行后，100% 的含义已经改变"}
 
 归一化前先决定特殊行是否保留；删除未解释部分后重新闭合，不能再把 100% 解释为功能覆盖率。
 
@@ -69,6 +69,12 @@ ordinary community value 在 gene family、reaction 和 pathway denominators 中
 
 
 AsnicarF_2017 的 24 个 profiles 不是 24 个独立受试者，而是 15 个 subjects 的纵向采样。本文只用它演示多样本筛选和零值合同，不检验母婴、时间点或其他生物组差异。
+
+### 删除特殊行后，100% 的含义已经改变
+
+本例去掉特殊行后，pathway 分母从约 102,782 降到 3,568。重新闭合所得比例描述的是可解释普通通路内部的组成，而不是全部输入的功能覆盖；两种图可以都合理，但必须写清条件分母。CPM 与相对丰度只是同一次闭合的不同数值刻度，不构成两个独立归一化证据。
+
+特殊行也不能都解释为“未知物种”：未映射、未归组与未整合反映不同分析阶段。应保留它们各自的比例，再决定统计目标是否条件于已注释部分。pathway coverage 则保留原生范围，不应当作 abundance 继续闭合或稀释。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -257,11 +263,11 @@ HUMAnN 用 `|` 区分 stratification level：
 
 如果目的是报告“某 pathway 的 taxon contribution”，最稳妥的写法是同时给两个量：
 
-\[
+$$
 Contribution_{i,s} = \frac{x_{i,s}}{\sum_s x_{i,s}},
 \qquad
 R_i = \frac{\sum_s x_{i,s}}{x_{i,community}}.
-\]
+$$
 
 第一个量在 stratified evidence 内闭合；第二个量把 strata 与 community reconstruction 的差距如实留下。不能先把 taxa 强行缩放到 community value，再声称它们是原始 pathway abundance。
 
@@ -320,10 +326,10 @@ levelwise 的 taxon strata 加和为 1，不再保留 community 量级。不能�
 
 对一个样本、一个选定 denominator (D)，feature (i) 的两种常见输出是：
 
-\[
+$$
 RA_i = \frac{x_i}{D}, \qquad
 CPM_i = 10^6\frac{x_i}{D}.
-\]
+$$
 
 因此 `CPM = relative abundance × 1,000,000`。二者排序和比例信息完全相同；CPM 只是让很小的小数更易读。这里的 CPM 是 **copies per million** 的相对刻度，不是 raw read count、每细胞拷贝数、每克样本绝对量，也不是代谢通量。
 
@@ -569,9 +575,9 @@ prevalence 还依赖 detection rule。本次 445 个 ordinary unstratified pathw
 
 对含零的 log-ratio，pseudocount (c) 会进入：
 
-\[
+$$
 \log_2\frac{x_i+c}{x_j+c}.
-\]
+$$
 
 当 (x_i) 或 (x_j) 接近 0 时，结果可主要由 (c) 决定。因此至少报告一组有数量级差异的 (c)，或使用明确建模 zeros 的组成型方法；不要只展示“最好看”的一个值。
 

@@ -43,7 +43,7 @@ reader-mode: upstream
 > **真实数据：**官方 ExperimentHub 资源 `EH7091`，标题为 `2021-10-14.AsnicarF_2017.relative_abundance`。对象来自 Asnicar 等的母婴菌株传播研究 [@asnicar2017transmission]，包含 298 个分类特征、24 个样本、15 位受试者和 SRA accession `SRR4052021`–`SRR4052044`。  
 > **预计资源：**建议 2 核、8 GB RAM、2 GB 项目可用磁盘；首次安装通常 15–60 分钟，本文 18,187-byte Hub 资源的实际取回低于 1 分钟。共享服务器上应把 Hub cache 放进可写的项目或 scratch 路径；没有服务器时，可在本地 Linux、macOS 或 WSL2 完成这一步，后续大型 FASTQ 和数据库仍放到 HPC。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="对象读取成功之后，先确认 assay 的单位"}
 
 先确认包版本和资源标识，再检查对象维度、单位与样本信息；缓存可用不等于来源已经记录完整。
 
@@ -62,6 +62,12 @@ reader-mode: upstream
 5. 新会话不访问网络也能恢复同一对象。
 
 ![五道证据边界必须逐级通过。`dryrun = TRUE` 只到 discovery，不能证明对象已经下载。](../figures/12-r-data-access-boundaries.png){#fig-r-data-access-boundaries}
+
+### 对象读取成功之后，先确认 assay 的单位
+
+298 行 × 24 列只说明对象维度，不能说明每一行是什么分类层级、每个值是 counts 还是百分比。相对丰度不能重新命名为整数计数再用于 count likelihood；同一受试者的多个样本也不能只因列名不同就作为独立重复。这里 24 个样本来自 15 位受试者，设计信息必须随 assay 一起保留。
+
+ExperimentHub 标识、资源标题和处理版本共同说明数据身份。缓存使复现更快，但重新取回一个更新资源后，仍需检查样本、分类层级及单位是否改变。对象转换时按明确的 ID 对齐，而不是依赖行列数量相等；保留原始资源与转换规则，才能判断后续差异来自科学方法还是输入变化。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

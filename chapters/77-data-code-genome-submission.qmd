@@ -103,7 +103,7 @@ stopifnot(
 )
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="文件能下载之后，还要怎样保证结果可追溯"}
 
 先把研究、样本、运行与派生对象连起来；只有真正取得的 accession 和 DOI 才能写进可用性声明。
 
@@ -113,13 +113,19 @@ stopifnot(
 
 ten Hoopen 等人的 Figure 2 把宏基因组归档拆成五种相连对象：**Study、Sample、Experiment、Run、Analysis** [@tenhoopen2017metagenomic]。Study 描述研究范围，Sample 描述生物材料，Experiment 描述建库和测序设计，Run 指向原始 reads 文件，Analysis 承接 assembly、分类/功能注释等派生结果。图中的箭头比“把所有文件扔进一个网盘”重要得多：归档的核心是可追溯关系，不只是文件存在。
 
-![宏基因组读段与元数据的公共对象模型：Study 连接 Sample，Sample 与 Experiment 共同定义 Run，Analysis 再回指输入 Run。原图为 ten Hoopen et al. 2017 Figure 2，按 CC BY 4.0 使用并注明来源，DOI `10.1093/gigascience/gix047`；本地文件 SHA-256 为 `1a7ebe7ca72de90d9de9a6f7d5daec8b641a73fece7b3458d40a46fc45237477`。](../figures/article77/77-tenhoopen-figure2-original.jpg){#fig-77-anchor}
+![宏基因组读段与元数据的公共对象模型：Study 连接 Sample，Sample 与 Experiment 共同定义 Run，Analysis 再回指输入 Run。原图为 ten Hoopen et al. 2017 Figure 2，按 CC BY 4.0 使用并注明来源，DOI `10.1093/gigascience/gix047`](../figures/article77/77-tenhoopen-figure2-original.jpg){#fig-77-anchor}
 
 今天的仓库界面和字段模板已经更新，但对象关系仍然成立。NCBI 当前文档明确区分 BioProject/Study、BioSample/Sample、Experiment 与 Run [@ncbi2026srametadata]；ENA 的 reads、primary metagenome assembly 和 MAG 提交流程也都要求先有 Study/Sample，并保留与下层 reads 的链接 [@ena2026readsubmission; @ena2026primarymetagenome; @ena2026magsubmission]。
 
 ::: {.callout-important title="先画对象图，再打开提交门户"}
 投稿前先做一张 `internal_sample_id → BioSample → Experiment → Run → Assembly → MAG/UViG/catalog` crosswalk。若某个箭头没有真实标识符或来源证据，就把它列为阻断门；不要根据 accession 的外观猜一个编号。
 :::
+
+### 文件能下载之后，还要怎样保证结果可追溯？
+
+可下载只是访问条件。读者还需要知道某张分析表来自哪些原始样本、使用哪次代码发布和哪份参考数据库，以及过滤前后对象怎样对应。accession、DOI 与 digest 分别解决对象身份、版本引用和具体内容标识等问题，不能互相替代；校验值也不能证明数据获得了合法公开授权。
+
+人源宏基因组还可能包含宿主信息，清除标识符或过滤宿主 reads 不等于自动满足同意、伦理和数据库要求。受限材料应使用相应访问机制，并明确公开与受限部分的连接方式。更正发布时保留旧版本与变更说明，避免以同一链接静默替换内容，使已发表结果失去可追溯性。
 
 ## 从 accession crosswalk 开始 {#sec-code}
 

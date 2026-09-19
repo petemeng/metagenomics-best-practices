@@ -43,7 +43,7 @@ reader-mode: upstream
 > **真实数据：**人源阳性控制为 Hostile 论文列出的 NA12878 Illumina paired-end run `ERR194147`，ENA project `PRJEB3381`、sample `SAMEA1573618` [@constantinides2023hostile]；微生物保留控制为 71-strain MOCK1 run `ERR9765746`，project `PRJEB52977`、sample `SAMEA14435832` [@meslier2022platforms]。两组各使用官方 R1/R2 文件最前面的 20,000 个完整同步 pairs。  
 > **预计资源：**建议 8 核、8 GB RAM、至少 12 GB scratch。`human-t2t-hla.tar` 为 3,934,284,979 bytes（3.66 GiB），六个 Bowtie2 文件解包后共 4.24 GiB。本文 20,000-pair 控制中，Hostile 峰值内存为 1.05–1.16 GiB、用时 0.94–1.51 秒；真实全量样本仍应按官方建议为 Bowtie2 去宿主预留约 4 GB RAM，并先在目标存储上实测 I/O。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="去重改变的是测量，而不只是文件大小"}
 
 检查人源残留的同时检查微生物误删；重复序列可能来自真实高丰度成员，不自动等于 PCR 重复。
 
@@ -59,6 +59,12 @@ Hostile 论文的 Table 1 同时报告两个方向：真实人类 reads 的残�
 2. 同一流程是否保留真实复杂 mock community reads；
 3. paired policy 是否让输入、保留和删除三本账完全守恒；
 4. 复杂度与重复信号是否被独立记录，而没有混入主流程。
+
+### 去重改变的是测量，而不只是文件大小
+
+在高度不均匀的微生物群落中，多个相同 reads 可能是同一高丰度成员的真实采样，也可能来自技术扩增；仅凭序列相同无法区分。默认去重会对高丰度和小基因组成员产生不同影响，因此主丰度分析不应无条件删除这些记录。若有 UMI 或可靠定位信息，也要说明它们支持的重复定义。
+
+去宿主则需要同时考虑人源残留和微生物误删。本例两个控制验证了给定输入与参考下的表现，不覆盖所有人群变异或所有微生物。某一控制的高删除率不能被写成零隐私风险，微生物 mock 的高保留率也不是全部自然群落的保真保证。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

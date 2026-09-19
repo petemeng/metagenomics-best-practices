@@ -51,11 +51,17 @@ reader-mode: analysis
 
 Kurtz 等的 SPIEC-EASI Figure 2b 把网络推断拆成三步：先对 compositional table 做 centered log-ratio（CLR）处理，再选择 neighborhood selection 或 inverse-covariance selection，最后用 StARS 从 regularization path 中选一个稀疏、较稳定的图 [@kurtz2015spieceasi]。
 
-![Kurtz et al. 2015 Figure 2 原图。右半部分给出 CLR、MB/glasso 与 StARS 的方法骨架。原图由 PLOS 以 CC BY 4.0 发布，未改动；官方 large PNG 为 3600 × 2313 px，本地 SHA-256 为 a67e5d64b526d35d0d4e77645c1c1494fcd83b842177fe01458fae5c78b4a4ee。](../figures/29-kurtz-fig2-original.png){#fig-29-anchor}
+![Kurtz et al. 2015 Figure 2 原图。右半部分给出 CLR、MB/glasso 与 StARS 的方法骨架。原图由 PLOS 以 CC BY 4.0 发布，未改动；官方 large PNG 为 3600 × 2313 px，本地](../figures/29-kurtz-fig2-original.png){#fig-29-anchor}
 
 本文复现的是 Figure 2b 的 **glasso branch**，不是作者 American Gut 网络的数值：输入换成真实温泉 MAG 谱；在 CLR 后增加 region、temperature 和 pH 的线性残差化；用 `huge 1.5.1` 显式执行 graphical lasso 与 StARS；再加入 1,000 次 bootstrap、分析分支、Zi-Pi、degree-preserving null 和 deletion robustness [@zhao2012huge]。因此 Methods 应写“CLR + graphical lasso + StARS implemented with `huge`”，不能写成调用了 `SpiecEasi::spiec.easi()`。
 
 ![节点筛选同时约束 prevalence 和 catalog-relative mean abundance。主规则从 780 个 recovered MAGs 留下 93 个；relaxed 与 strict 分支分别留下 183 和 63 个。](../figures/29-feature-contract.png){#fig-29-filter}
+
+### 稳定性筛选不能把网络边变成互作证据
+
+70 条主网络边中只有 30 条在 bootstrap 中达到 70% 选择率，说明稀疏图本身仍有不确定性。StARS 的平均稳定性目标不等于每条边的错误率控制；换过滤、变换或调整集造成的差异，也不能由同一设置下更多 bootstrap 消除。
+
+这里先将 500 个样本汇总为 56 个等权温泉，并调整 region、温度和 pH，减少了几种明确的结构影响，但未知环境与目录选择仍可能造成关联。删除图节点后的连通性变化描述估计图，不代表真实群落会如何恢复。五个拓扑候选更适合用来提出后续问题，而不是被直接命名为生态 keystone。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -122,7 +128,7 @@ branch29 <- function(name, column, digits = 3L) {
 }
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="稳定性筛选不能把网络边变成互作证据"}
 
 条件关联不是直接互作；网络结构、边稳定性与节点删除结果都要同适当零模型比较。
 

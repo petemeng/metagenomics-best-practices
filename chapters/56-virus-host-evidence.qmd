@@ -32,7 +32,7 @@ reader-mode: evidence
 只读取固化证据表并重画 5 组图，**4 CPU、4 GB RAM、100 MB 磁盘、耗时约 1 分钟**。已验证的 iPHoP v1.4.2 Conda 软件环境本身占约 **4.9 GB**；程序下载器提示完整宿主库约需 **300 GB**，测试库约 **9 GB**。论文报告的 `Sept_2021_pub` 数据库上，5 条完整噬菌体、6 CPU 的完整预测约 **12 分钟**，但未报告 RAM。队列级正式运行可保守预留 **16--32 CPU、32--64 GB RAM、至少 400 GB 磁盘，耗时数小时到数天**；这是规划上界，不冒充实测 benchmark。没有服务器时，用 `data/small/56-virus-host-evidence-frozen/` 完成证据审计和出图；命令烟雾测试可用官方 test database，正式生物学结论转到 HPC 或云端的完整、锁版本数据库运行。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="超出适用范围的预测为什么容易显得可信"}
 
 不同证据不能压成一个无条件的宿主标签；预测结果应保留冲突、不确定性与尚未验证的范围。
 
@@ -54,6 +54,12 @@ reader-mode: evidence
 ![Composition and scale of the iPHoP calibration test, IMG/VR application, and eukaryotic-virus negative control.](../figures/56-iphop-benchmark-scope.png){#fig-56-scope}
 
 MIUViG 对 host prediction 的归纳提供了更上位的判读框架：宿主—病毒序列相似性通常最可靠；composition 方法通常难以可靠下探到 genus 以下；跨样本 abundance profile 仍属预测，并需要稳健 FDR [@roux2019miuvig]。
+
+### 超出适用范围的预测为什么容易显得可信？
+
+本例把不属于目标适用域的序列作为负对照，仍出现 1,018 次宿主调用，占 8,128 条序列的 12.5%。这说明“软件返回了标签”与“问题在该模型的适用范围内”是两件事。内部得分只能在其定义和评估范围内解读，不能自动变成任意新样本上的感染概率。
+
+若多种证据共享参考库、相似性基础或训练来源，它们的一致也不是完全独立的支持。应允许未判定，并明确模型适用域、缺失证据和候选解释的不确定性。序列层的关联判断不能代替实际感染证据，也不足以推出宿主范围或传播能力。
 
 ## 重建论文级 aggregate evidence {#sec-code}
 
@@ -218,10 +224,10 @@ iPHoP v1.0 的 composite score 汇总四路分数：最佳 BLAST、最佳 CRISPR
 
 模型输出的 confidence score 是测试集上经验 PPV 的重新标定。名义关系可写为：
 
-\[
+$$
 \widehat{\mathrm{FDR}} \approx 1-\widehat{\mathrm{PPV}}
 \approx 1-\frac{\mathrm{score}}{100}.
-\]
+$$
 
 所以 score ≥90 对应约 ≤10% FDR，score ≥95 对应约 ≤5% FDR；论文也明确提醒，这个 FDR 依赖测试集组成，只能视作近似校准，不是某一条边“90% 真实”的实验概率。
 

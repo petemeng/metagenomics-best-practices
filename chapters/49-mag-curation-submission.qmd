@@ -32,7 +32,7 @@ reader-mode: upstream
 本次自动化预审使用 **1 CPU core**，耗时 **54.08 秒**，峰值 RAM **0.066 GiB**；12 份 review FASTA 合计约 35 MB。建议准备 **4 cores、8 GB RAM、5 GB 可用磁盘**。真正耗时的是人工复核：按 MAG 复杂度预留 **10--30 分钟/MAG**，大型 anvi'o profile 还会受 BAM 体积影响。没有服务器时，可在普通工作站读取 `data/small/49-mag-curation-submission-frozen/` 的压缩审计表与 review FASTA；若需要交互式 anvi'o/Bandage，可把单个 MAG、对应 BAM 和 assembly graph 下载到本地逐一检查。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="异常标记为什么不应该自动删除序列"}
 
 保留覆盖、GC、组装连接与质量记录；人工删除或修改 contig 必须留下可追踪依据。
 
@@ -40,13 +40,19 @@ reader-mode: upstream
 
 ## 提交 MAG 之前，哪些异常还需要人工检查？ {#sec-target}
 
-这一环节通常不会成为论文主图，而会落在三处：Methods 的 curation/submission 描述、补充材料的逐 MAG MIMAG 表，以及 Data availability 中可核验的 BioProject、BioSample 与 assembly accessions。最接近发表图的是 completeness--contamination quality panel；但真正决定数据能否复用的是“每个点背后的稳定 ID、质量字段、来源关系和 accession”。MIMAG 为 MAG 质量与元数据报告建立了最低标准 [@bowers2017mimag]。
+completeness--contamination 图概括基因组质量，逐 MAG 记录则说明每个点的稳定 ID、质量字段、来源关系与 accession。只有两者可以对应，其他研究者才能复核或复用这些基因组。MIMAG 为 MAG 质量与元数据报告建立了最低标准 [@bowers2017mimag]。
 
 ![从 24 个非冗余 SGB 到 12 个技术复核 MAG；人工与元数据关卡尚未通过，因此 external-ready 为 0。](../figures/49-submission-funnel.png){#fig-49-funnel}
 
 ![12 个技术复核 MAG 的 CheckM2 completeness 与 contamination；MIMAG high-quality 还要求完整 rRNA 与足够 tRNA 证据。](../figures/49-mimag-quality.png){#fig-49-quality}
 
 这两个图回答不同问题：quality panel 是序列质量证据，submission funnel 是可提交性证据。不能用前者替代后者。
+
+### 异常标记为什么不应该自动删除序列？
+
+GC 或深度偏离可能来自错分，也可能来自同一基因组内部的真实异质性。只按单个 robust-z 阈值删除会改变基因组组成，并可能人为提高某些质量指标。本例 135 条标记的作用是定位需要复核的位置，不是已经判定 135 条污染序列。
+
+技术质量与外部提交资格也是两件事。稳定 ID、来源关系、数据权利及提交元数据不足时，即使序列通过数值门槛，也不能替代相应确认。若人工修改最终 FASTA，应保留变更理由并重算全部依赖序列的结果，而不是只更新一个名称或质量数字。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -139,11 +145,11 @@ save_pub <- function(plot, file_base, width = 190, height = 125,
 
 本次对每个 MAG 内部独立计算 GC 与 `log2(mean depth + 0.1)` 的 median/MAD robust z-score：
 
-\[
+$$
 z_i^{\mathrm{robust}}=\frac{x_i-\mathrm{median}(x)}{1.4826\times\mathrm{MAD}(x)}.
-\]
+$$
 
-任一轴满足 \(|z|>3.5\) 即标记 review；阈值在分析前固定，动作永远是 `REVIEW_ONLY`。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。
+任一轴满足 $|z|>3.5$ 即标记 review；阈值在分析前固定，动作永远是 `REVIEW_ONLY`。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。
 
 ```bash
 ROOT="$PWD"

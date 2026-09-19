@@ -32,7 +32,7 @@ reader-mode: upstream
 本次实跑使用 **24 CPU cores**。Bacteria 的 GToTree 与 IQ-TREE 分别耗时 **190.03 秒**和 **2,382.92 秒**，Archaea 分别为 **112.99 秒**和 **747.71 秒**；四步顺序运行约 **57 分钟**。峰值 RAM 仅 **0.313 GiB**，完整工作目录约 **94 MB**。考虑并行峰值、参考基因组下载与临时文件，建议为这个 24-MAG 示例准备 **8 GB RAM、24 cores、5 GB 磁盘、1--2 小时**。数百至数千 MAG 的 ModelFinder 和 bootstrap 会显著增时；没有服务器时，可读取 `data/small/47-novel-mag-phylogenomics-frozen/` 中的 alignment、tree 和审计表重画图。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="高分支支持不等于物种界限已被证明"}
 
 把基因组质量、相似性边界与系统发育支持合起来判断；树上独立成枝不自动等于新物种。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 ![Bacteria tree 包含 15 个 query MAGs 和 16 个 versioned references；洋红数字仅标出 UFBoot <95 的内部枝。](../figures/47-bacteria-phylogenomics.png){#fig-47-bacteria}
 
 ![Archaea tree 包含全部 8 个 archaeal MAGs 与 8 个 references。](../figures/47-archaea-phylogenomics.png){#fig-47-archaea}
+
+### 高分支支持不等于物种界限已被证明
+
+bootstrap 支持评估的是给定比对与模型下的分支稳定性，不覆盖参考选择、基因缺失、污染和基因间冲突的全部不确定性。某个 MAG 单独成枝可能只是缺少近缘参考；新物种主张还需要合适的相似性范围及基因组质量证据。
+
+本例一个 MAG 因 marker recovery 不足没有入树，但它仍有支持已有物种归属的 ANI/AF 信息。不同证据失败应分别解释，不能把“未入树”当作“新颖”。当前数据支持零个 novel species 是有效结果，不需要通过改变图形或参考集合制造新分支故事。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -152,9 +158,9 @@ GTDB 用规范化分类框架和 reference-specific ANI radii 界定 species clu
 
 令 query 与 reference 的 ANI 为 $A$，该 reference 的 GTDB species radius 为 $R$，则本篇画出的 margin 是
 
-\[
+$$
 \Delta_{ANI}=A-R.
-\]
+$$
 
 $\Delta_{ANI}>0$ 只有在足够大的 alignment fraction（AF）下才有意义。局部保守区的高 ANI 不能代表整套基因组；反过来，低质量 MAG 的低 ANI 也可能由缺失、污染或错分箱造成。
 

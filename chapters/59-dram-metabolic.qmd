@@ -36,7 +36,7 @@ reader-mode: upstream
 本次 28 个 genome inputs 在大内存节点上使用 DRAM **24 个并行分片 × 每片 3 threads**，总 CPU ceiling 为 72；METABOLIC-G 使用 32 threads。建议为这一并行配置预留 **192--256 GB RAM、72 CPU、80 GB 磁盘和 30--60 分钟**。普通服务器可把 `--dram-jobs` 降到 4--8，并为每个 KOfam scan 预留约 8 GB RAM，代价是延长 wall time。实测 DRAM annotation wall time 为 **41 min 50.94 s**，merge 为 2.85 s，distill 为 56.98 s；METABOLIC 的独立 Prodigal 步骤为 **2 min 10.39 s**，METABOLIC-G 为 **13 min 01.69 s**。数据库构建与全部步骤的 GNU-time 账本保存在固化包。没有服务器时，先用固化的 `annotations.tsv.gz`、`product.tsv`、六张 METABOLIC worksheets 和每基因组 KO 表完成统计与作图；完整 HMM 搜索放到 HPC 或云端批处理。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="功能注释高度一致，是否意味着功能已被验证"}
 
 同源注释、模块完整度与代谢潜力要分开；不完整 MAG 的缺失不能直接写成功能缺失。
 
@@ -49,6 +49,12 @@ DRAM 原始论文的 **Figure 1** 是从 raw genomes 到 annotation、distillate
 METABOLIC 论文的 **Figure 1** 给出 genome、HMM、motif、module 与 network 的分析路线，**Figure 2** 将基因组证据组织成 carbon、nitrogen、sulfur 和其他元素循环图 [@zhou2022metabolic]。本次不把循环图当作“实测通量图”，而是把 26 个关键功能规则拆回 genome × function matrix，检查每个 positive cell 的证据来源。
 
 ![DRAM 对 13 个共享 KEGG modules 的连续 step coverage。叉号表示在 0.75 presence cutoff 上与 METABOLIC 的二元判定不一致。](../figures/59-pathway-module-heatmap.png){#fig-59-module-heatmap}
+
+### 功能注释高度一致，是否意味着功能已被验证？
+
+24 个 MAG 的两套注释共有 2,678 个 KO，样本层 Jaccard 中位数为 0.853；307/312 个模块判定一致。这说明在当前输入和规则下，多数注释结论可以相互对应，不等于这些功能已经被独立实验验证。共享参考知识和同一组预测蛋白，也会带来共同偏差。
+
+模块未完整检出可能来自真实缺失、MAG 不完整或注释遗漏。应把“哪些反应得到支持”和“哪些关键环节仍未知”分开，再结合基因组质量解释。注释一致适合提高后续核验的优先级，但不能把代谢潜力直接升级为表达、活性或通量。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -325,20 +331,20 @@ Genome annotation描述 DNA 编码潜力。即使某条 pathway 的所有 genes 
 
 ### Module completeness 是连续量，presence 是人为决策
 
-设 module 有 \(S\) 个逻辑 steps，第 \(s\) 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：
+设 module 有 $S$ 个逻辑 steps，第 $s$ 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：
 
-\[
+$$
 C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.
-\]
+$$
 
-本次为跨工具审计预先固定 \(C_m \ge 0.75\) 作为 DRAM presence，并使用 METABOLIC-G 的 `-m-cutoff 0.75`。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。
+本次为跨工具审计预先固定 $C_m \ge 0.75$ 作为 DRAM presence，并使用 METABOLIC-G 的 `-m-cutoff 0.75`。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。
 
-对于 genome \(g\)，两套 KO 集合的一致性用 Jaccard 指数：
+对于 genome $g$，两套 KO 集合的一致性用 Jaccard 指数：
 
-\[
+$$
 J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}
 {|K_g^{DRAM}\cup K_g^{METABOLIC}|}.
-\]
+$$
 
 Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。
 

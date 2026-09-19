@@ -42,11 +42,11 @@ wechat:
 reader-mode: analysis
 ---
 
-> **学习目标：**先声明 feature universe、native scale、filter、closure 与 zero，再计算 Hill \(q=0/1/2\)、Bray–Curtis、binary Jaccard 和 Aitchison；区分样本匹配的人体 species / gene-family profiles 与独立的温泉 MAG catalog；把重复采样、负特征值、零值替换和 MAG reads recruitment 保留在解释边界内。  
+> **学习目标：**先声明 feature universe、native scale、filter、closure 与 zero，再计算 Hill $q=0/1/2$、Bray–Curtis、binary Jaccard 和 Aitchison；区分样本匹配的人体 species / gene-family profiles 与独立的温泉 MAG catalog；把重复采样、负特征值、零值替换和 MAG reads recruitment 保留在解释边界内。  
 > **真实数据：**人体分支来自 curatedMetagenomicData 3.12.0 的 <code>AsnicarF_2017.relative_abundance</code>（ExperimentHub <code>EH7091</code>）与同批 24 profiles 的 <code>gene_families</code>（<code>EH7086</code>），对应 15 位受试者 [@asnicar2017transmission; @pasolli2017cmd]。MAG 分支来自美国西部 56 个温泉的 500 个 metagenomes 与 780 个 recovered MAGs，固定到 Figshare 30284068 v2 [@korchagina2026hotsprings; @louca2026hotsprings]。  
 > **预计资源：**常规复算读取 12 MB checksum-locked 输入，不访问网络；1–2 核、建议 4 GB RAM，实测约 30 s。一次性源数据下载约 58 MB；不需要重跑 MetaPhlAn、HUMAnN、assembly、binning 或 read mapping。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="MAG 多样性低，可能只是目录覆盖少"}
 
 物种、基因和 MAG 的多样性各有自己的特征集合；过滤、零值和目录回收率都会影响结果。
 
@@ -56,7 +56,7 @@ reader-mode: analysis
 
 Korchagina 等对每个样本的质控 reads 竞争性比对到 780 个 MAG，以每个 MAG 的平均 genome coverage 除以该样本全部 MAG coverages 之和，得到 catalog 内 relative abundance。论文 Figure 5A–B 再按 phylum / order 汇总这些比例 [@korchagina2026hotsprings]。
 
-![Korchagina et al. 2026 Figure 5 原图。A–B 的组成来自 recovered MAG relative abundance；论文同时提醒 recovered MAGs 只代表群落子集。原图由 Springer Nature 以 CC BY 4.0 发布，未改动；本地文件 SHA-256 为 f851549526f4872f6e32ef79c99676df7b6b16663067c476e08499fa27b461aa。](../figures/22-korchagina-fig5-original.png){#fig-22-anchor}
+![Korchagina et al. 2026 Figure 5 原图。A–B 的组成来自 recovered MAG relative abundance；论文同时提醒 recovered MAGs 只代表群落子集。原图由 Springer Nature 以 CC BY 4.0 发布，未改动](../figures/22-korchagina-fig5-original.png){#fig-22-anchor}
 
 同一论文另算了 quality-filtered reads 对全部 MAG 的 recruitment：平均 12.98%，范围 0.816%–77.896%。因此 MAG composition 每列约等于 100%，只表示“**已经进入 780-MAG catalog 的 coverage 怎样分配**”，不能写成“780 个 MAG 覆盖了全部群落”。
 
@@ -65,6 +65,12 @@ Korchagina 等对每个样本的质控 reads 竞争性比对到 780 个 MAG，�
 
 
 
+
+### MAG 多样性低，可能只是目录覆盖少
+
+780 个 MAG 的相对丰度各列可加到 100%，但平均 read recruitment 只有 12.98%。因此这套 diversity 描述目录内已回收的部分；不能与人体物种谱或基因家族的 richness 按数字大小直接比较，更不能解释为整群落低多样性。
+
+同一数据内的过滤也会重定义 feature universe：gene prevalence 从 10% 到 50% 时，入选数量从 415,581 降到 1,896。若 richness 大幅变化，首先是问题从“较广泛的检出集合”变成“常见基因集合”，不一定是生物学结论相互矛盾。重复个体的样本仍需保留身份，多样性值本身不会消除伪重复。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -453,23 +459,23 @@ MetaPhlAn percentage、HUMAnN relative fraction 和 MAG coverage proportion 都�
 
 ### Alpha 是一个样本内的有效特征数 {#sec-theory}
 
-对已经固定 feature universe 且闭合为 \(p_i\) 的样本，Hill number 为 [@jost2006entropy]：
+对已经固定 feature universe 且闭合为 $p_i$ 的样本，Hill number 为 [@jost2006entropy]：
 
-\[
+$$
 {}^qD=
 \begin{cases}
 \left(\sum_i p_i^q\right)^{1/(1-q)}, & q\neq 1\\
 \exp\left(-\sum_i p_i\log p_i\right), & q=1.
 \end{cases}
-\]
+$$
 
 三个常用阶数具有同一单位“effective number of features”：
 
-- \(q=0\)：observed richness，只看 \(p_i>0\)，最受检出阈值和过滤影响；
-- \(q=1\)：\(\exp(\mathrm{Shannon})\)，按丰度加权常见特征；
-- \(q=2\)：inverse Simpson \(1/\sum_i p_i^2\)，更强调优势特征。
+- $q=0$：observed richness，只看 $p_i>0$，最受检出阈值和过滤影响；
+- $q=1$：$\exp(\mathrm{Shannon})$，按丰度加权常见特征；
+- $q=2$：inverse Simpson $1/\sum_i p_i^2$，更强调优势特征。
 
-同一样本应满足 \({}^0D\ge{}^1D\ge{}^2D\)。但 56,066 个 gene families、38.5 个 species 与 180.5 个 MAGs 的中位 richness 并不是一场“谁更高”的竞赛：UniRef90 family、MetaPhlAn species 和 recovered MAG 是不同观测单位，行数上限与 zero 生成机制也不同。
+同一样本应满足 ${}^0D\ge{}^1D\ge{}^2D$。但 56,066 个 gene families、38.5 个 species 与 180.5 个 MAGs 的中位 richness 并不是一场“谁更高”的竞赛：UniRef90 family、MetaPhlAn species 和 recovered MAG 是不同观测单位，行数上限与 zero 生成机制也不同。
 
 ```{r}
 hill_values <- function(x) {
@@ -564,33 +570,33 @@ for (space in unique(alpha$FeatureSpace)) {
 
 ### Beta 的三种距离回答不同问题
 
-对样本 \(x,y\)：
+对样本 $x,y$：
 
-\[
+$$
 d_{\mathrm{Bray}}(x,y)=
 \frac{\sum_i|x_i-y_i|}{\sum_i(x_i+y_i)}.
-\]
+$$
 
 Bray–Curtis 保留 abundance 变化 [@bray1957ordination]。当两行都闭合到 1 时，分母固定为 2；这不消除组成约束，只让 denominator 明确。
 
 binary Jaccard 先把数值变成 presence / absence：
 
-\[
+$$
 d_J=1-\frac{|A\cap B|}{|A\cup B|}.
-\]
+$$
 
 它回答“检出的 feature membership 是否相同”，不回答丰度差多少。因此 detection threshold 也是模型的一部分。
 
 Aitchison distance 则在 centered log-ratio（CLR）空间求 Euclidean distance [@gloor2017compositional]：
 
-\[
+$$
 \operatorname{clr}(p)_i=
 \log(p_i+\delta)-\frac{1}{D}\sum_j\log(p_j+\delta),
 \qquad
 d_A(x,y)=\|\operatorname{clr}(x)-\operatorname{clr}(y)\|_2.
-\]
+$$
 
-零值使对数未定义，所以必须先过滤并声明 \(\delta\)。species 使用 \(10^{-6}\) 对 \(10^{-5}\)，gene families 使用 \(10^{-8}\) 对 \(10^{-7}\) 做 sensitivity。MAG catalog 没有强行做 Aitchison：低 recruitment 下，unrecovered genomes 不只是矩阵里的普通 sampling zero。
+零值使对数未定义，所以必须先过滤并声明 $\delta$。species 使用 $10^{-6}$ 对 $10^{-5}$，gene families 使用 $10^{-8}$ 对 $10^{-7}$ 做 sensitivity。MAG catalog 没有强行做 Aitchison：低 recruitment 下，unrecovered genomes 不只是矩阵里的普通 sampling zero。
 
 ```{r}
 aitchison_distance <- function(x, pseudocount) {

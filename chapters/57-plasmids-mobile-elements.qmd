@@ -32,7 +32,7 @@ reader-mode: evidence
 只读取固化表并重画 5 组图，**4 CPU、4 GB RAM、200 MB 磁盘、耗时约 1 分钟**。本次 geNomad 实跑使用 **16 CPU、16 splits**：10.22 Mb 的匹配参考集耗时 186.63 s、峰值 2.75 GiB RAM；84.81 Mb 共组装耗时 1,092.21 s、峰值 2.83 GiB；USA300 对照耗时 182.64 s、峰值 2.71 GiB。geNomad database v1.9 解压后约 **1.47 GB**。正式队列建议预留 **16--32 CPU、32--64 GB RAM、至少 30 GB 临时磁盘，单个中等共组装约几十分钟至数小时**；样本数、contig 数和共享存储速度都会改变耗时。没有服务器时，直接读取 `data/small/57-plasmids-mobile-elements-frozen/` 完成审计和作图；全量发现任务放到 HPC 或云端。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="候选移动元件与实际转移事件之间还有哪些缺口"}
 
 物理共定位、可移动性推断和已观察到的转移是不同结论；没有直接证据时不宣称转移发生。
 
@@ -50,6 +50,12 @@ reader-mode: evidence
 本次长度匹配基准由 43 条 GenBank header 明确含 `plasmid` 的参考复制子，以及 43 条按长度确定性一对一匹配的其他参考序列构成。geNomad 检出 33/43 条已标注质粒，同时在 43 条匹配序列中产生 1 个阳性调用：sensitivity 76.7%（Wilson 95% CI 62.3--86.8%）、precision 97.1%（85.1--99.5%）、specificity 97.7%（87.9--99.6%）。这些指标只适用于这 86 条、这一标签定义和当前数据库，不是自然群落的普适性能。
 
 ![Length-matched reference audit. Labels are literal GenBank sequence labels in a fixed public mock reference set.](../figures/57-reference-plasmid-audit.png){#fig-57-reference}
+
+### 候选移动元件与实际转移事件之间还有哪些缺口？
+
+在 218 个候选条目中观察到 42 个带有转移相关标记，只能说明相应序列具有某类注释证据。候选分类、标记注释、基因共定位和实际转移事件是不同层次的判断；前一层成立，不会自动补齐后一层。
+
+本例主要结果没有支持耐药基因与这些标记的共定位，因此不能把总体计数改写成“发现了耐药传播载体”。组装不完整、来源不明及数据库覆盖不足也应保留为不确定性。结果表应区分已观察到、未观察到和当前数据无法判断，而不是把它们压成一个风险分数。
 
 ## 下载参考并验证上游身份 {#sec-code}
 
@@ -284,9 +290,9 @@ USA300 `GCA_000013465.1` 有 4 条参考复制子，其中 3 条 header 标为 p
 
 证据强度可以写成一个结论天花板：
 
-\[
+$$
 C_{max}=\min(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}).
-\]
+$$
 
 只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 [@pike2022broadhostmge]。这正是序列文章最容易漏掉的一层。
 

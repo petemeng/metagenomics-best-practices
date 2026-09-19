@@ -46,7 +46,7 @@ reader-mode: analysis
 > **真实数据：**`curatedMetagenomicData` 3.12.0 的完整 `sampleMetadata` 和资源标题目录，以及 `HMP_2012`、`ZellerG_2014`、`AsnicarF_2017` 的 MetaPhlAn 3 / HUMAnN 3 统一重处理结果 [@pasolli2017cmd]。  
 > **推断边界：**本章审核的是数据身份、可合并性与观察单位，不检验疾病关联；谱表是相对组成，不能替代绝对微生物负荷或原始 feature-level read counts。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="统一重处理解决了什么，又没有解决什么"}
 
 锁定具体资源 release，而不只记包名；合并前核对 profiler、数据库、单位与跨研究样本主键。
 
@@ -56,13 +56,19 @@ reader-mode: analysis
 
 curatedMetagenomicData 3（cMD3）论文 Figure 1a 把公开 raw reads、bioBakery 3 统一处理、手工整理的样本元数据和 R/Bioconductor 访问接口放在同一条资源链上；Figure 1b 则展示不同元数据字段的可用程度 [@manghi2026cmd3]。它提醒我们：跨队列分析的起点不是一张 abundance matrix，而是“样本、谱表和处理版本能否彼此追溯”。
 
-![Manghi et al. 2026 Figure 1。cMD3 将公开 shotgun reads、MetaPhlAn 3 / HUMAnN 3 谱和标准化元数据连接起来。原图按 CC BY 4.0 使用，SHA-256 为 559c95bd7e5c35c99e853bc16bc6c8d9739a9d7555992bf58efef3fd5b77b7c1。](../figures/26-cmd3-fig1-original.png){#fig-26-anchor}
+![Manghi et al. 2026 Figure 1。cMD3 将公开 shotgun reads、MetaPhlAn 3 / HUMAnN 3 谱和标准化元数据连接起来。原图按 CC BY 4.0 使用，](../figures/26-cmd3-fig1-original.png){#fig-26-anchor}
 
 论文分析集合与本机软件快照必须分开记账。`curatedMetagenomicData` 3.12.0 的 `sampleMetadata` 恰有 **22,588 个样本、93 个 study 和 141 个字段**；论文在此基础上另加入尚未进入包快照的 `HeQ_2017` 122 个样本，因此论文集合是 **22,710 个样本、94 个 cohorts** [@manghi2026cmd3]。这两个数字都正确，但不能混写成同一个资源版本。
 
 
 
 
+
+### 统一重处理解决了什么，又没有解决什么？
+
+统一 profiler 和数据库减少生信流程差异，但不会消除原研究的采样、提取、人群和病例定义差异。相同 study 名在不同 release 中还可能包含不同样本与特征。因此数据主键至少应结合 study 与 sample；本例 177 个跨研究重复 sample IDs 正说明不能只按裸样本名合并。
+
+选择独立观察单位后，再决定哪些协变量和 assay 可比较。缺失一整列测量不等于该变量为零，未进入某个资源的样本也不应被静默丢弃。跨队列推断需要在统一处理之外保留这些差异，才能判断异质性是研究对象变化还是分析流程变化。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

@@ -42,7 +42,7 @@ reader-mode: upstream
 
 这里使用 Lloyd-Price 等人 IBD Multi'omics Database（IBDMDB/HMP2）的 450 份官方宏蛋白组产品，以及同一研究的 MGX、MTX、MPX EC 表和临床元数据 [@lloydprice2019multiomics]。官方同时提供“至少 1/2 条肽段 × protein FDR 1%/5%”四套蛋白表，正好用来展示：检出量会随证据门槛显著变化，但宽松表不能自动称为更真实。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="蛋白推断的证据门槛为何会改变下游结论"}
 
 PSM、蛋白推断与物种归属不能跳步；共享肽段和搜索库决定结论可以细化到哪一层。
 
@@ -52,11 +52,17 @@ PSM、蛋白推断与物种归属不能跳步；共享肽段和搜索库决定�
 
 原研究 Supplementary Figure 1 对每个候选 EC–metabolite 组合并排展示 MGX、MTX、MPX、MTX:MGX 与 MBX 的关系。下面第一页以 biotin synthase 与 biotin 为例，定位了四层问题：DNA 是功能潜力，RNA 是相对转录分配，蛋白是质谱可检测的翻译产物，代谢物则处在底物、产物、饮食和宿主共同影响的更下游位置。
 
-![Lloyd-Price et al. 2019 Supplementary Figure 1，第 1 页。原始补充 PDF 共 231 页，SHA-256 为 `78d9845d...80760`；本页 PNG 的 SHA-256 为 `d35f590c...7ca7`。论文与补充材料采用 CC BY 4.0。](../figures/65-lloyd-price-supp-fig1-page1-original.png){#fig-65-anchor}
+![Lloyd-Price et al. 2019 Supplementary Figure 1，第 1 页。论文与补充材料采用 CC BY 4.0。](../figures/65-lloyd-price-supp-fig1-page1-original.png){#fig-65-anchor}
 
 复现先不挑最相关的一对酶和代谢物，而是审计四套官方 protein evidence gates。至少 1 条肽段、5% protein FDR 的表检出 66,606 个 protein IDs，中位每样本 1,413.5 个；至少 2 条肽段、1% protein FDR 的主表只保留 10,469 个，中位每样本 373 个。差异来自证据定义，不应包装成生物学变化。
 
 ![四套官方 protein-filter 产品的检出规模。左图是至少一个样本中非零的 protein IDs；右图是每个 profile 的检出分布。](../figures/65-evidence-threshold-audit.png){#fig-65-threshold}
+
+### 蛋白推断的证据门槛为何会改变下游结论？
+
+从 66,606 个宽松条件下检出的 protein IDs，到严格条件下的 10,469 个，变化来自证据定义。PSM、肽段与 protein group 的错误率针对不同层级，不能把其中一个 1% 数字套到所有下游对象。共享肽段带来的归属歧义也不会因重复计算到多个物种而消失。
+
+DNA–RNA 与 RNA–protein 的相关程度不同，可能同时受到生物学时间尺度、检测动态范围和缺失机制影响。只分析三层都检出的特征，还会选择更易检测的部分。跨层不一致值得检查，但不能直接认定为翻译调控；跨层一致也不能直接认定酶活性或通量增加。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

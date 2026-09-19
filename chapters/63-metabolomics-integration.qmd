@@ -46,11 +46,17 @@ reader-mode: analysis
 
 原研究 **Figure 1** 并排展示 clinical groups、microbiome ordination 与 metabolome ordination，核心问题是：CD、UC 和 non-IBD controls 在两种分子层是否呈现相互呼应的样本结构 [@franzosa2019ibd]。原文后续又把差异代谢物与菌种、酶和临床炎症联系起来；这种并行证据很有启发性，但“两个组学都随疾病变化”仍不等于某菌产生或消耗某代谢物。
 
-![Franzosa et al. 2019 Figure 1。原图用于定位待复现的配对组学问题；权利归原权利人所有，仅用于学术评论，不属于本仓库 CC BY/MIT 授权内容。官方 Nature 图像 SHA-256 为 `7b81b865ae65659ad476d6f5210a3bc383b4eadad50d2ad7793a0b99df2450eb`。](../figures/63-franzosa-fig1-original.png){#fig-63-anchor}
+![Franzosa et al. 2019 Figure 1。原图用于定位待复现的配对组学问题；权利归原权利人所有，仅用于学术评论，不属于本仓库 CC BY/MIT 授权内容。](../figures/63-franzosa-fig1-original.png){#fig-63-anchor}
 
 这里先忠实保留“microbiome ordination 对照 metabolome ordination”的框架，再升级为 symmetric Procrustes、Spearman Mantel、HAllA hierarchical associations 和 sPLS-DIABLO。所有外部验证都使用原研究中的 Validation cohort，不把它随机拆回训练集。
 
 ![数据分割、特征门控与样本配对审计。每名受试者只贡献一行；所有 prevalence、mean-abundance 与 supervised tuning gates 都只在 PRISM 中拟合。](../figures/63-paired-data-audit.png){#fig-63-data-audit}
+
+### 多组学预测是否真的比单组学更有用？
+
+全局一致性、特征关联和分类性能分别回答不同问题。外部队列中 Procrustes 或 Mantel 结果较强，不保证两类组学组合后能提高预测；很多相关结构可能只是共享疾病状态、饮食或其他背景。953 对关联的外部复现支持可重复关联，仍不能确定生产者、消费者或因果方向。
+
+DIABLO 的外部 balanced accuracy 为 0.635。要回答联合测量是否值得增加成本，还需要在相同训练/验证分割和调参预算下，与各单组学模型比较，并考虑校准与目标人群。若没有这一对照，当前结果只能说明联合模型的表现，不能宣称整合带来了增益。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -109,7 +115,7 @@ stopifnot(
 )
 ```
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="多组学预测是否真的比单组学更有用"}
 
 全局结构、逐特征关联和预测是三个问题；先对齐同一受试者，再把独立验证留到最后。
 

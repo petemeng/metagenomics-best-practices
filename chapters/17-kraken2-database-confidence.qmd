@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**阳性基准为 71-strain MOCK1 DNA 的 Illumina run `ERR9765746`，使用第 13 篇 fastp 后保留的 99,991 个同步 pairs [@meslier2022platforms]。方法对照为公开人类 WGS `ERR194147` 的确定性前 20,000 个同步 pairs [@constantinides2023hostile]；它不是 extraction blank，也不能给出实验性假阳性率。  
 > **预计资源：**三份固定 archive 合计 22.24 GiB，三个解包数据库合计 31.59 GiB，建议预留至少 70 GB 磁盘、8 核和 24 GB RAM；本次 Standard-16 单分支实测峰值为 15,585 MiB RSS。没有服务器时，可直接读取仓库内的 checksum-locked frozen reports 与聚合审计重画结果；要完整复跑三库矩阵，则应使用 HPC 或合规云，不要在 16 GB 笔记本上并行加载多个索引。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="提高阈值应同时报告丢掉了什么"}
 
 阈值的影响取决于数据库内容；用已知组成对照比较召回和非预期调用，不把 confidence 当概率。
 
@@ -67,6 +67,12 @@ Wright 等的 Figure 2 先问 mock/simulated truth 有多少 taxa 与 reads 被�
 ::: {.callout-important title="这不是把三个名字放进一张柱状图"}
 数据库比较必须锁 release date、archive bytes、publisher checksum、解包文件 checksum 和实际 reference crosswalk。否则看到的差异可能来自数据库更新、taxonomy 更新、内容变化、cap 变化或文件损坏，无法归因。
 :::
+
+### 提高阈值应同时报告丢掉了什么
+
+confidence 是分类规则中的证据要求，不是每条物种调用的校准正确概率。提高它可能减少非预期调用，也可能把真实但证据稀少的成员推到更高层级或未分类；如果只报告剩余物种的准确性，就会隐藏召回损失。应在固定数据库与真值范围内同时比较覆盖、检出和误差。
+
+本例的人类 WGS 方法对照不包含提取空白的污染过程，因此不能由其非预期调用率估计实验污染率。对不同数据库容量的比较也要限定在相同发布与内容条件下。若某个高阈值分支已无法产生目标层级的有效结果，应如实记为不可用，而不是改一套下游分母继续比较。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等的 `PRJEB52977` 不均一 DNA mocks：MOCK1 含 71 strains，MOCK2 含 87 strains。输入是 15 个 checksum-identified assemblies：6 个短读 single/co、4 个长读、5 个 short/hybrid/polished 分支 [@meslier2022platforms]。  
 > **结论边界：**这些 workflows 的 read budget、平台、组装器和 community composition 并不相同；它们用于展示指标如何改变决策，不构成平台或算法的单因素因果比较。两个由真实 HiFi assembly 派生的诊断正控只检验指标语义，不能参与生物学排名。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="没有精确参考时，哪些质控结论仍然成立"}
 
 连续性不是正确性；把 reference-free 指标与有参考的结构、回收和碱基错误一起判断。
 
@@ -62,6 +62,12 @@ QUAST 同时支持无 reference 与有 reference 两种模式；MetaQUAST 再为
 ::: {.callout-important title="先给结论：可用性必须带任务宾语"}
 “这个 assembly 可用”不是完整结论。至少要补成“可用于 `>=1 kb` ORF catalog”“可进入 differential-coverage binning”“支持某个候选完整 replicon”，并为该任务列出仍需通过的 read、reference、gene、graph 或 MAG 证据。
 :::
+
+### 没有精确参考时，哪些质控结论仍然成立？
+
+contig 长度、总 bases 和 N50 无需精确参考，但无法单独判断错误连接。若拿近缘参考做 MetaQUAST，真实结构差异也可能被标为异常；因此 reference-aware 结果需要说明参考与样本的关系。没有真值时应结合 reads、覆盖和组装图证据，不能把“无参考可检验”写成“没有错误”。
+
+同样的 bases 和 N50 可以对应不同结构，说明长度摘要不是充分质量指标。gene-centric 分析可能容忍部分碎片化，完整基因组或上下文归属却对结构要求更高。应先定义任务，再设定接受标准；不能给所有用途套一个 N50 门槛。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

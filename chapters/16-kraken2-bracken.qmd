@@ -44,7 +44,7 @@ reader-mode: upstream
 > **真实数据：**71-strain MOCK1 DNA 的 Illumina HiSeq 3000 run `ERR9765746`，ENA project `PRJEB52977`、sample `SAMEA14435832` [@meslier2022platforms]。输入是 fastp 后保留的 99,991 个同步 read pairs；R1/R2 分别包含 14,974,589 与 14,835,184 bases，压缩文件 SHA-256、记录数和 pair-ID hash 均在运行前复核。  
 > **预计资源：**本次固定的 Standard-8 索引安装后为 8.64 GB，Kraken2 实测峰值内存 7.77 GiB。建议分配 8 核、12–16 GB RAM，并预留至少 20 GB 磁盘同时容纳 5.54 GiB 压缩包、索引和临时输出。完整 Standard 或 `core_nt` 数据库的磁盘与内存需求会高得多，不能套用这里的 8 GB 预算。没有服务器时，可用 Standard-8 在 16 GB 内存工作站运行小样本；生产队列应提交到 HPC 或合规云，并让每个作业独占足以加载索引的内存。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="重分配增加物种计数，但没有增加原始序列证据"}
 
 先读清 Kraken2 的层级计数，再解释 Bracken 重分配；不要把模型估计当成原始物种 read counts。
 
@@ -69,6 +69,12 @@ one call per paired fragment
 ```
 
 这条链必须保存两张表：Kraken report 回答“片段落在 taxonomy tree 的哪里”，Bracken table 回答“在指定 rank、read length 和 threshold 下，组成质量如何重估”。后者不能覆盖前者。
+
+### 重分配增加物种计数，但没有增加原始序列证据
+
+Bracken 把兼容的高层级分类质量分配到目标层级，使丰度估计更完整；新分配的数量仍来自同一批输入，而不是额外观测到的物种特异 reads。本例的 24,156 个重分配片段应与原 Kraken 层级计数分开保留，便于看清结果依赖模型的程度。
+
+read-length 分布与数据库预计算条件不匹配时，重分配假设也会变化。应检查实际 clean reads 的长度，而不是只使用测序仪名义读长。比较两个样本时还要保留未分类比例；只对已分类物种闭合到 100%，可能把参考覆盖差异隐藏起来。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

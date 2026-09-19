@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**71-strain MOCK1 DNA 的 Illumina run `ERR9765746`，使用 fastp 后保留的 99,991 个同步 pairs [@meslier2022platforms]。三套输入的压缩 FASTQ SHA-256 与 normalized pair-ID hash 完全相同。真值来自 Supplementary Table S3 的 71 个 assembly，经固定 NCBI snapshot 解析为 69 个 current species；原表比例合计 100.0121565%，不静默改成整齐的 100%。  
 > **预计资源：**只复跑 mOTUs 建议 8 核、12 GB RAM、20 GB 可用磁盘，实测主流程 133.1 秒、峰值 8.4 GiB；同时重建三套数据库与全部谱，建议至少 8 核、40 GB RAM、140 GB 可用磁盘。没有大内存服务器时，直接读取 checksum-locked profile、crosswalk 与聚合表即可重画结果；大型 FASTQ、BAM 和数据库索引不需要进入个人电脑。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="共同物种域让比较公平，也缩小了结论范围"}
 
 先对齐工具能够识别的共同物种集合；相关系数高，仍可能同时存在丰度偏差和漏检。
 
@@ -62,6 +62,12 @@ reader-mode: upstream
 | mOTUs 4 | marker-gene operational taxonomic unit, mOTU | 10 个 universal single-copy marker gene families 的 MGC evidence | `INSERT_SCALED` marker-gene insert counts |
 
 如果直接按 species name 做 outer join，`Pseudomonas_E alloputida`、`Pseudomonas putida`、SGB 与 `mOTUv4.0_*` 会被误当成互不相干或一一对应的标签。正确顺序是：**数据库参考覆盖 → feature split/merge → 原生检出 → 共同域组成**。
+
+### 共同物种域让比较公平，也缩小了结论范围
+
+三工具严格共同的一对一物种域只有 52 个物种，占预期组成质量的 70.738%。在这个范围比较误差可以减少命名与覆盖差异，但也排除了较难对齐的对象。应同时报告各工具完整参考范围的表现，不能把共同域内最好者直接称为所有群落的最佳工具。
+
+组成相关很高仍可能存在系统性比例偏差，丰度加权误差较小也可能漏掉很多稀有成员。因此选择指标应对应主要问题：群落总体组成、可靠检出或某个预设目标并不等价。这个单一真实 mock 支持受控比较，不提供跨生态环境的永久排名。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

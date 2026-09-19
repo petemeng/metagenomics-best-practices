@@ -32,7 +32,7 @@ reader-mode: upstream
 本次以 32 CPU cores 实跑。完整基因组分支的 peak RAM 为 0.43–0.83 GiB、耗时 12 秒至 7 分 50 秒；39.7 Mb 的真实共组装子集上，antiSMASH 用时 22 分 26 秒、peak 0.77 GiB，GECCO 用时 52 秒、peak 1.77 GiB。建议预留 **16 GB RAM、32 CPU cores、30 GB 可用磁盘和 1 小时**；启用更多 antiSMASH modules、处理大队列或长读长组装时需按输入规模上调。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="基因簇数量增加，可能只是同一个簇被切开"}
 
 完整度、参考相似性和潜在新颖性分别报告；预测基因簇不等于已经检测到化合物。
 
@@ -45,6 +45,12 @@ reader-mode: upstream
 antiSMASH 8 把可检测 cluster types 从 81 扩到 101，并更新了 terpene、tailoring enzyme、NRPS/PKS 与 MIBiG 4.0 comparison [@blin2025antismash8]。最终要复现的不是网页截图，而是四张可审计的论文图：工具 yield、fragmentation recovery、BGC type composition，以及 MIBiG similarity 与 read abundance 的联合图。
 
 ![同一序列在完整、20 kb 碎片和真实共组装条件下的 BGC yield；计数差异首先反映边界与模型定义。](../figures/40-tool-bgc-yield.png){#fig-40-yield}
+
+### 基因簇数量增加，可能只是同一个簇被切开
+
+完整序列切成片段后 calls 从 19 增至 29，说明边界碎片化会改变计数单位。若把每个片段都当作独立完整簇，便会夸大多样性。应追踪边缘位置、重叠与可见范围，先区分“候选片段”与“完整上下文”，再比较不同样本的簇数量。
+
+低参考相似性也不是新化合物的充分证据，可能来自不完整序列或参考不足。工具间重叠提供条件性支持，却不能证明表达与产物形成。应分别报告序列结构、已知参考关联和尚待验证的化学结论。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -197,11 +203,11 @@ antiSMASH 的固定参数为 bacterial taxon、`--minimal --cc-mibig --cb-knownc
 
 对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：
 
-\[
+$$
 \frac{|A\cap B|}{|A|}\ge 0.25
-\quad\text{且}\quad
+\quad\text{and}\quad
 \frac{|A\cap B|}{|B|}\ge 0.25.
-\]
+$$
 
 双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。
 
@@ -270,11 +276,11 @@ BGC 是一组在基因组上相邻、共同参与 specialized metabolite biosynt
 
 一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：
 
-\[
+$$
 A_{rs}=\sum_{g\in r}w_{gr}C_{gs},
 \qquad
 P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.
-\]
+$$
 
 这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。
 

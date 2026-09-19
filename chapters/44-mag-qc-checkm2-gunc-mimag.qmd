@@ -32,7 +32,7 @@ reader-mode: upstream
 本次用 **24 CPU cores**；建议 **128 GB RAM、200 GB 磁盘，预计耗时 3--8 小时**。CheckM2 v3 DIAMOND 文件为 3,082,500,605 bytes；GUNC ProGenomes 2.1 下载归档约 7.19 GB、解压库更大；CheckM1 pplacer 应只给 1 thread 以限制内存。barrnap/tRNAscan-SE 很快，但每个 MAG 都保留 GFF、table 和日志。没有服务器时，可读取 `data/small/44-mag-qc-mimag-graph-frozen/` 的完整 MIMAG table、graph audit、raw QC tables、feature evidence、资源日志和环境锁。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="完整度与污染估计不能定位每一条错误 contig"}
 
 CheckM2、GUNC 与 rRNA/tRNA 证据回答不同问题；完整 MIMAG 分级不能简化成完整度和污染两个阈值。
 
@@ -47,6 +47,12 @@ CheckM2、GUNC 与 rRNA/tRNA 证据回答不同问题；完整 MIMAG 分级不�
 ![完整 MIMAG 等级叠加在 CheckM2 landscape；进入绿色象限仍可能因 rRNA/tRNA 不完整而只能算 medium quality。](../figures/44-quality-landscape.png){#fig-44-quality}
 
 23 个 candidates 全部通过 GUNC，其中 17 个先通过 CheckM2 `>90%/<5%` 前门；但只有 5 个含完整 5S/16S/23S rRNA set，21 个达到至少 18 个 tRNA isotypes。完整 MIMAG 规则最终得到 **4 个 high-quality、19 个 medium-quality、0 个 low/failed**，也就是 17 个 pre-marker HQ 中有 13 个不能直接写成 high-quality。CheckM marker lineage 进一步把它们分为 16 个 Bacteria 与 7 个 Archaea，结构注释均使用相应 domain mode。
+
+### 完整度与污染估计不能定位每一条错误 contig
+
+质量模型给出基因组层面的估计，可能遗漏局部错分、结构错误或近缘混合；高完整度也不保证所有必需 RNA 元件都被回收。本例 23 个 MAG 中只有 4 个达到完整 MIMAG HQ，说明二维质量散点的绿色区域不能直接充当最终等级。
+
+GUNC 关注谱系不一致，rRNA/tRNA 检查关注明确结构需求，组装图与回比关注连接和局部支持，几者应互补。自动异常标记适合引导检查，不应直接触发删除。删改后要重新计算质量并保留版本，否则报告可能指向已经不存在的序列集合。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

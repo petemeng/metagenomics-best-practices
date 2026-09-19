@@ -45,7 +45,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等的 71-strain MOCK1 Illumina run `ERR9765746`，使用第 13 篇 fastp 后保留的 99,991 个同步 read pairs [@meslier2022platforms]。R1/R2 分别含 14,974,589 与 14,835,184 bases；两个压缩文件的 SHA-256 和 normalized pair-ID hash 均被固定。HUMAnN 按官方 paired-end 约定读取顺序串接后的 199,982 条 individual reads，不把 mates overlap-merge 成 fragments。  
 > **预计资源：**完整复跑建议 8 核、64 GB RAM、至少 200 GB 可用 SSD；四个数据库归档合计 63.4 GB（59.0 GiB），分段下载文件、解包数据库、临时 sample-specific Bowtie2 index 与 DIAMOND 中间文件会同时占盘。归档完整性和 SHA-256 全部通过后清理 range parts，稳定占用可降到约 150 GB。当前 100k-pair MOCK1 的 HUMAnN 主流程实测为 **31 分 01 秒**、峰值 **6.62 GiB RSS**。没有服务器时，可直接读取 checksum-locked 小表重画结果；换成全深度人体或环境队列时，应在 HPC/云节点逐样本运行，并把大数据库放在共享只读存储。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="物种贡献之和为什么不总等于群落通路丰度"}
 
 先确认 feature 类型和单位；pathway coverage 不等于 abundance，物种分层行也不能重复计入总量。
 
@@ -67,6 +67,12 @@ bioBakery 3 将物种组成、gene family、pathway abundance 和 pathway covera
 
 
 
+
+### 物种贡献之和为什么不总等于群落通路丰度？
+
+gene family 的群落行与分层行具有相加关系，但通路由多个反应及重建规则决定；先在整个群落重建与先在各物种中重建再求和，不是同一运算。若把所有 pathway strata 加回 community 行，可能重复计数或得到不成立的恒等式。
+
+本例同时保留基因家族、反应、通路 abundance 与 coverage，正是为了分别回答“检测到哪些序列功能”“如何组成通路”和“证据覆盖到什么程度”。coverage 高不等于通路活跃，abundance 高也不证明每个必要反应都有直接证据。进入差异分析前，应先锁定其中一种测量对象。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -345,13 +351,13 @@ vJun23 profile header 记录 199,929 reads processed，因为 MetaPhlAn 的 `--r
 
 ### Nucleotide 与 translated search 是串行补充，不是两个独立分母
 
-通过 prescreen 后，Bowtie2 先把 reads 对到物种 pangenomes；未匹配 reads 再翻译搜索 UniRef90。设输入 reads 为 \(N\)，nucleotide、translated 与最终 unmapped 数分别为 \(N_n\)、\(N_t\)、\(N_u\)，则：
+通过 prescreen 后，Bowtie2 先把 reads 对到物种 pangenomes；未匹配 reads 再翻译搜索 UniRef90。设输入 reads 为 $N$，nucleotide、translated 与最终 unmapped 数分别为 $N_n$、$N_t$、$N_u$，则：
 
-\[
+$$
 N = N_n + N_t + N_u.
-\]
+$$
 
-translated fraction 应写成 \(N_t/N\) 或在明确条件下写成 \(N_t/(N-N_n)\)。不能把二者混用，也不能将 paired-end mates 当成一个 fragment 后仍沿用 199,982 的分母。
+translated fraction 应写成 $N_t/N$ 或在明确条件下写成 $N_t/(N-N_n)$。不能把二者混用，也不能将 paired-end mates 当成一个 fragment 后仍沿用 199,982 的分母。
 
 `choco_dir` 应包含 `g__*.v201901_v31.ffn.gz`，`uniref_dir` 应包含 annotated UniRef90 `v201901b` DIAMOND database。Bowtie2 显式固定 `--seed 20260722`；HUMAnN 本身没有抽样，但同时固定 `PYTHONHASHSEED=0`，避免 hash-order 漂移。
 
@@ -401,13 +407,13 @@ export ARTICLE19_METAPHLAN_REAL="${BIOBAKERY_ENV_PREFIX}/bin/metaphlan"
 
 ### Gene-family RPK 先校正 reference length，再按 mapping evidence 聚合
 
-HUMAnN 的 native gene-family output 是 reads per kilobase（RPK）。它适合在同一样本内比较不同 reference lengths 已校正后的 gene-family abundance，但不是 raw reads，也不是绝对 copies。对同一个普通 gene family \(g\)：
+HUMAnN 的 native gene-family output 是 reads per kilobase（RPK）。它适合在同一样本内比较不同 reference lengths 已校正后的 gene-family abundance，但不是 raw reads，也不是绝对 copies。对同一个普通 gene family $g$：
 
-\[
+$$
 RPK_{g,community} = \sum_s RPK_{g,s},
-\]
+$$
 
-其中 \(s\) 是 species 或 unclassified stratum。当前 11,776 个 ordinary community gene families 中，违反该恒等式的 feature 数为 **0**。
+其中 $s$ 是 species 或 unclassified stratum。当前 11,776 个 ordinary community gene families 中，违反该恒等式的 feature 数为 **0**。
 
 `humann_renorm_table --units cpm --mode community` 将 unstratified community denominator 归一到 1,000,000；`--units relab` 归一到 1。CPM 仍是 compositional abundance，不是每细胞绝对拷贝数。
 

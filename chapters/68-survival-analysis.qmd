@@ -44,7 +44,7 @@ reader-mode: analysis
 
 本章使用 Spencer 等人的黑色素瘤免疫治疗队列：每位患者在治疗基线有一个 stool whole-genome shotgun（WGS）样本，公开工作簿同时提供 Last Known Taxon（LKT）PPM 谱和部分患者的 progression-free survival（PFS）信息 [@spencer2021dietary]。167 个公开 WGS profiles 中，110 个同时具有正的 PFS 时间和 0/1 结局，发生进展或死亡 61 例，右删失 49 例。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="风险比与临床预测性能为何不能互换"}
 
 优先报告连续效应；cutoff 只在训练集确定，并检查比例风险和时间依赖性能。
 
@@ -54,11 +54,17 @@ reader-mode: analysis
 
 原研究 Figure 3A 是本章的生存图锚点：在 128 位接受 immune checkpoint blockade（ICB）的患者中，作者按问卷估计的日均膳食纤维是否达到 20 g 分组，Kaplan--Meier log-rank $P=0.047$；Figure 3B 又联合纤维与 probiotic supplement 状态。论文表 1 报告每增加 5 g/day 纤维，校正后进展或死亡风险下降约 30% [@spencer2021dietary]。
 
-![Spencer et al. 2021 Figure 3A。原图用于定位 PFS、删失标记、风险表与 log-rank 检验；公开 PDF SHA-256 为 `414c9350...707`。](../figures/68-spencer-fig3a-original.png){#fig-68-anchor}
+![Spencer et al. 2021 Figure 3A。原图用于定位 PFS、删失标记、风险表与 log-rank 检验](../figures/68-spencer-fig3a-original.png){#fig-68-anchor}
 
 公开 WGS 工作簿不是 Figure 3A 全部 128 人的临床分析表：它有 167 个基线 WGS 样本，但只有 110 人具备 PFS time/event。因此下面不声称逐位复原论文的 128 人纤维模型，而是在**真实 WGS 与真实 PFS 的交集**上复现生存分析骨架，并把论文同时强调的 *Faecalibacterium* 作为预先指定的微生物特征。这个区别必须写进数据谱系和 Methods，不能用相近曲线掩盖样本集合变化。
 
 ![从公开 WGS 到生存分析队列。右图保留删失状态与观测时间；空心圈标出只在测序质量敏感性分析中排除的一位患者。](../figures/68-cohort-design.png){#fig-68-design}
+
+### 风险比与临床预测性能为何不能互换？
+
+校正后风险比 0.933 的区间跨 1，不能说明真实效应为零，也不能把未校正显著结果当作独立预后证据。Cox 风险比描述给定协变量下的瞬时风险关系，不是固定时间点的风险差或治愈概率。比例风险不成立时，一个常数风险比还可能遮住随时间变化的关联。
+
+模型能否预测，需要在预先指定时间点检查区分度、校准和不确定性；它不由某个系数的 P 值决定。110 人中仅 61 个事件，33 人测试集的性能尤其需要谨慎解释。删失机制、时间起点和训练阶段的特征选择，都比事后寻找更好看的 cutoff 更能决定结论是否可靠。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -591,7 +597,7 @@ P 值不表示效应大小，KM 尾部往往只剩极少患者。主文至少给
 - training、held-out、leaky descriptive 用不同标题，不能只靠图注补救；
 - 主图交付 vector PDF、350 dpi PNG 与 LZW TIFF，图内文字全英文。
 
-本章七张原创图均由冻结结果表重绘，并输出 PDF/PNG/TIFF；论文原图只保留 Figure 3A 小面板作锚定引用。若期刊要求黑白打印，`High/Low` 除颜色外还应增加 line type，避免灰阶下无法辨认。
+生存曲线应同时标出删失状态和风险集人数。若期刊要求黑白打印，`High/Low` 除颜色外还应增加 line type，避免灰阶下无法辨认。
 
 ## 回到最初的问题
 

@@ -40,7 +40,6 @@ UPSTREAM_EVAL_FALSE = {
     30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
 }
 REQUIRED_SECTIONS = (
-    "先确定这一点",
     "参考文献",
 )
 LEGACY_SLOT_H2 = re.compile(
@@ -1078,6 +1077,10 @@ def main() -> int:
                 errors.append(
                     f"article {number:02d} is missing section: {section}"
                 )
+        # Require decision-changing guidance, not the previous stock heading.
+        from audit_reader_delivery import has_decision_recommendation
+        if not has_decision_recommendation(text):
+            errors.append(f"article {number:02d} lacks a substantive recommendation")
         if number != 71 and metadata.get('reader-mode') != 'evidence':
             for token in ("#sec-theory", "#sec-code", "#sec-audit", ".callout-caution"):
                 if token not in text:

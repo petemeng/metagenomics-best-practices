@@ -46,7 +46,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等构建的不均一微生物 DNA mock：MOCK1 含 71 strains（SAMEA14435832；ERR9765746），MOCK2 含 87 strains（SAMEA14435833；ERR9765747），项目 PRJEB52977 [@meslier2022platforms]。  
 > **结论边界：**每个 mock 从 200 万 selected pairs 开始；fastp 后 single branches 分别输入 1,999,853 与 1,999,888 clean pairs，co-assembly 合并为 3,999,741 pairs。co branch 的 read budget 约为 single 的两倍，而且两种 mock 的组成不同。因此这是受控的 workflow comparison，**不是算法单因素 benchmark，也不代表普适赢家**。Reference-aware correctness、misassembly 与 genome fraction 在第 33 篇用 MetaQUAST 独立审计。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="混合组装的收益，要与输入预算一起解释"}
 
 把连续性、读段回贴与资源代价分开比较；输入量不同的单样本和混合组装不是纯算法对照。
 
@@ -63,6 +63,12 @@ Delgado 与 Andersson 对 124 个 Baltic Sea metagenomes 的研究解释了为�
 ::: {.callout-important title="先把比较问题写对"}
 这套设计同时改变了 **assembler、assembly strategy、read budget 和 community composition**。可回答的是“在这两个真实 mock 和这套固定预算下，六条工作流各产出什么、花费多少”；不能回答“某工具在所有生态位都更准”或“co-assembly 必然优于 single assembly”。
 :::
+
+### 混合组装的收益，要与输入预算一起解释
+
+co-assembly 同时增加了 reads 和群落混合程度。本例约 400 万 pairs 对比单样本约 200 万 pairs，不能把所有连续性改善都归因于算法策略。若要隔离策略本身，需要额外的相同预算比较；这里已有结果只能支持当前配置下的工作流权衡。
+
+更高 N50 可能来自正确连接，也可能来自错误拼接或少数高丰度基因组。应与 read recruitment、参考覆盖和错误证据一起读。低丰度回收是可能收益，近缘菌株混合则可能增加歧义；选择单样本、混合或组合路线，应由目标对象及可接受的错误类型决定。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

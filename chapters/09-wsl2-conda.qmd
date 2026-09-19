@@ -42,7 +42,7 @@ reader-mode: upstream
 > **真实数据：**环境冒烟读取 Meslier 等 71-strain MOCK1 的已固化 ENA 证据 [@meslier2022platforms]：project `PRJEB52977`、sample `SAMEA14435832`、4 个 checksum-identified FASTQ sources，以及 Illumina、历史 ONT R9、PacBio CCS 各 5,000 条 records 的 15,000 行指标。原始 FASTQ 不进入 Git。  
 > **预计资源：**WSL2 与 Ubuntu 首次安装通常需 10–25 分钟并重启 Windows；Miniforge 和本文环境的求解/下载时间取决于网络与缓存。一次原生 Linux 实测解析为 71 个包，环境占用约 409 MB；验证约需 1 核、低于 1 GB RAM、1–2 分钟。若要继续完整 short-read QC 与 profiling，建议从 8 核、16–32 GB RAM、至少 200 GB Linux 侧可用磁盘起步；组装、分箱和大型数据库常需更高配置，必须按第 10–11 篇重新估算。没有服务器时，先用本章固化表完成学习和审计，把完整 FASTQ、数据库与组装任务提交到 HPC 或合规云环境。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="能创建环境，还要确认命令实际从哪里运行"}
 
 区分 Windows 管理命令与 Linux 分析命令；环境创建成功后，还要检查实际工具入口。
 
@@ -50,13 +50,7 @@ reader-mode: upstream
 
 ## 在 Windows 上建立可检查的 Linux 分析环境 {#sec-target}
 
-环境搭建不产生生物学效应值，却决定论文中的命令能否被第三方重跑。它通常对应：
-
-1. Methods 的 **Computational environment**，报告 host/guest 操作系统、软件环境、版本和文件系统；
-2. Supplementary Methods 的 **reproducibility workflow**，说明 Windows、WSL2、Linux、环境管理器、工具和数据的层次；
-3. 代码仓库中的 machine-readable audit，保存环境文件 hash、包 build、输入 hash 和验收状态。
-
-关键不是截一张“终端没有报错”的图，而是把两个证据平面分开：
+Windows 的管理命令与 Ubuntu 内的分析命令属于不同执行层。安装环境之前先确认当前终端，否则同名命令可能指向不同软件：
 
 - **Windows control plane**：`wsl.exe --install`、`wsl.exe --update`、distribution 是否为 `VERSION 2`；
 - **Linux execution plane**：Linux kernel、架构、文件系统、`conda`/`mamba`、命名环境、命令入口和真实输入。
@@ -64,6 +58,12 @@ reader-mode: upstream
 ![Windows 侧指令与 Linux 侧实测证据必须分开报告。本仓库验证机是原生 Linux，因此 Windows control plane 保留为待 Windows 主机验证。](../figures/09-wsl2-layer-map.png){#fig-wsl2-layer-map}
 
 这条边界非常重要。本仓库在原生 Ubuntu Linux 上执行了环境和数据审计，不能据此写成“已在 Windows 11 + WSL2 实测”。Windows 用户应在自己的 PowerShell 中补齐 `wsl.exe` 证据，再在 Ubuntu 中运行同一套 Linux 侧验证。
+
+### 能创建环境，还要确认命令实际从哪里运行
+
+同名 Python 或 R 可以同时存在于 Windows、WSL、base 与项目环境中。排错时先确认当前终端、可执行路径和实际加载版本，再修改依赖；否则可能在一个环境安装包，却在另一个环境运行分析。把项目与高频读写放在合适的 Linux 文件系统，也比只增加线程更能避免不必要的 I/O 开销。
+
+本例已验证的是原生 Linux 执行层，不能把它冒充某台 Windows 电脑的 WSL 验收。Windows 虚拟化、发行版版本和资源分配仍需在读者机器上确认。后续重建环境时应使用与目标平台匹配的锁文件，而不是跨操作系统直接复制安装目录。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

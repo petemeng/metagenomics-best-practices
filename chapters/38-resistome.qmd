@@ -41,10 +41,10 @@ reader-mode: evidence
 ---
 
 > **学习目标：**用 Resistance Gene Identifier（RGI）调用 Comprehensive Antibiotic Resistance Database（CARD）的 model-aware resistome；分清 Perfect、Strict 与 Loose；理解 protein 与 contig 分支能看见的模型不同；用正控验证流程；把 ARG sequence evidence 与 antimicrobial susceptibility phenotype 分开。  
-> **真实数据：**93,782 条 Article 34 catalog proteins、Article 30 的 18,354 条 $≥1$ kb co-assembly contigs（84.81 Mb），以及 *Pseudomonas aeruginosa* ATCC 9027 和 *Staphylococcus aureus* USA300 FPR3757。catalog read weights来自 Article 35。  
+> **真实数据：**93,782 条 Article 34 catalog proteins、Article 30 的 18,354 条 $\geq 1$ kb co-assembly contigs（84.81 Mb），以及 *Pseudomonas aeruginosa* ATCC 9027 和 *Staphylococcus aureus* USA300 FPR3757。catalog read weights来自 Article 35。  
 > **结论边界：**RGI 命中表示 sequence/model evidence；它不等同于 isolate 的 MIC、临床耐药、基因表达或可移动性。Loose 不进入主 ARG abundance。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="序列证据的等级不能直接转换为临床风险等级"}
 
 序列相似性、归属证据与表型结果需要分开；缺少相应验证时，结论停留在抗性相关遗传潜力。
 
@@ -61,6 +61,12 @@ DeepARG 使用深度学习从 sequence features 预测 ARG category，适合扩�
 ::: {.callout-important title="先给结论：主分析只有 36 条，不是 6,799 条"}
 catalog protein 分支共输出 6,799 hits，其中 36 条为 Strict，0 条为 Perfect，6,763 条为 Loose。主 resistome 只包含 Perfect + Strict；Loose 是预先声明的 sensitivity set。若把全部输出行都叫 ARG，结果会被 6,763 个低于 curated model threshold 的候选支配。
 :::
+
+### 序列证据的等级不能直接转换为临床风险等级
+
+Strict 与 Loose 描述的是给定数据库模型下的序列支持，不是样本的药敏表型。主集合与探索性集合相差很大，说明阈值层级必须保留；不能把所有命中合计后称为已确认耐药基因负担，更不能从序列数量推出治疗反应。
+
+丰度、宿主归属、表达与可移动性还需要各自的证据。缺少这些信息时，结果应限定为抗性相关遗传潜力及其测量范围。阳性控制可以支持流程识别已知对象，却不证明自然样本中所有候选都正确，也不能消除数据库覆盖不足造成的未检出。
 
 ## 准备输入与数据库 {#sec-code}
 

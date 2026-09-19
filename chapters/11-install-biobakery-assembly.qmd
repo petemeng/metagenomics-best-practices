@@ -43,7 +43,7 @@ reader-mode: upstream
 > **本章真实证据：**2026-07-19 至 2026-07-20 在 native Linux 上实际求解并安装 `metagenome-biobakery-2026.07` 与 `metagenome-assembly-2026.07`。组装环境逐个启动 8 个直接工具，MEGAHIT 与 SPAdes 内置测试均通过；CONCOCT 暴露 user-site NumPy 污染和 `setuptools 83` 移除 `pkg_resources` 的故障，锁为 `setuptools<81` 后复测通过。bioBakery 环境又发现 HUMAnN 3.9 链接的内置 Bowtie2 2.2.3/DIAMOND 2.0.15 覆盖了环境元数据声明的 2.5.5/2.2.4；按精确版本重链接后，五个入口和 HUMAnN 单元测试通过。  
 > **算力门槛：**只创建环境建议 4 核、16 GB RAM、10 GB 可用磁盘和稳定网络；真正的数据库远大于软件包。当前 manifest 中 MetaPhlAn vJan26 归档为 6.014 GB，CheckM2 v3 为 1.735 GB，GTDB-Tk R232 为 60.806 GB 且解压后约 100 GB；HUMAnN 手册给出的 ChocoPhlAn 与 UniRef90 约为 16.4 GB 和 20.7 GB。没有服务器时可先在 Linux/WSL2 完成环境和内置测试，把数据库统一落在机构 HPC 的只读共享目录；不要在笔记本重复下载每位用户一份。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="软件锁与数据库锁必须一起定义结果版本"}
 
 工具能启动不等于数据库已就绪；把软件版本、数据库 release 和入口测试分别记录。
 
@@ -62,6 +62,12 @@ bioBakery 3 的主工作流把 MetaPhlAn 分类、HUMAnN 核酸比对、蛋白�
 本次将依赖按分析合同拆成三块。前两块已安装并保存完整 Linux-64 锁；CheckM2、GUNC、GTDB-Tk 与 dRep 留到各自章节的隔离环境，避免把已复现的 solver 冲突带进组装环境。
 
 ![两个已执行环境与后续 MAG 质控/分类环境的边界。环境拆分依据是依赖合同，不是软件数量。](../figures/11-environment-boundaries.png){#fig-environment-boundaries}
+
+### 软件锁与数据库锁必须一起定义结果版本
+
+同一个工具版本读取不同 marker 或参考基因集，可能输出不同的可检出对象。因此“环境能安装”与“分析可以重建”不是同一个结论；后者还需要数据库 release、实际文件身份与关键参数。本例工具入口曾与包管理器记录不一致，也说明应检查运行时，而不能只保存安装清单。
+
+升级应作为新的分析版本进行比较：先在固定输入上检查对象数量、未分类比例与关键结果，再决定是否迁移全队列。不要让部分样本读取旧数据库、部分读取新数据库后直接合并。下载失败或缺少必要文件时应明确停止，不能静默切换到一个不同的参考版本。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -522,12 +528,12 @@ MetaPhlAn 4 根据 marker database 将 reads 分配到 SGB；HUMAnN 根据 Choco
 
 因此 Methods 至少要同时写：
 
-\[
+$$
 \text{software version}
 + \text{database release}
 + \text{archive checksum}
 + \text{runtime parameter}
-\]
+$$
 
 只写 “MetaPhlAn 4” 无法判断使用 vJun23、vJan25 还是 vJan26。2026-07-15 官方 `mpa_latest` 已指向 `mpa_vJan26_CHOCOPhlAnSGB_202605`；若脚本运行时解析 `latest`，同一命令在四天前后会读取不同参考。
 
@@ -725,13 +731,13 @@ gtdbtk check_install
 
 数据库落地的最低共享盘预算为：
 
-\[
+$$
 S_{\text{landing}} =
 S_{\text{archive}}
 + S_{\text{unpacked}}
 + S_{\text{temporary}}
 + S_{\text{next release}}
-\]
+$$
 
 保留旧 release 直到新 release 通过 validation query，才能回滚。GTDB R232 归档本身 60.806 GB，官方文档给出约 100 GB reference data；若下载、解压和保留上一版同时发生，不能只申请 100 GB。
 

@@ -42,7 +42,7 @@ reader-mode: analysis
 
 这里使用 Lloyd-Price 等人 IBD Multi'omics Database（IBDMDB/HMP2）的官方 MetaPhlAn taxonomic profiles 与临床元数据 [@lloydprice2019multiomics]。公开产品含 1,638 个 profiles、130 名受试者；去除同一 biospecimen 的 43 个技术/处理重复，再施加 filtered reads ≥1,000,000 与每人至少 4 次合格随访的预设门槛，主分析保留 **1,523 个样本、107 名受试者**。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="个体内变化与个体间差异需要分别估计"}
 
 以受试者而非访视数计算独立性；模型和 bootstrap 都要保留主体结构与实际时间间隔。
 
@@ -52,11 +52,17 @@ reader-mode: analysis
 
 原研究 Figure 3 是本章的锚点：Figure 3a 比较不同时间间隔的 taxonomic Bray--Curtis dissimilarity，Figure 3b 展示稳定与 dysbiotic 时段的主要贡献物种，Figure 3c 追踪 *Prevotella copri* 的个体轨迹；后续面板把群落变化与其他组学层联系起来。论文主图使用 1,595 个独立 biospecimens、130 名受试者，并报告 CD 与 UC 中更多 dysbiotic periods [@lloydprice2019multiomics]。
 
-![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向稳定性、群落转换和 *P. copri* 轨迹；原始 PNG SHA-256 为 `b5ea6e10...5eed7`。](../figures/67-lloyd-price-fig3-original.png){#fig-67-anchor}
+![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向稳定性、群落转换和 *P. copri* 轨迹](../figures/67-lloyd-price-fig3-original.png){#fig-67-anchor}
 
 本章先重建论文的分析骨架，再增加三个今天更应明确的契约：技术重复的确定性取舍、主体等权的不确定性、以及固定阈值 sensitivity analysis（敏感性分析）与论文原始 shift caller 的边界。
 
 ![官方 profile 到主分析样本的确定性缩减。每个点是一位受试者的合格随访次数；同一个人的多次随访不被当作独立研究对象。](../figures/67-sampling-design.png){#fig-67-sampling}
+
+### 个体内变化与个体间差异需要分别估计
+
+某个变量在不同受试者之间与菌群有关，不代表同一个人该变量变化时菌群也随之变化。若研究目标是个体内关联，可将随时间变化的协变量拆为个人均值与偏离个人均值的部分；只放一个原始值，可能混合两种效应。随机截距处理相关性，但不会自动完成这种分解。
+
+随机时间斜率允许轨迹不同，也仍需检查模型能否支持相应复杂度。随访更密集或失访与病情相关时，观察到的轨迹可能不是全队列的无偏变化。本例按人处理不确定性，独立单位仍是 107 名受试者，而非 1,523 次测量；反复检出也不能单独证明永久定植。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

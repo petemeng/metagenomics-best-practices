@@ -26,13 +26,13 @@ wechat:
 reader-mode: upstream
 ---
 
-> **先给结论：**精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 **truth-blind** 规则选择：先最大化 CheckM2 >=50%、contamination <10%、GUNC pass 的 bins；平局时最大化这些 bins 的 (sum(completeness-5\times contamination))，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。
+> **先给结论：**精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 **truth-blind** 规则选择：先最大化 CheckM2 >=50%、contamination <10%、GUNC pass 的 bins；平局时最大化这些 bins 的 $\sum(\mathrm{completeness}-5\times\mathrm{contamination})$，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。
 
 ::: {.callout-important title="算力与数据边界"}
 本次输入为五套候选 bins、74.93 Mb 共组装，使用 **24 CPU cores**。建议 **96 GB RAM、150 GB 磁盘**，预计耗时 **2--6 小时**；Binette 内部 CheckM2 与精炼后统一 CheckM2/GUNC 是主要算力开销。数据库为 CheckM2 v3 约 3.08 GB 与 GUNC ProGenomes 2.1 大型 DIAMOND 库。没有服务器时，可读取 `data/small/43-bin-refinement-frozen/` 的 candidate reconstruction、provenance、独立 QC、selection ledger、日志和环境锁。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="精炼后的质量必须针对最终序列重新计算"}
 
 记录每个最终 bin 的来源和 contig 成员；选择不能借用已知真值，质量必须对最终序列重新计算。
 
@@ -47,6 +47,12 @@ DAS Tool 论文的核心图比较 single binners、输入 union 与 dereplicated
 ![五个 input partitions 与两个 refinement outputs 的 CheckM2+GUNC minimum-pass yield。](../figures/43-refinement-yield.png){#fig-43-yield}
 
 DAS Tool 产生 26 个 refined bins，其中 21 个通过 minimum gate；Binette 产生 27 个，其中 23 个通过。预注册 primary criterion 因而直接选择 Binette，不需要启动平局规则；其 passing score sum 也高于 DAS Tool（2,054.76 对 1,882.56）。决定完成后的 mock audit 中，Binette 与 DAS Tool 分别得到 17 和 13 个 HQ proxies。最终 23 个 selected candidates 共覆盖 57,793,968 bp，选择过程中未读取这组真值结果。
+
+### 精炼后的质量必须针对最终序列重新计算
+
+split 或 merge 改变了 contig 集合，旧 bin 的最佳 completeness 与最低 contamination 不能拼成新 bin 的质量报告。最终序列需要重新评价，并保留每条 contig 来自哪个候选、是否重复进入多个结果。这样才能区分真正改善与同一序列被重复计算。
+
+Binette 用 CheckM2 参与选择，随后再次用 CheckM2 评分主要验证最终对象的一致性，不是完全独立的方法验证。GUNC、其他质量维度及留到最后的 mock 真值提供不同信息。应把选择用的标准与最终评价用的证据分开说明，不以一个总分替代全部质量检查。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

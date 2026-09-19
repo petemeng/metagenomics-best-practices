@@ -44,7 +44,7 @@ reader-mode: analysis
 
 本章沿用 Spencer 等人的黑色素瘤 immune checkpoint blockade（ICB）研究 [@spencer2021dietary]。公开工作簿有 167 位患者的 baseline stool WGS，94 人同时有 NIH Dietary Screener Questionnaire 推算的 fiber grams、论文预先定义的 20 g/day fiber category、基线 LKT PPM profile 与后续 RECIST-based response。Exposure 为 sufficient（23 人）vs insufficient（71 人），outcome 为 responder（60 人）vs non-responder（34 人），mediator 为预先指定的 *Faecalibacterium* 聚合丰度。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="为什么二分类结局不宜直接相乘两个回归系数"}
 
 先确认暴露、中介和结局的时间顺序；再报告重叠、混杂假设与未测混杂敏感性。
 
@@ -54,11 +54,17 @@ reader-mode: analysis
 
 原研究 Figure 3A 比较 sufficient 与 insufficient fiber 的 PFS，Figure 3B 再联合 probiotic use；表 1 同时报告 fiber 与 ICB response 的 association。作者还观察到 sufficient fiber + no probiotic 的患者中 alpha diversity、Ruminococcaceae 与 *Faecalibacterium* 数值更高，但结果未达到统计显著 [@spencer2021dietary]。
 
-![Spencer et al. 2021 Figure 3A/B。原图建立 exposure–outcome 锚点；公开 PDF SHA-256 为 `414c9350...707`。](../figures/69-spencer-fig3ab-original.png){#fig-69-anchor}
+![Spencer et al. 2021 Figure 3A/B。原图建立 exposure–outcome 锚点](../figures/69-spencer-fig3ab-original.png){#fig-69-anchor}
 
 这些结果提出了“fiber 是否通过 gut microbiome 影响 treatment response”的机制问题，却没有自动完成 mediation identification。论文 Figure 3 包含人群 association 与小鼠实验；本章只分析 94 人公开 WGS 交集，不把跨物种实验信息塞进同一个统计中介系数。
 
 ![A：167 个 WGS profiles 缩减为 94 人真实交集。B：观察到的 response rate。C：观察到的 *Faecalibacterium* 分布；这些边际图只能检查路径线索。](../figures/69-cohort-observed-path.png){#fig-69-observed}
+
+### 为什么二分类结局不宜直接相乘两个回归系数？
+
+非线性模型中，logistic 系数的乘积通常不等于人群平均风险尺度上的间接效应。这里用 g-computation 先计算模型下的结局概率，再在同一人群上标准化，因而能用 percentage points 解释总、直接和间接分量。即便数值可分解，因果解释仍要求正确模型、充分重叠及相应的无未测混杂假设。
+
+间接分量为 +1.0 percentage point，区间跨 0；它与较大的总关联可以同时存在。proportion mediated 是两个不确定量的比值，总效应接近 0 或间接效应方向变化时尤其不稳定。先报告风险尺度的分量及区间，再讨论剩余偏差，比把 4.6% 当成确定机制贡献更合适。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

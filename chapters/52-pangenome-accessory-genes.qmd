@@ -32,7 +32,7 @@ reader-mode: upstream
 本次从官方预计算 mapping profiles 起步，PanPhlAn 3.1 主分析耗时 **8.83 秒、峰值 RAM 0.148 GiB**；敏感性分支耗时 **6.59 秒、峰值 RAM 0.113 GiB**。全工作目录约 **240 MB**，实际 profiling 为单进程。按这一入口建议准备 **1--2 CPU cores、2 GB RAM、1 GB 可用磁盘、5 分钟**。若从 25 个原始 FASTQ 重新做 Bowtie2 mapping，建议 **8--16 cores、32 GB RAM、至少 300 GB 临时磁盘**，耗时会随读长、深度和压缩格式从数小时增加到数天。没有服务器时，可直接读取 `data/small/52-panphlan-pangenome-frozen/` 中校验过的 presence/absence 矩阵和汇总表重画下游图。
 :::
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="基因未检出，何时才能解释为真正缺失"}
 
 参考集合和检出规则共同定义附属基因；未检出与真实缺失要区分，基因存在仍不等于表达。
 
@@ -44,6 +44,12 @@ PanPhlAn 方法论文 Figure 3 用 *E. rectale* 与 *A. muciniphila* 展示大�
 
 
 
+
+### 基因未检出，何时才能解释为真正缺失？
+
+read-based 泛基因组分析受目标物种深度和参考集合限制。低深度样本中的零可能只是未检出；参考中不存在的家族则根本不在当前搜索范围。只有先确认样本具备足够信息，才能比较 presence/absence，不能把所有未见条目都改名为菌株缺失。
+
+本例的 operational core 来自 22 个合格样本，95% 阈值描述的是这些样本中的检出频率，不是该物种所有成员的必需基因。重复来源、地理结构及混合菌株都可能影响分类。基因组成差异支持种内遗传多样性，但不会单独证明表达、表型或功能改变。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 
@@ -251,11 +257,11 @@ Jaccard clustering 没有 nucleotide substitution model，也不处理同源重�
 
 对样本 (i) 与 gene family (g)，PanPhlAn 先得到 read coverage (c_{ig})，再用该样本的覆盖平台估计物种内基因的基准拷贝水平。归一化值过低判 absent，落在明确平台内判 present，过高则提示 multicopy。默认 gene-level 阈值为：
 
-\[
+$$
 z_{ig}<0.25\Rightarrow absent,\qquad
 z_{ig}>0.50\Rightarrow present,\qquad
 z_{ig}>1.50\Rightarrow multicopy.
-\]
+$$
 
 样本本身还需通过 median coverage、left-side plateau 与 right-side plateau 三道门。这样能减少低深度随机命中被误判为基因存在，但阈值也会改变哪些样本进入分析。
 
@@ -263,9 +269,9 @@ z_{ig}>1.50\Rightarrow multicopy.
 
 这里的 operational prevalence 定义为：
 
-\[
+$$
 p_g=\frac{\sum_{i=1}^{n} I(g\text{ present in }i)}{n}.
-\]
+$$
 
 - `Core >=95%`：(p_g\ge0.95)；主分析 22 个样本时等价于至少 21 个样本检出。
 - `Accessory 5-<95%`：(0.05\le p_g<0.95)。
@@ -341,9 +347,9 @@ UniRef/GO/KO/Pfam 是候选注释层。高风险功能需要专库、版本、id
 
 Jaccard distance 只比较 binary gene content：
 
-\[
+$$
 d_J(A,B)=1-\frac{|A\cap B|}{|A\cup B|}.
-\]
+$$
 
 它会受基因获得/丢失、质粒和噬菌体、mapping bias、阈值及数据库覆盖影响。StrainPhlAn 或 core-genome phylogeny 比较的是同源 marker/core sequence 的 nucleotide substitutions。二者回答不同问题：gene-content dendrogram 适合找“功能型相似”的样本，不能当作物种演化树，更不能仅凭近邻断言传播。
 

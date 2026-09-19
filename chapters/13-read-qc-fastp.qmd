@@ -43,7 +43,7 @@ reader-mode: upstream
 > **真实数据：**Meslier 等构建的 71-strain MOCK1 DNA，ENA project `PRJEB52977`、sample `SAMEA14435832`、Illumina HiSeq 3000 paired-end run `ERR9765746` [@meslier2022platforms]。本文确定性使用官方 R1/R2 文件各自最前面的 100,000 条完整记录；它是可核验的文件前缀，不是随机抽样，也不代表全量 run。  
 > **预计资源：**建议 4 核、4 GB RAM、2 GB scratch；本文实际运行中 fastp 用时 1 分 17.91 秒、峰值 1,580,964 KB，四份 FastQC 合计低于 9 秒，MultiQC 用时 2.37 秒。全量 FASTQ 的官方压缩体积约 1.62 GiB（R1）与 1.96 GiB（R2），应在 HPC/scratch 或云盘处理；没有服务器时可先运行本文 100,000-pair 前缀。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="读段保留率高，为什么仍要检查丢失发生在哪里"}
 
 先看原始质量再选择修剪规则；成对 reads 的损失需要逐项解释，WARN 不能直接当成失败。
 
@@ -53,11 +53,17 @@ reader-mode: upstream
 
 Meslier 等用同一组复杂 mock DNA 比较七种测序平台。Figure 1 展示 mock 中跨 29 个 phyla、GC 含量约 27%–69% 的基因组背景，Table 1 给出平台与读长，后续 Figure 2、Figure 3 比较测序深度与物种丰度偏差 [@meslier2022platforms]。这些比较成立的前提，是每个平台的 reads 先经过可解释的质量处理。
 
-原论文的 Illumina/MGI short-read QC 使用 fastp 0.20.0；Illumina 提供 TruSeq adapters，过滤后最短长度为 45 nt，含一个 `N` 的 reads 和失去配对的 reads 被移除。本文使用同一公开 Illumina run，但目标不是伪装成对原论文统计图的逐像素复现，而是把论文图之前容易被压缩成一句 Methods 的步骤展开成三张可审计证据图：
+原论文的 Illumina/MGI short-read QC 使用 fastp 0.20.0；Illumina 提供 TruSeq adapters，过滤后最短长度为 45 nt，含一个 `N` 的 reads 和失去配对的 reads 被移除。下面使用同一公开 Illumina run，分别检查过滤前后的质量、读段去向与配对完整性：
 
 1. 每个 cycle 的质量在过滤前后是否真正改变；
 2. 100,000 个 read pairs 到底保留、损失了多少，损失由哪条规则造成；
 3. raw/clean × R1/R2 的 FastQC module 状态是否一致，WARN 是否有生物学解释。
+
+### 读段保留率高，为什么仍要检查丢失发生在哪里？
+
+本例仅损失 9 对过短 reads，说明当前输入在这组规则下变化很小，并不证明所有样本都可使用同样阈值。总体保留率会掩盖逐样本和 R1/R2 的不平衡；若某组系统性损失更多，其下游检出差异可能部分来自处理。先比较逐样本保留、长度和质量分布，再决定是否需要额外敏感性分析。
+
+修剪还会改变可比对长度和序列证据，不能只以最高保留率或全部 FastQC 变绿为目标。真实群落的组成可产生非均匀 GC 或重复信号，通用 WARN 需要按样本类型解释。数据前缀适合验证流程是否正确计数，不适合估计整个 run 的随机抽样性能。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

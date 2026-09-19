@@ -44,7 +44,7 @@ reader-mode: analysis
 > **真实数据：**shotgun 机制锚点来自 Salter 等对纯培养 *Salmonella bongori* 连续稀释并用四种 DNA extraction kits 处理的 metagenomic experiment；统计演示使用 `decontam 1.24.0` 官方 `MUClite.rds` 导出的真实 16S V4 三件套，含 1,951 个 ASV、539 个口腔生物样本和 30 个阴性对照。前者证明 shotgun 也受 kit/reagent DNA 影响，后者用于真实执行分类器；ASV 结果不冒充 shotgun 物种谱。  
 > **预计资源：**本文计算在普通笔记本上通常需 1 个 CPU、内存低于 1 GB、磁盘约 20 MB、1–3 分钟；无需服务器。真实项目的 blank、mock 和 UDI 成本应在送测前进入预算。若数据量太大，可先把 FASTQ 统一转成 sample × feature 原始计数表，再在登录节点或笔记本运行本章统计；不要把受控人源样本上传到未经授权的在线工具。
 
-::: {.callout-tip title="先确定这一点"}
+::: {.callout-tip title="不同污染判据冲突时，先检查对照覆盖了哪一批"}
 
 过程空白、浓度趋势和逐样本污染负担要一起看；不要仅凭通用菌名黑名单删除特征。
 
@@ -87,6 +87,12 @@ knitr::kable(
 ```
 
 这组真实 shotgun 证据说明：污染 DNA 不是 marker-gene PCR 才有的问题。PCR-free shotgun 不扩增 16S，也仍会把提取试剂带入的 DNA 建库、测序并分类。
+
+### 不同污染判据冲突时，先检查对照覆盖了哪一批
+
+frequency 方法依赖 DNA 浓度能反映相关样本成分；宿主 DNA 占比变化很大时，总浓度未必是微生物量的好代理。prevalence 方法则依赖与样本匹配的阴性对照。本例的 30 个对照分布在六块板上，合并后得到的候选清单还应与板内证据对照，避免把批次特有背景稀释掉。
+
+同一个分类单元可以同时来自真实样本与背景污染，所以被标记不等于应在所有样本中无条件归零。应观察逐样本污染负担、主要结果对处理规则的敏感性，并说明无法补做的对照缺口。对于低生物量样本，扩大软件过滤力度不能替代采样与流程对照。
 
 ## 下载本例数据与分析代码 {#sec-reader-inputs}
 

@@ -93,6 +93,9 @@ def update(path: Path) -> int:
 
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
+    if any(re.search(r'^reader-mode:', p.read_text(), re.M)
+           for p in [root/'index.qmd']+list((root/'chapters').glob('*.qmd'))):
+        raise SystemExit('Historical migration already applied; retain current semantic reader gates.')
     reports = []
     for path in sorted((root / "scripts").glob("validate_article*.py")):
         count = update(path)
