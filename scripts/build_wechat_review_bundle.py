@@ -635,6 +635,24 @@ def selected_chapters(
     return [known[number] for number in wanted]
 
 
+def image_ledger_matches(
+    fragment: etree._Element,
+    records: list[dict[str, Any]],
+    expected_count: int,
+) -> bool:
+    """Match unique local assets, allowing an image to occur more than once."""
+    referenced = {
+        element.get("src") or ""
+        for element in fragment.xpath(".//img")
+        if not (element.get("src") or "").startswith(("http://", "https://", "data:"))
+    }
+    recorded = [str(record["relative_src"]) for record in records]
+    return (
+        expected_count == len(recorded) == len(set(recorded))
+        and referenced == set(recorded)
+    )
+
+
 def validate_item(
     item: dict[str, Any],
     payload: dict[str, Any],
@@ -685,7 +703,7 @@ def validate_item(
         if not (link.get("href") or "").startswith(("https://", "http://", "mailto:")):
             errors.append(f"{chapter_id}: relative or fragment link remains")
             break
-    if len(fragment.xpath('.//img[@src]')) != item["embedded_image_count"]:
+    if not image_ledger_matches(fragment, item["embedded_images"], item["embedded_image_count"]):
         errors.append(f"{chapter_id}: embedded image ledger does not match HTML")
     if re.search(
         r"审阅草稿|开放审阅|GitHub Draft PR|草稿箱继续查看|"
