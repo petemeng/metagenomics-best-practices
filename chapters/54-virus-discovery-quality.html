@@ -948,7 +948,10 @@ window.Quarto = {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">病毒候选、质量与分类，为什么要分别判断？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">病毒候选、质量与分类，为什么要分别判断？</a>
+  <ul class="collapse">
+  <li><a href="#基准集上的检出率能外推到环境样本吗" id="toc-基准集上的检出率能外推到环境样本吗" class="nav-link" data-scroll-target="#基准集上的检出率能外推到环境样本吗">基准集上的检出率能外推到环境样本吗？</a></li>
+  </ul></li>
   <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">下载并校验三份小型公开输入</a>
   <ul class="collapse">
   <li><a href="#sec-audit" id="toc-sec-audit" class="nav-link" data-scroll-target="#sec-audit">这不是 detector benchmark 的 sensitivity/specificity</a></li>
@@ -1040,13 +1043,13 @@ window.Quarto = {
 <p>同一台 Linux 服务器、同一批 46 条序列、16 threads 的 GNU <code>time -v</code> 实测：<strong>geNomad 1.12.0：131.88 秒、3.809 GiB 峰值 RAM；CheckV 1.1.1：37.18 秒、1.945 GiB；VirSorter2 2.2.4：881.50 秒、0.366 GiB</strong>。三个清理后结果目录分别约 2.1、10.9、24.0 MB。数据库才是磁盘大头：geNomad v1.9 安装后约 <strong>1.47 GB</strong>，CheckV v1.5 约 <strong>6.83 GB</strong>，VirSorter2 v0.4 核心文件约 <strong>10.52 GB</strong>，另需其 Snakemake 运行环境。真实百万级 contig 项目建议准备 <strong>16–32 CPU cores、64 GB RAM、至少 50 GB 数据库/临时磁盘空间</strong>；耗时取决于 contig 数、总 ORF 数和 HMM 拆分策略。没有服务器时，可从 <code>data/small/54-virus-discovery-quality-frozen/</code> 的逐 contig 证据矩阵重画统计图；不要把这个小规模回归集的资源消耗外推成大型队列承诺。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="基准集上的检出率能外推到环境样本吗">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>基准集上的检出率能外推到环境样本吗
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1084,6 +1087,11 @@ window.Quarto = {
 </figcaption>
 </figure>
 </div>
+<section id="基准集上的检出率能外推到环境样本吗" class="level3">
+<h3 class="anchored" data-anchor-id="基准集上的检出率能外推到环境样本吗">基准集上的检出率能外推到环境样本吗？</h3>
+<p>46 条基准序列中，不同工具的并集包含 44 条，高置信结果包含 38 条。这两个数回答的是给定测试集和判定规则下保留了多少候选，而不是实际环境中有多少病毒。若测试集的长度、完整度或来源与目标样本不同，同一个阈值的表现也可能改变。</p>
+<p>检出、完整度评估与分类是不同证据层。CheckV 的质量分层不能替代候选发现的准确性评价，无法确定完整度也不等于没有生物学价值。报告时应保留每层的分母和未判定条目，不把筛选后的高置信集合当作环境中全部成员的无偏样本。</p>
+</section>
 </section>
 <section id="sec-code" class="level2">
 <h2 class="anchored" data-anchor-id="sec-code">下载并校验三份小型公开输入</h2>
@@ -1125,7 +1133,10 @@ window.Quarto = {
 <li>单工具阳性不能只因另一个工具阴性就删除，应回看 hallmark genes、cellular genes、长度、基因排列和数据库命中。</li>
 </ul>
 <p>VirSorter2 2.2.4 的默认门槛是 <code>max_score ≥ 0.5</code>。其 <code>--high-confidence-only</code> 等价于：</p>
-<p>[ = I(s);;I(s&nbsp;&nbsp;h), ]</p>
+<p><span class="math display">\[
+\text{high confidence}=
+I(s\ge 0.9)\;\lor\;I(s\ge 0.7\ \land\ h\ge 1),
+\]</span></p>
 <p>其中 <span class="math inline">\(s\)</span> 是最大分类分数，<span class="math inline">\(h\)</span> 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。</p>
 </section>
 <section id="total-metagenome-与-enriched-virome-的分母不同" class="level3">
@@ -1303,7 +1314,10 @@ window.Quarto = {
 <section id="votu-必须同时跨过-ani-和-alignment-fraction" class="level3">
 <h3 class="anchored" data-anchor-id="votu-必须同时跨过-ani-和-alignment-fraction">vOTU 必须同时跨过 ANI 和 alignment fraction</h3>
 <p>MIUViG 建议以 <strong>95% average nucleotide identity（ANI）覆盖较短序列的 85%</strong> 作为病毒物种级 operational taxonomic unit（vOTU）阈值 <span class="citation" data-cites="roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。对序列 <span class="math inline">\((i,j)\)</span>，令 <span class="math inline">\(A_{ij}\)</span> 为去重后的对齐碱基数，<span class="math inline">\(L_s=\min(L_i,L_j)\)</span>，则：</p>
-<p>[ AF_{short}=, =I(ANI%)I(AF_{short}%). ]</p>
+<p><span class="math display">\[
+AF_{short}=\frac{A_{ij}}{L_s},\qquad
+\text{same vOTU}=I(ANI\ge95\%)I(AF_{short}\ge85\%).
+\]</span></p>
 <p>只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 <code>UHGV-0001702</code> 与 <code>UHGV-0001715</code> 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。</p>
 <div id="fig-54-votu" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -2104,7 +2118,7 @@ VirSorter2 developers. 2026年. <em><span>VirSorter2</span> Software, Version 2.
 <span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>同一台 Linux 服务器、同一批 46 条序列、16 threads 的 GNU <span class="in">`time -v`</span> 实测：**geNomad 1.12.0：131.88 秒、3.809 GiB 峰值 RAM；CheckV 1.1.1：37.18 秒、1.945 GiB；VirSorter2 2.2.4：881.50 秒、0.366 GiB**。三个清理后结果目录分别约 2.1、10.9、24.0 MB。数据库才是磁盘大头：geNomad v1.9 安装后约 **1.47 GB**，CheckV v1.5 约 **6.83 GB**，VirSorter2 v0.4 核心文件约 **10.52 GB**，另需其 Snakemake 运行环境。真实百万级 contig 项目建议准备 **16--32 CPU cores、64 GB RAM、至少 50 GB 数据库/临时磁盘空间**；耗时取决于 contig 数、总 ORF 数和 HMM 拆分策略。没有服务器时，可从 <span class="in">`data/small/54-virus-discovery-quality-frozen/`</span> 的逐 contig 证据矩阵重画统计图；不要把这个小规模回归集的资源消耗外推成大型队列承诺。</span>
 <span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="基准集上的检出率能外推到环境样本吗"}</span>
 <span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>识别结果不等于完整基因组；不同实验类型、质量证据和分类不确定性应分别报告。</span>
 <span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2127,371 +2141,377 @@ VirSorter2 developers. 2026年. <em><span>VirSorter2</span> Software, Version 2.
 <span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a><span class="al">![CheckV quality tiers and the separate completeness/host-flank axes. UHGV-0000346 contains a high-quality proviral region within a host-contaminated contig.](../figures/54-checkv-quality.png)</span>{#fig-54-checkv}</span>
 <span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载并校验三份小型公开输入 {#sec-code}</span></span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="fu">### 基准集上的检出率能外推到环境样本吗？</span></span>
 <span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article54"</span></span>
-<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a><span class="va">RESULTS</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/54-virus-discovery-quality"</span></span>
-<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article54_virus_discovery.py <span class="dt">\</span></span>
-<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
-<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
-<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>脚本先验证 byte count 与 SHA-256，再允许 FASTA/XML 进入解析器。输出的 <span class="in">`input-lineage.tsv`</span> 记录“哪个公开文件 → 哪个分析步骤”，防止以后把测试 fixture 误写成自然人群队列。</span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>46 条基准序列中，不同工具的并集包含 44 条，高置信结果包含 38 条。这两个数回答的是给定测试集和判定规则下保留了多少候选，而不是实际环境中有多少病毒。若测试集的长度、完整度或来源与目标样本不同，同一个阈值的表现也可能改变。</span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>检出、完整度评估与分类是不同证据层。CheckV 的质量分层不能替代候选发现的准确性评价，无法确定完整度也不等于没有生物学价值。报告时应保留每层的分母和未判定条目，不把筛选后的高置信集合当作环境中全部成员的无偏样本。</span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载并校验三份小型公开输入 {#sec-code}</span></span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article54"</span></span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a><span class="va">RESULTS</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/54-virus-discovery-quality"</span></span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
 <span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a><span class="fu">### 这不是 detector benchmark 的 sensitivity/specificity {#sec-audit}</span></span>
-<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a>46 条输入来自 CheckV 的质量回归测试，不含设计好的 cellular/plasmid negatives，也没有 blind truth labels。因此能审计的是“两个当前版本对同一输入如何分歧”，不能声称 geNomad 灵敏度 89.1% 或 VirSorter2 灵敏度 93.5%。正式 benchmark 需要保留 taxonomically held-out viruses、近缘 plasmids/cellular regions、长度分层和 train/test 去泄漏设计。</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
+<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a><span class="fu">## 对同一 FASTA 跑两个发现工具与 CheckV</span></span>
+<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a>脚本先验证 byte count 与 SHA-256，再允许 FASTA/XML 进入解析器。输出的 <span class="in">`input-lineage.tsv`</span> 记录“哪个公开文件 → 哪个分析步骤”，防止以后把测试 fixture 误写成自然人群队列。</span>
 <span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a><span class="fu">### 发现工具回答“像不像病毒”，不是“有多完整” {#sec-theory}</span></span>
+<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a><span class="fu">### 这不是 detector benchmark 的 sensitivity/specificity {#sec-audit}</span></span>
 <span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a><span class="al">![Five decisions from discovery to MIUViG reporting. Each decision has a distinct evidence type and cannot be replaced by the next tool in the chain.](../figures/54-virus-evidence-ladder.png)</span>{#fig-54-ladder}</span>
+<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a>46 条输入来自 CheckV 的质量回归测试，不含设计好的 cellular/plasmid negatives，也没有 blind truth labels。因此能审计的是“两个当前版本对同一输入如何分歧”，不能声称 geNomad 灵敏度 89.1% 或 VirSorter2 灵敏度 93.5%。正式 benchmark 需要保留 taxonomically held-out viruses、近缘 plasmids/cellular regions、长度分层和 train/test 去泄漏设计。</span>
 <span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a>geNomad 综合 marker enrichment、基因组成和神经网络分类，并同时区分 chromosome、plasmid 与 virus；VirSorter2 将不同病毒群的基因与 HMM 特征送入专门分类器。二者使用的训练集、特征、score calibration 和后处理不同，所以：</span>
+<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a><span class="fu">## 对同一 FASTA 跑两个发现工具与 CheckV</span></span>
 <span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`geNomad score = 0.95`</span> 与 <span class="in">`VirSorter2 score = 0.95`</span> 不能直接相减或取平均；</span>
-<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>交集可作为更保守的候选集，并集可作为更敏感的人工审查集；</span>
-<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“两个工具都阳性”是 evidence convergence，不是无条件真值；</span>
-<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>单工具阳性不能只因另一个工具阴性就删除，应回看 hallmark genes、cellular genes、长度、基因排列和数据库命中。</span>
-<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的默认门槛是 <span class="in">`max_score ≥ 0.5`</span>。其 <span class="in">`--high-confidence-only`</span> 等价于：</span>
-<span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a>\text{high confidence}=</span>
-<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a>I(s\ge 0.9)\;\lor\;I(s\ge 0.7\ \land\ h\ge 1),</span>
-<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a>其中 $s$ 是最大分类分数，$h$ 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。</span>
-<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 enriched virome 的分母不同</span></span>
-<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a>Total metagenome 通常从完整样本提取核酸，能同时看到细胞内、细胞相关、整合前病毒和部分游离病毒，但低丰度病毒可能达不到组装深度。Virus-enriched virome 通过离心、过滤、核酸酶和/或颗粒富集提高 viral fraction，却主动改变了“谁能被看到”：</span>
+<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a><span class="fu">### 发现工具回答“像不像病毒”，不是“有多完整” {#sec-theory}</span></span>
+<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a><span class="al">![Five decisions from discovery to MIUViG reporting. Each decision has a distinct evidence type and cannot be replaced by the next tool in the chain.](../figures/54-virus-evidence-ladder.png)</span>{#fig-54-ladder}</span>
+<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a>geNomad 综合 marker enrichment、基因组成和神经网络分类，并同时区分 chromosome、plasmid 与 virus；VirSorter2 将不同病毒群的基因与 HMM 特征送入专门分类器。二者使用的训练集、特征、score calibration 和后处理不同，所以：</span>
+<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`geNomad score = 0.95`</span> 与 <span class="in">`VirSorter2 score = 0.95`</span> 不能直接相减或取平均；</span>
+<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>交集可作为更保守的候选集，并集可作为更敏感的人工审查集；</span>
+<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“两个工具都阳性”是 evidence convergence，不是无条件真值；</span>
+<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>单工具阳性不能只因另一个工具阴性就删除，应回看 hallmark genes、cellular genes、长度、基因排列和数据库命中。</span>
+<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的默认门槛是 <span class="in">`max_score ≥ 0.5`</span>。其 <span class="in">`--high-confidence-only`</span> 等价于：</span>
+<span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a>\text{high confidence}=</span>
+<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a>I(s\ge 0.9)\;\lor\;I(s\ge 0.7\ \land\ h\ge 1),</span>
+<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`0.22 µm`</span> filtration 会损失一部分大病毒；filter material 也会影响回收；</span>
-<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>nuclease treatment 偏向保留被完整 capsid 保护的核酸，破损颗粒和游离病毒核酸可能消失；</span>
-<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MDA 常过度扩增小型环状基因组，并受 GC 与模板量影响；SISPA 也会产生序列依赖的 coverage peaks；</span>
-<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified dataset 的 coverage 不再与原样本粒子数成比例 <span class="co">[</span><span class="ot">@parrasmolto2018viromebias; @conceicaoneto2015netovir; @roux2019miuvig</span><span class="co">]</span>。</span>
-<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a><span class="al">![Methodological evidence map for total metagenomes, virus-enriched viromes, and amplified viromes. Rows describe sampling consequences rather than a quantitative ranking.](../figures/54-library-design-bias.png)</span>{#fig-54-library}</span>
-<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a>因此，两类 library 的 raw richness、relative abundance、presence rate 和 assembly recovery 不能直接并表比较。配对 aliquot 设计可以估计 protocol effect，但仍须分层报告，并把 extraction、filter、nuclease、amplification 和 input mass 写入元数据。</span>
-<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/genomad_db"</span></span>
-<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKV_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/checkv"</span></span>
-<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a><span class="va">VIRSORTER2_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/virsorter2"</span></span>
-<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article54_virus_discovery.py <span class="dt">\</span></span>
-<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkv-db</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a>  <span class="at">--virsorter2-db</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-126"><a href="#cb10-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span>
-<span id="cb10-127"><a href="#cb10-127" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-128"><a href="#cb10-128" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-129"><a href="#cb10-129" aria-hidden="true" tabindex="-1"></a>运行契约等价于下面三条核心命令：</span>
-<span id="cb10-130"><a href="#cb10-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-131"><a href="#cb10-131" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-132"><a href="#cb10-132" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
-<span id="cb10-133"><a href="#cb10-133" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="at">--restart</span> <span class="at">--threads</span> 16 <span class="at">--splits</span> 8 <span class="dt">\</span></span>
-<span id="cb10-134"><a href="#cb10-134" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-135"><a href="#cb10-135" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/genomad"</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a>其中 $s$ 是最大分类分数，$h$ 是 hallmark gene 数。46 条序列中默认分支保留 43 条，高置信分支保留 38 条；这 5 条差值应显式记录，而不是悄悄换阈值。</span>
+<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 enriched virome 的分母不同</span></span>
+<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a>Total metagenome 通常从完整样本提取核酸，能同时看到细胞内、细胞相关、整合前病毒和部分游离病毒，但低丰度病毒可能达不到组装深度。Virus-enriched virome 通过离心、过滤、核酸酶和/或颗粒富集提高 viral fraction，却主动改变了“谁能被看到”：</span>
+<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`0.22 µm`</span> filtration 会损失一部分大病毒；filter material 也会影响回收；</span>
+<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>nuclease treatment 偏向保留被完整 capsid 保护的核酸，破损颗粒和游离病毒核酸可能消失；</span>
+<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MDA 常过度扩增小型环状基因组，并受 GC 与模板量影响；SISPA 也会产生序列依赖的 coverage peaks；</span>
+<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified dataset 的 coverage 不再与原样本粒子数成比例 <span class="co">[</span><span class="ot">@parrasmolto2018viromebias; @conceicaoneto2015netovir; @roux2019miuvig</span><span class="co">]</span>。</span>
+<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a><span class="al">![Methodological evidence map for total metagenomes, virus-enriched viromes, and amplified viromes. Rows describe sampling consequences rather than a quantitative ranking.](../figures/54-library-design-bias.png)</span>{#fig-54-library}</span>
+<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a>因此，两类 library 的 raw richness、relative abundance、presence rate 和 assembly recovery 不能直接并表比较。配对 aliquot 设计可以估计 protocol effect，但仍须分层报告，并把 extraction、filter、nuclease、amplification 和 input mass 写入元数据。</span>
+<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/genomad_db"</span></span>
+<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKV_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/checkv"</span></span>
+<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a><span class="va">VIRSORTER2_DB</span><span class="op">=</span><span class="st">"/srv/metagenome-db/article54/databases/virsorter2"</span></span>
+<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-126"><a href="#cb10-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-127"><a href="#cb10-127" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-128"><a href="#cb10-128" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-129"><a href="#cb10-129" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-130"><a href="#cb10-130" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkv-db</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-131"><a href="#cb10-131" aria-hidden="true" tabindex="-1"></a>  <span class="at">--virsorter2-db</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-132"><a href="#cb10-132" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16</span>
+<span id="cb10-133"><a href="#cb10-133" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-134"><a href="#cb10-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-135"><a href="#cb10-135" aria-hidden="true" tabindex="-1"></a>运行契约等价于下面三条核心命令：</span>
 <span id="cb10-136"><a href="#cb10-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-137"><a href="#cb10-137" aria-hidden="true" tabindex="-1"></a><span class="ex">virsorter</span> run <span class="dt">\</span></span>
-<span id="cb10-138"><a href="#cb10-138" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/virsorter2"</span> <span class="dt">\</span></span>
-<span id="cb10-139"><a href="#cb10-139" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-140"><a href="#cb10-140" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-141"><a href="#cb10-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-length</span> 1500 <span class="at">--keep-original-seq</span> <span class="dt">\</span></span>
-<span id="cb10-142"><a href="#cb10-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">--include-groups</span> dsDNAphage,ssDNA <span class="dt">\</span></span>
-<span id="cb10-143"><a href="#cb10-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-score</span> 0.5 <span class="at">-j</span> 16 all</span>
-<span id="cb10-144"><a href="#cb10-144" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-145"><a href="#cb10-145" aria-hidden="true" tabindex="-1"></a><span class="ex">checkv</span> end_to_end <span class="dt">\</span></span>
-<span id="cb10-146"><a href="#cb10-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-147"><a href="#cb10-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv"</span> <span class="dt">\</span></span>
-<span id="cb10-148"><a href="#cb10-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="at">-t</span> 16 <span class="at">--restart</span></span>
-<span id="cb10-149"><a href="#cb10-149" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-137"><a href="#cb10-137" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-138"><a href="#cb10-138" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb10-139"><a href="#cb10-139" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="at">--restart</span> <span class="at">--threads</span> 16 <span class="at">--splits</span> 8 <span class="dt">\</span></span>
+<span id="cb10-140"><a href="#cb10-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-141"><a href="#cb10-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/genomad"</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb10-142"><a href="#cb10-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-143"><a href="#cb10-143" aria-hidden="true" tabindex="-1"></a><span class="ex">virsorter</span> run <span class="dt">\</span></span>
+<span id="cb10-144"><a href="#cb10-144" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/virsorter2"</span> <span class="dt">\</span></span>
+<span id="cb10-145"><a href="#cb10-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$VIRSORTER2_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-146"><a href="#cb10-146" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-147"><a href="#cb10-147" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-length</span> 1500 <span class="at">--keep-original-seq</span> <span class="dt">\</span></span>
+<span id="cb10-148"><a href="#cb10-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">--include-groups</span> dsDNAphage,ssDNA <span class="dt">\</span></span>
+<span id="cb10-149"><a href="#cb10-149" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-score</span> 0.5 <span class="at">-j</span> 16 all</span>
 <span id="cb10-150"><a href="#cb10-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-151"><a href="#cb10-151" aria-hidden="true" tabindex="-1"></a>这组输入以 DNA viruses 为主，VirSorter2 因而只启用 <span class="in">`dsDNAphage,ssDNA`</span>。RNA virome / metatranscriptome 要在实验端保留 RNA、记录 reverse transcription，并启用相应 classifier；不能把这里的参数无修改套到 RNA 病毒研究。</span>
-<span id="cb10-152"><a href="#cb10-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-153"><a href="#cb10-153" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先比较发现集合，再看各自证据列</span></span>
-<span id="cb10-154"><a href="#cb10-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-155"><a href="#cb10-155" aria-hidden="true" tabindex="-1"></a><span class="fu">### DTR 是闭合线索，不是自动“完整基因组”</span></span>
+<span id="cb10-151"><a href="#cb10-151" aria-hidden="true" tabindex="-1"></a><span class="ex">checkv</span> end_to_end <span class="dt">\</span></span>
+<span id="cb10-152"><a href="#cb10-152" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-153"><a href="#cb10-153" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv"</span> <span class="dt">\</span></span>
+<span id="cb10-154"><a href="#cb10-154" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">$CHECKV_DB</span><span class="st">"</span> <span class="at">-t</span> 16 <span class="at">--restart</span></span>
+<span id="cb10-155"><a href="#cb10-155" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb10-156"><a href="#cb10-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-157"><a href="#cb10-157" aria-hidden="true" tabindex="-1"></a>重复序列可让不完整 contig 被错误环化。当前回归集里，geNomad 报告 3 个 DTR；CheckV <span class="in">`complete_genomes.tsv`</span> 记录 5 个 DTR 候选，但 **5 个全是 low confidence**，原因都是 repeat 中存在过多 <span class="in">`N`</span>。只有 3 条被两个工具同时标为 DTR。这个结果正好说明：</span>
+<span id="cb10-157"><a href="#cb10-157" aria-hidden="true" tabindex="-1"></a>这组输入以 DNA viruses 为主，VirSorter2 因而只启用 <span class="in">`dsDNAphage,ssDNA`</span>。RNA virome / metatranscriptome 要在实验端保留 RNA、记录 reverse transcription，并启用相应 classifier；不能把这里的参数无修改套到 RNA 病毒研究。</span>
 <span id="cb10-158"><a href="#cb10-158" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-159"><a href="#cb10-159" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>topology prediction 与 completeness estimate 是不同字段；</span>
-<span id="cb10-160"><a href="#cb10-160" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DTR 要结合 raw-read spanning、覆盖均匀性、重复序列质量、长度与基因模块人工检查；</span>
-<span id="cb10-161"><a href="#cb10-161" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“circular contig”描述装配结构；许多生物学上为线性基因组的病毒也可在装配时呈现 terminal redundancy。</span>
+<span id="cb10-159"><a href="#cb10-159" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先比较发现集合，再看各自证据列</span></span>
+<span id="cb10-160"><a href="#cb10-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-161"><a href="#cb10-161" aria-hidden="true" tabindex="-1"></a><span class="fu">### DTR 是闭合线索，不是自动“完整基因组”</span></span>
 <span id="cb10-162"><a href="#cb10-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-163"><a href="#cb10-163" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-164"><a href="#cb10-164" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article54_virus_discovery.py <span class="dt">\</span></span>
-<span id="cb10-165"><a href="#cb10-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-166"><a href="#cb10-166" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-167"><a href="#cb10-167" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span></span>
+<span id="cb10-163"><a href="#cb10-163" aria-hidden="true" tabindex="-1"></a>重复序列可让不完整 contig 被错误环化。当前回归集里，geNomad 报告 3 个 DTR；CheckV <span class="in">`complete_genomes.tsv`</span> 记录 5 个 DTR 候选，但 **5 个全是 low confidence**，原因都是 repeat 中存在过多 <span class="in">`N`</span>。只有 3 条被两个工具同时标为 DTR。这个结果正好说明：</span>
+<span id="cb10-164"><a href="#cb10-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-165"><a href="#cb10-165" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>topology prediction 与 completeness estimate 是不同字段；</span>
+<span id="cb10-166"><a href="#cb10-166" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DTR 要结合 raw-read spanning、覆盖均匀性、重复序列质量、长度与基因模块人工检查；</span>
+<span id="cb10-167"><a href="#cb10-167" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>“circular contig”描述装配结构；许多生物学上为线性基因组的病毒也可在装配时呈现 terminal redundancy。</span>
 <span id="cb10-168"><a href="#cb10-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-169"><a href="#cb10-169" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/discovery-overlap.tsv"</span></span>
-<span id="cb10-170"><a href="#cb10-170" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/virus-evidence-matrix.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb10-171"><a href="#cb10-171" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-172"><a href="#cb10-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-173"><a href="#cb10-173" aria-hidden="true" tabindex="-1"></a>固定输出为：</span>
+<span id="cb10-169"><a href="#cb10-169" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-170"><a href="#cb10-170" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-171"><a href="#cb10-171" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-172"><a href="#cb10-172" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-173"><a href="#cb10-173" aria-hidden="true" tabindex="-1"></a>  <span class="at">--results-dir</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">"</span></span>
 <span id="cb10-174"><a href="#cb10-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-175"><a href="#cb10-175" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Pattern <span class="pp">|</span> Contigs <span class="pp">|</span></span>
-<span id="cb10-176"><a href="#cb10-176" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
-<span id="cb10-177"><a href="#cb10-177" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Both <span class="pp">|</span> 40 <span class="pp">|</span></span>
-<span id="cb10-178"><a href="#cb10-178" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> geNomad only <span class="pp">|</span> 1 <span class="pp">|</span></span>
-<span id="cb10-179"><a href="#cb10-179" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> VirSorter2 only <span class="pp">|</span> 3 <span class="pp">|</span></span>
-<span id="cb10-180"><a href="#cb10-180" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Neither <span class="pp">|</span> 2 <span class="pp">|</span></span>
-<span id="cb10-181"><a href="#cb10-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-182"><a href="#cb10-182" aria-hidden="true" tabindex="-1"></a>geNomad-only 序列是 <span class="in">`2013338001_____MeugFOFF_C1475`</span>；VirSorter2-only 有 3 条。<span class="in">`Neither`</span> 的两条也不能标成“已证伪非病毒”，因为此 fixture 没有独立 gold-standard label，且两个模型共享病毒数据库知识。</span>
-<span id="cb10-183"><a href="#cb10-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-184"><a href="#cb10-184" aria-hidden="true" tabindex="-1"></a><span class="fu">### VirSorter2 v0.4 数据库可复现，但已老</span></span>
-<span id="cb10-185"><a href="#cb10-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-186"><a href="#cb10-186" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的官方 v0.4 database 发布于 2020 年，适合复现其 classifier 行为，不适合把 <span class="in">`group`</span> 列当 2026 年可靠 taxonomy；工具日志也明确提醒 <span class="in">`group`</span> 不应作为可信分类。当前 taxonomy 应另用锁版本的 geNomad/ICTV 或专门病毒分类流程，并把数据库日期写进表头。旧数据库结果与新数据库结果应作为 sensitivity analysis，而不是覆盖旧文件。</span>
+<span id="cb10-175"><a href="#cb10-175" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/discovery-overlap.tsv"</span></span>
+<span id="cb10-176"><a href="#cb10-176" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/virus-evidence-matrix.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb10-177"><a href="#cb10-177" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-178"><a href="#cb10-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-179"><a href="#cb10-179" aria-hidden="true" tabindex="-1"></a>固定输出为：</span>
+<span id="cb10-180"><a href="#cb10-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-181"><a href="#cb10-181" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Pattern <span class="pp">|</span> Contigs <span class="pp">|</span></span>
+<span id="cb10-182"><a href="#cb10-182" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb10-183"><a href="#cb10-183" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Both <span class="pp">|</span> 40 <span class="pp">|</span></span>
+<span id="cb10-184"><a href="#cb10-184" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> geNomad only <span class="pp">|</span> 1 <span class="pp">|</span></span>
+<span id="cb10-185"><a href="#cb10-185" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> VirSorter2 only <span class="pp">|</span> 3 <span class="pp">|</span></span>
+<span id="cb10-186"><a href="#cb10-186" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Neither <span class="pp">|</span> 2 <span class="pp">|</span></span>
 <span id="cb10-187"><a href="#cb10-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-188"><a href="#cb10-188" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 upstream fixture 检查 CheckV 是否精确复现</span></span>
+<span id="cb10-188"><a href="#cb10-188" aria-hidden="true" tabindex="-1"></a>geNomad-only 序列是 <span class="in">`2013338001_____MeugFOFF_C1475`</span>；VirSorter2-only 有 3 条。<span class="in">`Neither`</span> 的两条也不能标成“已证伪非病毒”，因为此 fixture 没有独立 gold-standard label，且两个模型共享病毒数据库知识。</span>
 <span id="cb10-189"><a href="#cb10-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-190"><a href="#cb10-190" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 假定输入已经是病毒候选</span></span>
+<span id="cb10-190"><a href="#cb10-190" aria-hidden="true" tabindex="-1"></a><span class="fu">### VirSorter2 v0.4 数据库可复现，但已老</span></span>
 <span id="cb10-191"><a href="#cb10-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-192"><a href="#cb10-192" aria-hidden="true" tabindex="-1"></a>CheckV 解决三个问题：</span>
+<span id="cb10-192"><a href="#cb10-192" aria-hidden="true" tabindex="-1"></a>VirSorter2 2.2.4 的官方 v0.4 database 发布于 2020 年，适合复现其 classifier 行为，不适合把 <span class="in">`group`</span> 列当 2026 年可靠 taxonomy；工具日志也明确提醒 <span class="in">`group`</span> 不应作为可信分类。当前 taxonomy 应另用锁版本的 geNomad/ICTV 或专门病毒分类流程，并把数据库日期写进表头。旧数据库结果与新数据库结果应作为 sensitivity analysis，而不是覆盖旧文件。</span>
 <span id="cb10-193"><a href="#cb10-193" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-194"><a href="#cb10-194" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用病毒参考基因组的 amino-acid identity（AAI）或病毒 HMM 推断 completeness；</span>
-<span id="cb10-195"><a href="#cb10-195" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>比较相邻窗口的 viral/host genes，寻找 integrated provirus 的宿主侧序列；</span>
-<span id="cb10-196"><a href="#cb10-196" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>检查 direct terminal repeat（DTR）、inverted terminal repeat（ITR）和其他闭合信号。</span>
+<span id="cb10-194"><a href="#cb10-194" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 upstream fixture 检查 CheckV 是否精确复现</span></span>
+<span id="cb10-195"><a href="#cb10-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-196"><a href="#cb10-196" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 假定输入已经是病毒候选</span></span>
 <span id="cb10-197"><a href="#cb10-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-198"><a href="#cb10-198" aria-hidden="true" tabindex="-1"></a>它不会先证明输入一定是病毒。把全部 assembly contigs 丢给 CheckV，再按 <span class="in">`high-quality`</span> 反向定义“病毒”，会把“质量模型有参考命中”偷换成“病毒发现”。正确顺序是发现 → 边界 → 质量。</span>
+<span id="cb10-198"><a href="#cb10-198" aria-hidden="true" tabindex="-1"></a>CheckV 解决三个问题：</span>
 <span id="cb10-199"><a href="#cb10-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-200"><a href="#cb10-200" aria-hidden="true" tabindex="-1"></a>CheckV 的四级输出与 MIUViG 的三级标签也不能逐字互换：</span>
-<span id="cb10-201"><a href="#cb10-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-202"><a href="#cb10-202" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CheckV 输出 <span class="pp">|</span> 常用解释 <span class="pp">|</span> MIUViG 允许的上限 <span class="pp">|</span></span>
-<span id="cb10-203"><a href="#cb10-203" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`High-quality`</span> <span class="pp">|</span> estimated completeness ≥90% 或可信闭合证据 <span class="pp">|</span> high-quality draft；仍不自动是 finished <span class="pp">|</span></span>
-<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Medium-quality`</span> <span class="pp">|</span> 50%--&lt;90% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
-<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Low-quality`</span> <span class="pp">|</span> &lt;50% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
-<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Not-determined`</span> <span class="pp">|</span> 无可靠 completeness estimate <span class="pp">|</span> genome fragment / 未定；不能当阴性 <span class="pp">|</span></span>
-<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a>MIUViG 的 **finished genome** 还要求单 contig（分节病毒每个 segment 一条）、广泛人工审查与注释，包括结构、复制/溶原模块和转录单元 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。自动程序输出 <span class="in">`Complete`</span>、<span class="in">`DTR`</span> 或 <span class="in">`High-quality`</span> 都不能跳过这一步。</span>
-<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a><span class="fu">diff</span> <span class="at">-u</span> <span class="dt">\</span></span>
-<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-upstream-ground-truth-quality-summary.tsv"</span> <span class="dt">\</span></span>
-<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv/quality_summary.tsv"</span></span>
-<span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/checkv-quality-counts.tsv"</span></span>
-<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/terminal-repeat-audit.tsv"</span></span>
-<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a><span class="in">`diff`</span> 无输出，两个文件逐字节一致。质量计数为 1/4/33/8；3 条 <span class="in">`provirus=Yes`</span>。<span class="in">`UHGV-0000346`</span> 的病毒区长度为 4,899 bp、completeness 100%，但原 contig 长 7,028 bp、host-flank contamination 30.29%。生产分析应使用 CheckV 切出的 viral region，而不是把 2,129 bp 宿主侧序列带入 AMGs、蛋白家族或 vOTU。</span>
+<span id="cb10-200"><a href="#cb10-200" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用病毒参考基因组的 amino-acid identity（AAI）或病毒 HMM 推断 completeness；</span>
+<span id="cb10-201"><a href="#cb10-201" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>比较相邻窗口的 viral/host genes，寻找 integrated provirus 的宿主侧序列；</span>
+<span id="cb10-202"><a href="#cb10-202" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>检查 direct terminal repeat（DTR）、inverted terminal repeat（ITR）和其他闭合信号。</span>
+<span id="cb10-203"><a href="#cb10-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a>它不会先证明输入一定是病毒。把全部 assembly contigs 丢给 CheckV，再按 <span class="in">`high-quality`</span> 反向定义“病毒”，会把“质量模型有参考命中”偷换成“病毒发现”。正确顺序是发现 → 边界 → 质量。</span>
+<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a>CheckV 的四级输出与 MIUViG 的三级标签也不能逐字互换：</span>
+<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CheckV 输出 <span class="pp">|</span> 常用解释 <span class="pp">|</span> MIUViG 允许的上限 <span class="pp">|</span></span>
+<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`High-quality`</span> <span class="pp">|</span> estimated completeness ≥90% 或可信闭合证据 <span class="pp">|</span> high-quality draft；仍不自动是 finished <span class="pp">|</span></span>
+<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Medium-quality`</span> <span class="pp">|</span> 50%--&lt;90% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
+<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Low-quality`</span> <span class="pp">|</span> &lt;50% <span class="pp">|</span> genome fragment <span class="pp">|</span></span>
+<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`Not-determined`</span> <span class="pp">|</span> 无可靠 completeness estimate <span class="pp">|</span> genome fragment / 未定；不能当阴性 <span class="pp">|</span></span>
+<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a>MIUViG 的 **finished genome** 还要求单 contig（分节病毒每个 segment 一条）、广泛人工审查与注释，包括结构、复制/溶原模块和转录单元 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。自动程序输出 <span class="in">`Complete`</span>、<span class="in">`DTR`</span> 或 <span class="in">`High-quality`</span> 都不能跳过这一步。</span>
+<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a><span class="fu">diff</span> <span class="at">-u</span> <span class="dt">\</span></span>
+<span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-upstream-ground-truth-quality-summary.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/checkv/quality_summary.tsv"</span></span>
 <span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 的 `Not-determined` 不是低质量同义词</span></span>
-<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a>8 条 not-determined 表示模型不能给可靠 completeness；其中可能有高度新颖的病毒，也可能有非病毒候选。把它们全部删除会产生 reference bias。至少保留长度、viral/host genes、hallmarks、coverage、发现工具共识与 warning，必要时单列“quality unresolved”。</span>
+<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/checkv-quality-counts.tsv"</span></span>
+<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/terminal-repeat-audit.tsv"</span></span>
+<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb10-225"><a href="#cb10-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-226"><a href="#cb10-226" aria-hidden="true" tabindex="-1"></a><span class="fu">### 前病毒边界必须早于功能注释</span></span>
+<span id="cb10-226"><a href="#cb10-226" aria-hidden="true" tabindex="-1"></a><span class="in">`diff`</span> 无输出，两个文件逐字节一致。质量计数为 1/4/33/8；3 条 <span class="in">`provirus=Yes`</span>。<span class="in">`UHGV-0000346`</span> 的病毒区长度为 4,899 bp、completeness 100%，但原 contig 长 7,028 bp、host-flank contamination 30.29%。生产分析应使用 CheckV 切出的 viral region，而不是把 2,129 bp 宿主侧序列带入 AMGs、蛋白家族或 vOTU。</span>
 <span id="cb10-227"><a href="#cb10-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-228"><a href="#cb10-228" aria-hidden="true" tabindex="-1"></a>若宿主 flank 保留到后面，宿主代谢基因会被错写成 auxiliary metabolic genes（AMGs），contig length 与 coverage 也会被污染。这里 <span class="in">`UHGV-0000346`</span> 直接展示了“病毒区完整但母 contig 污染高”的组合；一个总 quality label 无法表达它。</span>
+<span id="cb10-228"><a href="#cb10-228" aria-hidden="true" tabindex="-1"></a><span class="fu">### CheckV 的 `Not-determined` 不是低质量同义词</span></span>
 <span id="cb10-229"><a href="#cb10-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-230"><a href="#cb10-230" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 all-vs-all BLASTN 计算 ANI 与严格 vOTU</span></span>
+<span id="cb10-230"><a href="#cb10-230" aria-hidden="true" tabindex="-1"></a>8 条 not-determined 表示模型不能给可靠 completeness；其中可能有高度新颖的病毒，也可能有非病毒候选。把它们全部删除会产生 reference bias。至少保留长度、viral/host genes、hallmarks、coverage、发现工具共识与 warning，必要时单列“quality unresolved”。</span>
 <span id="cb10-231"><a href="#cb10-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-232"><a href="#cb10-232" aria-hidden="true" tabindex="-1"></a><span class="fu">### vOTU 必须同时跨过 ANI 和 alignment fraction</span></span>
+<span id="cb10-232"><a href="#cb10-232" aria-hidden="true" tabindex="-1"></a><span class="fu">### 前病毒边界必须早于功能注释</span></span>
 <span id="cb10-233"><a href="#cb10-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-234"><a href="#cb10-234" aria-hidden="true" tabindex="-1"></a>MIUViG 建议以 **95% average nucleotide identity（ANI）覆盖较短序列的 85%** 作为病毒物种级 operational taxonomic unit（vOTU）阈值 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。对序列 $(i,j)$，令 $A_{ij}$ 为去重后的对齐碱基数，$L_s=\min(L_i,L_j)$，则：</span>
+<span id="cb10-234"><a href="#cb10-234" aria-hidden="true" tabindex="-1"></a>若宿主 flank 保留到后面，宿主代谢基因会被错写成 auxiliary metabolic genes（AMGs），contig length 与 coverage 也会被污染。这里 <span class="in">`UHGV-0000346`</span> 直接展示了“病毒区完整但母 contig 污染高”的组合；一个总 quality label 无法表达它。</span>
 <span id="cb10-235"><a href="#cb10-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-236"><a href="#cb10-236" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb10-237"><a href="#cb10-237" aria-hidden="true" tabindex="-1"></a>AF_{short}=\frac{A_{ij}}{L_s},\qquad</span>
-<span id="cb10-238"><a href="#cb10-238" aria-hidden="true" tabindex="-1"></a>\text{same vOTU}=I(ANI\ge95\%)I(AF_{short}\ge85\%).</span>
-<span id="cb10-239"><a href="#cb10-239" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb10-240"><a href="#cb10-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-241"><a href="#cb10-241" aria-hidden="true" tabindex="-1"></a>只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 <span class="in">`UHGV-0001702`</span> 与 <span class="in">`UHGV-0001715`</span> 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。</span>
-<span id="cb10-242"><a href="#cb10-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-243"><a href="#cb10-243" aria-hidden="true" tabindex="-1"></a><span class="al">![Pairwise ANI and shorter-sequence alignment fraction. The boundary UHGV pair passes ANI but misses the alignment-fraction gate.](../figures/54-votu-threshold.png)</span>{#fig-54-votu}</span>
-<span id="cb10-244"><a href="#cb10-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-245"><a href="#cb10-245" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-246"><a href="#cb10-246" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu"</span></span>
-<span id="cb10-247"><a href="#cb10-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-248"><a href="#cb10-248" aria-hidden="true" tabindex="-1"></a><span class="ex">makeblastdb</span> <span class="dt">\</span></span>
-<span id="cb10-249"><a href="#cb10-249" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-250"><a href="#cb10-250" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> nucl <span class="dt">\</span></span>
-<span id="cb10-251"><a href="#cb10-251" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span></span>
-<span id="cb10-252"><a href="#cb10-252" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-253"><a href="#cb10-253" aria-hidden="true" tabindex="-1"></a><span class="ex">blastn</span> <span class="dt">\</span></span>
-<span id="cb10-254"><a href="#cb10-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">-query</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-255"><a href="#cb10-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">-db</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span> <span class="dt">\</span></span>
-<span id="cb10-256"><a href="#cb10-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
-<span id="cb10-257"><a href="#cb10-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">-outfmt</span> <span class="st">'6 std qlen slen'</span> <span class="dt">\</span></span>
-<span id="cb10-258"><a href="#cb10-258" aria-hidden="true" tabindex="-1"></a>  <span class="at">-max_target_seqs</span> 10000 <span class="dt">\</span></span>
-<span id="cb10-259"><a href="#cb10-259" aria-hidden="true" tabindex="-1"></a>  <span class="at">-num_threads</span> 16</span>
-<span id="cb10-260"><a href="#cb10-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-261"><a href="#cb10-261" aria-hidden="true" tabindex="-1"></a><span class="ex">anicalc</span> <span class="dt">\</span></span>
-<span id="cb10-262"><a href="#cb10-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
-<span id="cb10-263"><a href="#cb10-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span></span>
-<span id="cb10-264"><a href="#cb10-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-265"><a href="#cb10-265" aria-hidden="true" tabindex="-1"></a><span class="ex">aniclust</span> <span class="dt">\</span></span>
-<span id="cb10-266"><a href="#cb10-266" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fna</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
-<span id="cb10-267"><a href="#cb10-267" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span> <span class="dt">\</span></span>
-<span id="cb10-268"><a href="#cb10-268" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/votu-clusters.tsv"</span> <span class="dt">\</span></span>
-<span id="cb10-269"><a href="#cb10-269" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_ani</span> 95 <span class="dt">\</span></span>
-<span id="cb10-270"><a href="#cb10-270" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_tcov</span> 85</span>
-<span id="cb10-271"><a href="#cb10-271" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-272"><a href="#cb10-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-273"><a href="#cb10-273" aria-hidden="true" tabindex="-1"></a>这里故意在原始 46 条 fixture sequences 上展示阈值边界；生产数据应先用 CheckV 切除前病毒宿主侧序列，再对 cleaned viral sequences 聚类。<span class="in">`--min_tcov 85`</span> 在 <span class="in">`aniclust`</span> 中对应较短序列 coverage gate；汇总表同时保留 ANI、shorter-sequence AF 和两个独立 pass flags。</span>
-<span id="cb10-274"><a href="#cb10-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-275"><a href="#cb10-275" aria-hidden="true" tabindex="-1"></a><span class="fu">### Threshold sensitivity 要围绕两个轴展开</span></span>
-<span id="cb10-276"><a href="#cb10-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-277"><a href="#cb10-277" aria-hidden="true" tabindex="-1"></a>对 95% ANI 附近的 pair，只做 <span class="in">`94/95/96% ANI`</span> 敏感性还不够；应同时报告 AF 的 <span class="in">`80/85/90%`</span>。<span class="in">`UHGV-0001702`</span>/<span class="in">`UHGV-0001715`</span> 在 85% AF 处只差 0.24 percentage point，适合人工检查 alignment fragmentation、低复杂区、N-rich regions 与 assembler breakpoints。</span>
+<span id="cb10-236"><a href="#cb10-236" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 all-vs-all BLASTN 计算 ANI 与严格 vOTU</span></span>
+<span id="cb10-237"><a href="#cb10-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-238"><a href="#cb10-238" aria-hidden="true" tabindex="-1"></a><span class="fu">### vOTU 必须同时跨过 ANI 和 alignment fraction</span></span>
+<span id="cb10-239"><a href="#cb10-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-240"><a href="#cb10-240" aria-hidden="true" tabindex="-1"></a>MIUViG 建议以 **95% average nucleotide identity（ANI）覆盖较短序列的 85%** 作为病毒物种级 operational taxonomic unit（vOTU）阈值 <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。对序列 $(i,j)$，令 $A_{ij}$ 为去重后的对齐碱基数，$L_s=\min(L_i,L_j)$，则：</span>
+<span id="cb10-241"><a href="#cb10-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-242"><a href="#cb10-242" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-243"><a href="#cb10-243" aria-hidden="true" tabindex="-1"></a>AF_{short}=\frac{A_{ij}}{L_s},\qquad</span>
+<span id="cb10-244"><a href="#cb10-244" aria-hidden="true" tabindex="-1"></a>\text{same vOTU}=I(ANI\ge95\%)I(AF_{short}\ge85\%).</span>
+<span id="cb10-245"><a href="#cb10-245" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-246"><a href="#cb10-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-247"><a href="#cb10-247" aria-hidden="true" tabindex="-1"></a>只看 ANI 会把“一个高度保守短片段”误当全基因组同种。这里 <span class="in">`UHGV-0001702`</span> 与 <span class="in">`UHGV-0001715`</span> 的 ANI 为 95.16%，但较短序列 AF 只有 84.76%，严格说不能合并。</span>
+<span id="cb10-248"><a href="#cb10-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-249"><a href="#cb10-249" aria-hidden="true" tabindex="-1"></a><span class="al">![Pairwise ANI and shorter-sequence alignment fraction. The boundary UHGV pair passes ANI but misses the alignment-fraction gate.](../figures/54-votu-threshold.png)</span>{#fig-54-votu}</span>
+<span id="cb10-250"><a href="#cb10-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-251"><a href="#cb10-251" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-252"><a href="#cb10-252" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu"</span></span>
+<span id="cb10-253"><a href="#cb10-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-254"><a href="#cb10-254" aria-hidden="true" tabindex="-1"></a><span class="ex">makeblastdb</span> <span class="dt">\</span></span>
+<span id="cb10-255"><a href="#cb10-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-256"><a href="#cb10-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">-dbtype</span> nucl <span class="dt">\</span></span>
+<span id="cb10-257"><a href="#cb10-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span></span>
+<span id="cb10-258"><a href="#cb10-258" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-259"><a href="#cb10-259" aria-hidden="true" tabindex="-1"></a><span class="ex">blastn</span> <span class="dt">\</span></span>
+<span id="cb10-260"><a href="#cb10-260" aria-hidden="true" tabindex="-1"></a>  <span class="at">-query</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-261"><a href="#cb10-261" aria-hidden="true" tabindex="-1"></a>  <span class="at">-db</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/checkv-test"</span> <span class="dt">\</span></span>
+<span id="cb10-262"><a href="#cb10-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">-out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-263"><a href="#cb10-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">-outfmt</span> <span class="st">'6 std qlen slen'</span> <span class="dt">\</span></span>
+<span id="cb10-264"><a href="#cb10-264" aria-hidden="true" tabindex="-1"></a>  <span class="at">-max_target_seqs</span> 10000 <span class="dt">\</span></span>
+<span id="cb10-265"><a href="#cb10-265" aria-hidden="true" tabindex="-1"></a>  <span class="at">-num_threads</span> 16</span>
+<span id="cb10-266"><a href="#cb10-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-267"><a href="#cb10-267" aria-hidden="true" tabindex="-1"></a><span class="ex">anicalc</span> <span class="dt">\</span></span>
+<span id="cb10-268"><a href="#cb10-268" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/all-vs-all-blast.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-269"><a href="#cb10-269" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span></span>
+<span id="cb10-270"><a href="#cb10-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-271"><a href="#cb10-271" aria-hidden="true" tabindex="-1"></a><span class="ex">aniclust</span> <span class="dt">\</span></span>
+<span id="cb10-272"><a href="#cb10-272" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fna</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input/checkv-test-sequences.fna"</span> <span class="dt">\</span></span>
+<span id="cb10-273"><a href="#cb10-273" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/ani.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-274"><a href="#cb10-274" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out</span> <span class="st">"</span><span class="va">$RESULTS</span><span class="st">/votu/votu-clusters.tsv"</span> <span class="dt">\</span></span>
+<span id="cb10-275"><a href="#cb10-275" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_ani</span> 95 <span class="dt">\</span></span>
+<span id="cb10-276"><a href="#cb10-276" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_tcov</span> 85</span>
+<span id="cb10-277"><a href="#cb10-277" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb10-278"><a href="#cb10-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-279"><a href="#cb10-279" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存证据、导出图并执行检查</span></span>
+<span id="cb10-279"><a href="#cb10-279" aria-hidden="true" tabindex="-1"></a>这里故意在原始 46 条 fixture sequences 上展示阈值边界；生产数据应先用 CheckV 切除前病毒宿主侧序列，再对 cleaned viral sequences 聚类。<span class="in">`--min_tcov 85`</span> 在 <span class="in">`aniclust`</span> 中对应较短序列 coverage gate；汇总表同时保留 ANI、shorter-sequence AF 和两个独立 pass flags。</span>
 <span id="cb10-280"><a href="#cb10-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-281"><a href="#cb10-281" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb10-282"><a href="#cb10-282" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article54_virus_discovery.R <span class="dt">\</span></span>
-<span id="cb10-283"><a href="#cb10-283" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb10-281"><a href="#cb10-281" aria-hidden="true" tabindex="-1"></a><span class="fu">### Threshold sensitivity 要围绕两个轴展开</span></span>
+<span id="cb10-282"><a href="#cb10-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-283"><a href="#cb10-283" aria-hidden="true" tabindex="-1"></a>对 95% ANI 附近的 pair，只做 <span class="in">`94/95/96% ANI`</span> 敏感性还不够；应同时报告 AF 的 <span class="in">`80/85/90%`</span>。<span class="in">`UHGV-0001702`</span>/<span class="in">`UHGV-0001715`</span> 在 85% AF 处只差 0.24 percentage point，适合人工检查 alignment fragmentation、低复杂区、N-rich regions 与 assembler breakpoints。</span>
 <span id="cb10-284"><a href="#cb10-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-285"><a href="#cb10-285" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article54_virus_discovery.py <span class="dt">\</span></span>
-<span id="cb10-286"><a href="#cb10-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-287"><a href="#cb10-287" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-288"><a href="#cb10-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/54-virus-discovery-quality-frozen</span>
-<span id="cb10-289"><a href="#cb10-289" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-290"><a href="#cb10-290" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article54_virus_discovery.py <span class="dt">\</span></span>
-<span id="cb10-291"><a href="#cb10-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-292"><a href="#cb10-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/54-virus-discovery-quality-frozen <span class="dt">\</span></span>
-<span id="cb10-293"><a href="#cb10-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/54-virus-discovery-quality/validation <span class="dt">\</span></span>
-<span id="cb10-294"><a href="#cb10-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb10-295"><a href="#cb10-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/54-virus-discovery-quality.qmd</span>
-<span id="cb10-296"><a href="#cb10-296" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-297"><a href="#cb10-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-298"><a href="#cb10-298" aria-hidden="true" tabindex="-1"></a><span class="fu">### Library protocol 不是可以事后完全校正的 batch</span></span>
-<span id="cb10-299"><a href="#cb10-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-300"><a href="#cb10-300" aria-hidden="true" tabindex="-1"></a>Total metagenome 与 VLP virome 的差异包含 biological capture mechanism，不只是测序中心批次。把 <span class="in">`library_type`</span> 放入线性模型不能恢复过滤掉的大病毒，也不能反推出 MDA 前的 particle counts。最稳方案是同一样本配对 aliquots、process blanks、mock virome、spike-ins 和 protocol-stratified primary analysis；跨 protocol 的丰度效应只能作受限探索。</span>
-<span id="cb10-301"><a href="#cb10-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-302"><a href="#cb10-302" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常追问的五个证据缺口"}</span>
-<span id="cb10-303"><a href="#cb10-303" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>只报“用了 VirSorter2/CheckV”，未给 score、hallmark、长度、数据库 release 与筛选规则；</span>
-<span id="cb10-304"><a href="#cb10-304" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 CheckV 当 detector，或把 <span class="in">`Not-determined`</span> 当非病毒；</span>
-<span id="cb10-305"><a href="#cb10-305" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>把 DTR/circular 自动写成 complete/finished，却没有 raw-read spanning 和人工注释；</span>
-<span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>vOTU 只报 95% ANI，没有写 alignment fraction 是相对较短序列还是较长序列；</span>
-<span id="cb10-307"><a href="#cb10-307" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>合并 total metagenome 与 amplified virome 的 relative abundance，却未记录 filtration、nuclease、amplification 和 input mass。</span>
-<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 1：把并集叫真值、把交集叫完整集"}</span>
-<span id="cb10-311"><a href="#cb10-311" aria-hidden="true" tabindex="-1"></a>并集偏向 sensitivity，交集偏向 specificity，但方向不等于可量化性能。没有独立 negatives、held-out viruses 和 truth labels 时，只能写“consensus candidate”或“supported by both tools”。</span>
-<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-313"><a href="#cb10-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-314"><a href="#cb10-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 2：先 vOTU，后切前病毒"}</span>
-<span id="cb10-315"><a href="#cb10-315" aria-hidden="true" tabindex="-1"></a>宿主 flank 会降低 ANI/AF、制造虚假的 singleton vOTU，并污染功能。先固定 viral boundaries，再聚类、建库和回帖 reads。</span>
-<span id="cb10-316"><a href="#cb10-316" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-317"><a href="#cb10-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-318"><a href="#cb10-318" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 3：把 medium-quality 写成 MIUViG 中等质量"}</span>
-<span id="cb10-319"><a href="#cb10-319" aria-hidden="true" tabindex="-1"></a>MIUViG 质量类别不是 CheckV 四级标签的同名复制。当前 CheckV medium-quality 仍映射为 MIUViG genome fragment；表中应同时保留 <span class="in">`checkv_quality`</span> 与 <span class="in">`miuvig_quality`</span>。</span>
-<span id="cb10-320"><a href="#cb10-320" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-321"><a href="#cb10-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-322"><a href="#cb10-322" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 4：把 DTR 中的 N 当可靠 terminal repeat"}</span>
-<span id="cb10-323"><a href="#cb10-323" aria-hidden="true" tabindex="-1"></a>本次 5 个 CheckV DTR 候选全部因 repeat 中 <span class="in">`N`</span> 过多被标为 low confidence。只 grep <span class="in">`prediction_type=DTR`</span> 会把软件 warning 丢掉。</span>
-<span id="cb10-324"><a href="#cb10-324" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-325"><a href="#cb10-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-326"><a href="#cb10-326" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 5：直接比较 total metagenome 与 WGA virome"}</span>
-<span id="cb10-327"><a href="#cb10-327" aria-hidden="true" tabindex="-1"></a>WGA/MDA/SISPA 后的 coverage 是技术放大结果。可比较的是按相同 protocol 处理、通过 controls 的样本；跨 protocol 的原始 read count、RPM 或 relative abundance 没有共同分母。</span>
-<span id="cb10-328"><a href="#cb10-328" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-329"><a href="#cb10-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-330"><a href="#cb10-330" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="诊断顺序"}</span>
-<span id="cb10-331"><a href="#cb10-331" aria-hidden="true" tabindex="-1"></a>遇到异常候选时依次检查：原 contig 与 cleaned viral region 是否混用 → 两个 detector 的 score/hallmark/cellular genes → CheckV completeness method 与 confidence → provirus/DTR warning → raw-read coverage 与 spanning → ANI 和 shorter-sequence AF。这样能定位是哪一道门失败，而不是反复调一个总分阈值。</span>
-<span id="cb10-332"><a href="#cb10-332" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-333"><a href="#cb10-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-334"><a href="#cb10-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## 分开报告病毒识别与质量证据 {#sec-methods}</span></span>
+<span id="cb10-285"><a href="#cb10-285" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存证据、导出图并执行检查</span></span>
+<span id="cb10-286"><a href="#cb10-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-287"><a href="#cb10-287" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb10-288"><a href="#cb10-288" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article54_virus_discovery.R <span class="dt">\</span></span>
+<span id="cb10-289"><a href="#cb10-289" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb10-290"><a href="#cb10-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-291"><a href="#cb10-291" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-292"><a href="#cb10-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-293"><a href="#cb10-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-294"><a href="#cb10-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/54-virus-discovery-quality-frozen</span>
+<span id="cb10-295"><a href="#cb10-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-296"><a href="#cb10-296" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article54_virus_discovery.py <span class="dt">\</span></span>
+<span id="cb10-297"><a href="#cb10-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-298"><a href="#cb10-298" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/54-virus-discovery-quality-frozen <span class="dt">\</span></span>
+<span id="cb10-299"><a href="#cb10-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/54-virus-discovery-quality/validation <span class="dt">\</span></span>
+<span id="cb10-300"><a href="#cb10-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb10-301"><a href="#cb10-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/54-virus-discovery-quality.qmd</span>
+<span id="cb10-302"><a href="#cb10-302" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-303"><a href="#cb10-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-304"><a href="#cb10-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### Library protocol 不是可以事后完全校正的 batch</span></span>
+<span id="cb10-305"><a href="#cb10-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a>Total metagenome 与 VLP virome 的差异包含 biological capture mechanism，不只是测序中心批次。把 <span class="in">`library_type`</span> 放入线性模型不能恢复过滤掉的大病毒，也不能反推出 MDA 前的 particle counts。最稳方案是同一样本配对 aliquots、process blanks、mock virome、spike-ins 和 protocol-stratified primary analysis；跨 protocol 的丰度效应只能作受限探索。</span>
+<span id="cb10-307"><a href="#cb10-307" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常追问的五个证据缺口"}</span>
+<span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>只报“用了 VirSorter2/CheckV”，未给 score、hallmark、长度、数据库 release 与筛选规则；</span>
+<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 CheckV 当 detector，或把 <span class="in">`Not-determined`</span> 当非病毒；</span>
+<span id="cb10-311"><a href="#cb10-311" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>把 DTR/circular 自动写成 complete/finished，却没有 raw-read spanning 和人工注释；</span>
+<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>vOTU 只报 95% ANI，没有写 alignment fraction 是相对较短序列还是较长序列；</span>
+<span id="cb10-313"><a href="#cb10-313" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>合并 total metagenome 与 amplified virome 的 relative abundance，却未记录 filtration、nuclease、amplification 和 input mass。</span>
+<span id="cb10-314"><a href="#cb10-314" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-315"><a href="#cb10-315" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-316"><a href="#cb10-316" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 1：把并集叫真值、把交集叫完整集"}</span>
+<span id="cb10-317"><a href="#cb10-317" aria-hidden="true" tabindex="-1"></a>并集偏向 sensitivity，交集偏向 specificity，但方向不等于可量化性能。没有独立 negatives、held-out viruses 和 truth labels 时，只能写“consensus candidate”或“supported by both tools”。</span>
+<span id="cb10-318"><a href="#cb10-318" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-319"><a href="#cb10-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-320"><a href="#cb10-320" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 2：先 vOTU，后切前病毒"}</span>
+<span id="cb10-321"><a href="#cb10-321" aria-hidden="true" tabindex="-1"></a>宿主 flank 会降低 ANI/AF、制造虚假的 singleton vOTU，并污染功能。先固定 viral boundaries，再聚类、建库和回帖 reads。</span>
+<span id="cb10-322"><a href="#cb10-322" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-323"><a href="#cb10-323" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-324"><a href="#cb10-324" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 3：把 medium-quality 写成 MIUViG 中等质量"}</span>
+<span id="cb10-325"><a href="#cb10-325" aria-hidden="true" tabindex="-1"></a>MIUViG 质量类别不是 CheckV 四级标签的同名复制。当前 CheckV medium-quality 仍映射为 MIUViG genome fragment；表中应同时保留 <span class="in">`checkv_quality`</span> 与 <span class="in">`miuvig_quality`</span>。</span>
+<span id="cb10-326"><a href="#cb10-326" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-327"><a href="#cb10-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-328"><a href="#cb10-328" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 4：把 DTR 中的 N 当可靠 terminal repeat"}</span>
+<span id="cb10-329"><a href="#cb10-329" aria-hidden="true" tabindex="-1"></a>本次 5 个 CheckV DTR 候选全部因 repeat 中 <span class="in">`N`</span> 过多被标为 low confidence。只 grep <span class="in">`prediction_type=DTR`</span> 会把软件 warning 丢掉。</span>
+<span id="cb10-330"><a href="#cb10-330" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-331"><a href="#cb10-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-332"><a href="#cb10-332" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="坑 5：直接比较 total metagenome 与 WGA virome"}</span>
+<span id="cb10-333"><a href="#cb10-333" aria-hidden="true" tabindex="-1"></a>WGA/MDA/SISPA 后的 coverage 是技术放大结果。可比较的是按相同 protocol 处理、通过 controls 的样本；跨 protocol 的原始 read count、RPM 或 relative abundance 没有共同分母。</span>
+<span id="cb10-334"><a href="#cb10-334" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-335"><a href="#cb10-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-336"><a href="#cb10-336" aria-hidden="true" tabindex="-1"></a><span class="fu">### Discovery、quality 与 vOTU 的英文模板</span></span>
-<span id="cb10-337"><a href="#cb10-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-338"><a href="#cb10-338" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Viral sequences were identified from assembled contigs (minimum length, 1,500 bp) using geNomad v1.12.0 with database v1.9 (ICTV MSL39) and VirSorter2 v2.2.4 with database v0.4. VirSorter2 was run for the dsDNAphage and ssDNA groups at a minimum score of 0.5; high-confidence calls were defined as a maximum score ≥0.9 or a score ≥0.7 with at least one hallmark gene. Candidate viral sequences were assessed with CheckV v1.1.1 and database v1.5. Proviral host flanks were removed before gene-content analysis and sequence clustering. Cleaned viral sequences were compared by all-versus-all BLASTN v2.17.0, and vOTUs were formed with CheckV </span><span class="in">`anicalc`</span><span class="at">/</span><span class="in">`aniclust`</span><span class="at"> at ≥95% ANI across ≥85% of the shorter sequence. Genome origin, detection evidence, quality, completeness method, contamination, topology warnings, taxonomy, and abundance provenance were reported following MIUViG recommendations.</span></span>
+<span id="cb10-336"><a href="#cb10-336" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="诊断顺序"}</span>
+<span id="cb10-337"><a href="#cb10-337" aria-hidden="true" tabindex="-1"></a>遇到异常候选时依次检查：原 contig 与 cleaned viral region 是否混用 → 两个 detector 的 score/hallmark/cellular genes → CheckV completeness method 与 confidence → provirus/DTR warning → raw-read coverage 与 spanning → ANI 和 shorter-sequence AF。这样能定位是哪一道门失败，而不是反复调一个总分阈值。</span>
+<span id="cb10-338"><a href="#cb10-338" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-339"><a href="#cb10-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-340"><a href="#cb10-340" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template（当前固定结果）</span></span>
+<span id="cb10-340"><a href="#cb10-340" aria-hidden="true" tabindex="-1"></a><span class="fu">## 分开报告病毒识别与质量证据 {#sec-methods}</span></span>
 <span id="cb10-341"><a href="#cb10-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-342"><a href="#cb10-342" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Among 46 sequences in the CheckV regression fixture, geNomad and VirSorter2 identified 41 and 43 viral candidates, respectively; 40 were supported by both tools and 44 by at least one tool. Thirty-eight VirSorter2 calls met its high-confidence rule. CheckV classified one sequence as high quality, four as medium quality, 33 as low quality, and eight as not determined, and identified three proviral contigs. Five direct-terminal-repeat candidates were low confidence because their repeats contained excessive ambiguous bases. Ten non-self sequence pairs yielded reportable nucleotide alignments, but none passed both vOTU gates. The closest boundary case showed 95.16% ANI across 84.76% of the shorter sequence and was therefore retained as two vOTUs.</span></span>
+<span id="cb10-342"><a href="#cb10-342" aria-hidden="true" tabindex="-1"></a><span class="fu">### Discovery、quality 与 vOTU 的英文模板</span></span>
 <span id="cb10-343"><a href="#cb10-343" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-344"><a href="#cb10-344" aria-hidden="true" tabindex="-1"></a>若研究使用 amplified virome，Methods 还必须增加一句：</span>
+<span id="cb10-344"><a href="#cb10-344" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Viral sequences were identified from assembled contigs (minimum length, 1,500 bp) using geNomad v1.12.0 with database v1.9 (ICTV MSL39) and VirSorter2 v2.2.4 with database v0.4. VirSorter2 was run for the dsDNAphage and ssDNA groups at a minimum score of 0.5; high-confidence calls were defined as a maximum score ≥0.9 or a score ≥0.7 with at least one hallmark gene. Candidate viral sequences were assessed with CheckV v1.1.1 and database v1.5. Proviral host flanks were removed before gene-content analysis and sequence clustering. Cleaned viral sequences were compared by all-versus-all BLASTN v2.17.0, and vOTUs were formed with CheckV </span><span class="in">`anicalc`</span><span class="at">/</span><span class="in">`aniclust`</span><span class="at"> at ≥95% ANI across ≥85% of the shorter sequence. Genome origin, detection evidence, quality, completeness method, contamination, topology warnings, taxonomy, and abundance provenance were reported following MIUViG recommendations.</span></span>
 <span id="cb10-345"><a href="#cb10-345" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-346"><a href="#cb10-346" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Read depth from amplified virome libraries was treated as nonquantitative and was not directly compared with relative abundance from unamplified total-metagenome libraries.</span></span>
+<span id="cb10-346"><a href="#cb10-346" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template（当前固定结果）</span></span>
 <span id="cb10-347"><a href="#cb10-347" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-348"><a href="#cb10-348" aria-hidden="true" tabindex="-1"></a>工具版本不够；Methods 或 supplement 还应列出 database release、archive checksum、contig length gate、score gate、hallmark rule、前病毒是否切边界、ANI/AF 相对哪个序列，以及 DTR 的人工复核方法。</span>
+<span id="cb10-348"><a href="#cb10-348" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Among 46 sequences in the CheckV regression fixture, geNomad and VirSorter2 identified 41 and 43 viral candidates, respectively; 40 were supported by both tools and 44 by at least one tool. Thirty-eight VirSorter2 calls met its high-confidence rule. CheckV classified one sequence as high quality, four as medium quality, 33 as low quality, and eight as not determined, and identified three proviral contigs. Five direct-terminal-repeat candidates were low confidence because their repeats contained excessive ambiguous bases. Ten non-self sequence pairs yielded reportable nucleotide alignments, but none passed both vOTU gates. The closest boundary case showed 95.16% ANI across 84.76% of the shorter sequence and was therefore retained as two vOTUs.</span></span>
 <span id="cb10-349"><a href="#cb10-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-350"><a href="#cb10-350" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb10-350"><a href="#cb10-350" aria-hidden="true" tabindex="-1"></a>若研究使用 amplified virome，Methods 还必须增加一句：</span>
 <span id="cb10-351"><a href="#cb10-351" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-352"><a href="#cb10-352" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最少需要四类输入</span></span>
+<span id="cb10-352"><a href="#cb10-352" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Read depth from amplified virome libraries was treated as nonquantitative and was not directly compared with relative abundance from unamplified total-metagenome libraries.</span></span>
 <span id="cb10-353"><a href="#cb10-353" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-354"><a href="#cb10-354" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`contigs.fna`</span>：每样本或 co-assembly contigs；header 唯一且不能含会被下游截断的空格；</span>
-<span id="cb10-355"><a href="#cb10-355" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`samples.tsv`</span>：至少含 <span class="in">`sample_id`</span>、<span class="in">`subject_id`</span>、<span class="in">`library_type`</span>、<span class="in">`extraction_batch`</span>、<span class="in">`sequencing_run`</span>；</span>
-<span id="cb10-356"><a href="#cb10-356" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`wetlab_protocol.tsv`</span>：记录 filter pore/material、centrifugation、nuclease、VLP enrichment、WGA/MDA/SISPA、input mass 与 cycle/time；</span>
-<span id="cb10-357"><a href="#cb10-357" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>raw-read alignment：用于 coverage、breadth、contig ends、DTR/ITR、污染与跨样本 abundance 审计。</span>
-<span id="cb10-358"><a href="#cb10-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-359"><a href="#cb10-359" aria-hidden="true" tabindex="-1"></a><span class="fu">### 建议主流程</span></span>
-<span id="cb10-360"><a href="#cb10-360" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-361"><a href="#cb10-361" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
-<span id="cb10-362"><a href="#cb10-362" aria-hidden="true" tabindex="-1"></a><span class="in">assembled contigs</span></span>
-<span id="cb10-363"><a href="#cb10-363" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; geNomad + VirSorter2 candidate ledger</span></span>
-<span id="cb10-364"><a href="#cb10-364" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; score / hallmark / cellular-gene review</span></span>
-<span id="cb10-365"><a href="#cb10-365" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; CheckV boundary trimming and quality</span></span>
-<span id="cb10-366"><a href="#cb10-366" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; raw-read coverage and terminal-repeat review</span></span>
-<span id="cb10-367"><a href="#cb10-367" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; cleaned viral FASTA</span></span>
-<span id="cb10-368"><a href="#cb10-368" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; 95% ANI + 85% shorter-sequence AF vOTUs</span></span>
-<span id="cb10-369"><a href="#cb10-369" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; representative catalog</span></span>
-<span id="cb10-370"><a href="#cb10-370" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; competitive read mapping and abundance filters</span></span>
-<span id="cb10-371"><a href="#cb10-371" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; protocol-stratified statistics and MIUViG table</span></span>
-<span id="cb10-372"><a href="#cb10-372" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-373"><a href="#cb10-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-374"><a href="#cb10-374" aria-hidden="true" tabindex="-1"></a>每个候选保留一行 ledger，不要只留下最终 FASTA。建议字段至少包括 <span class="in">`original_contig_id`</span>、<span class="in">`cleaned_viral_id`</span>、两个 detector scores、hallmarks、viral/cellular genes、provirus coordinates、CheckV quality、completeness method/confidence、contamination、topology/warning、vOTU representative、library type、数据库 release 和软件 commit。</span>
-<span id="cb10-375"><a href="#cb10-375" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-376"><a href="#cb10-376" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 virome 的统计策略</span></span>
-<span id="cb10-377"><a href="#cb10-377" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-378"><a href="#cb10-378" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>同 protocol 的样本：用统一代表序列库 competitive mapping，预注册 identity、breadth、minimum covered bases 和 multi-mapping 规则；</span>
-<span id="cb10-379"><a href="#cb10-379" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>配对 aliquots：在同一样本内估计 protocol-associated recovery，但分别展示两类 library 的 richness 与 abundance；</span>
-<span id="cb10-380"><a href="#cb10-380" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>非配对 protocol：primary analysis 分层，跨层只做 presence/absence 或经过 controls 支持的有限比较；</span>
-<span id="cb10-381"><a href="#cb10-381" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified virome：不把 read depth 当 particle abundance；若研究目标必须定量，加入已知浓度 spike-ins、未扩增对照和 ddPCR/qPCR 校准。</span>
-<span id="cb10-382"><a href="#cb10-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-383"><a href="#cb10-383" aria-hidden="true" tabindex="-1"></a>无法获得 wet-lab protocol 时，不能把缺失字段默认成“未过滤/未扩增”。把 protocol 标为 <span class="in">`unknown`</span>，做敏感性分析，并在结论中降低丰度比较的证据等级。</span>
-<span id="cb10-384"><a href="#cb10-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-385"><a href="#cb10-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb10-386"><a href="#cb10-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-387"><a href="#cb10-387" aria-hidden="true" tabindex="-1"></a>五张图分别服务五个问题，不把全部字段塞进一张“总览”：</span>
+<span id="cb10-354"><a href="#cb10-354" aria-hidden="true" tabindex="-1"></a>工具版本不够；Methods 或 supplement 还应列出 database release、archive checksum、contig length gate、score gate、hallmark rule、前病毒是否切边界、ANI/AF 相对哪个序列，以及 DTR 的人工复核方法。</span>
+<span id="cb10-355"><a href="#cb10-355" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-356"><a href="#cb10-356" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb10-357"><a href="#cb10-357" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-358"><a href="#cb10-358" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最少需要四类输入</span></span>
+<span id="cb10-359"><a href="#cb10-359" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-360"><a href="#cb10-360" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`contigs.fna`</span>：每样本或 co-assembly contigs；header 唯一且不能含会被下游截断的空格；</span>
+<span id="cb10-361"><a href="#cb10-361" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`samples.tsv`</span>：至少含 <span class="in">`sample_id`</span>、<span class="in">`subject_id`</span>、<span class="in">`library_type`</span>、<span class="in">`extraction_batch`</span>、<span class="in">`sequencing_run`</span>；</span>
+<span id="cb10-362"><a href="#cb10-362" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`wetlab_protocol.tsv`</span>：记录 filter pore/material、centrifugation、nuclease、VLP enrichment、WGA/MDA/SISPA、input mass 与 cycle/time；</span>
+<span id="cb10-363"><a href="#cb10-363" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>raw-read alignment：用于 coverage、breadth、contig ends、DTR/ITR、污染与跨样本 abundance 审计。</span>
+<span id="cb10-364"><a href="#cb10-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-365"><a href="#cb10-365" aria-hidden="true" tabindex="-1"></a><span class="fu">### 建议主流程</span></span>
+<span id="cb10-366"><a href="#cb10-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-367"><a href="#cb10-367" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
+<span id="cb10-368"><a href="#cb10-368" aria-hidden="true" tabindex="-1"></a><span class="in">assembled contigs</span></span>
+<span id="cb10-369"><a href="#cb10-369" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; geNomad + VirSorter2 candidate ledger</span></span>
+<span id="cb10-370"><a href="#cb10-370" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; score / hallmark / cellular-gene review</span></span>
+<span id="cb10-371"><a href="#cb10-371" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; CheckV boundary trimming and quality</span></span>
+<span id="cb10-372"><a href="#cb10-372" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; raw-read coverage and terminal-repeat review</span></span>
+<span id="cb10-373"><a href="#cb10-373" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; cleaned viral FASTA</span></span>
+<span id="cb10-374"><a href="#cb10-374" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; 95% ANI + 85% shorter-sequence AF vOTUs</span></span>
+<span id="cb10-375"><a href="#cb10-375" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; representative catalog</span></span>
+<span id="cb10-376"><a href="#cb10-376" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; competitive read mapping and abundance filters</span></span>
+<span id="cb10-377"><a href="#cb10-377" aria-hidden="true" tabindex="-1"></a><span class="in">  -&gt; protocol-stratified statistics and MIUViG table</span></span>
+<span id="cb10-378"><a href="#cb10-378" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb10-379"><a href="#cb10-379" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-380"><a href="#cb10-380" aria-hidden="true" tabindex="-1"></a>每个候选保留一行 ledger，不要只留下最终 FASTA。建议字段至少包括 <span class="in">`original_contig_id`</span>、<span class="in">`cleaned_viral_id`</span>、两个 detector scores、hallmarks、viral/cellular genes、provirus coordinates、CheckV quality、completeness method/confidence、contamination、topology/warning、vOTU representative、library type、数据库 release 和软件 commit。</span>
+<span id="cb10-381"><a href="#cb10-381" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-382"><a href="#cb10-382" aria-hidden="true" tabindex="-1"></a><span class="fu">### Total metagenome 与 virome 的统计策略</span></span>
+<span id="cb10-383"><a href="#cb10-383" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-384"><a href="#cb10-384" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>同 protocol 的样本：用统一代表序列库 competitive mapping，预注册 identity、breadth、minimum covered bases 和 multi-mapping 规则；</span>
+<span id="cb10-385"><a href="#cb10-385" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>配对 aliquots：在同一样本内估计 protocol-associated recovery，但分别展示两类 library 的 richness 与 abundance；</span>
+<span id="cb10-386"><a href="#cb10-386" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>非配对 protocol：primary analysis 分层，跨层只做 presence/absence 或经过 controls 支持的有限比较；</span>
+<span id="cb10-387"><a href="#cb10-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>amplified virome：不把 read depth 当 particle abundance；若研究目标必须定量，加入已知浓度 spike-ins、未扩增对照和 ddPCR/qPCR 校准。</span>
 <span id="cb10-388"><a href="#cb10-388" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-389"><a href="#cb10-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>discovery overlap 用同一 contig coordinate 展示两个 detector 和 VirSorter2 high-confidence 收缩；</span>
-<span id="cb10-390"><a href="#cb10-390" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>quality plot 把 completeness 与 host-flank contamination 分成两个轴；</span>
-<span id="cb10-391"><a href="#cb10-391" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>vOTU 图把 95% ANI 与 85% AF 画成二维 acceptance region；</span>
-<span id="cb10-392"><a href="#cb10-392" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>evidence ladder 约束发现、边界、质量、聚类与 MIUViG 的措辞；</span>
-<span id="cb10-393"><a href="#cb10-393" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>library map 明确它是 methodological evidence map，不伪装成定量效应图。</span>
+<span id="cb10-389"><a href="#cb10-389" aria-hidden="true" tabindex="-1"></a>无法获得 wet-lab protocol 时，不能把缺失字段默认成“未过滤/未扩增”。把 protocol 标为 <span class="in">`unknown`</span>，做敏感性分析，并在结论中降低丰度比较的证据等级。</span>
+<span id="cb10-390"><a href="#cb10-390" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-391"><a href="#cb10-391" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb10-392"><a href="#cb10-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-393"><a href="#cb10-393" aria-hidden="true" tabindex="-1"></a>五张图分别服务五个问题，不把全部字段塞进一张“总览”：</span>
 <span id="cb10-394"><a href="#cb10-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-395"><a href="#cb10-395" aria-hidden="true" tabindex="-1"></a>颜色采用色觉友好的 Okabe--Ito 系列；图内全部英文。每张图同时导出 PDF、350 dpi PNG 和 LZW TIFF。正文图注写清分母是 **46 regression sequences** 或 **10 non-self alignable pairs**，避免读者误以为条形高度来自自然队列。</span>
-<span id="cb10-396"><a href="#cb10-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-397"><a href="#cb10-397" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb10-398"><a href="#cb10-398" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
-<span id="cb10-399"><a href="#cb10-399" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/virus-evidence-matrix.tsv"</span>,</span>
-<span id="cb10-400"><a href="#cb10-400" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb10-401"><a href="#cb10-401" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-402"><a href="#cb10-402" aria-hidden="true" tabindex="-1"></a>votu_pairs <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
-<span id="cb10-403"><a href="#cb10-403" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/votu-pairwise-threshold-audit.tsv"</span>,</span>
-<span id="cb10-404"><a href="#cb10-404" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb10-405"><a href="#cb10-405" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-406"><a href="#cb10-406" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-407"><a href="#cb10-407" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(evidence) <span class="sc">==</span> <span class="dv">46</span>)</span>
-<span id="cb10-408"><a href="#cb10-408" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(votu_pairs) <span class="sc">==</span> <span class="dv">10</span>)</span>
-<span id="cb10-409"><a href="#cb10-409" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(votu_pairs<span class="sc">$</span>SameVOTU) <span class="sc">==</span> <span class="dv">0</span>)</span>
-<span id="cb10-410"><a href="#cb10-410" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb10-411"><a href="#cb10-411" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-412"><a href="#cb10-412" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb10-413"><a href="#cb10-413" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-414"><a href="#cb10-414" aria-hidden="true" tabindex="-1"></a>病毒发现、CheckV 质量、前病毒边界和 vOTU 聚类是四道不同门；任何单一工具都不能包办整条证据链。</span>
-<span id="cb10-415"><a href="#cb10-415" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-416"><a href="#cb10-416" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb10-395"><a href="#cb10-395" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>discovery overlap 用同一 contig coordinate 展示两个 detector 和 VirSorter2 high-confidence 收缩；</span>
+<span id="cb10-396"><a href="#cb10-396" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>quality plot 把 completeness 与 host-flank contamination 分成两个轴；</span>
+<span id="cb10-397"><a href="#cb10-397" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>vOTU 图把 95% ANI 与 85% AF 画成二维 acceptance region；</span>
+<span id="cb10-398"><a href="#cb10-398" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>evidence ladder 约束发现、边界、质量、聚类与 MIUViG 的措辞；</span>
+<span id="cb10-399"><a href="#cb10-399" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>library map 明确它是 methodological evidence map，不伪装成定量效应图。</span>
+<span id="cb10-400"><a href="#cb10-400" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-401"><a href="#cb10-401" aria-hidden="true" tabindex="-1"></a>颜色采用色觉友好的 Okabe--Ito 系列；图内全部英文。每张图同时导出 PDF、350 dpi PNG 和 LZW TIFF。正文图注写清分母是 **46 regression sequences** 或 **10 non-self alignable pairs**，避免读者误以为条形高度来自自然队列。</span>
+<span id="cb10-402"><a href="#cb10-402" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-403"><a href="#cb10-403" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb10-404"><a href="#cb10-404" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb10-405"><a href="#cb10-405" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/virus-evidence-matrix.tsv"</span>,</span>
+<span id="cb10-406"><a href="#cb10-406" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-407"><a href="#cb10-407" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-408"><a href="#cb10-408" aria-hidden="true" tabindex="-1"></a>votu_pairs <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb10-409"><a href="#cb10-409" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/54-virus-discovery-quality-frozen/votu-pairwise-threshold-audit.tsv"</span>,</span>
+<span id="cb10-410"><a href="#cb10-410" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb10-411"><a href="#cb10-411" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-412"><a href="#cb10-412" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-413"><a href="#cb10-413" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(evidence) <span class="sc">==</span> <span class="dv">46</span>)</span>
+<span id="cb10-414"><a href="#cb10-414" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(votu_pairs) <span class="sc">==</span> <span class="dv">10</span>)</span>
+<span id="cb10-415"><a href="#cb10-415" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(votu_pairs<span class="sc">$</span>SameVOTU) <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb10-416"><a href="#cb10-416" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb10-417"><a href="#cb10-417" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-418"><a href="#cb10-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 原理与评估：@camargo2024genomad；软件版本：@genomad2026software。</span>
-<span id="cb10-419"><a href="#cb10-419" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>VirSorter2 多分类器：@guo2021virsorter2；软件版本：@virsorter22026software。</span>
-<span id="cb10-420"><a href="#cb10-420" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckV 完整度、宿主边界与质量：@nayfach2021checkv；软件版本：@checkv2026software。</span>
-<span id="cb10-421"><a href="#cb10-421" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG 质量类别、vOTU 与报告清单：@roux2019miuvig。</span>
-<span id="cb10-422"><a href="#cb10-422" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Virome filtration、nuclease 与 amplification 偏倚：@parrasmolto2018viromebias；@conceicaoneto2015netovir。</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb10-418"><a href="#cb10-418" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb10-419"><a href="#cb10-419" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-420"><a href="#cb10-420" aria-hidden="true" tabindex="-1"></a>病毒发现、CheckV 质量、前病毒边界和 vOTU 聚类是四道不同门；任何单一工具都不能包办整条证据链。</span>
+<span id="cb10-421"><a href="#cb10-421" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-422"><a href="#cb10-422" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb10-423"><a href="#cb10-423" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-424"><a href="#cb10-424" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 原理与评估：@camargo2024genomad；软件版本：@genomad2026software。</span>
+<span id="cb10-425"><a href="#cb10-425" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>VirSorter2 多分类器：@guo2021virsorter2；软件版本：@virsorter22026software。</span>
+<span id="cb10-426"><a href="#cb10-426" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckV 完整度、宿主边界与质量：@nayfach2021checkv；软件版本：@checkv2026software。</span>
+<span id="cb10-427"><a href="#cb10-427" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG 质量类别、vOTU 与报告清单：@roux2019miuvig。</span>
+<span id="cb10-428"><a href="#cb10-428" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Virome filtration、nuclease 与 amplification 偏倚：@parrasmolto2018viromebias；@conceicaoneto2015netovir。</span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 

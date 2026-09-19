@@ -948,7 +948,10 @@ window.Quarto = {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">重复测了很多次，独立样本到底有多少？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">重复测了很多次，独立样本到底有多少？</a>
+  <ul class="collapse">
+  <li><a href="#个体内变化与个体间差异需要分别估计" id="toc-个体内变化与个体间差异需要分别估计" class="nav-link" data-scroll-target="#个体内变化与个体间差异需要分别估计">个体内变化与个体间差异需要分别估计</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先锁定输入、版本和算力边界</a>
   <ul class="collapse">
@@ -1010,7 +1013,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">发布于</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2026年9月17日</p>
+      <p class="date">2026年9月19日</p>
     </div>
   </div>
   
@@ -1026,13 +1029,13 @@ window.Quarto = {
 <p><strong>先给结论：</strong>纵向设计的价值不是“样本数变多”，而是能把<strong>人和人之间的差异</strong>与<strong>同一个人随时间的变化</strong>分开。分析时必须把受试者作为聚类单位：轨迹图按人连线，效应模型至少有 subject random intercept（主体随机截距），时间趋势允许时再加 random slope（随机斜率），bootstrap 和交叉验证也按人重采样或切分。两次都检出某个物种，只能称为 detection stability（检出稳定），不能直接写成 permanent colonization（永久定植）。</p>
 </blockquote>
 <p>这里使用 Lloyd-Price 等人 IBD Multi’omics Database（IBDMDB/HMP2）的官方 MetaPhlAn taxonomic profiles 与临床元数据 <span class="citation" data-cites="lloydprice2019multiomics">(<a href="02-three-analysis-layers.html#ref-lloydprice2019multiomics" role="doc-biblioref"><span class="nocase">Lloyd-Price 等</span> 2019年</a>)</span>。公开产品含 1,638 个 profiles、130 名受试者；去除同一 biospecimen 的 43 个技术/处理重复，再施加 filtered reads ≥1,000,000 与每人至少 4 次合格随访的预设门槛，主分析保留 <strong>1,523 个样本、107 名受试者</strong>。</p>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="个体内变化与个体间差异需要分别估计">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>个体内变化与个体间差异需要分别估计
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1048,7 +1051,7 @@ window.Quarto = {
 <img src="../figures/67-lloyd-price-fig3-original.png" class="img-fluid figure-img">
 </div>
 <figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-67-anchor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-图&nbsp;67.1: Lloyd-Price et al.&nbsp;2019 Figure 3。原图用于定位纵向稳定性、群落转换和 <em>P. copri</em> 轨迹；原始 PNG SHA-256 为 <code>b5ea6e10...5eed7</code>。
+图&nbsp;67.1: Lloyd-Price et al.&nbsp;2019 Figure 3。原图用于定位纵向稳定性、群落转换和 <em>P. copri</em> 轨迹
 </figcaption>
 </figure>
 </div>
@@ -1063,6 +1066,11 @@ window.Quarto = {
 </figcaption>
 </figure>
 </div>
+<section id="个体内变化与个体间差异需要分别估计" class="level3">
+<h3 class="anchored" data-anchor-id="个体内变化与个体间差异需要分别估计">个体内变化与个体间差异需要分别估计</h3>
+<p>某个变量在不同受试者之间与菌群有关，不代表同一个人该变量变化时菌群也随之变化。若研究目标是个体内关联，可将随时间变化的协变量拆为个人均值与偏离个人均值的部分；只放一个原始值，可能混合两种效应。随机截距处理相关性，但不会自动完成这种分解。</p>
+<p>随机时间斜率允许轨迹不同，也仍需检查模型能否支持相应复杂度。随访更密集或失访与病情相关时，观察到的轨迹可能不是全队列的无偏变化。本例按人处理不确定性，独立单位仍是 107 名受试者，而非 1,523 次测量；反复检出也不能单独证明永久定植。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -2459,7 +2467,7 @@ Kuznetsova, Alexandra, Per B. Brockhoff, 和 Rune H. B. Christensen. 2017年. <s
 <span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>这里使用 Lloyd-Price 等人 IBD Multi'omics Database（IBDMDB/HMP2）的官方 MetaPhlAn taxonomic profiles 与临床元数据 <span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span>。公开产品含 1,638 个 profiles、130 名受试者；去除同一 biospecimen 的 43 个技术/处理重复，再施加 filtered reads ≥1,000,000 与每人至少 4 次合格随访的预设门槛，主分析保留 **1,523 个样本、107 名受试者**。</span>
 <span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="个体内变化与个体间差异需要分别估计"}</span>
 <span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a>以受试者而非访视数计算独立性；模型和 bootstrap 都要保留主体结构与实际时间间隔。</span>
 <span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a></span>
@@ -2469,517 +2477,523 @@ Kuznetsova, Alexandra, Per B. Brockhoff, 和 Rune H. B. Christensen. 2017年. <s
 <span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a>原研究 Figure 3 是本章的锚点：Figure 3a 比较不同时间间隔的 taxonomic Bray--Curtis dissimilarity，Figure 3b 展示稳定与 dysbiotic 时段的主要贡献物种，Figure 3c 追踪 *Prevotella copri* 的个体轨迹；后续面板把群落变化与其他组学层联系起来。论文主图使用 1,595 个独立 biospecimens、130 名受试者，并报告 CD 与 UC 中更多 dysbiotic periods <span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span>。</span>
 <span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a><span class="al">![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向稳定性、群落转换和 *P. copri* 轨迹；原始 PNG SHA-256 为 `b5ea6e10...5eed7`。](../figures/67-lloyd-price-fig3-original.png)</span>{#fig-67-anchor}</span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a><span class="al">![Lloyd-Price et al. 2019 Figure 3。原图用于定位纵向稳定性、群落转换和 *P. copri* 轨迹](../figures/67-lloyd-price-fig3-original.png)</span>{#fig-67-anchor}</span>
 <span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a>本章先重建论文的分析骨架，再增加三个今天更应明确的契约：技术重复的确定性取舍、主体等权的不确定性、以及固定阈值 sensitivity analysis（敏感性分析）与论文原始 shift caller 的边界。</span>
 <span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a><span class="al">![官方 profile 到主分析样本的确定性缩减。每个点是一位受试者的合格随访次数；同一个人的多次随访不被当作独立研究对象。](../figures/67-sampling-design.png)</span>{#fig-67-sampling}</span>
 <span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a><span class="fu">### 个体内变化与个体间差异需要分别估计</span></span>
 <span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/67/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 2.9 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a>某个变量在不同受试者之间与菌群有关，不代表同一个人该变量变化时菌群也随之变化。若研究目标是个体内关联，可将随时间变化的协变量拆为个人均值与偏离个人均值的部分；只放一个原始值，可能混合两种效应。随机截距处理相关性，但不会自动完成这种分解。</span>
 <span id="cb16-64"><a href="#cb16-64" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/67/download.R)</span>。</span>
+<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a>随机时间斜率允许轨迹不同，也仍需检查模型能否支持相应复杂度。随访更密集或失访与病情相关时，观察到的轨迹可能不是全队列的无偏变化。本例按人处理不确定性，独立单位仍是 107 名受试者，而非 1,523 次测量；反复检出也不能单独证明永久定植。</span>
 <span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-67</span></span>
-<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/67/files.tsv"</span>))</span>
-<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-83"><a href="#cb16-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-84"><a href="#cb16-84" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-preparation}</span></span>
-<span id="cb16-85"><a href="#cb16-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-86"><a href="#cb16-86" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据谱系、门槛与算力</span></span>
-<span id="cb16-87"><a href="#cb16-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-88"><a href="#cb16-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 对象 <span class="pp">|</span> 锁定内容 <span class="pp">|</span></span>
-<span id="cb16-89"><a href="#cb16-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
-<span id="cb16-90"><a href="#cb16-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Study <span class="pp">|</span> Lloyd-Price et al., Nature 2019；DOI <span class="in">`10.1038/s41586-019-1237-9`</span>；PMCID <span class="in">`PMC6650278`</span> <span class="pp">|</span></span>
-<span id="cb16-91"><a href="#cb16-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Cohort <span class="pp">|</span> IBDMDB/HMP2；CD、UC、non-IBD control；最多约 1 年随访 <span class="pp">|</span></span>
-<span id="cb16-92"><a href="#cb16-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Taxonomic profile <span class="pp">|</span> 官方 MGX merged product，release <span class="in">`2018-05-04`</span>；SHA-256 <span class="in">`5728531...e72c`</span> <span class="pp">|</span></span>
-<span id="cb16-93"><a href="#cb16-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Metadata <span class="pp">|</span> HMP2 metadata release <span class="in">`2018-08-20`</span>；SHA-256 <span class="in">`656b7bd9...ec9`</span> <span class="pp">|</span></span>
-<span id="cb16-94"><a href="#cb16-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Primary profile <span class="pp">|</span> 同一 <span class="in">`site_sub_coll`</span> 内依次优先 non-<span class="in">`_TR`</span>、<span class="in">`_P`</span>、较高 filtered reads、字典序 SampleID <span class="pp">|</span></span>
-<span id="cb16-95"><a href="#cb16-95" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Eligibility <span class="pp">|</span> filtered reads ≥1,000,000；每位受试者 ≥4 个合格 primary profiles <span class="pp">|</span></span>
-<span id="cb16-96"><a href="#cb16-96" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Analysis <span class="pp">|</span> 572 个 terminal species rows，568 个曾检出；63 个物种进入探索性 LMM screen <span class="pp">|</span></span>
-<span id="cb16-97"><a href="#cb16-97" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Seeds <span class="pp">|</span> analysis/bootstrap <span class="in">`67001`</span>；plot jitter <span class="in">`20260767`</span>；bootstrap 2,000 次 <span class="pp">|</span></span>
-<span id="cb16-98"><a href="#cb16-98" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Independent unit <span class="pp">|</span> 107 名受试者；所有 CI、模型聚类与验证以 subject 为单位 <span class="pp">|</span></span>
-<span id="cb16-99"><a href="#cb16-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-100"><a href="#cb16-100" aria-hidden="true" tabindex="-1"></a>预计耗时与资源如下：冻结结果复核需要约 **2 CPU、4 GB RAM、&lt;3 分钟、&lt;1 GB 磁盘**；从两个官方合并表重算距离矩阵与 63 个 mixed models 约需 **4 CPU、8 GB RAM、5--15 分钟、约 5 GB 临时空间**。从原始 FASTQ 重建 profile 建议 **8--16 CPU、32 GB RAM、100 GB 以上磁盘、数小时至数天**。下游问题通常不需要先重跑 1,638 个 FASTQ；先锁定官方 product release，只有方法比较或数据库升级才启动上游重算。</span>
-<span id="cb16-101"><a href="#cb16-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-102"><a href="#cb16-102" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb16-103"><a href="#cb16-103" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装依赖、下载真实数据，并内联统一作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb16-104"><a href="#cb16-104" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-107"><a href="#cb16-107" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
-<span id="cb16-108"><a href="#cb16-108" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-109"><a href="#cb16-109" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> env/multiomics-python.yml</span>
+<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/67/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 2.9 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/67/download.R)</span>。</span>
+<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-67</span></span>
+<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/67/files.tsv"</span>))</span>
+<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb16-83"><a href="#cb16-83" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-84"><a href="#cb16-84" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb16-85"><a href="#cb16-85" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb16-86"><a href="#cb16-86" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-87"><a href="#cb16-87" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-88"><a href="#cb16-88" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-89"><a href="#cb16-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-90"><a href="#cb16-90" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-preparation}</span></span>
+<span id="cb16-91"><a href="#cb16-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-92"><a href="#cb16-92" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据谱系、门槛与算力</span></span>
+<span id="cb16-93"><a href="#cb16-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-94"><a href="#cb16-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 对象 <span class="pp">|</span> 锁定内容 <span class="pp">|</span></span>
+<span id="cb16-95"><a href="#cb16-95" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb16-96"><a href="#cb16-96" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Study <span class="pp">|</span> Lloyd-Price et al., Nature 2019；DOI <span class="in">`10.1038/s41586-019-1237-9`</span>；PMCID <span class="in">`PMC6650278`</span> <span class="pp">|</span></span>
+<span id="cb16-97"><a href="#cb16-97" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Cohort <span class="pp">|</span> IBDMDB/HMP2；CD、UC、non-IBD control；最多约 1 年随访 <span class="pp">|</span></span>
+<span id="cb16-98"><a href="#cb16-98" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Taxonomic profile <span class="pp">|</span> 官方 MGX merged product，release <span class="in">`2018-05-04`</span>；SHA-256 <span class="in">`5728531...e72c`</span> <span class="pp">|</span></span>
+<span id="cb16-99"><a href="#cb16-99" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Metadata <span class="pp">|</span> HMP2 metadata release <span class="in">`2018-08-20`</span>；SHA-256 <span class="in">`656b7bd9...ec9`</span> <span class="pp">|</span></span>
+<span id="cb16-100"><a href="#cb16-100" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Primary profile <span class="pp">|</span> 同一 <span class="in">`site_sub_coll`</span> 内依次优先 non-<span class="in">`_TR`</span>、<span class="in">`_P`</span>、较高 filtered reads、字典序 SampleID <span class="pp">|</span></span>
+<span id="cb16-101"><a href="#cb16-101" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Eligibility <span class="pp">|</span> filtered reads ≥1,000,000；每位受试者 ≥4 个合格 primary profiles <span class="pp">|</span></span>
+<span id="cb16-102"><a href="#cb16-102" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Analysis <span class="pp">|</span> 572 个 terminal species rows，568 个曾检出；63 个物种进入探索性 LMM screen <span class="pp">|</span></span>
+<span id="cb16-103"><a href="#cb16-103" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Seeds <span class="pp">|</span> analysis/bootstrap <span class="in">`67001`</span>；plot jitter <span class="in">`20260767`</span>；bootstrap 2,000 次 <span class="pp">|</span></span>
+<span id="cb16-104"><a href="#cb16-104" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Independent unit <span class="pp">|</span> 107 名受试者；所有 CI、模型聚类与验证以 subject 为单位 <span class="pp">|</span></span>
+<span id="cb16-105"><a href="#cb16-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-106"><a href="#cb16-106" aria-hidden="true" tabindex="-1"></a>预计耗时与资源如下：冻结结果复核需要约 **2 CPU、4 GB RAM、&lt;3 分钟、&lt;1 GB 磁盘**；从两个官方合并表重算距离矩阵与 63 个 mixed models 约需 **4 CPU、8 GB RAM、5--15 分钟、约 5 GB 临时空间**。从原始 FASTQ 重建 profile 建议 **8--16 CPU、32 GB RAM、100 GB 以上磁盘、数小时至数天**。下游问题通常不需要先重跑 1,638 个 FASTQ；先锁定官方 product release，只有方法比较或数据库升级才启动上游重算。</span>
+<span id="cb16-107"><a href="#cb16-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-108"><a href="#cb16-108" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb16-109"><a href="#cb16-109" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装依赖、下载真实数据，并内联统一作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
 <span id="cb16-110"><a href="#cb16-110" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-111"><a href="#cb16-111" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'install.packages(c(</span></span>
-<span id="cb16-112"><a href="#cb16-112" aria-hidden="true" tabindex="-1"></a><span class="st">  "ggplot2", "dplyr", "tidyr", "readr", "lme4", "lmerTest",</span></span>
-<span id="cb16-113"><a href="#cb16-113" aria-hidden="true" tabindex="-1"></a><span class="st">  "pbkrtest", "scales", "patchwork", "knitr"</span></span>
-<span id="cb16-114"><a href="#cb16-114" aria-hidden="true" tabindex="-1"></a><span class="st">))'</span></span>
-<span id="cb16-115"><a href="#cb16-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-116"><a href="#cb16-116" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/download_article67_longitudinal_data.py <span class="dt">\</span></span>
-<span id="cb16-117"><a href="#cb16-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> db/hmp2/article67</span>
-<span id="cb16-118"><a href="#cb16-118" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-119"><a href="#cb16-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-122"><a href="#cb16-122" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-123"><a href="#cb16-123" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260767</span>)</span>
-<span id="cb16-124"><a href="#cb16-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-125"><a href="#cb16-125" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Control"</span> <span class="ot">=</span> <span class="st">"#4C78A8"</span>, <span class="st">"CD"</span> <span class="ot">=</span> <span class="st">"#E45756"</span>, <span class="st">"UC"</span> <span class="ot">=</span> <span class="st">"#72B7B2"</span>)</span>
-<span id="cb16-126"><a href="#cb16-126" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) ggplot2<span class="sc">::</span><span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb16-127"><a href="#cb16-127" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) ggplot2<span class="sc">::</span><span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb16-128"><a href="#cb16-128" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb16-129"><a href="#cb16-129" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> ggplot2<span class="sc">::</span><span class="fu">theme</span>(</span>
-<span id="cb16-130"><a href="#cb16-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
-<span id="cb16-131"><a href="#cb16-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> ggplot2<span class="sc">::</span><span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
-<span id="cb16-132"><a href="#cb16-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> ggplot2<span class="sc">::</span><span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb16-133"><a href="#cb16-133" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
-<span id="cb16-134"><a href="#cb16-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> ggplot2<span class="sc">::</span><span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EDF2F4"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb16-135"><a href="#cb16-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
-<span id="cb16-136"><a href="#cb16-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> ggplot2<span class="sc">::</span><span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
-<span id="cb16-137"><a href="#cb16-137" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb16-138"><a href="#cb16-138" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-139"><a href="#cb16-139" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">210</span>, <span class="at">height =</span> <span class="dv">150</span>,</span>
-<span id="cb16-140"><a href="#cb16-140" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb16-141"><a href="#cb16-141" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-142"><a href="#cb16-142" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width,</span>
-<span id="cb16-143"><a href="#cb16-143" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units,</span>
-<span id="cb16-144"><a href="#cb16-144" aria-hidden="true" tabindex="-1"></a>                  <span class="at">device =</span> grDevices<span class="sc">::</span>cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-145"><a href="#cb16-145" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width,</span>
-<span id="cb16-146"><a href="#cb16-146" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-147"><a href="#cb16-147" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width,</span>
-<span id="cb16-148"><a href="#cb16-148" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi,</span>
-<span id="cb16-149"><a href="#cb16-149" aria-hidden="true" tabindex="-1"></a>                  <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-150"><a href="#cb16-150" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb16-151"><a href="#cb16-151" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-152"><a href="#cb16-152" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-153"><a href="#cb16-153" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-154"><a href="#cb16-154" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb16-155"><a href="#cb16-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-156"><a href="#cb16-156" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先结果核对 checksum、样本缩减与表结构</span></span>
-<span id="cb16-157"><a href="#cb16-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-160"><a href="#cb16-160" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
-<span id="cb16-161"><a href="#cb16-161" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-162"><a href="#cb16-162" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/67-longitudinal-frozen"</span></span>
-<span id="cb16-163"><a href="#cb16-163" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
-<span id="cb16-164"><a href="#cb16-164" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/sample-attrition.tsv"</span></span>
-<span id="cb16-165"><a href="#cb16-165" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/dysbiosis-summary.tsv"</span></span>
-<span id="cb16-166"><a href="#cb16-166" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/primary-model-audit.tsv"</span></span>
-<span id="cb16-167"><a href="#cb16-167" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-168"><a href="#cb16-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-171"><a href="#cb16-171" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-172"><a href="#cb16-172" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/67-longitudinal-frozen"</span></span>
-<span id="cb16-173"><a href="#cb16-173" aria-hidden="true" tabindex="-1"></a>attrition <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">file.path</span>(frozen, <span class="st">"sample-attrition.tsv"</span>), <span class="at">check.names =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-174"><a href="#cb16-174" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">file.path</span>(frozen, <span class="st">"sample-ledger.tsv"</span>), <span class="at">check.names =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-175"><a href="#cb16-175" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(attrition, <span class="at">digits =</span> <span class="dv">0</span>, <span class="at">caption =</span> <span class="st">"HMP2 profile 的确定性缩减"</span>)</span>
-<span id="cb16-176"><a href="#cb16-176" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(samples) <span class="sc">==</span> <span class="dv">1523</span>, <span class="fu">length</span>(<span class="fu">unique</span>(samples<span class="sc">$</span>SubjectID)) <span class="sc">==</span> <span class="dv">107</span>)</span>
-<span id="cb16-177"><a href="#cb16-177" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-178"><a href="#cb16-178" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-179"><a href="#cb16-179" aria-hidden="true" tabindex="-1"></a><span class="fu">## 确定性选择一个 biospecimen 的 primary profile {#sec-code}</span></span>
-<span id="cb16-180"><a href="#cb16-180" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-181"><a href="#cb16-181" aria-hidden="true" tabindex="-1"></a><span class="fu">### 观测单位、实验单位与不确定性单位不是一回事 {#sec-theory}</span></span>
-<span id="cb16-182"><a href="#cb16-182" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-183"><a href="#cb16-183" aria-hidden="true" tabindex="-1"></a>设受试者 $i$ 在时间 $t_{ij}$ 的群落指标为 $y_{ij}$。同一受试者的 $y_{i1},y_{i2},\ldots$ 共享遗传背景、长期饮食、生活环境和疾病史，通常满足：</span>
+<span id="cb16-113"><a href="#cb16-113" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
+<span id="cb16-114"><a href="#cb16-114" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-115"><a href="#cb16-115" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> env/multiomics-python.yml</span>
+<span id="cb16-116"><a href="#cb16-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-117"><a href="#cb16-117" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">'install.packages(c(</span></span>
+<span id="cb16-118"><a href="#cb16-118" aria-hidden="true" tabindex="-1"></a><span class="st">  "ggplot2", "dplyr", "tidyr", "readr", "lme4", "lmerTest",</span></span>
+<span id="cb16-119"><a href="#cb16-119" aria-hidden="true" tabindex="-1"></a><span class="st">  "pbkrtest", "scales", "patchwork", "knitr"</span></span>
+<span id="cb16-120"><a href="#cb16-120" aria-hidden="true" tabindex="-1"></a><span class="st">))'</span></span>
+<span id="cb16-121"><a href="#cb16-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-122"><a href="#cb16-122" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/download_article67_longitudinal_data.py <span class="dt">\</span></span>
+<span id="cb16-123"><a href="#cb16-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> db/hmp2/article67</span>
+<span id="cb16-124"><a href="#cb16-124" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-125"><a href="#cb16-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-128"><a href="#cb16-128" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-129"><a href="#cb16-129" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260767</span>)</span>
+<span id="cb16-130"><a href="#cb16-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-131"><a href="#cb16-131" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Control"</span> <span class="ot">=</span> <span class="st">"#4C78A8"</span>, <span class="st">"CD"</span> <span class="ot">=</span> <span class="st">"#E45756"</span>, <span class="st">"UC"</span> <span class="ot">=</span> <span class="st">"#72B7B2"</span>)</span>
+<span id="cb16-132"><a href="#cb16-132" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) ggplot2<span class="sc">::</span><span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb16-133"><a href="#cb16-133" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) ggplot2<span class="sc">::</span><span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb16-134"><a href="#cb16-134" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb16-135"><a href="#cb16-135" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> ggplot2<span class="sc">::</span><span class="fu">theme</span>(</span>
+<span id="cb16-136"><a href="#cb16-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
+<span id="cb16-137"><a href="#cb16-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> ggplot2<span class="sc">::</span><span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
+<span id="cb16-138"><a href="#cb16-138" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> ggplot2<span class="sc">::</span><span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb16-139"><a href="#cb16-139" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> ggplot2<span class="sc">::</span><span class="fu">element_blank</span>(),</span>
+<span id="cb16-140"><a href="#cb16-140" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> ggplot2<span class="sc">::</span><span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EDF2F4"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb16-141"><a href="#cb16-141" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
+<span id="cb16-142"><a href="#cb16-142" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> ggplot2<span class="sc">::</span><span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
+<span id="cb16-143"><a href="#cb16-143" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-144"><a href="#cb16-144" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-145"><a href="#cb16-145" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">210</span>, <span class="at">height =</span> <span class="dv">150</span>,</span>
+<span id="cb16-146"><a href="#cb16-146" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb16-147"><a href="#cb16-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-148"><a href="#cb16-148" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width,</span>
+<span id="cb16-149"><a href="#cb16-149" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units,</span>
+<span id="cb16-150"><a href="#cb16-150" aria-hidden="true" tabindex="-1"></a>                  <span class="at">device =</span> grDevices<span class="sc">::</span>cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-151"><a href="#cb16-151" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width,</span>
+<span id="cb16-152"><a href="#cb16-152" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-153"><a href="#cb16-153" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width,</span>
+<span id="cb16-154"><a href="#cb16-154" aria-hidden="true" tabindex="-1"></a>                  <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi,</span>
+<span id="cb16-155"><a href="#cb16-155" aria-hidden="true" tabindex="-1"></a>                  <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-156"><a href="#cb16-156" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb16-157"><a href="#cb16-157" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-158"><a href="#cb16-158" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-159"><a href="#cb16-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-160"><a href="#cb16-160" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb16-161"><a href="#cb16-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-162"><a href="#cb16-162" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先结果核对 checksum、样本缩减与表结构</span></span>
+<span id="cb16-163"><a href="#cb16-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-166"><a href="#cb16-166" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
+<span id="cb16-167"><a href="#cb16-167" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-168"><a href="#cb16-168" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/67-longitudinal-frozen"</span></span>
+<span id="cb16-169"><a href="#cb16-169" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
+<span id="cb16-170"><a href="#cb16-170" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/sample-attrition.tsv"</span></span>
+<span id="cb16-171"><a href="#cb16-171" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/dysbiosis-summary.tsv"</span></span>
+<span id="cb16-172"><a href="#cb16-172" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/primary-model-audit.tsv"</span></span>
+<span id="cb16-173"><a href="#cb16-173" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-174"><a href="#cb16-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-177"><a href="#cb16-177" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-178"><a href="#cb16-178" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/67-longitudinal-frozen"</span></span>
+<span id="cb16-179"><a href="#cb16-179" aria-hidden="true" tabindex="-1"></a>attrition <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">file.path</span>(frozen, <span class="st">"sample-attrition.tsv"</span>), <span class="at">check.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-180"><a href="#cb16-180" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">file.path</span>(frozen, <span class="st">"sample-ledger.tsv"</span>), <span class="at">check.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-181"><a href="#cb16-181" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(attrition, <span class="at">digits =</span> <span class="dv">0</span>, <span class="at">caption =</span> <span class="st">"HMP2 profile 的确定性缩减"</span>)</span>
+<span id="cb16-182"><a href="#cb16-182" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(samples) <span class="sc">==</span> <span class="dv">1523</span>, <span class="fu">length</span>(<span class="fu">unique</span>(samples<span class="sc">$</span>SubjectID)) <span class="sc">==</span> <span class="dv">107</span>)</span>
+<span id="cb16-183"><a href="#cb16-183" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-184"><a href="#cb16-184" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-185"><a href="#cb16-185" aria-hidden="true" tabindex="-1"></a>$$</span>
-<span id="cb16-186"><a href="#cb16-186" aria-hidden="true" tabindex="-1"></a>\operatorname{Cor}(y_{ij},y_{ik}) \neq 0, \qquad j\neq k.</span>
-<span id="cb16-187"><a href="#cb16-187" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-185"><a href="#cb16-185" aria-hidden="true" tabindex="-1"></a><span class="fu">## 确定性选择一个 biospecimen 的 primary profile {#sec-code}</span></span>
+<span id="cb16-186"><a href="#cb16-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-187"><a href="#cb16-187" aria-hidden="true" tabindex="-1"></a><span class="fu">### 观测单位、实验单位与不确定性单位不是一回事 {#sec-theory}</span></span>
 <span id="cb16-188"><a href="#cb16-188" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-189"><a href="#cb16-189" aria-hidden="true" tabindex="-1"></a>因此 1,523 次测量不能当作 1,523 个独立人。这里的层级是：</span>
+<span id="cb16-189"><a href="#cb16-189" aria-hidden="true" tabindex="-1"></a>设受试者 $i$ 在时间 $t_{ij}$ 的群落指标为 $y_{ij}$。同一受试者的 $y_{i1},y_{i2},\ldots$ 共享遗传背景、长期饮食、生活环境和疾病史，通常满足：</span>
 <span id="cb16-190"><a href="#cb16-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-191"><a href="#cb16-191" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**观测单位**：一次 stool metagenome；</span>
-<span id="cb16-192"><a href="#cb16-192" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**聚类/实验单位**：受试者；</span>
-<span id="cb16-193"><a href="#cb16-193" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**时间变化单位**：同一受试者相邻或成对的两次采样；</span>
-<span id="cb16-194"><a href="#cb16-194" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**bootstrap 单位**：受试者，而非样本或物种。</span>
-<span id="cb16-195"><a href="#cb16-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-196"><a href="#cb16-196" aria-hidden="true" tabindex="-1"></a>若直接对 1,523 行做普通线性回归，standard error 往往过小，显著性被夸大；若先把每个人压成一个均值，又会丢掉时间信息。mixed-effects model（混合效应模型）在二者之间保留了正确层级 <span class="co">[</span><span class="ot">@bates2015lme4; @kuznetsova2017lmertest</span><span class="co">]</span>。</span>
-<span id="cb16-197"><a href="#cb16-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-198"><a href="#cb16-198" aria-hidden="true" tabindex="-1"></a>同一 <span class="in">`site_sub_coll`</span> 可能有 <span class="in">`_TR`</span> technical rerun、<span class="in">`_P`</span> processing version 或其他重复。不能让文件系统顺序决定取舍，也不能事后挑“更符合预期”的 profile。下面的排序规则在查看结果前声明，并把所有入选/排除记录写入 ledger。</span>
-<span id="cb16-199"><a href="#cb16-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-202"><a href="#cb16-202" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb16-203"><a href="#cb16-203" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-204"><a href="#cb16-204" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb16-205"><a href="#cb16-205" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
-<span id="cb16-206"><a href="#cb16-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-207"><a href="#cb16-207" aria-hidden="true" tabindex="-1"></a>profile <span class="op">=</span> pd.read_csv(<span class="st">"db/hmp2/article67/taxonomic_profiles.tsv.gz"</span>, sep<span class="op">=</span><span class="st">"</span><span class="ch">\t</span><span class="st">"</span>)</span>
-<span id="cb16-208"><a href="#cb16-208" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> pd.read_csv(<span class="st">"db/hmp2/article67/hmp2-metadata.csv"</span>, low_memory<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb16-209"><a href="#cb16-209" aria-hidden="true" tabindex="-1"></a>sample_ids <span class="op">=</span> profile.columns[<span class="dv">1</span>:].astype(<span class="bu">str</span>)</span>
-<span id="cb16-210"><a href="#cb16-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-211"><a href="#cb16-211" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> meta.loc[</span>
-<span id="cb16-212"><a href="#cb16-212" aria-hidden="true" tabindex="-1"></a>    meta[<span class="st">"data_type"</span>].eq(<span class="st">"metagenomics"</span>) <span class="op">&amp;</span></span>
-<span id="cb16-213"><a href="#cb16-213" aria-hidden="true" tabindex="-1"></a>    meta[<span class="st">"External ID"</span>].astype(<span class="bu">str</span>).isin(sample_ids)</span>
-<span id="cb16-214"><a href="#cb16-214" aria-hidden="true" tabindex="-1"></a>].copy()</span>
-<span id="cb16-215"><a href="#cb16-215" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"External ID"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].astype(<span class="bu">str</span>)</span>
-<span id="cb16-216"><a href="#cb16-216" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"TechnicalRerun"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].<span class="bu">str</span>.endswith(<span class="st">"_TR"</span>)</span>
-<span id="cb16-217"><a href="#cb16-217" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"PreferredP"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].<span class="bu">str</span>.endswith(<span class="st">"_P"</span>)</span>
-<span id="cb16-218"><a href="#cb16-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-219"><a href="#cb16-219" aria-hidden="true" tabindex="-1"></a>ranked <span class="op">=</span> meta.sort_values(</span>
-<span id="cb16-220"><a href="#cb16-220" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"site_sub_coll"</span>, <span class="st">"TechnicalRerun"</span>, <span class="st">"PreferredP"</span>,</span>
-<span id="cb16-221"><a href="#cb16-221" aria-hidden="true" tabindex="-1"></a>     <span class="st">"reads_filtered"</span>, <span class="st">"External ID"</span>],</span>
-<span id="cb16-222"><a href="#cb16-222" aria-hidden="true" tabindex="-1"></a>    ascending<span class="op">=</span>[<span class="va">True</span>, <span class="va">True</span>, <span class="va">False</span>, <span class="va">False</span>, <span class="va">True</span>]</span>
-<span id="cb16-223"><a href="#cb16-223" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-224"><a href="#cb16-224" aria-hidden="true" tabindex="-1"></a>ranked[<span class="st">"SelectionRank"</span>] <span class="op">=</span> ranked.groupby(<span class="st">"site_sub_coll"</span>).cumcount() <span class="op">+</span> <span class="dv">1</span></span>
-<span id="cb16-225"><a href="#cb16-225" aria-hidden="true" tabindex="-1"></a>primary <span class="op">=</span> ranked.loc[ranked[<span class="st">"SelectionRank"</span>].eq(<span class="dv">1</span>)].copy()</span>
-<span id="cb16-226"><a href="#cb16-226" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-227"><a href="#cb16-227" aria-hidden="true" tabindex="-1"></a>depth_pass <span class="op">=</span> primary.loc[primary[<span class="st">"reads_filtered"</span>].ge(<span class="dv">1_000_000</span>)].copy()</span>
-<span id="cb16-228"><a href="#cb16-228" aria-hidden="true" tabindex="-1"></a>visits <span class="op">=</span> depth_pass.groupby(<span class="st">"Participant ID"</span>).size()</span>
-<span id="cb16-229"><a href="#cb16-229" aria-hidden="true" tabindex="-1"></a>eligible <span class="op">=</span> depth_pass.loc[</span>
-<span id="cb16-230"><a href="#cb16-230" aria-hidden="true" tabindex="-1"></a>    depth_pass[<span class="st">"Participant ID"</span>].isin(visits[visits <span class="op">&gt;=</span> <span class="dv">4</span>].index)</span>
-<span id="cb16-231"><a href="#cb16-231" aria-hidden="true" tabindex="-1"></a>].copy()</span>
-<span id="cb16-232"><a href="#cb16-232" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> (<span class="bu">len</span>(meta), <span class="bu">len</span>(primary), <span class="bu">len</span>(eligible)) <span class="op">==</span> (<span class="dv">1638</span>, <span class="dv">1595</span>, <span class="dv">1523</span>)</span>
-<span id="cb16-233"><a href="#cb16-233" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-234"><a href="#cb16-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-235"><a href="#cb16-235" aria-hidden="true" tabindex="-1"></a>这条规则先去掉 43 个 profile-level duplicates；测序深度门槛再去掉 42 个 profiles；最后有 23 名受试者因不足 4 次合格随访而整体退出，但其中只有 30 个已通过深度门槛的 profiles，所以最终是 1,523 个样本。完整 <span class="in">`profile-selection-ledger.tsv`</span> 同时保留入选与排除行，不能只交最终矩阵。</span>
-<span id="cb16-236"><a href="#cb16-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-237"><a href="#cb16-237" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 1：把每次采样都当独立样本"}</span>
-<span id="cb16-238"><a href="#cb16-238" aria-hidden="true" tabindex="-1"></a>普通 t test、Wilcoxon、PERMANOVA 或 bootstrap 若忽略 subject cluster，会产生伪重复。至少按人聚类；训练/测试切分也必须保证同一人的所有时间点只在一侧。</span>
-<span id="cb16-239"><a href="#cb16-239" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-191"><a href="#cb16-191" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-192"><a href="#cb16-192" aria-hidden="true" tabindex="-1"></a>\operatorname{Cor}(y_{ij},y_{ik}) \neq 0, \qquad j\neq k.</span>
+<span id="cb16-193"><a href="#cb16-193" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-194"><a href="#cb16-194" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-195"><a href="#cb16-195" aria-hidden="true" tabindex="-1"></a>因此 1,523 次测量不能当作 1,523 个独立人。这里的层级是：</span>
+<span id="cb16-196"><a href="#cb16-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-197"><a href="#cb16-197" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**观测单位**：一次 stool metagenome；</span>
+<span id="cb16-198"><a href="#cb16-198" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**聚类/实验单位**：受试者；</span>
+<span id="cb16-199"><a href="#cb16-199" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**时间变化单位**：同一受试者相邻或成对的两次采样；</span>
+<span id="cb16-200"><a href="#cb16-200" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**bootstrap 单位**：受试者，而非样本或物种。</span>
+<span id="cb16-201"><a href="#cb16-201" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-202"><a href="#cb16-202" aria-hidden="true" tabindex="-1"></a>若直接对 1,523 行做普通线性回归，standard error 往往过小，显著性被夸大；若先把每个人压成一个均值，又会丢掉时间信息。mixed-effects model（混合效应模型）在二者之间保留了正确层级 <span class="co">[</span><span class="ot">@bates2015lme4; @kuznetsova2017lmertest</span><span class="co">]</span>。</span>
+<span id="cb16-203"><a href="#cb16-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-204"><a href="#cb16-204" aria-hidden="true" tabindex="-1"></a>同一 <span class="in">`site_sub_coll`</span> 可能有 <span class="in">`_TR`</span> technical rerun、<span class="in">`_P`</span> processing version 或其他重复。不能让文件系统顺序决定取舍，也不能事后挑“更符合预期”的 profile。下面的排序规则在查看结果前声明，并把所有入选/排除记录写入 ledger。</span>
+<span id="cb16-205"><a href="#cb16-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-208"><a href="#cb16-208" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb16-209"><a href="#cb16-209" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-210"><a href="#cb16-210" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb16-211"><a href="#cb16-211" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb16-212"><a href="#cb16-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-213"><a href="#cb16-213" aria-hidden="true" tabindex="-1"></a>profile <span class="op">=</span> pd.read_csv(<span class="st">"db/hmp2/article67/taxonomic_profiles.tsv.gz"</span>, sep<span class="op">=</span><span class="st">"</span><span class="ch">\t</span><span class="st">"</span>)</span>
+<span id="cb16-214"><a href="#cb16-214" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> pd.read_csv(<span class="st">"db/hmp2/article67/hmp2-metadata.csv"</span>, low_memory<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb16-215"><a href="#cb16-215" aria-hidden="true" tabindex="-1"></a>sample_ids <span class="op">=</span> profile.columns[<span class="dv">1</span>:].astype(<span class="bu">str</span>)</span>
+<span id="cb16-216"><a href="#cb16-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-217"><a href="#cb16-217" aria-hidden="true" tabindex="-1"></a>meta <span class="op">=</span> meta.loc[</span>
+<span id="cb16-218"><a href="#cb16-218" aria-hidden="true" tabindex="-1"></a>    meta[<span class="st">"data_type"</span>].eq(<span class="st">"metagenomics"</span>) <span class="op">&amp;</span></span>
+<span id="cb16-219"><a href="#cb16-219" aria-hidden="true" tabindex="-1"></a>    meta[<span class="st">"External ID"</span>].astype(<span class="bu">str</span>).isin(sample_ids)</span>
+<span id="cb16-220"><a href="#cb16-220" aria-hidden="true" tabindex="-1"></a>].copy()</span>
+<span id="cb16-221"><a href="#cb16-221" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"External ID"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].astype(<span class="bu">str</span>)</span>
+<span id="cb16-222"><a href="#cb16-222" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"TechnicalRerun"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].<span class="bu">str</span>.endswith(<span class="st">"_TR"</span>)</span>
+<span id="cb16-223"><a href="#cb16-223" aria-hidden="true" tabindex="-1"></a>meta[<span class="st">"PreferredP"</span>] <span class="op">=</span> meta[<span class="st">"External ID"</span>].<span class="bu">str</span>.endswith(<span class="st">"_P"</span>)</span>
+<span id="cb16-224"><a href="#cb16-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-225"><a href="#cb16-225" aria-hidden="true" tabindex="-1"></a>ranked <span class="op">=</span> meta.sort_values(</span>
+<span id="cb16-226"><a href="#cb16-226" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"site_sub_coll"</span>, <span class="st">"TechnicalRerun"</span>, <span class="st">"PreferredP"</span>,</span>
+<span id="cb16-227"><a href="#cb16-227" aria-hidden="true" tabindex="-1"></a>     <span class="st">"reads_filtered"</span>, <span class="st">"External ID"</span>],</span>
+<span id="cb16-228"><a href="#cb16-228" aria-hidden="true" tabindex="-1"></a>    ascending<span class="op">=</span>[<span class="va">True</span>, <span class="va">True</span>, <span class="va">False</span>, <span class="va">False</span>, <span class="va">True</span>]</span>
+<span id="cb16-229"><a href="#cb16-229" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-230"><a href="#cb16-230" aria-hidden="true" tabindex="-1"></a>ranked[<span class="st">"SelectionRank"</span>] <span class="op">=</span> ranked.groupby(<span class="st">"site_sub_coll"</span>).cumcount() <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb16-231"><a href="#cb16-231" aria-hidden="true" tabindex="-1"></a>primary <span class="op">=</span> ranked.loc[ranked[<span class="st">"SelectionRank"</span>].eq(<span class="dv">1</span>)].copy()</span>
+<span id="cb16-232"><a href="#cb16-232" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-233"><a href="#cb16-233" aria-hidden="true" tabindex="-1"></a>depth_pass <span class="op">=</span> primary.loc[primary[<span class="st">"reads_filtered"</span>].ge(<span class="dv">1_000_000</span>)].copy()</span>
+<span id="cb16-234"><a href="#cb16-234" aria-hidden="true" tabindex="-1"></a>visits <span class="op">=</span> depth_pass.groupby(<span class="st">"Participant ID"</span>).size()</span>
+<span id="cb16-235"><a href="#cb16-235" aria-hidden="true" tabindex="-1"></a>eligible <span class="op">=</span> depth_pass.loc[</span>
+<span id="cb16-236"><a href="#cb16-236" aria-hidden="true" tabindex="-1"></a>    depth_pass[<span class="st">"Participant ID"</span>].isin(visits[visits <span class="op">&gt;=</span> <span class="dv">4</span>].index)</span>
+<span id="cb16-237"><a href="#cb16-237" aria-hidden="true" tabindex="-1"></a>].copy()</span>
+<span id="cb16-238"><a href="#cb16-238" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> (<span class="bu">len</span>(meta), <span class="bu">len</span>(primary), <span class="bu">len</span>(eligible)) <span class="op">==</span> (<span class="dv">1638</span>, <span class="dv">1595</span>, <span class="dv">1523</span>)</span>
+<span id="cb16-239"><a href="#cb16-239" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-240"><a href="#cb16-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-241"><a href="#cb16-241" aria-hidden="true" tabindex="-1"></a><span class="fu">## 只取 terminal species，并在样本内重归一化</span></span>
+<span id="cb16-241"><a href="#cb16-241" aria-hidden="true" tabindex="-1"></a>这条规则先去掉 43 个 profile-level duplicates；测序深度门槛再去掉 42 个 profiles；最后有 23 名受试者因不足 4 次合格随访而整体退出，但其中只有 30 个已通过深度门槛的 profiles，所以最终是 1,523 个样本。完整 <span class="in">`profile-selection-ledger.tsv`</span> 同时保留入选与排除行，不能只交最终矩阵。</span>
 <span id="cb16-242"><a href="#cb16-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 合并表同时包含 kingdom 到 strain 的层级行。若把 genus、species 与 strain 一起求距离，会重复计算同一 read evidence。这里选择含 <span class="in">`s__`</span>、但不含 <span class="in">`t__`</span> 的 terminal species rows；移除全队列从未检出的行后剩 568 个 species，并在这个明确的 feature universe 内重归一化。</span>
-<span id="cb16-244"><a href="#cb16-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb16-248"><a href="#cb16-248" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a>taxon <span class="op">=</span> profile[<span class="st">"#SampleID"</span>].astype(<span class="bu">str</span>)</span>
-<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a>keep <span class="op">=</span> taxon.<span class="bu">str</span>.contains(<span class="vs">r"</span>(?:<span class="dv">^</span><span class="cf">|</span><span class="ch">\|</span>)<span class="vs">s__"</span>, regex<span class="op">=</span><span class="va">True</span>) <span class="op">&amp;</span> <span class="op">~</span>taxon.<span class="bu">str</span>.contains(</span>
-<span id="cb16-251"><a href="#cb16-251" aria-hidden="true" tabindex="-1"></a>    <span class="vs">r"</span><span class="ch">\|</span><span class="vs">t__"</span>, regex<span class="op">=</span><span class="va">True</span></span>
-<span id="cb16-252"><a href="#cb16-252" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-253"><a href="#cb16-253" aria-hidden="true" tabindex="-1"></a>species <span class="op">=</span> profile.loc[keep].set_index(<span class="st">"#SampleID"</span>)</span>
-<span id="cb16-254"><a href="#cb16-254" aria-hidden="true" tabindex="-1"></a>species <span class="op">=</span> species.loc[(species <span class="op">&gt;</span> <span class="dv">0</span>).<span class="bu">any</span>(axis<span class="op">=</span><span class="dv">1</span>), eligible[<span class="st">"External ID"</span>]]</span>
-<span id="cb16-255"><a href="#cb16-255" aria-hidden="true" tabindex="-1"></a>relative <span class="op">=</span> species.T</span>
-<span id="cb16-256"><a href="#cb16-256" aria-hidden="true" tabindex="-1"></a>relative <span class="op">=</span> relative.div(relative.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>), axis<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb16-257"><a href="#cb16-257" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> relative.shape <span class="op">==</span> (<span class="dv">1523</span>, <span class="dv">568</span>)</span>
-<span id="cb16-258"><a href="#cb16-258" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.allclose(relative.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>), <span class="fl">1.0</span>)</span>
-<span id="cb16-259"><a href="#cb16-259" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-260"><a href="#cb16-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-261"><a href="#cb16-261" aria-hidden="true" tabindex="-1"></a>这是原版 profile 的纵向再分析，不是用 MetaPhlAn 4 重跑的现代结果。若升级 taxonomy database，必须把新旧 profile 作为两个版本并行比较，不能静默覆盖。</span>
-<span id="cb16-262"><a href="#cb16-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-263"><a href="#cb16-263" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实保留了什么 {#sec-audit}</span></span>
-<span id="cb16-264"><a href="#cb16-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-265"><a href="#cb16-265" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>使用 HMP2 原版 MGX taxonomic product 与 2018-08-20 metadata，不用现代 MetaPhlAn 重跑静默替换原结果；</span>
-<span id="cb16-266"><a href="#cb16-266" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>保留论文 Figure 3 的核心问题：时间间隔与 Bray--Curtis、dysbiotic periods、*P. copri* individual trajectories；</span>
-<span id="cb16-267"><a href="#cb16-267" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>profile-level 原始规模 1,638、biospecimen-level 规模 1,595 与 subject count 130 都与公开数据契约一致；</span>
-<span id="cb16-268"><a href="#cb16-268" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 只重编码图内英文：<span class="in">`nonIBD → Control`</span>，不改变原 metadata；</span>
-<span id="cb16-269"><a href="#cb16-269" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>固定 0.54 明确标为 sensitivity analysis，不称为论文原 shift caller。</span>
+<span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 1：把每次采样都当独立样本"}</span>
+<span id="cb16-244"><a href="#cb16-244" aria-hidden="true" tabindex="-1"></a>普通 t test、Wilcoxon、PERMANOVA 或 bootstrap 若忽略 subject cluster，会产生伪重复。至少按人聚类；训练/测试切分也必须保证同一人的所有时间点只在一侧。</span>
+<span id="cb16-245"><a href="#cb16-245" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-246"><a href="#cb16-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a><span class="fu">## 只取 terminal species，并在样本内重归一化</span></span>
+<span id="cb16-248"><a href="#cb16-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 合并表同时包含 kingdom 到 strain 的层级行。若把 genus、species 与 strain 一起求距离，会重复计算同一 read evidence。这里选择含 <span class="in">`s__`</span>、但不含 <span class="in">`t__`</span> 的 terminal species rows；移除全队列从未检出的行后剩 568 个 species，并在这个明确的 feature universe 内重归一化。</span>
+<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-253"><a href="#cb16-253" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb16-254"><a href="#cb16-254" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-255"><a href="#cb16-255" aria-hidden="true" tabindex="-1"></a>taxon <span class="op">=</span> profile[<span class="st">"#SampleID"</span>].astype(<span class="bu">str</span>)</span>
+<span id="cb16-256"><a href="#cb16-256" aria-hidden="true" tabindex="-1"></a>keep <span class="op">=</span> taxon.<span class="bu">str</span>.contains(<span class="vs">r"</span>(?:<span class="dv">^</span><span class="cf">|</span><span class="ch">\|</span>)<span class="vs">s__"</span>, regex<span class="op">=</span><span class="va">True</span>) <span class="op">&amp;</span> <span class="op">~</span>taxon.<span class="bu">str</span>.contains(</span>
+<span id="cb16-257"><a href="#cb16-257" aria-hidden="true" tabindex="-1"></a>    <span class="vs">r"</span><span class="ch">\|</span><span class="vs">t__"</span>, regex<span class="op">=</span><span class="va">True</span></span>
+<span id="cb16-258"><a href="#cb16-258" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-259"><a href="#cb16-259" aria-hidden="true" tabindex="-1"></a>species <span class="op">=</span> profile.loc[keep].set_index(<span class="st">"#SampleID"</span>)</span>
+<span id="cb16-260"><a href="#cb16-260" aria-hidden="true" tabindex="-1"></a>species <span class="op">=</span> species.loc[(species <span class="op">&gt;</span> <span class="dv">0</span>).<span class="bu">any</span>(axis<span class="op">=</span><span class="dv">1</span>), eligible[<span class="st">"External ID"</span>]]</span>
+<span id="cb16-261"><a href="#cb16-261" aria-hidden="true" tabindex="-1"></a>relative <span class="op">=</span> species.T</span>
+<span id="cb16-262"><a href="#cb16-262" aria-hidden="true" tabindex="-1"></a>relative <span class="op">=</span> relative.div(relative.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>), axis<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb16-263"><a href="#cb16-263" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> relative.shape <span class="op">==</span> (<span class="dv">1523</span>, <span class="dv">568</span>)</span>
+<span id="cb16-264"><a href="#cb16-264" aria-hidden="true" tabindex="-1"></a><span class="cf">assert</span> np.allclose(relative.<span class="bu">sum</span>(axis<span class="op">=</span><span class="dv">1</span>), <span class="fl">1.0</span>)</span>
+<span id="cb16-265"><a href="#cb16-265" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-266"><a href="#cb16-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-267"><a href="#cb16-267" aria-hidden="true" tabindex="-1"></a>这是原版 profile 的纵向再分析，不是用 MetaPhlAn 4 重跑的现代结果。若升级 taxonomy database，必须把新旧 profile 作为两个版本并行比较，不能静默覆盖。</span>
+<span id="cb16-268"><a href="#cb16-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-269"><a href="#cb16-269" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实保留了什么 {#sec-audit}</span></span>
 <span id="cb16-270"><a href="#cb16-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-271"><a href="#cb16-271" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 2：先看轨迹，再挑最‘戏剧化’的人做检验"}</span>
-<span id="cb16-272"><a href="#cb16-272" aria-hidden="true" tabindex="-1"></a>按方差选出的 *P. copri* 轨迹是描述性展示。若再在这些人上检验变化，属于 double dipping。推断必须回到预声明的全队列模型或独立验证集。</span>
-<span id="cb16-273"><a href="#cb16-273" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-274"><a href="#cb16-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-275"><a href="#cb16-275" aria-hidden="true" tabindex="-1"></a><span class="fu">## 构造可解释的 dysbiosis score</span></span>
+<span id="cb16-271"><a href="#cb16-271" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>使用 HMP2 原版 MGX taxonomic product 与 2018-08-20 metadata，不用现代 MetaPhlAn 重跑静默替换原结果；</span>
+<span id="cb16-272"><a href="#cb16-272" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>保留论文 Figure 3 的核心问题：时间间隔与 Bray--Curtis、dysbiotic periods、*P. copri* individual trajectories；</span>
+<span id="cb16-273"><a href="#cb16-273" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>profile-level 原始规模 1,638、biospecimen-level 规模 1,595 与 subject count 130 都与公开数据契约一致；</span>
+<span id="cb16-274"><a href="#cb16-274" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 只重编码图内英文：<span class="in">`nonIBD → Control`</span>，不改变原 metadata；</span>
+<span id="cb16-275"><a href="#cb16-275" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>固定 0.54 明确标为 sensitivity analysis，不称为论文原 shift caller。</span>
 <span id="cb16-276"><a href="#cb16-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-277"><a href="#cb16-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### “群落转换”必须先定义 estimand，再选择阈值</span></span>
-<span id="cb16-278"><a href="#cb16-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-279"><a href="#cb16-279" aria-hidden="true" tabindex="-1"></a>原论文依据 healthy reference distribution 与 time-lag relationship 识别 taxonomic shifts，并在扩展数据中讨论 2-week Bray--Curtis 约 0.54 的界限 <span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span>。本章没有把固定 0.54 冒充原始 lag-dependent caller，而是预先声明一个更窄的问题：</span>
+<span id="cb16-277"><a href="#cb16-277" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 2：先看轨迹，再挑最‘戏剧化’的人做检验"}</span>
+<span id="cb16-278"><a href="#cb16-278" aria-hidden="true" tabindex="-1"></a>按方差选出的 *P. copri* 轨迹是描述性展示。若再在这些人上检验变化，属于 double dipping。推断必须回到预声明的全队列模型或独立验证集。</span>
+<span id="cb16-279"><a href="#cb16-279" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-280"><a href="#cb16-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-281"><a href="#cb16-281" aria-hidden="true" tabindex="-1"></a>$$</span>
-<span id="cb16-282"><a href="#cb16-282" aria-hidden="true" tabindex="-1"></a>\text{Shift}_{ij}=I(1\le \Delta t_{ij}\le3 \ \text{weeks})</span>
-<span id="cb16-283"><a href="#cb16-283" aria-hidden="true" tabindex="-1"></a>\times I(BC_{ij}&gt;0.54).</span>
-<span id="cb16-284"><a href="#cb16-284" aria-hidden="true" tabindex="-1"></a>$$</span>
-<span id="cb16-285"><a href="#cb16-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-286"><a href="#cb16-286" aria-hidden="true" tabindex="-1"></a>它只回答“在 1--3 周相邻样本中，超过固定 0.54 的比例是多少”。CD、UC 与 control 分别出现 63/454、26/270、34/281 个事件；图上的 diamonds 和 CI 均按受试者等权，不用 interval 数冒充独立样本。</span>
-<span id="cb16-287"><a href="#cb16-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-288"><a href="#cb16-288" aria-hidden="true" tabindex="-1"></a><span class="al">![固定 0.54 只作为 short-interval sensitivity analysis。散点是一位受试者的 event fraction，菱形为主体均值，误差线为主体级 bootstrap 95% CI。](../figures/67-short-interval-shifts.png)</span>{#fig-67-shifts}</span>
-<span id="cb16-289"><a href="#cb16-289" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-290"><a href="#cb16-290" aria-hidden="true" tabindex="-1"></a>用 week ≥20 的 control samples 作为 reference pool（207 samples、26 subjects）。每个样本的 score 是它到 reference profiles 的 Bray--Curtis distance 中位数；若样本自身属于 reference pool，先删去 self-distance。dysbiotic threshold 定义为所有合格 control sample scores 的第 90 百分位，即 0.832358。</span>
+<span id="cb16-281"><a href="#cb16-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## 构造可解释的 dysbiosis score</span></span>
+<span id="cb16-282"><a href="#cb16-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-283"><a href="#cb16-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### “群落转换”必须先定义 estimand，再选择阈值</span></span>
+<span id="cb16-284"><a href="#cb16-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-285"><a href="#cb16-285" aria-hidden="true" tabindex="-1"></a>原论文依据 healthy reference distribution 与 time-lag relationship 识别 taxonomic shifts，并在扩展数据中讨论 2-week Bray--Curtis 约 0.54 的界限 <span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span>。本章没有把固定 0.54 冒充原始 lag-dependent caller，而是预先声明一个更窄的问题：</span>
+<span id="cb16-286"><a href="#cb16-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-287"><a href="#cb16-287" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-288"><a href="#cb16-288" aria-hidden="true" tabindex="-1"></a>\text{Shift}_{ij}=I(1\le \Delta t_{ij}\le3 \ \text{weeks})</span>
+<span id="cb16-289"><a href="#cb16-289" aria-hidden="true" tabindex="-1"></a>\times I(BC_{ij}&gt;0.54).</span>
+<span id="cb16-290"><a href="#cb16-290" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb16-291"><a href="#cb16-291" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-294"><a href="#cb16-294" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb16-295"><a href="#cb16-295" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-296"><a href="#cb16-296" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.spatial.distance <span class="im">import</span> cdist</span>
+<span id="cb16-292"><a href="#cb16-292" aria-hidden="true" tabindex="-1"></a>它只回答“在 1--3 周相邻样本中，超过固定 0.54 的比例是多少”。CD、UC 与 control 分别出现 63/454、26/270、34/281 个事件；图上的 diamonds 和 CI 均按受试者等权，不用 interval 数冒充独立样本。</span>
+<span id="cb16-293"><a href="#cb16-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-294"><a href="#cb16-294" aria-hidden="true" tabindex="-1"></a><span class="al">![固定 0.54 只作为 short-interval sensitivity analysis。散点是一位受试者的 event fraction，菱形为主体均值，误差线为主体级 bootstrap 95% CI。](../figures/67-short-interval-shifts.png)</span>{#fig-67-shifts}</span>
+<span id="cb16-295"><a href="#cb16-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-296"><a href="#cb16-296" aria-hidden="true" tabindex="-1"></a>用 week ≥20 的 control samples 作为 reference pool（207 samples、26 subjects）。每个样本的 score 是它到 reference profiles 的 Bray--Curtis distance 中位数；若样本自身属于 reference pool，先删去 self-distance。dysbiotic threshold 定义为所有合格 control sample scores 的第 90 百分位，即 0.832358。</span>
 <span id="cb16-297"><a href="#cb16-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-298"><a href="#cb16-298" aria-hidden="true" tabindex="-1"></a>reference_ids <span class="op">=</span> sample.loc[</span>
-<span id="cb16-299"><a href="#cb16-299" aria-hidden="true" tabindex="-1"></a>    sample[<span class="st">"Diagnosis"</span>].eq(<span class="st">"Control"</span>) <span class="op">&amp;</span> sample[<span class="st">"Week"</span>].ge(<span class="dv">20</span>), <span class="st">"SampleID"</span></span>
-<span id="cb16-300"><a href="#cb16-300" aria-hidden="true" tabindex="-1"></a>]</span>
-<span id="cb16-301"><a href="#cb16-301" aria-hidden="true" tabindex="-1"></a>distance <span class="op">=</span> cdist(relative, relative.loc[reference_ids], metric<span class="op">=</span><span class="st">"braycurtis"</span>)</span>
-<span id="cb16-302"><a href="#cb16-302" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-303"><a href="#cb16-303" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> []</span>
-<span id="cb16-304"><a href="#cb16-304" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row, sample_id <span class="kw">in</span> <span class="bu">enumerate</span>(relative.index):</span>
-<span id="cb16-305"><a href="#cb16-305" aria-hidden="true" tabindex="-1"></a>    values <span class="op">=</span> distance[row].copy()</span>
-<span id="cb16-306"><a href="#cb16-306" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sample_id <span class="kw">in</span> <span class="bu">set</span>(reference_ids):</span>
-<span id="cb16-307"><a href="#cb16-307" aria-hidden="true" tabindex="-1"></a>        values[<span class="bu">list</span>(reference_ids).index(sample_id)] <span class="op">=</span> np.nan</span>
-<span id="cb16-308"><a href="#cb16-308" aria-hidden="true" tabindex="-1"></a>    scores.append(np.nanmedian(values))</span>
-<span id="cb16-309"><a href="#cb16-309" aria-hidden="true" tabindex="-1"></a>sample[<span class="st">"DysbiosisScore"</span>] <span class="op">=</span> scores</span>
-<span id="cb16-310"><a href="#cb16-310" aria-hidden="true" tabindex="-1"></a>threshold <span class="op">=</span> sample.loc[</span>
-<span id="cb16-311"><a href="#cb16-311" aria-hidden="true" tabindex="-1"></a>    sample[<span class="st">"Diagnosis"</span>].eq(<span class="st">"Control"</span>), <span class="st">"DysbiosisScore"</span></span>
-<span id="cb16-312"><a href="#cb16-312" aria-hidden="true" tabindex="-1"></a>].quantile(<span class="fl">0.90</span>)</span>
-<span id="cb16-313"><a href="#cb16-313" aria-hidden="true" tabindex="-1"></a>sample[<span class="st">"Dysbiotic"</span>] <span class="op">=</span> sample[<span class="st">"DysbiosisScore"</span>] <span class="op">&gt;</span> threshold</span>
-<span id="cb16-314"><a href="#cb16-314" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-315"><a href="#cb16-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-316"><a href="#cb16-316" aria-hidden="true" tabindex="-1"></a>该 reference score 是透明、可复算的 reanalysis estimand，不声称逐位复原原论文的 dysbiosis classifier。主分析中 control、CD、UC 的 dysbiotic sample fraction 分别为 10.0%、25.5%、12.8%；这些是 sample fractions，不是“25.5% 的 CD 患者持续 dysbiotic”。</span>
-<span id="cb16-317"><a href="#cb16-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-318"><a href="#cb16-318" aria-hidden="true" tabindex="-1"></a><span class="al">![每条淡线是一位受试者，粗线与带状区域是 fixed-effect marginal prediction 及 95% CI，金色 X 表示当次 metadata 记录 antibiotics=yes。虚线为 control score 的第 90 百分位。](../figures/67-dysbiosis-trajectories.png)</span>{#fig-67-dysbiosis}</span>
-<span id="cb16-319"><a href="#cb16-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-320"><a href="#cb16-320" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 3：把采样序号当真实时间"}</span>
-<span id="cb16-321"><a href="#cb16-321" aria-hidden="true" tabindex="-1"></a>第 3 次到第 4 次可能隔 1 周，也可能隔 10 周。用真实日期或 week；若日期只精确到区间，应考虑 interval censoring，而不是伪造一个精确时间点。</span>
-<span id="cb16-322"><a href="#cb16-322" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-300"><a href="#cb16-300" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb16-301"><a href="#cb16-301" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-302"><a href="#cb16-302" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> scipy.spatial.distance <span class="im">import</span> cdist</span>
+<span id="cb16-303"><a href="#cb16-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-304"><a href="#cb16-304" aria-hidden="true" tabindex="-1"></a>reference_ids <span class="op">=</span> sample.loc[</span>
+<span id="cb16-305"><a href="#cb16-305" aria-hidden="true" tabindex="-1"></a>    sample[<span class="st">"Diagnosis"</span>].eq(<span class="st">"Control"</span>) <span class="op">&amp;</span> sample[<span class="st">"Week"</span>].ge(<span class="dv">20</span>), <span class="st">"SampleID"</span></span>
+<span id="cb16-306"><a href="#cb16-306" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb16-307"><a href="#cb16-307" aria-hidden="true" tabindex="-1"></a>distance <span class="op">=</span> cdist(relative, relative.loc[reference_ids], metric<span class="op">=</span><span class="st">"braycurtis"</span>)</span>
+<span id="cb16-308"><a href="#cb16-308" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-309"><a href="#cb16-309" aria-hidden="true" tabindex="-1"></a>scores <span class="op">=</span> []</span>
+<span id="cb16-310"><a href="#cb16-310" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> row, sample_id <span class="kw">in</span> <span class="bu">enumerate</span>(relative.index):</span>
+<span id="cb16-311"><a href="#cb16-311" aria-hidden="true" tabindex="-1"></a>    values <span class="op">=</span> distance[row].copy()</span>
+<span id="cb16-312"><a href="#cb16-312" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> sample_id <span class="kw">in</span> <span class="bu">set</span>(reference_ids):</span>
+<span id="cb16-313"><a href="#cb16-313" aria-hidden="true" tabindex="-1"></a>        values[<span class="bu">list</span>(reference_ids).index(sample_id)] <span class="op">=</span> np.nan</span>
+<span id="cb16-314"><a href="#cb16-314" aria-hidden="true" tabindex="-1"></a>    scores.append(np.nanmedian(values))</span>
+<span id="cb16-315"><a href="#cb16-315" aria-hidden="true" tabindex="-1"></a>sample[<span class="st">"DysbiosisScore"</span>] <span class="op">=</span> scores</span>
+<span id="cb16-316"><a href="#cb16-316" aria-hidden="true" tabindex="-1"></a>threshold <span class="op">=</span> sample.loc[</span>
+<span id="cb16-317"><a href="#cb16-317" aria-hidden="true" tabindex="-1"></a>    sample[<span class="st">"Diagnosis"</span>].eq(<span class="st">"Control"</span>), <span class="st">"DysbiosisScore"</span></span>
+<span id="cb16-318"><a href="#cb16-318" aria-hidden="true" tabindex="-1"></a>].quantile(<span class="fl">0.90</span>)</span>
+<span id="cb16-319"><a href="#cb16-319" aria-hidden="true" tabindex="-1"></a>sample[<span class="st">"Dysbiotic"</span>] <span class="op">=</span> sample[<span class="st">"DysbiosisScore"</span>] <span class="op">&gt;</span> threshold</span>
+<span id="cb16-320"><a href="#cb16-320" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-321"><a href="#cb16-321" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-322"><a href="#cb16-322" aria-hidden="true" tabindex="-1"></a>该 reference score 是透明、可复算的 reanalysis estimand，不声称逐位复原原论文的 dysbiosis classifier。主分析中 control、CD、UC 的 dysbiotic sample fraction 分别为 10.0%、25.5%、12.8%；这些是 sample fractions，不是“25.5% 的 CD 患者持续 dysbiotic”。</span>
 <span id="cb16-323"><a href="#cb16-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-324"><a href="#cb16-324" aria-hidden="true" tabindex="-1"></a><span class="fu">## 拟合主模型，并结果核对随机效应结构</span></span>
+<span id="cb16-324"><a href="#cb16-324" aria-hidden="true" tabindex="-1"></a><span class="al">![每条淡线是一位受试者，粗线与带状区域是 fixed-effect marginal prediction 及 95% CI，金色 X 表示当次 metadata 记录 antibiotics=yes。虚线为 control score 的第 90 百分位。](../figures/67-dysbiosis-trajectories.png)</span>{#fig-67-dysbiosis}</span>
 <span id="cb16-325"><a href="#cb16-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-326"><a href="#cb16-326" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不规则采样时间不能强行改成“第 1、2、3 次”</span></span>
-<span id="cb16-327"><a href="#cb16-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-328"><a href="#cb16-328" aria-hidden="true" tabindex="-1"></a>HMP2 的采样间隔并不完全相等。把 visit number 当连续时间会把 1 周和 8 周的间隔视为相同。这里始终使用真实 <span class="in">`week_num`</span>：</span>
+<span id="cb16-326"><a href="#cb16-326" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 3：把采样序号当真实时间"}</span>
+<span id="cb16-327"><a href="#cb16-327" aria-hidden="true" tabindex="-1"></a>第 3 次到第 4 次可能隔 1 周，也可能隔 10 周。用真实日期或 week；若日期只精确到区间，应考虑 interval censoring，而不是伪造一个精确时间点。</span>
+<span id="cb16-328"><a href="#cb16-328" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-329"><a href="#cb16-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-330"><a href="#cb16-330" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>trajectory model 使用连续 study week；</span>
-<span id="cb16-331"><a href="#cb16-331" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>lag analysis 将所有正时间差分为 <span class="in">`0–2`</span>, <span class="in">`&gt;2–4`</span>, <span class="in">`&gt;4–8`</span>, <span class="in">`&gt;8–16`</span>, <span class="in">`&gt;16–32`</span>, <span class="in">`&gt;32–60`</span> weeks；</span>
-<span id="cb16-332"><a href="#cb16-332" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>short-interval sensitivity analysis 只用间隔 1--3 周的相邻合格样本。</span>
+<span id="cb16-330"><a href="#cb16-330" aria-hidden="true" tabindex="-1"></a><span class="fu">## 拟合主模型，并结果核对随机效应结构</span></span>
+<span id="cb16-331"><a href="#cb16-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-332"><a href="#cb16-332" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不规则采样时间不能强行改成“第 1、2、3 次”</span></span>
 <span id="cb16-333"><a href="#cb16-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-334"><a href="#cb16-334" aria-hidden="true" tabindex="-1"></a>在每个 lag bin 内先对每位受试者的所有 pairwise distances 取中位数，再跨受试者取中位数和 subject bootstrap 95% CI。这样采样 24 次的人不会仅凭 pair 数量压过采样 5 次的人。</span>
+<span id="cb16-334"><a href="#cb16-334" aria-hidden="true" tabindex="-1"></a>HMP2 的采样间隔并不完全相等。把 visit number 当连续时间会把 1 周和 8 周的间隔视为相同。这里始终使用真实 <span class="in">`week_num`</span>：</span>
 <span id="cb16-335"><a href="#cb16-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-336"><a href="#cb16-336" aria-hidden="true" tabindex="-1"></a><span class="al">![时间间隔越长，主体等权的 Bray--Curtis 中位数整体越高。点是跨主体中位数，误差线是 2,000 次主体级 bootstrap 95% CI。](../figures/67-lag-stability.png)</span>{#fig-67-lag}</span>
-<span id="cb16-337"><a href="#cb16-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-338"><a href="#cb16-338" aria-hidden="true" tabindex="-1"></a>模型用 week 26 为中心、每 52 周为 1 单位。<span class="in">`Diagnosis`</span> 以 control 为 reference；<span class="in">`Antibiotics`</span> 以 No 为 reference。先固定 factor levels，避免不同机器因字母排序改变系数含义。</span>
+<span id="cb16-336"><a href="#cb16-336" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>trajectory model 使用连续 study week；</span>
+<span id="cb16-337"><a href="#cb16-337" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>lag analysis 将所有正时间差分为 <span class="in">`0–2`</span>, <span class="in">`&gt;2–4`</span>, <span class="in">`&gt;4–8`</span>, <span class="in">`&gt;8–16`</span>, <span class="in">`&gt;16–32`</span>, <span class="in">`&gt;32–60`</span> weeks；</span>
+<span id="cb16-338"><a href="#cb16-338" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>short-interval sensitivity analysis 只用间隔 1--3 周的相邻合格样本。</span>
 <span id="cb16-339"><a href="#cb16-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-342"><a href="#cb16-342" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-343"><a href="#cb16-343" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">TZ =</span> <span class="st">"UTC"</span>)</span>
-<span id="cb16-344"><a href="#cb16-344" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">67001</span>)</span>
-<span id="cb16-345"><a href="#cb16-345" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>({</span>
-<span id="cb16-346"><a href="#cb16-346" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(lme4)</span>
-<span id="cb16-347"><a href="#cb16-347" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(lmerTest)</span>
-<span id="cb16-348"><a href="#cb16-348" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb16-349"><a href="#cb16-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-350"><a href="#cb16-350" aria-hidden="true" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(</span>
-<span id="cb16-351"><a href="#cb16-351" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/67-longitudinal-frozen/sample-ledger.tsv"</span>,</span>
-<span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
-<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>Diagnosis <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>Diagnosis, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Control"</span>, <span class="st">"CD"</span>, <span class="st">"UC"</span>))</span>
-<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>Antibiotics <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>Antibiotics, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"No"</span>, <span class="st">"Yes"</span>))</span>
-<span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>SubjectID <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>SubjectID)</span>
-<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a>control <span class="ot">&lt;-</span> <span class="fu">lmerControl</span>(</span>
-<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a>  <span class="at">optimizer =</span> <span class="st">"bobyqa"</span>, <span class="at">optCtrl =</span> <span class="fu">list</span>(<span class="at">maxfun =</span> <span class="dv">200000</span>),</span>
-<span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.conv.singular =</span> <span class="st">"ignore"</span></span>
-<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> lmerTest<span class="sc">::</span><span class="fu">lmer</span>(</span>
-<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a>  DysbiosisScore <span class="sc">~</span> Diagnosis <span class="sc">*</span> WeekYearCentered <span class="sc">+</span> Antibiotics <span class="sc">+</span></span>
-<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a>    Log10ReadsCentered <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">+</span> WeekYearCentered <span class="sc">|</span> SubjectID),</span>
-<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> sample, <span class="at">REML =</span> <span class="cn">TRUE</span>, <span class="at">control =</span> control</span>
-<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span>lme4<span class="sc">::</span><span class="fu">isSingular</span>(model))</span>
-<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a>fixed <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">coef</span>(<span class="fu">summary</span>(model)))</span>
-<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>fixed<span class="sc">$</span>Term <span class="ot">&lt;-</span> <span class="fu">rownames</span>(fixed)</span>
-<span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a>fixed <span class="ot">&lt;-</span> fixed[, <span class="fu">c</span>(<span class="st">"Term"</span>, <span class="st">"Estimate"</span>, <span class="st">"Std. Error"</span>, <span class="st">"df"</span>, <span class="st">"Pr(&gt;|t|)"</span>)]</span>
-<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(fixed, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">"主体随机截距+时间随机斜率 LMM"</span>)</span>
-<span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-340"><a href="#cb16-340" aria-hidden="true" tabindex="-1"></a>在每个 lag bin 内先对每位受试者的所有 pairwise distances 取中位数，再跨受试者取中位数和 subject bootstrap 95% CI。这样采样 24 次的人不会仅凭 pair 数量压过采样 5 次的人。</span>
+<span id="cb16-341"><a href="#cb16-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-342"><a href="#cb16-342" aria-hidden="true" tabindex="-1"></a><span class="al">![时间间隔越长，主体等权的 Bray--Curtis 中位数整体越高。点是跨主体中位数，误差线是 2,000 次主体级 bootstrap 95% CI。](../figures/67-lag-stability.png)</span>{#fig-67-lag}</span>
+<span id="cb16-343"><a href="#cb16-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-344"><a href="#cb16-344" aria-hidden="true" tabindex="-1"></a>模型用 week 26 为中心、每 52 周为 1 单位。<span class="in">`Diagnosis`</span> 以 control 为 reference；<span class="in">`Antibiotics`</span> 以 No 为 reference。先固定 factor levels，避免不同机器因字母排序改变系数含义。</span>
+<span id="cb16-345"><a href="#cb16-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-348"><a href="#cb16-348" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-349"><a href="#cb16-349" aria-hidden="true" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">TZ =</span> <span class="st">"UTC"</span>)</span>
+<span id="cb16-350"><a href="#cb16-350" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">67001</span>)</span>
+<span id="cb16-351"><a href="#cb16-351" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>({</span>
+<span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(lme4)</span>
+<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(lmerTest)</span>
+<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(</span>
+<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/67-longitudinal-frozen/sample-ledger.tsv"</span>,</span>
+<span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.names =</span> <span class="cn">FALSE</span></span>
+<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>Diagnosis <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>Diagnosis, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Control"</span>, <span class="st">"CD"</span>, <span class="st">"UC"</span>))</span>
+<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>Antibiotics <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>Antibiotics, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"No"</span>, <span class="st">"Yes"</span>))</span>
+<span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a>sample<span class="sc">$</span>SubjectID <span class="ot">&lt;-</span> <span class="fu">factor</span>(sample<span class="sc">$</span>SubjectID)</span>
+<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a>control <span class="ot">&lt;-</span> <span class="fu">lmerControl</span>(</span>
+<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a>  <span class="at">optimizer =</span> <span class="st">"bobyqa"</span>, <span class="at">optCtrl =</span> <span class="fu">list</span>(<span class="at">maxfun =</span> <span class="dv">200000</span>),</span>
+<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">check.conv.singular =</span> <span class="st">"ignore"</span></span>
+<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> lmerTest<span class="sc">::</span><span class="fu">lmer</span>(</span>
+<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a>  DysbiosisScore <span class="sc">~</span> Diagnosis <span class="sc">*</span> WeekYearCentered <span class="sc">+</span> Antibiotics <span class="sc">+</span></span>
+<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>    Log10ReadsCentered <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">+</span> WeekYearCentered <span class="sc">|</span> SubjectID),</span>
+<span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> sample, <span class="at">REML =</span> <span class="cn">TRUE</span>, <span class="at">control =</span> control</span>
+<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span>lme4<span class="sc">::</span><span class="fu">isSingular</span>(model))</span>
 <span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a>主模型的关键估计为：CD vs control at week 26 = 0.0514（95% CI 0.0182--0.0846，Satterthwaite $P=0.0030$）；antibiotics yes = 0.0322（95% CI 0.0218--0.0427，$P=1.97\times10^{-9}$）；CD × time = 0.0424/year（95% CI 0.0065--0.0783，$P=0.0228$）。Kenward--Roger Type III tests 对 diagnosis、antibiotics、diagnosis × time 给出 $P=0.00785$、$2.19\times10^{-9}$、0.0490。</span>
-<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a>这些结果描述在当前模型、reference score 和完整病例规则下的关联。antibiotics 可能是疾病活动、住院或其他治疗的 marker；没有 treatment initiation、适应证与 time-varying confounder 设计时，不写成“抗生素导致 dysbiosis”。</span>
-<span id="cb16-378"><a href="#cb16-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-379"><a href="#cb16-379" aria-hidden="true" tabindex="-1"></a><span class="fu">## 按主体等权计算 lag、shift 与 retention</span></span>
+<span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a>fixed <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(<span class="fu">coef</span>(<span class="fu">summary</span>(model)))</span>
+<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>fixed<span class="sc">$</span>Term <span class="ot">&lt;-</span> <span class="fu">rownames</span>(fixed)</span>
+<span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a>fixed <span class="ot">&lt;-</span> fixed[, <span class="fu">c</span>(<span class="st">"Term"</span>, <span class="st">"Estimate"</span>, <span class="st">"Std. Error"</span>, <span class="st">"df"</span>, <span class="st">"Pr(&gt;|t|)"</span>)]</span>
+<span id="cb16-378"><a href="#cb16-378" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(fixed, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">"主体随机截距+时间随机斜率 LMM"</span>)</span>
+<span id="cb16-379"><a href="#cb16-379" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-380"><a href="#cb16-380" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-383"><a href="#cb16-383" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
-<span id="cb16-384"><a href="#cb16-384" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-385"><a href="#cb16-385" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.random <span class="im">import</span> default_rng</span>
+<span id="cb16-381"><a href="#cb16-381" aria-hidden="true" tabindex="-1"></a>主模型的关键估计为：CD vs control at week 26 = 0.0514（95% CI 0.0182--0.0846，Satterthwaite $P=0.0030$）；antibiotics yes = 0.0322（95% CI 0.0218--0.0427，$P=1.97\times10^{-9}$）；CD × time = 0.0424/year（95% CI 0.0065--0.0783，$P=0.0228$）。Kenward--Roger Type III tests 对 diagnosis、antibiotics、diagnosis × time 给出 $P=0.00785$、$2.19\times10^{-9}$、0.0490。</span>
+<span id="cb16-382"><a href="#cb16-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-383"><a href="#cb16-383" aria-hidden="true" tabindex="-1"></a>这些结果描述在当前模型、reference score 和完整病例规则下的关联。antibiotics 可能是疾病活动、住院或其他治疗的 marker；没有 treatment initiation、适应证与 time-varying confounder 设计时，不写成“抗生素导致 dysbiosis”。</span>
+<span id="cb16-384"><a href="#cb16-384" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-385"><a href="#cb16-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 按主体等权计算 lag、shift 与 retention</span></span>
 <span id="cb16-386"><a href="#cb16-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-387"><a href="#cb16-387" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> default_rng(<span class="dv">67001</span>)</span>
-<span id="cb16-388"><a href="#cb16-388" aria-hidden="true" tabindex="-1"></a>lag_bins <span class="op">=</span> [<span class="op">-</span>np.inf, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">16</span>, <span class="dv">32</span>, <span class="dv">60</span>]</span>
-<span id="cb16-389"><a href="#cb16-389" aria-hidden="true" tabindex="-1"></a>lag_labels <span class="op">=</span> [<span class="st">"0–2"</span>, <span class="st">"&gt;2–4"</span>, <span class="st">"&gt;4–8"</span>, <span class="st">"&gt;8–16"</span>, <span class="st">"&gt;16–32"</span>, <span class="st">"&gt;32–60"</span>]</span>
-<span id="cb16-390"><a href="#cb16-390" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-391"><a href="#cb16-391" aria-hidden="true" tabindex="-1"></a><span class="co"># pairs: 同一受试者所有正时间差的样本对</span></span>
-<span id="cb16-392"><a href="#cb16-392" aria-hidden="true" tabindex="-1"></a>pairs[<span class="st">"LagBin"</span>] <span class="op">=</span> pd.cut(</span>
-<span id="cb16-393"><a href="#cb16-393" aria-hidden="true" tabindex="-1"></a>    pairs[<span class="st">"LagWeeks"</span>], bins<span class="op">=</span>lag_bins, labels<span class="op">=</span>lag_labels, right<span class="op">=</span><span class="va">True</span></span>
-<span id="cb16-394"><a href="#cb16-394" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-395"><a href="#cb16-395" aria-hidden="true" tabindex="-1"></a>subject_lag <span class="op">=</span> (</span>
-<span id="cb16-396"><a href="#cb16-396" aria-hidden="true" tabindex="-1"></a>    pairs.groupby([<span class="st">"SubjectID"</span>, <span class="st">"Diagnosis"</span>, <span class="st">"LagBin"</span>], observed<span class="op">=</span><span class="va">True</span>)</span>
-<span id="cb16-397"><a href="#cb16-397" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"BrayCurtis"</span>].median().reset_index()</span>
-<span id="cb16-398"><a href="#cb16-398" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-399"><a href="#cb16-399" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-400"><a href="#cb16-400" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> subject_bootstrap(values, iterations<span class="op">=</span><span class="dv">2000</span>):</span>
-<span id="cb16-401"><a href="#cb16-401" aria-hidden="true" tabindex="-1"></a>    values <span class="op">=</span> np.asarray(values, dtype<span class="op">=</span><span class="bu">float</span>)</span>
-<span id="cb16-402"><a href="#cb16-402" aria-hidden="true" tabindex="-1"></a>    draws <span class="op">=</span> np.array([</span>
-<span id="cb16-403"><a href="#cb16-403" aria-hidden="true" tabindex="-1"></a>        np.median(rng.choice(values, size<span class="op">=</span><span class="bu">len</span>(values), replace<span class="op">=</span><span class="va">True</span>))</span>
-<span id="cb16-404"><a href="#cb16-404" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(iterations)</span>
-<span id="cb16-405"><a href="#cb16-405" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb16-406"><a href="#cb16-406" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.median(values), <span class="op">*</span>np.quantile(draws, [<span class="fl">0.025</span>, <span class="fl">0.975</span>])</span>
-<span id="cb16-407"><a href="#cb16-407" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-408"><a href="#cb16-408" aria-hidden="true" tabindex="-1"></a><span class="co"># consecutive: 同一受试者按真实 week 排序后的相邻合格样本</span></span>
-<span id="cb16-409"><a href="#cb16-409" aria-hidden="true" tabindex="-1"></a>short <span class="op">=</span> consecutive.loc[consecutive[<span class="st">"LagWeeks"</span>].between(<span class="dv">1</span>, <span class="dv">3</span>)].copy()</span>
-<span id="cb16-410"><a href="#cb16-410" aria-hidden="true" tabindex="-1"></a>short[<span class="st">"Shift054"</span>] <span class="op">=</span> short[<span class="st">"BrayCurtis"</span>] <span class="op">&gt;</span> <span class="fl">0.54</span></span>
-<span id="cb16-411"><a href="#cb16-411" aria-hidden="true" tabindex="-1"></a>subject_shift <span class="op">=</span> short.groupby([<span class="st">"SubjectID"</span>, <span class="st">"Diagnosis"</span>])[<span class="st">"Shift054"</span>].mean()</span>
-<span id="cb16-412"><a href="#cb16-412" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-413"><a href="#cb16-413" aria-hidden="true" tabindex="-1"></a><span class="co"># 每人、每个 baseline abundance band 先汇总 retained/detected，</span></span>
-<span id="cb16-414"><a href="#cb16-414" aria-hidden="true" tabindex="-1"></a><span class="co"># 再跨人求中位数和 subject bootstrap CI。</span></span>
-<span id="cb16-415"><a href="#cb16-415" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-416"><a href="#cb16-416" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-417"><a href="#cb16-417" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 4：固定 shift threshold 却不说明适用时间窗"}</span>
-<span id="cb16-418"><a href="#cb16-418" aria-hidden="true" tabindex="-1"></a>Bray--Curtis 随时间间隔增大。0.54 在 2 周和 40 周的含义不同；固定阈值只能在声明的 1--3 周窗口内解释，并与 lag-dependent threshold 做敏感性比较。</span>
-<span id="cb16-419"><a href="#cb16-419" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-420"><a href="#cb16-420" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-421"><a href="#cb16-421" aria-hidden="true" tabindex="-1"></a><span class="fu">## 物种层 screen 使用 CLR、随机截距与两层 FDR</span></span>
+<span id="cb16-389"><a href="#cb16-389" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb16-390"><a href="#cb16-390" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-391"><a href="#cb16-391" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> numpy.random <span class="im">import</span> default_rng</span>
+<span id="cb16-392"><a href="#cb16-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-393"><a href="#cb16-393" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> default_rng(<span class="dv">67001</span>)</span>
+<span id="cb16-394"><a href="#cb16-394" aria-hidden="true" tabindex="-1"></a>lag_bins <span class="op">=</span> [<span class="op">-</span>np.inf, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">8</span>, <span class="dv">16</span>, <span class="dv">32</span>, <span class="dv">60</span>]</span>
+<span id="cb16-395"><a href="#cb16-395" aria-hidden="true" tabindex="-1"></a>lag_labels <span class="op">=</span> [<span class="st">"0–2"</span>, <span class="st">"&gt;2–4"</span>, <span class="st">"&gt;4–8"</span>, <span class="st">"&gt;8–16"</span>, <span class="st">"&gt;16–32"</span>, <span class="st">"&gt;32–60"</span>]</span>
+<span id="cb16-396"><a href="#cb16-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-397"><a href="#cb16-397" aria-hidden="true" tabindex="-1"></a><span class="co"># pairs: 同一受试者所有正时间差的样本对</span></span>
+<span id="cb16-398"><a href="#cb16-398" aria-hidden="true" tabindex="-1"></a>pairs[<span class="st">"LagBin"</span>] <span class="op">=</span> pd.cut(</span>
+<span id="cb16-399"><a href="#cb16-399" aria-hidden="true" tabindex="-1"></a>    pairs[<span class="st">"LagWeeks"</span>], bins<span class="op">=</span>lag_bins, labels<span class="op">=</span>lag_labels, right<span class="op">=</span><span class="va">True</span></span>
+<span id="cb16-400"><a href="#cb16-400" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-401"><a href="#cb16-401" aria-hidden="true" tabindex="-1"></a>subject_lag <span class="op">=</span> (</span>
+<span id="cb16-402"><a href="#cb16-402" aria-hidden="true" tabindex="-1"></a>    pairs.groupby([<span class="st">"SubjectID"</span>, <span class="st">"Diagnosis"</span>, <span class="st">"LagBin"</span>], observed<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb16-403"><a href="#cb16-403" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"BrayCurtis"</span>].median().reset_index()</span>
+<span id="cb16-404"><a href="#cb16-404" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-405"><a href="#cb16-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-406"><a href="#cb16-406" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> subject_bootstrap(values, iterations<span class="op">=</span><span class="dv">2000</span>):</span>
+<span id="cb16-407"><a href="#cb16-407" aria-hidden="true" tabindex="-1"></a>    values <span class="op">=</span> np.asarray(values, dtype<span class="op">=</span><span class="bu">float</span>)</span>
+<span id="cb16-408"><a href="#cb16-408" aria-hidden="true" tabindex="-1"></a>    draws <span class="op">=</span> np.array([</span>
+<span id="cb16-409"><a href="#cb16-409" aria-hidden="true" tabindex="-1"></a>        np.median(rng.choice(values, size<span class="op">=</span><span class="bu">len</span>(values), replace<span class="op">=</span><span class="va">True</span>))</span>
+<span id="cb16-410"><a href="#cb16-410" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(iterations)</span>
+<span id="cb16-411"><a href="#cb16-411" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb16-412"><a href="#cb16-412" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.median(values), <span class="op">*</span>np.quantile(draws, [<span class="fl">0.025</span>, <span class="fl">0.975</span>])</span>
+<span id="cb16-413"><a href="#cb16-413" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-414"><a href="#cb16-414" aria-hidden="true" tabindex="-1"></a><span class="co"># consecutive: 同一受试者按真实 week 排序后的相邻合格样本</span></span>
+<span id="cb16-415"><a href="#cb16-415" aria-hidden="true" tabindex="-1"></a>short <span class="op">=</span> consecutive.loc[consecutive[<span class="st">"LagWeeks"</span>].between(<span class="dv">1</span>, <span class="dv">3</span>)].copy()</span>
+<span id="cb16-416"><a href="#cb16-416" aria-hidden="true" tabindex="-1"></a>short[<span class="st">"Shift054"</span>] <span class="op">=</span> short[<span class="st">"BrayCurtis"</span>] <span class="op">&gt;</span> <span class="fl">0.54</span></span>
+<span id="cb16-417"><a href="#cb16-417" aria-hidden="true" tabindex="-1"></a>subject_shift <span class="op">=</span> short.groupby([<span class="st">"SubjectID"</span>, <span class="st">"Diagnosis"</span>])[<span class="st">"Shift054"</span>].mean()</span>
+<span id="cb16-418"><a href="#cb16-418" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-419"><a href="#cb16-419" aria-hidden="true" tabindex="-1"></a><span class="co"># 每人、每个 baseline abundance band 先汇总 retained/detected，</span></span>
+<span id="cb16-420"><a href="#cb16-420" aria-hidden="true" tabindex="-1"></a><span class="co"># 再跨人求中位数和 subject bootstrap CI。</span></span>
+<span id="cb16-421"><a href="#cb16-421" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-422"><a href="#cb16-422" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-423"><a href="#cb16-423" aria-hidden="true" tabindex="-1"></a><span class="fu">### 随机截距回答“每个人基线不同”，随机斜率回答“每个人变化速度不同”</span></span>
-<span id="cb16-424"><a href="#cb16-424" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-425"><a href="#cb16-425" aria-hidden="true" tabindex="-1"></a>主模型写为：</span>
+<span id="cb16-423"><a href="#cb16-423" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 4：固定 shift threshold 却不说明适用时间窗"}</span>
+<span id="cb16-424"><a href="#cb16-424" aria-hidden="true" tabindex="-1"></a>Bray--Curtis 随时间间隔增大。0.54 在 2 周和 40 周的含义不同；固定阈值只能在声明的 1--3 周窗口内解释，并与 lag-dependent threshold 做敏感性比较。</span>
+<span id="cb16-425"><a href="#cb16-425" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-426"><a href="#cb16-426" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-427"><a href="#cb16-427" aria-hidden="true" tabindex="-1"></a>$$</span>
-<span id="cb16-428"><a href="#cb16-428" aria-hidden="true" tabindex="-1"></a>y_{ij}=\beta_0+\beta_1D_i+\beta_2t_{ij}+\beta_3D_i t_{ij}</span>
-<span id="cb16-429"><a href="#cb16-429" aria-hidden="true" tabindex="-1"></a>+\beta_4A_{ij}+\beta_5Q_{ij}+b_{0i}+b_{1i}t_{ij}+\epsilon_{ij},</span>
-<span id="cb16-430"><a href="#cb16-430" aria-hidden="true" tabindex="-1"></a>$$</span>
-<span id="cb16-431"><a href="#cb16-431" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-432"><a href="#cb16-432" aria-hidden="true" tabindex="-1"></a>其中 $D_i$ 是 diagnosis，$A_{ij}$ 是当次 antibiotics，$Q_{ij}$ 是中心化后的 $\log_{10}$ filtered reads；$b_{0i}$ 是主体随机截距，$b_{1i}$ 是主体时间随机斜率。时间以 week 26 为中心并换算成年，因此：</span>
-<span id="cb16-433"><a href="#cb16-433" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-434"><a href="#cb16-434" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 主效应是**第 26 周**的组间差异，不是笼统的“疾病效应”；</span>
-<span id="cb16-435"><a href="#cb16-435" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>control 的时间系数是每年的变化；</span>
-<span id="cb16-436"><a href="#cb16-436" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Diagnosis × time`</span> 是相对 control 的斜率差异；</span>
-<span id="cb16-437"><a href="#cb16-437" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>antibiotics 系数是同一模型条件下的 contemporaneous association（同期关联），不是药物因果效应。</span>
-<span id="cb16-438"><a href="#cb16-438" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-439"><a href="#cb16-439" aria-hidden="true" tabindex="-1"></a>random slope 需要每人有足够时间点，也可能出现 singular fit（奇异拟合）。这里用 maximum-likelihood likelihood-ratio test 比较随机截距与随机截距+斜率结构，再用 REML 拟合最终模型；主模型不奇异，随机斜率改进的 LRT $P=6.68\times10^{-12}$。</span>
-<span id="cb16-440"><a href="#cb16-440" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-441"><a href="#cb16-441" aria-hidden="true" tabindex="-1"></a><span class="fu">### 定植稳定性至少要区分 abundance、detection 与 strain identity</span></span>
-<span id="cb16-442"><a href="#cb16-442" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-443"><a href="#cb16-443" aria-hidden="true" tabindex="-1"></a>若物种在基线的相对丰度为 $p_{ijt}$，本章把 $p\ge10^{-4}$（0.01%）定义为 detected，并检查它在下一个 1--3 周样本是否仍达到同一门槛。结果主要由 baseline abundance 决定：</span>
+<span id="cb16-427"><a href="#cb16-427" aria-hidden="true" tabindex="-1"></a><span class="fu">## 物种层 screen 使用 CLR、随机截距与两层 FDR</span></span>
+<span id="cb16-428"><a href="#cb16-428" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-429"><a href="#cb16-429" aria-hidden="true" tabindex="-1"></a><span class="fu">### 随机截距回答“每个人基线不同”，随机斜率回答“每个人变化速度不同”</span></span>
+<span id="cb16-430"><a href="#cb16-430" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-431"><a href="#cb16-431" aria-hidden="true" tabindex="-1"></a>主模型写为：</span>
+<span id="cb16-432"><a href="#cb16-432" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-433"><a href="#cb16-433" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-434"><a href="#cb16-434" aria-hidden="true" tabindex="-1"></a>y_{ij}=\beta_0+\beta_1D_i+\beta_2t_{ij}+\beta_3D_i t_{ij}</span>
+<span id="cb16-435"><a href="#cb16-435" aria-hidden="true" tabindex="-1"></a>+\beta_4A_{ij}+\beta_5Q_{ij}+b_{0i}+b_{1i}t_{ij}+\epsilon_{ij},</span>
+<span id="cb16-436"><a href="#cb16-436" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-437"><a href="#cb16-437" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-438"><a href="#cb16-438" aria-hidden="true" tabindex="-1"></a>其中 $D_i$ 是 diagnosis，$A_{ij}$ 是当次 antibiotics，$Q_{ij}$ 是中心化后的 $\log_{10}$ filtered reads；$b_{0i}$ 是主体随机截距，$b_{1i}$ 是主体时间随机斜率。时间以 week 26 为中心并换算成年，因此：</span>
+<span id="cb16-439"><a href="#cb16-439" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-440"><a href="#cb16-440" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 主效应是**第 26 周**的组间差异，不是笼统的“疾病效应”；</span>
+<span id="cb16-441"><a href="#cb16-441" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>control 的时间系数是每年的变化；</span>
+<span id="cb16-442"><a href="#cb16-442" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Diagnosis × time`</span> 是相对 control 的斜率差异；</span>
+<span id="cb16-443"><a href="#cb16-443" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>antibiotics 系数是同一模型条件下的 contemporaneous association（同期关联），不是药物因果效应。</span>
 <span id="cb16-444"><a href="#cb16-444" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-445"><a href="#cb16-445" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Baseline abundance <span class="pp">|</span> Control <span class="pp">|</span> CD <span class="pp">|</span> UC <span class="pp">|</span></span>
-<span id="cb16-446"><a href="#cb16-446" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|</span></span>
-<span id="cb16-447"><a href="#cb16-447" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.01--0.1% <span class="pp">|</span> 57.4% <span class="pp">|</span> 55.6% <span class="pp">|</span> 57.8% <span class="pp">|</span></span>
-<span id="cb16-448"><a href="#cb16-448" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.1--1% <span class="pp">|</span> 87.0% <span class="pp">|</span> 82.5% <span class="pp">|</span> 83.9% <span class="pp">|</span></span>
-<span id="cb16-449"><a href="#cb16-449" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ≥1% <span class="pp">|</span> 95.7% <span class="pp">|</span> 94.7% <span class="pp">|</span> 96.1% <span class="pp">|</span></span>
+<span id="cb16-445"><a href="#cb16-445" aria-hidden="true" tabindex="-1"></a>random slope 需要每人有足够时间点，也可能出现 singular fit（奇异拟合）。这里用 maximum-likelihood likelihood-ratio test 比较随机截距与随机截距+斜率结构，再用 REML 拟合最终模型；主模型不奇异，随机斜率改进的 LRT $P=6.68\times10^{-12}$。</span>
+<span id="cb16-446"><a href="#cb16-446" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-447"><a href="#cb16-447" aria-hidden="true" tabindex="-1"></a><span class="fu">### 定植稳定性至少要区分 abundance、detection 与 strain identity</span></span>
+<span id="cb16-448"><a href="#cb16-448" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-449"><a href="#cb16-449" aria-hidden="true" tabindex="-1"></a>若物种在基线的相对丰度为 $p_{ijt}$，本章把 $p\ge10^{-4}$（0.01%）定义为 detected，并检查它在下一个 1--3 周样本是否仍达到同一门槛。结果主要由 baseline abundance 决定：</span>
 <span id="cb16-450"><a href="#cb16-450" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-451"><a href="#cb16-451" aria-hidden="true" tabindex="-1"></a>这说明低丰度物种更容易跨越 detection limit，却不能证明高丰度物种“永久定植”。物种层面连续检出仍可能是不同 strain；要主张 colonization，需要更长随访、strain-resolved SNV/haplotype 一致性、来源样本和传播方向证据 <span class="co">[</span><span class="ot">@halfvarson2017dynamics</span><span class="co">]</span>。</span>
-<span id="cb16-452"><a href="#cb16-452" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-453"><a href="#cb16-453" aria-hidden="true" tabindex="-1"></a><span class="al">![相邻 1--3 周的物种检出留存率。起始丰度的影响远大于 diagnosis 间的表观差异。](../figures/67-species-retention.png)</span>{#fig-67-retention}</span>
-<span id="cb16-454"><a href="#cb16-454" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-455"><a href="#cb16-455" aria-hidden="true" tabindex="-1"></a>先用全体样本预筛 prevalence ≥20% 且 mean relative abundance ≥0.1%，得到 63 个物种；加入固定 pseudocount $10^{-6}$ 后在**这 63 个物种构成的子组合**内做 closure 和 CLR。每个物种拟合：</span>
+<span id="cb16-451"><a href="#cb16-451" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Baseline abundance <span class="pp">|</span> Control <span class="pp">|</span> CD <span class="pp">|</span> UC <span class="pp">|</span></span>
+<span id="cb16-452"><a href="#cb16-452" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|</span></span>
+<span id="cb16-453"><a href="#cb16-453" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.01--0.1% <span class="pp">|</span> 57.4% <span class="pp">|</span> 55.6% <span class="pp">|</span> 57.8% <span class="pp">|</span></span>
+<span id="cb16-454"><a href="#cb16-454" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 0.1--1% <span class="pp">|</span> 87.0% <span class="pp">|</span> 82.5% <span class="pp">|</span> 83.9% <span class="pp">|</span></span>
+<span id="cb16-455"><a href="#cb16-455" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ≥1% <span class="pp">|</span> 95.7% <span class="pp">|</span> 94.7% <span class="pp">|</span> 96.1% <span class="pp">|</span></span>
 <span id="cb16-456"><a href="#cb16-456" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-459"><a href="#cb16-459" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-460"><a href="#cb16-460" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-461"><a href="#cb16-461" aria-hidden="true" tabindex="-1"></a>FeatureCLR <span class="sc">~</span> Diagnosis <span class="sc">*</span> WeekYearCentered <span class="sc">+</span> Antibiotics <span class="sc">+</span></span>
-<span id="cb16-462"><a href="#cb16-462" aria-hidden="true" tabindex="-1"></a>  Log10ReadsCentered <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> SubjectID)</span>
-<span id="cb16-463"><a href="#cb16-463" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-464"><a href="#cb16-464" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-465"><a href="#cb16-465" aria-hidden="true" tabindex="-1"></a>预先只提取 <span class="in">`DiagnosisCD`</span>、<span class="in">`DiagnosisUC`</span>、<span class="in">`AntibioticsYes`</span>、<span class="in">`CD × time`</span>、<span class="in">`UC × time`</span> 五类系数，共 315 个 tests。<span class="in">`QValueWithinTerm`</span> 回答同一 biological contrast 下的 63-feature screen；<span class="in">`QValueGlobal`</span> 对 315 个结果一起做 Benjamini--Hochberg，更保守。63 个模型均收敛、均不奇异；图只展示 global q-value 最小的 12 个系数，不能只报图中结果而隐藏完整表。</span>
-<span id="cb16-466"><a href="#cb16-466" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-467"><a href="#cb16-467" aria-hidden="true" tabindex="-1"></a><span class="al">![主 dysbiosis LMM 与探索性 species CLR screen。右图按 315 个系数的 global BH q-value 排序，仅作 hypothesis generation。](../figures/67-mixed-model-effects.png)</span>{#fig-67-effects}</span>
-<span id="cb16-468"><a href="#cb16-468" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-469"><a href="#cb16-469" aria-hidden="true" tabindex="-1"></a><span class="fu">### 今天应当补上的升级</span></span>
+<span id="cb16-457"><a href="#cb16-457" aria-hidden="true" tabindex="-1"></a>这说明低丰度物种更容易跨越 detection limit，却不能证明高丰度物种“永久定植”。物种层面连续检出仍可能是不同 strain；要主张 colonization，需要更长随访、strain-resolved SNV/haplotype 一致性、来源样本和传播方向证据 <span class="co">[</span><span class="ot">@halfvarson2017dynamics</span><span class="co">]</span>。</span>
+<span id="cb16-458"><a href="#cb16-458" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-459"><a href="#cb16-459" aria-hidden="true" tabindex="-1"></a><span class="al">![相邻 1--3 周的物种检出留存率。起始丰度的影响远大于 diagnosis 间的表观差异。](../figures/67-species-retention.png)</span>{#fig-67-retention}</span>
+<span id="cb16-460"><a href="#cb16-460" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-461"><a href="#cb16-461" aria-hidden="true" tabindex="-1"></a>先用全体样本预筛 prevalence ≥20% 且 mean relative abundance ≥0.1%，得到 63 个物种；加入固定 pseudocount $10^{-6}$ 后在**这 63 个物种构成的子组合**内做 closure 和 CLR。每个物种拟合：</span>
+<span id="cb16-462"><a href="#cb16-462" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-465"><a href="#cb16-465" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-466"><a href="#cb16-466" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-467"><a href="#cb16-467" aria-hidden="true" tabindex="-1"></a>FeatureCLR <span class="sc">~</span> Diagnosis <span class="sc">*</span> WeekYearCentered <span class="sc">+</span> Antibiotics <span class="sc">+</span></span>
+<span id="cb16-468"><a href="#cb16-468" aria-hidden="true" tabindex="-1"></a>  Log10ReadsCentered <span class="sc">+</span> (<span class="dv">1</span> <span class="sc">|</span> SubjectID)</span>
+<span id="cb16-469"><a href="#cb16-469" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-470"><a href="#cb16-470" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-471"><a href="#cb16-471" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**技术重复 ledger。** <span class="in">`_TR`</span>、<span class="in">`_P`</span> 与其他重复的取舍写成确定性排序，43 个排除 profile 仍保留原因。</span>
-<span id="cb16-472"><a href="#cb16-472" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**read-depth 与 visit gate。** 主模型只用 filtered reads ≥1,000,000 且每人 ≥4 次合格 visits 的 1,523 行；原论文 1,595 行结果作为外部锚点，不把两个 estimand 混在一起。</span>
-<span id="cb16-473"><a href="#cb16-473" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**主体等权。** pairwise lag 先在受试者内取中位数；CI 在 107 个 subject clusters 上 bootstrap。</span>
-<span id="cb16-474"><a href="#cb16-474" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**随机斜率验收。** 报告 singular status、optimizer gradient、random-effect variance，并用 ML 比较随机效应结构；固定效应用 REML + Kenward--Roger/Satterthwaite。</span>
-<span id="cb16-475"><a href="#cb16-475" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**composition-aware screen。** 物种筛选、pseudocount、CLR universe 和 315-test global BH 全部预先记录 <span class="co">[</span><span class="ot">@gloor2017compositional</span><span class="co">]</span>。</span>
-<span id="cb16-476"><a href="#cb16-476" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**时间变化混杂边界。** antibiotics 是同期暴露记录；没有 marginal structural model、time-varying propensity weights 或 target trial 时只报告关联。</span>
-<span id="cb16-477"><a href="#cb16-477" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**missingness sensitivity。** 正式投稿应补充：≥3/≥5 visits、0.5M/2M reads、complete-case vs inverse-probability-of-observation weighting、仅规则采样窗口等敏感性分析。</span>
-<span id="cb16-478"><a href="#cb16-478" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-479"><a href="#cb16-479" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="先定义 estimand，再决定用 LMM、GAMM 还是 survival model"}</span>
-<span id="cb16-480"><a href="#cb16-480" aria-hidden="true" tabindex="-1"></a>LMM 适合连续结局的平均轨迹；非线性轨迹可用 spline/GAMM；“首次 dysbiosis 的时间”是 interval-censored time-to-event；“一次事件后是否恢复”可能需要 multi-state model。模型名称不能替代问题定义。</span>
-<span id="cb16-481"><a href="#cb16-481" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-482"><a href="#cb16-482" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-483"><a href="#cb16-483" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 5：连续检出就写成定植"}</span>
-<span id="cb16-484"><a href="#cb16-484" aria-hidden="true" tabindex="-1"></a>物种层连续检出可能来自 detection limit、重复暴露或不同 strains。colonization/transmission 需要 strain-resolved identity、来源与方向证据；“retained detection”是更准确的结果词。</span>
-<span id="cb16-485"><a href="#cb16-485" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-486"><a href="#cb16-486" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-487"><a href="#cb16-487" aria-hidden="true" tabindex="-1"></a><span class="fu">## *P. copri* 轨迹只作预声明的描述性视图</span></span>
+<span id="cb16-471"><a href="#cb16-471" aria-hidden="true" tabindex="-1"></a>预先只提取 <span class="in">`DiagnosisCD`</span>、<span class="in">`DiagnosisUC`</span>、<span class="in">`AntibioticsYes`</span>、<span class="in">`CD × time`</span>、<span class="in">`UC × time`</span> 五类系数，共 315 个 tests。<span class="in">`QValueWithinTerm`</span> 回答同一 biological contrast 下的 63-feature screen；<span class="in">`QValueGlobal`</span> 对 315 个结果一起做 Benjamini--Hochberg，更保守。63 个模型均收敛、均不奇异；图只展示 global q-value 最小的 12 个系数，不能只报图中结果而隐藏完整表。</span>
+<span id="cb16-472"><a href="#cb16-472" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-473"><a href="#cb16-473" aria-hidden="true" tabindex="-1"></a><span class="al">![主 dysbiosis LMM 与探索性 species CLR screen。右图按 315 个系数的 global BH q-value 排序，仅作 hypothesis generation。](../figures/67-mixed-model-effects.png)</span>{#fig-67-effects}</span>
+<span id="cb16-474"><a href="#cb16-474" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-475"><a href="#cb16-475" aria-hidden="true" tabindex="-1"></a><span class="fu">### 今天应当补上的升级</span></span>
+<span id="cb16-476"><a href="#cb16-476" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-477"><a href="#cb16-477" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**技术重复 ledger。** <span class="in">`_TR`</span>、<span class="in">`_P`</span> 与其他重复的取舍写成确定性排序，43 个排除 profile 仍保留原因。</span>
+<span id="cb16-478"><a href="#cb16-478" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**read-depth 与 visit gate。** 主模型只用 filtered reads ≥1,000,000 且每人 ≥4 次合格 visits 的 1,523 行；原论文 1,595 行结果作为外部锚点，不把两个 estimand 混在一起。</span>
+<span id="cb16-479"><a href="#cb16-479" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**主体等权。** pairwise lag 先在受试者内取中位数；CI 在 107 个 subject clusters 上 bootstrap。</span>
+<span id="cb16-480"><a href="#cb16-480" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**随机斜率验收。** 报告 singular status、optimizer gradient、random-effect variance，并用 ML 比较随机效应结构；固定效应用 REML + Kenward--Roger/Satterthwaite。</span>
+<span id="cb16-481"><a href="#cb16-481" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**composition-aware screen。** 物种筛选、pseudocount、CLR universe 和 315-test global BH 全部预先记录 <span class="co">[</span><span class="ot">@gloor2017compositional</span><span class="co">]</span>。</span>
+<span id="cb16-482"><a href="#cb16-482" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**时间变化混杂边界。** antibiotics 是同期暴露记录；没有 marginal structural model、time-varying propensity weights 或 target trial 时只报告关联。</span>
+<span id="cb16-483"><a href="#cb16-483" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**missingness sensitivity。** 正式投稿应补充：≥3/≥5 visits、0.5M/2M reads、complete-case vs inverse-probability-of-observation weighting、仅规则采样窗口等敏感性分析。</span>
+<span id="cb16-484"><a href="#cb16-484" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-485"><a href="#cb16-485" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="先定义 estimand，再决定用 LMM、GAMM 还是 survival model"}</span>
+<span id="cb16-486"><a href="#cb16-486" aria-hidden="true" tabindex="-1"></a>LMM 适合连续结局的平均轨迹；非线性轨迹可用 spline/GAMM；“首次 dysbiosis 的时间”是 interval-censored time-to-event；“一次事件后是否恢复”可能需要 multi-state model。模型名称不能替代问题定义。</span>
+<span id="cb16-487"><a href="#cb16-487" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-488"><a href="#cb16-488" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-489"><a href="#cb16-489" aria-hidden="true" tabindex="-1"></a>为了对应原论文 Figure 3c，先要求每人 ≥8 个合格 visits 且 *P. copri* detection prevalence ≥20%，再在每个 diagnosis 内按 subject-level standard deviation 选前 4 名。这个选择会刻意突出高变异轨迹，因此不得对选中者再做显著性检验，也不得把它当作全队列典型模式。</span>
-<span id="cb16-490"><a href="#cb16-490" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-491"><a href="#cb16-491" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 diagnosis 中预声明筛选后的 4 条高变异 *P. copri* 轨迹。symlog 轴保留 0，同时展示 0.01% 到 100% 的数量级。](../figures/67-prevotella-trajectories.png)</span>{#fig-67-pcopri}</span>
+<span id="cb16-489"><a href="#cb16-489" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 5：连续检出就写成定植"}</span>
+<span id="cb16-490"><a href="#cb16-490" aria-hidden="true" tabindex="-1"></a>物种层连续检出可能来自 detection limit、重复暴露或不同 strains。colonization/transmission 需要 strain-resolved identity、来源与方向证据；“retained detection”是更准确的结果词。</span>
+<span id="cb16-491"><a href="#cb16-491" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-492"><a href="#cb16-492" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-493"><a href="#cb16-493" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 6：随机斜率越复杂越好"}</span>
-<span id="cb16-494"><a href="#cb16-494" aria-hidden="true" tabindex="-1"></a>时间点少、时间跨度窄或 slope variance 接近 0 时，模型可能 singular。报告 <span class="in">`isSingular()`</span>、variance、gradient 与简化模型比较；不能只删 warning 后继续解释。</span>
-<span id="cb16-495"><a href="#cb16-495" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-493"><a href="#cb16-493" aria-hidden="true" tabindex="-1"></a><span class="fu">## *P. copri* 轨迹只作预声明的描述性视图</span></span>
+<span id="cb16-494"><a href="#cb16-494" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-495"><a href="#cb16-495" aria-hidden="true" tabindex="-1"></a>为了对应原论文 Figure 3c，先要求每人 ≥8 个合格 visits 且 *P. copri* detection prevalence ≥20%，再在每个 diagnosis 内按 subject-level standard deviation 选前 4 名。这个选择会刻意突出高变异轨迹，因此不得对选中者再做显著性检验，也不得把它当作全队列典型模式。</span>
 <span id="cb16-496"><a href="#cb16-496" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-497"><a href="#cb16-497" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="审稿人会追问：退出随访是否与疾病活动相关？"}</span>
-<span id="cb16-498"><a href="#cb16-498" aria-hidden="true" tabindex="-1"></a>≥4 visits gate 可能选择更依从或病情更稳定的人。正文应给 attrition by diagnosis、退出时间和 missingness pattern；若缺失依赖既往结局或治疗，补 inverse-probability-of-observation weighting 或 joint model sensitivity analysis。</span>
-<span id="cb16-499"><a href="#cb16-499" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-500"><a href="#cb16-500" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-501"><a href="#cb16-501" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明纵向采样与随机效应 {#sec-methods}</span></span>
+<span id="cb16-497"><a href="#cb16-497" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 diagnosis 中预声明筛选后的 4 条高变异 *P. copri* 轨迹。symlog 轴保留 0，同时展示 0.01% 到 100% 的数量级。](../figures/67-prevotella-trajectories.png)</span>{#fig-67-pcopri}</span>
+<span id="cb16-498"><a href="#cb16-498" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-499"><a href="#cb16-499" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 6：随机斜率越复杂越好"}</span>
+<span id="cb16-500"><a href="#cb16-500" aria-hidden="true" tabindex="-1"></a>时间点少、时间跨度窄或 slope variance 接近 0 时，模型可能 singular。报告 <span class="in">`isSingular()`</span>、variance、gradient 与简化模型比较；不能只删 warning 后继续解释。</span>
+<span id="cb16-501"><a href="#cb16-501" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-502"><a href="#cb16-502" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-503"><a href="#cb16-503" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Longitudinal metagenomic analysis.** Published HMP2/IBDMDB metagenomic taxonomic profiles (MGX merged-product release 2018-05-04) and metadata (release 2018-08-20) were obtained from Lloyd-Price et al. (Nature 2019; DOI: 10.1038/s41586-019-1237-9). Profile and metadata SHA-256 digests were </span><span class="in">`5728531a...e72c`</span><span class="at"> and </span><span class="in">`656b7bd9...ec9`</span><span class="at">, respectively. Within each biospecimen identifier (</span><span class="in">`site_sub_coll`</span><span class="at">), a single profile was selected deterministically by preferring non-technical-rerun columns, </span><span class="in">`_P`</span><span class="at"> profiles, greater filtered-read count, and then lexicographic sample identifier. Samples with fewer than 1,000,000 filtered reads were excluded, and participants were required to contribute at least four eligible visits. The final analysis included 1,523 samples from 107 participants (27 controls, 50 with Crohn's disease, and 30 with ulcerative colitis). Terminal species-level MetaPhlAn rows were retained and renormalized within sample. A dysbiosis score was defined as the median Bray--Curtis distance to control profiles collected at week 20 or later, excluding self-distances; the 90th percentile of eligible control scores defined the descriptive dysbiosis threshold. The primary linear mixed-effects model included diagnosis, centered study time, their interaction, contemporaneous antibiotic exposure, centered log10 filtered reads, and participant-specific random intercepts and time slopes. The model was fitted by REML using R 4.4.1, lme4 1.1-35.4, lmerTest 3.1-3, and pbkrtest 0.5.2; fixed-effect tests used Satterthwaite or Kenward--Roger degrees of freedom as specified. Lag, shift, and retention summaries were first aggregated within participant. Ninety-five percent confidence intervals were estimated with 2,000 participant-level bootstrap replicates using seed 67001. Species-level exploratory models were restricted to species with prevalence ≥20% and mean relative abundance ≥0.1%, used a fixed $10^{-6}$ pseudocount and CLR transformation, and controlled false discovery using Benjamini--Hochberg adjustment both within term and across all 315 predeclared coefficients.</span></span>
-<span id="cb16-504"><a href="#cb16-504" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-505"><a href="#cb16-505" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Results template.** After deterministic technical-replicate resolution and eligibility filtering, 1,523 metagenomic profiles from 107 participants were analysed. At study week 26, the dysbiosis score was 0.0514 units higher in Crohn's disease than in controls (95% CI 0.0182--0.0846; Satterthwaite $P=0.0030$). Contemporaneous antibiotic exposure was associated with a 0.0322-unit higher score (95% CI 0.0218--0.0427; $P=1.97\times10^{-9}$), and the Crohn's-disease time slope differed from the control slope by 0.0424 units per year (95% CI 0.0065--0.0783; $P=0.0228$). These estimates describe within-cohort longitudinal associations and were not interpreted as antibiotic treatment effects or causal disease mechanisms.</span></span>
+<span id="cb16-503"><a href="#cb16-503" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="审稿人会追问：退出随访是否与疾病活动相关？"}</span>
+<span id="cb16-504"><a href="#cb16-504" aria-hidden="true" tabindex="-1"></a>≥4 visits gate 可能选择更依从或病情更稳定的人。正文应给 attrition by diagnosis、退出时间和 missingness pattern；若缺失依赖既往结局或治疗，补 inverse-probability-of-observation weighting 或 joint model sensitivity analysis。</span>
+<span id="cb16-505"><a href="#cb16-505" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-506"><a href="#cb16-506" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-507"><a href="#cb16-507" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb16-507"><a href="#cb16-507" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明纵向采样与随机效应 {#sec-methods}</span></span>
 <span id="cb16-508"><a href="#cb16-508" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-509"><a href="#cb16-509" aria-hidden="true" tabindex="-1"></a>最少需要三张表，而且 key 必须显式：</span>
+<span id="cb16-509"><a href="#cb16-509" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Longitudinal metagenomic analysis.** Published HMP2/IBDMDB metagenomic taxonomic profiles (MGX merged-product release 2018-05-04) and metadata (release 2018-08-20) were obtained from Lloyd-Price et al. (Nature 2019; DOI: 10.1038/s41586-019-1237-9). Profile and metadata SHA-256 digests were </span><span class="in">`5728531a...e72c`</span><span class="at"> and </span><span class="in">`656b7bd9...ec9`</span><span class="at">, respectively. Within each biospecimen identifier (</span><span class="in">`site_sub_coll`</span><span class="at">), a single profile was selected deterministically by preferring non-technical-rerun columns, </span><span class="in">`_P`</span><span class="at"> profiles, greater filtered-read count, and then lexicographic sample identifier. Samples with fewer than 1,000,000 filtered reads were excluded, and participants were required to contribute at least four eligible visits. The final analysis included 1,523 samples from 107 participants (27 controls, 50 with Crohn's disease, and 30 with ulcerative colitis). Terminal species-level MetaPhlAn rows were retained and renormalized within sample. A dysbiosis score was defined as the median Bray--Curtis distance to control profiles collected at week 20 or later, excluding self-distances; the 90th percentile of eligible control scores defined the descriptive dysbiosis threshold. The primary linear mixed-effects model included diagnosis, centered study time, their interaction, contemporaneous antibiotic exposure, centered log10 filtered reads, and participant-specific random intercepts and time slopes. The model was fitted by REML using R 4.4.1, lme4 1.1-35.4, lmerTest 3.1-3, and pbkrtest 0.5.2; fixed-effect tests used Satterthwaite or Kenward--Roger degrees of freedom as specified. Lag, shift, and retention summaries were first aggregated within participant. Ninety-five percent confidence intervals were estimated with 2,000 participant-level bootstrap replicates using seed 67001. Species-level exploratory models were restricted to species with prevalence ≥20% and mean relative abundance ≥0.1%, used a fixed $10^{-6}$ pseudocount and CLR transformation, and controlled false discovery using Benjamini--Hochberg adjustment both within term and across all 315 predeclared coefficients.</span></span>
 <span id="cb16-510"><a href="#cb16-510" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-511"><a href="#cb16-511" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`feature_table.tsv`</span>：rows = samples，columns = species/MAG/pathways；说明 raw count、relative abundance 还是 coverage；</span>
-<span id="cb16-512"><a href="#cb16-512" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`metadata.tsv`</span>：<span class="in">`SampleID`</span>, <span class="in">`SubjectID`</span>, <span class="in">`CollectionDate`</span> 或连续 <span class="in">`Time`</span>, <span class="in">`Group`</span>，以及 antibiotics、diet、treatment、batch 等时间变化协变量；</span>
-<span id="cb16-513"><a href="#cb16-513" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`sample_lineage.tsv`</span>：原始文件、biospecimen、技术重复、测序批次、profile/database 版本与排除原因。</span>
+<span id="cb16-511"><a href="#cb16-511" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Results template.** After deterministic technical-replicate resolution and eligibility filtering, 1,523 metagenomic profiles from 107 participants were analysed. At study week 26, the dysbiosis score was 0.0514 units higher in Crohn's disease than in controls (95% CI 0.0182--0.0846; Satterthwaite $P=0.0030$). Contemporaneous antibiotic exposure was associated with a 0.0322-unit higher score (95% CI 0.0218--0.0427; $P=1.97\times10^{-9}$), and the Crohn's-disease time slope differed from the control slope by 0.0424 units per year (95% CI 0.0065--0.0783; $P=0.0228$). These estimates describe within-cohort longitudinal associations and were not interpreted as antibiotic treatment effects or causal disease mechanisms.</span></span>
+<span id="cb16-512"><a href="#cb16-512" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-513"><a href="#cb16-513" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
 <span id="cb16-514"><a href="#cb16-514" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-515"><a href="#cb16-515" aria-hidden="true" tabindex="-1"></a>替换时按这个顺序：</span>
+<span id="cb16-515"><a href="#cb16-515" aria-hidden="true" tabindex="-1"></a>最少需要三张表，而且 key 必须显式：</span>
 <span id="cb16-516"><a href="#cb16-516" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-517"><a href="#cb16-517" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
-<span id="cb16-518"><a href="#cb16-518" aria-hidden="true" tabindex="-1"></a><span class="in">Lock IDs and timestamps</span></span>
-<span id="cb16-519"><a href="#cb16-519" aria-hidden="true" tabindex="-1"></a><span class="in">  → resolve technical replicates before viewing outcomes</span></span>
-<span id="cb16-520"><a href="#cb16-520" aria-hidden="true" tabindex="-1"></a><span class="in">  → draw visit-count, interval and missingness maps</span></span>
-<span id="cb16-521"><a href="#cb16-521" aria-hidden="true" tabindex="-1"></a><span class="in">  → define outcome and reference population</span></span>
-<span id="cb16-522"><a href="#cb16-522" aria-hidden="true" tabindex="-1"></a><span class="in">  → choose random-effect structure from the estimand</span></span>
-<span id="cb16-523"><a href="#cb16-523" aria-hidden="true" tabindex="-1"></a><span class="in">  → aggregate/resample/split by subject</span></span>
-<span id="cb16-524"><a href="#cb16-524" aria-hidden="true" tabindex="-1"></a><span class="in">  → run abundance/detection/lag sensitivities</span></span>
-<span id="cb16-525"><a href="#cb16-525" aria-hidden="true" tabindex="-1"></a><span class="in">  → reserve strain identity for colonization claims</span></span>
-<span id="cb16-526"><a href="#cb16-526" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-527"><a href="#cb16-527" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-528"><a href="#cb16-528" aria-hidden="true" tabindex="-1"></a>若研究是 intervention，额外需要 treatment start/stop、dose、indication、adherence 与 time-varying disease activity；若研究 transplant/colonization，额外需要 donor/source strain profiles 和 pre-exposure baseline。只有 treatment 前后两个时间点时，复杂 random slope 通常不可识别，应优先报告 change score 或 group × time 模型，并把个体轨迹和 missing pairs 全部画出。</span>
-<span id="cb16-529"><a href="#cb16-529" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-530"><a href="#cb16-530" aria-hidden="true" tabindex="-1"></a>完整复算命令如下；analysis seed <span class="in">`67001`</span> 与 plot seed <span class="in">`20260767`</span> 已固定：</span>
-<span id="cb16-531"><a href="#cb16-531" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-534"><a href="#cb16-534" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
-<span id="cb16-535"><a href="#cb16-535" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-536"><a href="#cb16-536" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/download_article67_longitudinal_data.py <span class="dt">\</span></span>
-<span id="cb16-537"><a href="#cb16-537" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> .tutorial_runs/article67-source</span>
-<span id="cb16-538"><a href="#cb16-538" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-539"><a href="#cb16-539" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/prepare_article67_longitudinal.py <span class="dt">\</span></span>
-<span id="cb16-540"><a href="#cb16-540" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> .tutorial_runs/article67-source <span class="dt">\</span></span>
-<span id="cb16-541"><a href="#cb16-541" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> .tutorial_runs/article67-work <span class="dt">\</span></span>
-<span id="cb16-542"><a href="#cb16-542" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bootstrap-iterations</span> 2000</span>
-<span id="cb16-543"><a href="#cb16-543" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-544"><a href="#cb16-544" aria-hidden="true" tabindex="-1"></a><span class="va">R_LIBS_USER</span><span class="op">=</span>.r-lib <span class="ex">Rscript</span> scripts/run_article67_longitudinal_models.R <span class="dt">\</span></span>
-<span id="cb16-545"><a href="#cb16-545" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> .tutorial_runs/article67-work <span class="dt">\</span></span>
-<span id="cb16-546"><a href="#cb16-546" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> .tutorial_runs/article67-work</span>
-<span id="cb16-547"><a href="#cb16-547" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-548"><a href="#cb16-548" aria-hidden="true" tabindex="-1"></a><span class="va">MPLCONFIGDIR</span><span class="op">=</span>/tmp/article67-mpl <span class="dt">\</span></span>
-<span id="cb16-549"><a href="#cb16-549" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/plot_article67_longitudinal.py <span class="dt">\</span></span>
-<span id="cb16-550"><a href="#cb16-550" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/67-longitudinal-frozen <span class="dt">\</span></span>
-<span id="cb16-551"><a href="#cb16-551" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures</span>
-<span id="cb16-552"><a href="#cb16-552" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-517"><a href="#cb16-517" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`feature_table.tsv`</span>：rows = samples，columns = species/MAG/pathways；说明 raw count、relative abundance 还是 coverage；</span>
+<span id="cb16-518"><a href="#cb16-518" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`metadata.tsv`</span>：<span class="in">`SampleID`</span>, <span class="in">`SubjectID`</span>, <span class="in">`CollectionDate`</span> 或连续 <span class="in">`Time`</span>, <span class="in">`Group`</span>，以及 antibiotics、diet、treatment、batch 等时间变化协变量；</span>
+<span id="cb16-519"><a href="#cb16-519" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`sample_lineage.tsv`</span>：原始文件、biospecimen、技术重复、测序批次、profile/database 版本与排除原因。</span>
+<span id="cb16-520"><a href="#cb16-520" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-521"><a href="#cb16-521" aria-hidden="true" tabindex="-1"></a>替换时按这个顺序：</span>
+<span id="cb16-522"><a href="#cb16-522" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-523"><a href="#cb16-523" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb16-524"><a href="#cb16-524" aria-hidden="true" tabindex="-1"></a><span class="in">Lock IDs and timestamps</span></span>
+<span id="cb16-525"><a href="#cb16-525" aria-hidden="true" tabindex="-1"></a><span class="in">  → resolve technical replicates before viewing outcomes</span></span>
+<span id="cb16-526"><a href="#cb16-526" aria-hidden="true" tabindex="-1"></a><span class="in">  → draw visit-count, interval and missingness maps</span></span>
+<span id="cb16-527"><a href="#cb16-527" aria-hidden="true" tabindex="-1"></a><span class="in">  → define outcome and reference population</span></span>
+<span id="cb16-528"><a href="#cb16-528" aria-hidden="true" tabindex="-1"></a><span class="in">  → choose random-effect structure from the estimand</span></span>
+<span id="cb16-529"><a href="#cb16-529" aria-hidden="true" tabindex="-1"></a><span class="in">  → aggregate/resample/split by subject</span></span>
+<span id="cb16-530"><a href="#cb16-530" aria-hidden="true" tabindex="-1"></a><span class="in">  → run abundance/detection/lag sensitivities</span></span>
+<span id="cb16-531"><a href="#cb16-531" aria-hidden="true" tabindex="-1"></a><span class="in">  → reserve strain identity for colonization claims</span></span>
+<span id="cb16-532"><a href="#cb16-532" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-533"><a href="#cb16-533" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-534"><a href="#cb16-534" aria-hidden="true" tabindex="-1"></a>若研究是 intervention，额外需要 treatment start/stop、dose、indication、adherence 与 time-varying disease activity；若研究 transplant/colonization，额外需要 donor/source strain profiles 和 pre-exposure baseline。只有 treatment 前后两个时间点时，复杂 random slope 通常不可识别，应优先报告 change score 或 group × time 模型，并把个体轨迹和 missing pairs 全部画出。</span>
+<span id="cb16-535"><a href="#cb16-535" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-536"><a href="#cb16-536" aria-hidden="true" tabindex="-1"></a>完整复算命令如下；analysis seed <span class="in">`67001`</span> 与 plot seed <span class="in">`20260767`</span> 已固定：</span>
+<span id="cb16-537"><a href="#cb16-537" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-540"><a href="#cb16-540" aria-hidden="true" tabindex="-1"></a><span class="in">```{bash}</span></span>
+<span id="cb16-541"><a href="#cb16-541" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-542"><a href="#cb16-542" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/download_article67_longitudinal_data.py <span class="dt">\</span></span>
+<span id="cb16-543"><a href="#cb16-543" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> .tutorial_runs/article67-source</span>
+<span id="cb16-544"><a href="#cb16-544" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-545"><a href="#cb16-545" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/prepare_article67_longitudinal.py <span class="dt">\</span></span>
+<span id="cb16-546"><a href="#cb16-546" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cache-dir</span> .tutorial_runs/article67-source <span class="dt">\</span></span>
+<span id="cb16-547"><a href="#cb16-547" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> .tutorial_runs/article67-work <span class="dt">\</span></span>
+<span id="cb16-548"><a href="#cb16-548" aria-hidden="true" tabindex="-1"></a>  <span class="at">--bootstrap-iterations</span> 2000</span>
+<span id="cb16-549"><a href="#cb16-549" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-550"><a href="#cb16-550" aria-hidden="true" tabindex="-1"></a><span class="va">R_LIBS_USER</span><span class="op">=</span>.r-lib <span class="ex">Rscript</span> scripts/run_article67_longitudinal_models.R <span class="dt">\</span></span>
+<span id="cb16-551"><a href="#cb16-551" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> .tutorial_runs/article67-work <span class="dt">\</span></span>
+<span id="cb16-552"><a href="#cb16-552" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> .tutorial_runs/article67-work</span>
 <span id="cb16-553"><a href="#cb16-553" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-554"><a href="#cb16-554" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb16-555"><a href="#cb16-555" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-556"><a href="#cb16-556" aria-hidden="true" tabindex="-1"></a>纵向图最容易被线条淹没。可投稿图遵循五点：</span>
-<span id="cb16-557"><a href="#cb16-557" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-558"><a href="#cb16-558" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>一人一条细线，alpha 0.1--0.2；总体 fixed-effect prediction 用粗线和 95% CI band；</span>
-<span id="cb16-559"><a href="#cb16-559" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 使用色盲友好蓝/朱红/青绿，antibiotics 用形状 <span class="in">`x`</span>，不再新增相似颜色；</span>
-<span id="cb16-560"><a href="#cb16-560" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>横轴始终写 <span class="in">`Study week`</span> 或 <span class="in">`Within-subject time lag (weeks)`</span>，不用模糊的 <span class="in">`Visit`</span>；</span>
-<span id="cb16-561"><a href="#cb16-561" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>abundance 跨多个数量级时，0 与正值必须明确处理；*P. copri* 图用 symlog，而不是把 0 偷换成任意小数；</span>
-<span id="cb16-562"><a href="#cb16-562" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>主图导出 vector PDF，同时交 350 dpi PNG 和 LZW TIFF；轴、图例、注释全部英文。</span>
+<span id="cb16-554"><a href="#cb16-554" aria-hidden="true" tabindex="-1"></a><span class="va">MPLCONFIGDIR</span><span class="op">=</span>/tmp/article67-mpl <span class="dt">\</span></span>
+<span id="cb16-555"><a href="#cb16-555" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> scripts/plot_article67_longitudinal.py <span class="dt">\</span></span>
+<span id="cb16-556"><a href="#cb16-556" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/67-longitudinal-frozen <span class="dt">\</span></span>
+<span id="cb16-557"><a href="#cb16-557" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures</span>
+<span id="cb16-558"><a href="#cb16-558" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-559"><a href="#cb16-559" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-560"><a href="#cb16-560" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb16-561"><a href="#cb16-561" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-562"><a href="#cb16-562" aria-hidden="true" tabindex="-1"></a>纵向图最容易被线条淹没。可投稿图遵循五点：</span>
 <span id="cb16-563"><a href="#cb16-563" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-566"><a href="#cb16-566" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-567"><a href="#cb16-567" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-568"><a href="#cb16-568" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(</span>
-<span id="cb16-569"><a href="#cb16-569" aria-hidden="true" tabindex="-1"></a>  samples,</span>
-<span id="cb16-570"><a href="#cb16-570" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">aes</span>(Week, DysbiosisScore, <span class="at">group =</span> SubjectID, <span class="at">color =</span> Diagnosis)</span>
-<span id="cb16-571"><a href="#cb16-571" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
-<span id="cb16-572"><a href="#cb16-572" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">linewidth =</span> <span class="fl">0.35</span>) <span class="sc">+</span></span>
-<span id="cb16-573"><a href="#cb16-573" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.832358</span>, <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
-<span id="cb16-574"><a href="#cb16-574" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">facet_wrap</span>(<span class="sc">~</span>Diagnosis, <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
-<span id="cb16-575"><a href="#cb16-575" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_pub</span>() <span class="sc">+</span></span>
-<span id="cb16-576"><a href="#cb16-576" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Study week"</span>, <span class="at">y =</span> <span class="st">"Dysbiosis score"</span>, <span class="at">color =</span> <span class="st">"Diagnosis"</span>) <span class="sc">+</span></span>
-<span id="cb16-577"><a href="#cb16-577" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pub</span>()</span>
-<span id="cb16-578"><a href="#cb16-578" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-579"><a href="#cb16-579" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p, <span class="st">"figures/67-dysbiosis-trajectories-r"</span>, <span class="at">width =</span> <span class="dv">260</span>, <span class="at">height =</span> <span class="dv">95</span>)</span>
-<span id="cb16-580"><a href="#cb16-580" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-581"><a href="#cb16-581" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-582"><a href="#cb16-582" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb16-583"><a href="#cb16-583" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-584"><a href="#cb16-584" aria-hidden="true" tabindex="-1"></a>同一受试者的 20 次采样不是 20 个独立样本。用 HMP2 真实纵向队列，把技术重复、不规则间隔、随机斜率、主体级 bootstrap 与‘检出不等于定植’一次讲清。</span>
-<span id="cb16-585"><a href="#cb16-585" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-586"><a href="#cb16-586" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb16-564"><a href="#cb16-564" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>一人一条细线，alpha 0.1--0.2；总体 fixed-effect prediction 用粗线和 95% CI band；</span>
+<span id="cb16-565"><a href="#cb16-565" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>diagnosis 使用色盲友好蓝/朱红/青绿，antibiotics 用形状 <span class="in">`x`</span>，不再新增相似颜色；</span>
+<span id="cb16-566"><a href="#cb16-566" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>横轴始终写 <span class="in">`Study week`</span> 或 <span class="in">`Within-subject time lag (weeks)`</span>，不用模糊的 <span class="in">`Visit`</span>；</span>
+<span id="cb16-567"><a href="#cb16-567" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>abundance 跨多个数量级时，0 与正值必须明确处理；*P. copri* 图用 symlog，而不是把 0 偷换成任意小数；</span>
+<span id="cb16-568"><a href="#cb16-568" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>主图导出 vector PDF，同时交 350 dpi PNG 和 LZW TIFF；轴、图例、注释全部英文。</span>
+<span id="cb16-569"><a href="#cb16-569" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-572"><a href="#cb16-572" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-573"><a href="#cb16-573" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-574"><a href="#cb16-574" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(</span>
+<span id="cb16-575"><a href="#cb16-575" aria-hidden="true" tabindex="-1"></a>  samples,</span>
+<span id="cb16-576"><a href="#cb16-576" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">aes</span>(Week, DysbiosisScore, <span class="at">group =</span> SubjectID, <span class="at">color =</span> Diagnosis)</span>
+<span id="cb16-577"><a href="#cb16-577" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb16-578"><a href="#cb16-578" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">linewidth =</span> <span class="fl">0.35</span>) <span class="sc">+</span></span>
+<span id="cb16-579"><a href="#cb16-579" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fl">0.832358</span>, <span class="at">linetype =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb16-580"><a href="#cb16-580" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">facet_wrap</span>(<span class="sc">~</span>Diagnosis, <span class="at">nrow =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb16-581"><a href="#cb16-581" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_pub</span>() <span class="sc">+</span></span>
+<span id="cb16-582"><a href="#cb16-582" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Study week"</span>, <span class="at">y =</span> <span class="st">"Dysbiosis score"</span>, <span class="at">color =</span> <span class="st">"Diagnosis"</span>) <span class="sc">+</span></span>
+<span id="cb16-583"><a href="#cb16-583" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pub</span>()</span>
+<span id="cb16-584"><a href="#cb16-584" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-585"><a href="#cb16-585" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p, <span class="st">"figures/67-dysbiosis-trajectories-r"</span>, <span class="at">width =</span> <span class="dv">260</span>, <span class="at">height =</span> <span class="dv">95</span>)</span>
+<span id="cb16-586"><a href="#cb16-586" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-587"><a href="#cb16-587" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-588"><a href="#cb16-588" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>HMP2/IBDMDB 纵向多组学设计、Figure 3 与官方产品：<span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span></span>
-<span id="cb16-589"><a href="#cb16-589" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>IBD 肠道菌群长期个体动态与稳定性：<span class="co">[</span><span class="ot">@halfvarson2017dynamics</span><span class="co">]</span></span>
-<span id="cb16-590"><a href="#cb16-590" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>线性混合模型实现与固定效应检验：<span class="co">[</span><span class="ot">@bates2015lme4; @kuznetsova2017lmertest</span><span class="co">]</span></span>
-<span id="cb16-591"><a href="#cb16-591" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>微生物组 compositional data 的解释边界：<span class="co">[</span><span class="ot">@gloor2017compositional</span><span class="co">]</span></span>
+<span id="cb16-588"><a href="#cb16-588" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb16-589"><a href="#cb16-589" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-590"><a href="#cb16-590" aria-hidden="true" tabindex="-1"></a>同一受试者的 20 次采样不是 20 个独立样本。用 HMP2 真实纵向队列，把技术重复、不规则间隔、随机斜率、主体级 bootstrap 与‘检出不等于定植’一次讲清。</span>
+<span id="cb16-591"><a href="#cb16-591" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-592"><a href="#cb16-592" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb16-593"><a href="#cb16-593" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-594"><a href="#cb16-594" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>HMP2/IBDMDB 纵向多组学设计、Figure 3 与官方产品：<span class="co">[</span><span class="ot">@lloydprice2019multiomics</span><span class="co">]</span></span>
+<span id="cb16-595"><a href="#cb16-595" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>IBD 肠道菌群长期个体动态与稳定性：<span class="co">[</span><span class="ot">@halfvarson2017dynamics</span><span class="co">]</span></span>
+<span id="cb16-596"><a href="#cb16-596" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>线性混合模型实现与固定效应检验：<span class="co">[</span><span class="ot">@bates2015lme4; @kuznetsova2017lmertest</span><span class="co">]</span></span>
+<span id="cb16-597"><a href="#cb16-597" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>微生物组 compositional data 的解释边界：<span class="co">[</span><span class="ot">@gloor2017compositional</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

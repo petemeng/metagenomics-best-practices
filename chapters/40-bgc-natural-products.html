@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">预测到基因簇之后，离天然产物还有多远？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">预测到基因簇之后，离天然产物还有多远？</a>
+  <ul class="collapse">
+  <li><a href="#基因簇数量增加可能只是同一个簇被切开" id="toc-基因簇数量增加可能只是同一个簇被切开" class="nav-link" data-scroll-target="#基因簇数量增加可能只是同一个簇被切开">基因簇数量增加，可能只是同一个簇被切开</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先锁定输入、版本和算力边界</a>
   <ul class="collapse">
@@ -1009,13 +1041,13 @@ div.csl-indent {
 <p>本次以 32 CPU cores 实跑。完整基因组分支的 peak RAM 为 0.43–0.83 GiB、耗时 12 秒至 7 分 50 秒；39.7 Mb 的真实共组装子集上，antiSMASH 用时 22 分 26 秒、peak 0.77 GiB，GECCO 用时 52 秒、peak 1.77 GiB。建议预留 <strong>16 GB RAM、32 CPU cores、30 GB 可用磁盘和 1 小时</strong>；启用更多 antiSMASH modules、处理大队列或长读长组装时需按输入规模上调。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="基因簇数量增加，可能只是同一个簇被切开">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>基因簇数量增加，可能只是同一个簇被切开
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1036,6 +1068,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="基因簇数量增加可能只是同一个簇被切开" class="level3">
+<h3 class="anchored" data-anchor-id="基因簇数量增加可能只是同一个簇被切开">基因簇数量增加，可能只是同一个簇被切开</h3>
+<p>完整序列切成片段后 calls 从 19 增至 29，说明边界碎片化会改变计数单位。若把每个片段都当作独立完整簇，便会夸大多样性。应追踪边缘位置、重叠与可见范围，先区分“候选片段”与“完整上下文”，再比较不同样本的簇数量。</p>
+<p>低参考相似性也不是新化合物的充分证据，可能来自不完整序列或参考不足。工具间重叠提供条件性支持，却不能证明表达与产物形成。应分别报告序列结构、已知参考关联和尚待验证的化学结论。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1259,7 +1296,11 @@ div.csl-indent {
 <section id="跨工具共识必须先定义边界重叠" class="level3">
 <h3 class="anchored" data-anchor-id="跨工具共识必须先定义边界重叠">跨工具共识必须先定义边界重叠</h3>
 <p>对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：</p>
-<p>[ . ]</p>
+<p><span class="math display">\[
+\frac{|A\cap B|}{|A|}\ge 0.25
+\quad\text{and}\quad
+\frac{|A\cap B|}{|B|}\ge 0.25.
+\]</span></p>
 <p>双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。</p>
 </section>
 <section id="mibig-similarity-不是-compound-novelty" class="level3">
@@ -1389,7 +1430,11 @@ div.csl-indent {
 <section id="read-weighted-abundance-要从-bgc-内-genes-守恒汇总" class="level3">
 <h3 class="anchored" data-anchor-id="read-weighted-abundance-要从-bgc-内-genes-守恒汇总">Read-weighted abundance 要从 BGC 内 genes 守恒汇总</h3>
 <p>一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：</p>
-<p>[ A_{rs}=<em>{gr}w</em>{gr}C_{gs}, P_{rs}=100. ]</p>
+<p><span class="math display">\[
+A_{rs}=\sum_{g\in r}w_{gr}C_{gs},
+\qquad
+P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.
+\]</span></p>
 <p>这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>bgc <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"coassembly-bgc-abundance.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
@@ -2063,7 +2108,7 @@ Udwary, Daniel W., Lisa Zeigler, Ratnakar N. Asolkar, 等. 2007年. <span>《Gen
 <span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>本次以 32 CPU cores 实跑。完整基因组分支的 peak RAM 为 0.43–0.83 GiB、耗时 12 秒至 7 分 50 秒；39.7 Mb 的真实共组装子集上，antiSMASH 用时 22 分 26 秒、peak 0.77 GiB，GECCO 用时 52 秒、peak 1.77 GiB。建议预留 **16 GB RAM、32 CPU cores、30 GB 可用磁盘和 1 小时**；启用更多 antiSMASH modules、处理大队列或长读长组装时需按输入规模上调。</span>
 <span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="基因簇数量增加，可能只是同一个簇被切开"}</span>
 <span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>完整度、参考相似性和潜在新颖性分别报告；预测基因簇不等于已经检测到化合物。</span>
 <span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2077,329 +2122,335 @@ Udwary, Daniel W., Lisa Zeigler, Ratnakar N. Asolkar, 等. 2007年. <span>《Gen
 <span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a><span class="al">![同一序列在完整、20 kb 碎片和真实共组装条件下的 BGC yield；计数差异首先反映边界与模型定义。](../figures/40-tool-bgc-yield.png)</span>{#fig-40-yield}</span>
 <span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a><span class="fu">### 基因簇数量增加，可能只是同一个簇被切开</span></span>
 <span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/40/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 0.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a>完整序列切成片段后 calls 从 19 增至 29，说明边界碎片化会改变计数单位。若把每个片段都当作独立完整簇，便会夸大多样性。应追踪边缘位置、重叠与可见范围，先区分“候选片段”与“完整上下文”，再比较不同样本的簇数量。</span>
 <span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/40/download.R)</span>。</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>低参考相似性也不是新化合物的充分证据，可能来自不完整序列或参考不足。工具间重叠提供条件性支持，却不能证明表达与产物形成。应分别报告序列结构、已知参考关联和尚待验证的化学结论。</span>
 <span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-40</span></span>
-<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/40/files.tsv"</span>))</span>
-<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-setup}</span></span>
-<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 算力门槛</span></span>
-<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 分支 <span class="pp">|</span> 输入规模 <span class="pp">|</span> 实跑耗时 <span class="pp">|</span> Peak RAM <span class="pp">|</span> 建议 <span class="pp">|</span></span>
-<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|</span></span>
-<span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, complete <span class="pp">|</span> 5.18 Mb <span class="pp">|</span> antiSMASH 1:34；GECCO 0:21 <span class="pp">|</span> 0.61/0.83 GiB <span class="pp">|</span> 8 cores, 8 GB RAM <span class="pp">|</span></span>
-<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, 20-kb fragments <span class="pp">|</span> 5.18 Mb / 260 fragments <span class="pp">|</span> antiSMASH 7:50；GECCO 0:12 <span class="pp">|</span> 0.43/0.85 GiB <span class="pp">|</span> 16 cores, 8 GB RAM <span class="pp">|</span></span>
-<span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> 7.21 Mb / 7 records <span class="pp">|</span> antiSMASH 1:21；GECCO 0:28 <span class="pp">|</span> 0.56/0.87 GiB <span class="pp">|</span> 8 cores, 8 GB RAM <span class="pp">|</span></span>
-<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Co-assembly contigs ≥20 kb <span class="pp">|</span> 39.67 Mb / 675 contigs <span class="pp">|</span> antiSMASH 22:26；GECCO 0:52 <span class="pp">|</span> 0.77/1.77 GiB <span class="pp">|</span> 32 cores, 16 GB RAM <span class="pp">|</span></span>
-<span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a>没有服务器时，可直接读取 <span class="in">`data/small/40-bgc-natural-products-frozen/`</span> 的 region ledger、fragmentation table、MIBiG summary、gene-to-BGC mapping 和资源日志。在线 antiSMASH 适合少量完整 genomes；涉及未公开人源样本时，不应上传到公共 web service。</span>
-<span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-antismash8-2026.07 <span class="dt">\</span></span>
-<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/antismash8-linux-64.lock</span>
-<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-bgc-gecco-2026.07 <span class="dt">\</span></span>
-<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/bgc-gecco-linux-64.lock</span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/40/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 0.3 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/40/download.R)</span>。</span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-40</span></span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/40/files.tsv"</span>))</span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-77"><a href="#cb10-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-78"><a href="#cb10-78" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-setup}</span></span>
+<span id="cb10-79"><a href="#cb10-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-80"><a href="#cb10-80" aria-hidden="true" tabindex="-1"></a><span class="fu">### 算力门槛</span></span>
+<span id="cb10-81"><a href="#cb10-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-82"><a href="#cb10-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 分支 <span class="pp">|</span> 输入规模 <span class="pp">|</span> 实跑耗时 <span class="pp">|</span> Peak RAM <span class="pp">|</span> 建议 <span class="pp">|</span></span>
+<span id="cb10-83"><a href="#cb10-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|</span></span>
+<span id="cb10-84"><a href="#cb10-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, complete <span class="pp">|</span> 5.18 Mb <span class="pp">|</span> antiSMASH 1:34；GECCO 0:21 <span class="pp">|</span> 0.61/0.83 GiB <span class="pp">|</span> 8 cores, 8 GB RAM <span class="pp">|</span></span>
+<span id="cb10-85"><a href="#cb10-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, 20-kb fragments <span class="pp">|</span> 5.18 Mb / 260 fragments <span class="pp">|</span> antiSMASH 7:50；GECCO 0:12 <span class="pp">|</span> 0.43/0.85 GiB <span class="pp">|</span> 16 cores, 8 GB RAM <span class="pp">|</span></span>
+<span id="cb10-86"><a href="#cb10-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> 7.21 Mb / 7 records <span class="pp">|</span> antiSMASH 1:21；GECCO 0:28 <span class="pp">|</span> 0.56/0.87 GiB <span class="pp">|</span> 8 cores, 8 GB RAM <span class="pp">|</span></span>
+<span id="cb10-87"><a href="#cb10-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Co-assembly contigs ≥20 kb <span class="pp">|</span> 39.67 Mb / 675 contigs <span class="pp">|</span> antiSMASH 22:26；GECCO 0:52 <span class="pp">|</span> 0.77/1.77 GiB <span class="pp">|</span> 32 cores, 16 GB RAM <span class="pp">|</span></span>
+<span id="cb10-88"><a href="#cb10-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-89"><a href="#cb10-89" aria-hidden="true" tabindex="-1"></a>没有服务器时，可直接读取 <span class="in">`data/small/40-bgc-natural-products-frozen/`</span> 的 region ledger、fragmentation table、MIBiG summary、gene-to-BGC mapping 和资源日志。在线 antiSMASH 适合少量完整 genomes；涉及未公开人源样本时，不应上传到公共 web service。</span>
+<span id="cb10-90"><a href="#cb10-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-91"><a href="#cb10-91" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb10-92"><a href="#cb10-92" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
 <span id="cb10-93"><a href="#cb10-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate metagenome-antismash8-2026.07</span>
-<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span><span class="st">"/absolute/path/antismash8"</span></span>
-<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> antismash8-install</span>
-<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> antismash8-verify</span>
-<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-94"><a href="#cb10-94" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb10-95"><a href="#cb10-95" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-antismash8-2026.07 <span class="dt">\</span></span>
+<span id="cb10-96"><a href="#cb10-96" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/antismash8-linux-64.lock</span>
+<span id="cb10-97"><a href="#cb10-97" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-bgc-gecco-2026.07 <span class="dt">\</span></span>
+<span id="cb10-98"><a href="#cb10-98" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/bgc-gecco-linux-64.lock</span>
 <span id="cb10-99"><a href="#cb10-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a>数据库审计锁定 PFAM 35.0、MIBiG 4.0 和 MITE 1.3 的七个关键文件；总数据库目录约 9.4 GB。下载器来自 antiSMASH 8.0.4 环境，随后逐文件核对 bytes 与 SHA-256。</span>
-<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
-<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
-<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260740</span>)</span>
-<span id="cb10-108"><a href="#cb10-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-109"><a href="#cb10-109" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a>  <span class="at">antiSMASH =</span> <span class="st">"#0072B2"</span>, <span class="at">GECCO =</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">PKS =</span> <span class="st">"#0072B2"</span>, <span class="at">NRPS =</span> <span class="st">"#D55E00"</span>, <span class="at">RiPP =</span> <span class="st">"#009E73"</span>,</span>
-<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a>  <span class="at">Terpene =</span> <span class="st">"#E69F00"</span>, <span class="at">Saccharide =</span> <span class="st">"#CC79A7"</span>, <span class="at">Other =</span> <span class="st">"#7F7F7F"</span>,</span>
-<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">BGC regions</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4D4D4D"</span>, <span class="st">`</span><span class="at">BGC genes</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>,</span>
-<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">MOCK1 reads</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">`</span><span class="at">MOCK2 reads</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#D55E00"</span></span>
-<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-126"><a href="#cb10-126" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">180</span>, <span class="at">height =</span> <span class="dv">120</span>, <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb10-127"><a href="#cb10-127" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb10-128"><a href="#cb10-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb10-129"><a href="#cb10-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb10-130"><a href="#cb10-130" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb10-131"><a href="#cb10-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb10-132"><a href="#cb10-132" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-133"><a href="#cb10-133" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-134"><a href="#cb10-134" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-135"><a href="#cb10-135" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb10-136"><a href="#cb10-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-137"><a href="#cb10-137" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实数据与 lineage</span></span>
-<span id="cb10-138"><a href="#cb10-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-139"><a href="#cb10-139" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 数据 <span class="pp">|</span> 标识符 <span class="pp">|</span> 角色 <span class="pp">|</span></span>
-<span id="cb10-140"><a href="#cb10-140" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb10-141"><a href="#cb10-141" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica* CNB-440 <span class="pp">|</span> GCA_000016425.1 / CP000667.1；5,183,331 bp <span class="pp">|</span> 含 salinosporamide、sporolide、salinilactam 等已知 BGC 的完整基因组正控 <span class="co">[</span><span class="ot">@udwary2007salinispora</span><span class="co">]</span> <span class="pp">|</span></span>
-<span id="cb10-142"><a href="#cb10-142" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> GCA_000009705.1 / BA000019.2；chromosome + 6 plasmids <span class="pp">|</span> 不同门类的完整基因组正控 <span class="co">[</span><span class="ot">@kaneko2001nostoc</span><span class="co">]</span> <span class="pp">|</span></span>
-<span id="cb10-143"><a href="#cb10-143" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEGAHIT co-assembly <span class="pp">|</span> checksum-locked co-assembly；确定性筛选 675 条 ≥20 kb contigs <span class="pp">|</span> 真实 fragmented-metagenome branch <span class="pp">|</span></span>
-<span id="cb10-144"><a href="#cb10-144" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Gene membership / abundance <span class="pp">|</span> checksum-locked catalog and abundance tables <span class="pp">|</span> 将 co-assembly ORFs 映射到 93,782-gene catalog 和两样本 raw reads <span class="pp">|</span></span>
-<span id="cb10-145"><a href="#cb10-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-146"><a href="#cb10-146" aria-hidden="true" tabindex="-1"></a>完整序列、数据库和临时 indexes 不进入 git；输入 compressed SHA-256、数据库文件 SHA-256、命令、版本和 compact outputs 进入 frozen evidence。</span>
-<span id="cb10-147"><a href="#cb10-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-148"><a href="#cb10-148" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备并核对输入 {#sec-code}</span></span>
-<span id="cb10-149"><a href="#cb10-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-150"><a href="#cb10-150" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb10-151"><a href="#cb10-151" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb10-152"><a href="#cb10-152" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article40"</span></span>
-<span id="cb10-153"><a href="#cb10-153" aria-hidden="true" tabindex="-1"></a><span class="va">AS_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-antismash8-2026.07"</span></span>
-<span id="cb10-154"><a href="#cb10-154" aria-hidden="true" tabindex="-1"></a><span class="va">GECCO_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-bgc-gecco-2026.07"</span></span>
-<span id="cb10-155"><a href="#cb10-155" aria-hidden="true" tabindex="-1"></a><span class="va">AS_DB</span><span class="op">=</span><span class="st">"/absolute/path/antismash8"</span></span>
-<span id="cb10-156"><a href="#cb10-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-157"><a href="#cb10-157" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article40_bgc.py <span class="dt">\</span></span>
-<span id="cb10-158"><a href="#cb10-158" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-159"><a href="#cb10-159" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-database</span> <span class="st">"</span><span class="va">${AS_DB}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-160"><a href="#cb10-160" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-env</span> <span class="st">"</span><span class="va">${AS_ENV}</span><span class="st">"</span> <span class="at">--gecco-env</span> <span class="st">"</span><span class="va">${GECCO_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-161"><a href="#cb10-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimum-contig</span> 20000 <span class="at">--fragment-size</span> 20000</span>
-<span id="cb10-162"><a href="#cb10-162" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-163"><a href="#cb10-163" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-164"><a href="#cb10-164" aria-hidden="true" tabindex="-1"></a>准备器执行五层 fail-closed 检查：两个完整 genomes、共组装、catalog membership、abundance 的 SHA-256；antiSMASH 七个数据库文件；序列数与总 bp；675 条 contig 子集；<span class="in">`antiSMASH --check-prereqs`</span>。<span class="in">`salinispora-fragment-map.tsv`</span> 固定每个 20 kb fragment 在完整染色体上的坐标。</span>
-<span id="cb10-165"><a href="#cb10-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-166"><a href="#cb10-166" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单工具列表升级为“定义 + overlap” {#sec-audit}</span></span>
-<span id="cb10-167"><a href="#cb10-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-168"><a href="#cb10-168" aria-hidden="true" tabindex="-1"></a>完整 *S. tropica* 上，14/19 个 antiSMASH regions 获得 GECCO support，14/15 个 GECCO regions 获得 antiSMASH support；真实共组装上则只有 17/71 与 17/21。前者说明完整上下文下两个模型大体收敛，后者说明 fragments、短 contigs 和不同边界假设放大分歧。未获共识不等于假阳性；它进入 secondary tier，等待更长 assembly、domain architecture、taxonomy 与实验证据。</span>
+<span id="cb10-100"><a href="#cb10-100" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate metagenome-antismash8-2026.07</span>
+<span id="cb10-101"><a href="#cb10-101" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span><span class="st">"/absolute/path/antismash8"</span></span>
+<span id="cb10-102"><a href="#cb10-102" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> antismash8-install</span>
+<span id="cb10-103"><a href="#cb10-103" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> antismash8-verify</span>
+<span id="cb10-104"><a href="#cb10-104" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-105"><a href="#cb10-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-106"><a href="#cb10-106" aria-hidden="true" tabindex="-1"></a>数据库审计锁定 PFAM 35.0、MIBiG 4.0 和 MITE 1.3 的七个关键文件；总数据库目录约 9.4 GB。下载器来自 antiSMASH 8.0.4 环境，随后逐文件核对 bytes 与 SHA-256。</span>
+<span id="cb10-107"><a href="#cb10-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-110"><a href="#cb10-110" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb10-111"><a href="#cb10-111" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb10-112"><a href="#cb10-112" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(forcats)</span>
+<span id="cb10-113"><a href="#cb10-113" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260740</span>)</span>
+<span id="cb10-114"><a href="#cb10-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-115"><a href="#cb10-115" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb10-116"><a href="#cb10-116" aria-hidden="true" tabindex="-1"></a>  <span class="at">antiSMASH =</span> <span class="st">"#0072B2"</span>, <span class="at">GECCO =</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb10-117"><a href="#cb10-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">PKS =</span> <span class="st">"#0072B2"</span>, <span class="at">NRPS =</span> <span class="st">"#D55E00"</span>, <span class="at">RiPP =</span> <span class="st">"#009E73"</span>,</span>
+<span id="cb10-118"><a href="#cb10-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">Terpene =</span> <span class="st">"#E69F00"</span>, <span class="at">Saccharide =</span> <span class="st">"#CC79A7"</span>, <span class="at">Other =</span> <span class="st">"#7F7F7F"</span>,</span>
+<span id="cb10-119"><a href="#cb10-119" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">BGC regions</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#4D4D4D"</span>, <span class="st">`</span><span class="at">BGC genes</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>,</span>
+<span id="cb10-120"><a href="#cb10-120" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">MOCK1 reads</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">`</span><span class="at">MOCK2 reads</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#D55E00"</span></span>
+<span id="cb10-121"><a href="#cb10-121" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-122"><a href="#cb10-122" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb10-123"><a href="#cb10-123" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb10-124"><a href="#cb10-124" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb10-125"><a href="#cb10-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb10-126"><a href="#cb10-126" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb10-127"><a href="#cb10-127" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb10-128"><a href="#cb10-128" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb10-129"><a href="#cb10-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb10-130"><a href="#cb10-130" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb10-131"><a href="#cb10-131" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-132"><a href="#cb10-132" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">180</span>, <span class="at">height =</span> <span class="dv">120</span>, <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb10-133"><a href="#cb10-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-134"><a href="#cb10-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb10-135"><a href="#cb10-135" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb10-136"><a href="#cb10-136" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height, <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb10-137"><a href="#cb10-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb10-138"><a href="#cb10-138" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-139"><a href="#cb10-139" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-140"><a href="#cb10-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-141"><a href="#cb10-141" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb10-142"><a href="#cb10-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-143"><a href="#cb10-143" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实数据与 lineage</span></span>
+<span id="cb10-144"><a href="#cb10-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-145"><a href="#cb10-145" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 数据 <span class="pp">|</span> 标识符 <span class="pp">|</span> 角色 <span class="pp">|</span></span>
+<span id="cb10-146"><a href="#cb10-146" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb10-147"><a href="#cb10-147" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica* CNB-440 <span class="pp">|</span> GCA_000016425.1 / CP000667.1；5,183,331 bp <span class="pp">|</span> 含 salinosporamide、sporolide、salinilactam 等已知 BGC 的完整基因组正控 <span class="co">[</span><span class="ot">@udwary2007salinispora</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb10-148"><a href="#cb10-148" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> GCA_000009705.1 / BA000019.2；chromosome + 6 plasmids <span class="pp">|</span> 不同门类的完整基因组正控 <span class="co">[</span><span class="ot">@kaneko2001nostoc</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb10-149"><a href="#cb10-149" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEGAHIT co-assembly <span class="pp">|</span> checksum-locked co-assembly；确定性筛选 675 条 ≥20 kb contigs <span class="pp">|</span> 真实 fragmented-metagenome branch <span class="pp">|</span></span>
+<span id="cb10-150"><a href="#cb10-150" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Gene membership / abundance <span class="pp">|</span> checksum-locked catalog and abundance tables <span class="pp">|</span> 将 co-assembly ORFs 映射到 93,782-gene catalog 和两样本 raw reads <span class="pp">|</span></span>
+<span id="cb10-151"><a href="#cb10-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-152"><a href="#cb10-152" aria-hidden="true" tabindex="-1"></a>完整序列、数据库和临时 indexes 不进入 git；输入 compressed SHA-256、数据库文件 SHA-256、命令、版本和 compact outputs 进入 frozen evidence。</span>
+<span id="cb10-153"><a href="#cb10-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-154"><a href="#cb10-154" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备并核对输入 {#sec-code}</span></span>
+<span id="cb10-155"><a href="#cb10-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-156"><a href="#cb10-156" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb10-157"><a href="#cb10-157" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb10-158"><a href="#cb10-158" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article40"</span></span>
+<span id="cb10-159"><a href="#cb10-159" aria-hidden="true" tabindex="-1"></a><span class="va">AS_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-antismash8-2026.07"</span></span>
+<span id="cb10-160"><a href="#cb10-160" aria-hidden="true" tabindex="-1"></a><span class="va">GECCO_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-bgc-gecco-2026.07"</span></span>
+<span id="cb10-161"><a href="#cb10-161" aria-hidden="true" tabindex="-1"></a><span class="va">AS_DB</span><span class="op">=</span><span class="st">"/absolute/path/antismash8"</span></span>
+<span id="cb10-162"><a href="#cb10-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-163"><a href="#cb10-163" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article40_bgc.py <span class="dt">\</span></span>
+<span id="cb10-164"><a href="#cb10-164" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-165"><a href="#cb10-165" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-database</span> <span class="st">"</span><span class="va">${AS_DB}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-166"><a href="#cb10-166" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-env</span> <span class="st">"</span><span class="va">${AS_ENV}</span><span class="st">"</span> <span class="at">--gecco-env</span> <span class="st">"</span><span class="va">${GECCO_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-167"><a href="#cb10-167" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimum-contig</span> 20000 <span class="at">--fragment-size</span> 20000</span>
+<span id="cb10-168"><a href="#cb10-168" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb10-169"><a href="#cb10-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-170"><a href="#cb10-170" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行八个预设分支</span></span>
+<span id="cb10-170"><a href="#cb10-170" aria-hidden="true" tabindex="-1"></a>准备器执行五层 fail-closed 检查：两个完整 genomes、共组装、catalog membership、abundance 的 SHA-256；antiSMASH 七个数据库文件；序列数与总 bp；675 条 contig 子集；<span class="in">`antiSMASH --check-prereqs`</span>。<span class="in">`salinispora-fragment-map.tsv`</span> 固定每个 20 kb fragment 在完整染色体上的坐标。</span>
 <span id="cb10-171"><a href="#cb10-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-172"><a href="#cb10-172" aria-hidden="true" tabindex="-1"></a><span class="fu">### Rule-based 与 de novo 模型回答不同问题</span></span>
+<span id="cb10-172"><a href="#cb10-172" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单工具列表升级为“定义 + overlap” {#sec-audit}</span></span>
 <span id="cb10-173"><a href="#cb10-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-174"><a href="#cb10-174" aria-hidden="true" tabindex="-1"></a>antiSMASH 用人工维护的 biosynthetic rules 和 profile HMMs 定义 protoclusters，再把重叠 protoclusters 合并为 regions <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span>。优点是类别和核心 gene 可解释；代价是新化学空间仍受 rule vocabulary 约束。</span>
+<span id="cb10-174"><a href="#cb10-174" aria-hidden="true" tabindex="-1"></a>完整 *S. tropica* 上，14/19 个 antiSMASH regions 获得 GECCO support，14/15 个 GECCO regions 获得 antiSMASH support；真实共组装上则只有 17/71 与 17/21。前者说明完整上下文下两个模型大体收敛，后者说明 fragments、短 contigs 和不同边界假设放大分歧。未获共识不等于假阳性；它进入 secondary tier，等待更长 assembly、domain architecture、taxonomy 与实验证据。</span>
 <span id="cb10-175"><a href="#cb10-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-176"><a href="#cb10-176" aria-hidden="true" tabindex="-1"></a>GECCO 用 conditional random field 根据相邻 proteins 的 domain evidence 进行 de novo 预测，强调高精度、可扩展和模型可解释性 <span class="co">[</span><span class="ot">@carroll2021gecco</span><span class="co">]</span>。DeepBGC 则用深度学习序列模型学习 BGC context <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span>。两类机器学习 scores 不是 antiSMASH rule 的概率版本，也不能直接相加。</span>
+<span id="cb10-176"><a href="#cb10-176" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行八个预设分支</span></span>
 <span id="cb10-177"><a href="#cb10-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-178"><a href="#cb10-178" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb10-179"><a href="#cb10-179" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article40_bgc.py <span class="dt">\</span></span>
-<span id="cb10-180"><a href="#cb10-180" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-181"><a href="#cb10-181" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-database</span> <span class="st">"</span><span class="va">${AS_DB}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-182"><a href="#cb10-182" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-env</span> <span class="st">"</span><span class="va">${AS_ENV}</span><span class="st">"</span> <span class="at">--gecco-env</span> <span class="st">"</span><span class="va">${GECCO_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-183"><a href="#cb10-183" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 32</span>
-<span id="cb10-184"><a href="#cb10-184" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-185"><a href="#cb10-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-186"><a href="#cb10-186" aria-hidden="true" tabindex="-1"></a>antiSMASH 的固定参数为 bacterial taxon、<span class="in">`--minimal --cc-mibig --cb-knownclusters`</span>；完整 genomes 用 <span class="in">`prodigal`</span>，fragments 与 metagenome contigs 用 <span class="in">`prodigal-m`</span>。GECCO 固定 <span class="in">`--threshold 0.8 --cds 3`</span>。命令、UTC 起止时间、stdout/stderr 与 <span class="in">`/usr/bin/time -v`</span> 全部写入日志。</span>
-<span id="cb10-187"><a href="#cb10-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-188"><a href="#cb10-188" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“低 MIBiG 相似”升级为候选优先级</span></span>
-<span id="cb10-189"><a href="#cb10-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-190"><a href="#cb10-190" aria-hidden="true" tabindex="-1"></a>71 个 co-assembly antiSMASH regions 中，best MIBiG region-to-region score 分为 3 个 high（≥0.75）、31 个 intermediate、36 个 low、1 个无 score。低 similarity 且 abundance 高的 region 值得优先做 assembly extension、GCF clustering、domain/synteny 检查与 metabolomics 联合分析；在这些验证之前，表述应是 **distant from characterized MIBiG entries**，不能写成 novel compound。</span>
+<span id="cb10-178"><a href="#cb10-178" aria-hidden="true" tabindex="-1"></a><span class="fu">### Rule-based 与 de novo 模型回答不同问题</span></span>
+<span id="cb10-179"><a href="#cb10-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-180"><a href="#cb10-180" aria-hidden="true" tabindex="-1"></a>antiSMASH 用人工维护的 biosynthetic rules 和 profile HMMs 定义 protoclusters，再把重叠 protoclusters 合并为 regions <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span>。优点是类别和核心 gene 可解释；代价是新化学空间仍受 rule vocabulary 约束。</span>
+<span id="cb10-181"><a href="#cb10-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-182"><a href="#cb10-182" aria-hidden="true" tabindex="-1"></a>GECCO 用 conditional random field 根据相邻 proteins 的 domain evidence 进行 de novo 预测，强调高精度、可扩展和模型可解释性 <span class="co">[</span><span class="ot">@carroll2021gecco</span><span class="co">]</span>。DeepBGC 则用深度学习序列模型学习 BGC context <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span>。两类机器学习 scores 不是 antiSMASH rule 的概率版本，也不能直接相加。</span>
+<span id="cb10-183"><a href="#cb10-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-184"><a href="#cb10-184" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb10-185"><a href="#cb10-185" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article40_bgc.py <span class="dt">\</span></span>
+<span id="cb10-186"><a href="#cb10-186" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-187"><a href="#cb10-187" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-database</span> <span class="st">"</span><span class="va">${AS_DB}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-188"><a href="#cb10-188" aria-hidden="true" tabindex="-1"></a>  <span class="at">--antismash-env</span> <span class="st">"</span><span class="va">${AS_ENV}</span><span class="st">"</span> <span class="at">--gecco-env</span> <span class="st">"</span><span class="va">${GECCO_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-189"><a href="#cb10-189" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 32</span>
+<span id="cb10-190"><a href="#cb10-190" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb10-191"><a href="#cb10-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-192"><a href="#cb10-192" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 co-assembly region 的 best MIBiG score 与两样本 assigned reads；点大小反映 region length。](../figures/40-mibig-similarity-abundance.png)</span>{#fig-40-mibig}</span>
+<span id="cb10-192"><a href="#cb10-192" aria-hidden="true" tabindex="-1"></a>antiSMASH 的固定参数为 bacterial taxon、<span class="in">`--minimal --cc-mibig --cb-knownclusters`</span>；完整 genomes 用 <span class="in">`prodigal`</span>，fragments 与 metagenome contigs 用 <span class="in">`prodigal-m`</span>。GECCO 固定 <span class="in">`--threshold 0.8 --cds 3`</span>。命令、UTC 起止时间、stdout/stderr 与 <span class="in">`/usr/bin/time -v`</span> 全部写入日志。</span>
 <span id="cb10-193"><a href="#cb10-193" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-194"><a href="#cb10-194" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 混用 complete-genome 与 metagenome gene finder"}</span>
-<span id="cb10-195"><a href="#cb10-195" aria-hidden="true" tabindex="-1"></a>完整 bacterial genome 使用 <span class="in">`prodigal`</span>；碎片化 contigs 使用 <span class="in">`prodigal-m`</span>。更换 gene calls 会改变 domain arrangement 与 BGC boundaries，必须和结果一起版本化。</span>
-<span id="cb10-196"><a href="#cb10-196" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-194"><a href="#cb10-194" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“低 MIBiG 相似”升级为候选优先级</span></span>
+<span id="cb10-195"><a href="#cb10-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-196"><a href="#cb10-196" aria-hidden="true" tabindex="-1"></a>71 个 co-assembly antiSMASH regions 中，best MIBiG region-to-region score 分为 3 个 high（≥0.75）、31 个 intermediate、36 个 low、1 个无 score。低 similarity 且 abundance 高的 region 值得优先做 assembly extension、GCF clustering、domain/synteny 检查与 metabolomics 联合分析；在这些验证之前，表述应是 **distant from characterized MIBiG entries**，不能写成 novel compound。</span>
 <span id="cb10-197"><a href="#cb10-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-198"><a href="#cb10-198" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成 compact evidence</span></span>
+<span id="cb10-198"><a href="#cb10-198" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 co-assembly region 的 best MIBiG score 与两样本 assigned reads；点大小反映 region length。](../figures/40-mibig-similarity-abundance.png)</span>{#fig-40-mibig}</span>
 <span id="cb10-199"><a href="#cb10-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-200"><a href="#cb10-200" aria-hidden="true" tabindex="-1"></a><span class="fu">### 跨工具共识必须先定义边界重叠</span></span>
-<span id="cb10-201"><a href="#cb10-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-202"><a href="#cb10-202" aria-hidden="true" tabindex="-1"></a>对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：</span>
+<span id="cb10-200"><a href="#cb10-200" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 混用 complete-genome 与 metagenome gene finder"}</span>
+<span id="cb10-201"><a href="#cb10-201" aria-hidden="true" tabindex="-1"></a>完整 bacterial genome 使用 <span class="in">`prodigal`</span>；碎片化 contigs 使用 <span class="in">`prodigal-m`</span>。更换 gene calls 会改变 domain arrangement 与 BGC boundaries，必须和结果一起版本化。</span>
+<span id="cb10-202"><a href="#cb10-202" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-203"><a href="#cb10-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a>\frac{|A\cap B|}{|A|}\ge 0.25</span>
-<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a>\quad\text{且}\quad</span>
-<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a>\frac{|A\cap B|}{|B|}\ge 0.25.</span>
-<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成 compact evidence</span></span>
+<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a><span class="fu">### 跨工具共识必须先定义边界重叠</span></span>
+<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a>对同一 contig 上的两个 regions (A) 与 (B)，本次把 cross-tool support 预定义为：</span>
 <span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a>双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。</span>
-<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a><span class="fu">### MIBiG similarity 不是 compound novelty</span></span>
-<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>MIBiG 4.0 是人工整理的 experimentally characterized BGC 集合 <span class="co">[</span><span class="ot">@zdouc2025mibig4</span><span class="co">]</span>。高 similarity 支持“接近已知 BGC”，低 similarity 只表示当前 sequence/context 与该 reference universe 不近。它不能证明产物新颖，更不能证明结构、产量或活性。</span>
+<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a>\frac{|A\cap B|}{|A|}\ge 0.25</span>
+<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a>\quad\text{and}\quad</span>
+<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a>\frac{|A\cap B|}{|B|}\ge 0.25.</span>
+<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article40_bgc.py <span class="dt">\</span></span>
-<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a>双向门槛防止一个很长 region 仅擦到一个很短 region 就被叫作“共识”。25% 是 operational matching rule，不是普适生物学常数；改变它必须作为 sensitivity analysis 报告。</span>
+<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a><span class="fu">### MIBiG similarity 不是 compound novelty</span></span>
 <span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/tool-yield-summary.tsv"</span></span>
-<span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mibig-similarity-summary.tsv"</span></span>
-<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a>关键输出如下：</span>
+<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a>MIBiG 4.0 是人工整理的 experimentally characterized BGC 集合 <span class="co">[</span><span class="ot">@zdouc2025mibig4</span><span class="co">]</span>。高 similarity 支持“接近已知 BGC”，低 similarity 只表示当前 sequence/context 与该 reference universe 不近。它不能证明产物新颖，更不能证明结构、产量或活性。</span>
+<span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article40_bgc.py <span class="dt">\</span></span>
+<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
 <span id="cb10-225"><a href="#cb10-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-226"><a href="#cb10-226" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Dataset <span class="pp">|</span> antiSMASH <span class="pp">|</span> GECCO <span class="pp">|</span> antiSMASH supported by GECCO <span class="pp">|</span> GECCO supported by antiSMASH <span class="pp">|</span></span>
-<span id="cb10-227"><a href="#cb10-227" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|</span></span>
-<span id="cb10-228"><a href="#cb10-228" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, complete <span class="pp">|</span> 19 <span class="pp">|</span> 15 <span class="pp">|</span> 14 <span class="pp">|</span> 14 <span class="pp">|</span></span>
-<span id="cb10-229"><a href="#cb10-229" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, 20-kb fragments <span class="pp">|</span> 29 <span class="pp">|</span> 27 <span class="pp">|</span> 20 <span class="pp">|</span> 20 <span class="pp">|</span></span>
-<span id="cb10-230"><a href="#cb10-230" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> 16 <span class="pp">|</span> 9 <span class="pp">|</span> 9 <span class="pp">|</span> 9 <span class="pp">|</span></span>
-<span id="cb10-231"><a href="#cb10-231" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Co-assembly contigs ≥20 kb <span class="pp">|</span> 71 <span class="pp">|</span> 21 <span class="pp">|</span> 17 <span class="pp">|</span> 17 <span class="pp">|</span></span>
-<span id="cb10-232"><a href="#cb10-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-233"><a href="#cb10-233" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把 MIBiG low similarity 写成 novel natural product"}</span>
-<span id="cb10-234"><a href="#cb10-234" aria-hidden="true" tabindex="-1"></a>MIBiG 只覆盖已表征 BGC 的一部分；low score 也可能来自 assembly truncation、gene-calling error 或 rearrangement。novelty 需要 GCF、结构和实验链条。</span>
-<span id="cb10-235"><a href="#cb10-235" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-236"><a href="#cb10-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-237"><a href="#cb10-237" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 只保留 antiSMASH HTML"}</span>
-<span id="cb10-238"><a href="#cb10-238" aria-hidden="true" tabindex="-1"></a>HTML 适合浏览，不适合作为唯一数据资产。至少保留 JSON/GenBank、region ledger、命令、版本、database hashes 和 compact summary。</span>
-<span id="cb10-239"><a href="#cb10-239" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-240"><a href="#cb10-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-241"><a href="#cb10-241" aria-hidden="true" tabindex="-1"></a><span class="fu">## 检查 fragmentation 与已知正控</span></span>
+<span id="cb10-226"><a href="#cb10-226" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/tool-yield-summary.tsv"</span></span>
+<span id="cb10-227"><a href="#cb10-227" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mibig-similarity-summary.tsv"</span></span>
+<span id="cb10-228"><a href="#cb10-228" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-229"><a href="#cb10-229" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-230"><a href="#cb10-230" aria-hidden="true" tabindex="-1"></a>关键输出如下：</span>
+<span id="cb10-231"><a href="#cb10-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-232"><a href="#cb10-232" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Dataset <span class="pp">|</span> antiSMASH <span class="pp">|</span> GECCO <span class="pp">|</span> antiSMASH supported by GECCO <span class="pp">|</span> GECCO supported by antiSMASH <span class="pp">|</span></span>
+<span id="cb10-233"><a href="#cb10-233" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|</span></span>
+<span id="cb10-234"><a href="#cb10-234" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, complete <span class="pp">|</span> 19 <span class="pp">|</span> 15 <span class="pp">|</span> 14 <span class="pp">|</span> 14 <span class="pp">|</span></span>
+<span id="cb10-235"><a href="#cb10-235" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *S. tropica*, 20-kb fragments <span class="pp">|</span> 29 <span class="pp">|</span> 27 <span class="pp">|</span> 20 <span class="pp">|</span> 20 <span class="pp">|</span></span>
+<span id="cb10-236"><a href="#cb10-236" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> *Nostoc* PCC 7120 <span class="pp">|</span> 16 <span class="pp">|</span> 9 <span class="pp">|</span> 9 <span class="pp">|</span> 9 <span class="pp">|</span></span>
+<span id="cb10-237"><a href="#cb10-237" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Co-assembly contigs ≥20 kb <span class="pp">|</span> 71 <span class="pp">|</span> 21 <span class="pp">|</span> 17 <span class="pp">|</span> 17 <span class="pp">|</span></span>
+<span id="cb10-238"><a href="#cb10-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-239"><a href="#cb10-239" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把 MIBiG low similarity 写成 novel natural product"}</span>
+<span id="cb10-240"><a href="#cb10-240" aria-hidden="true" tabindex="-1"></a>MIBiG 只覆盖已表征 BGC 的一部分；low score 也可能来自 assembly truncation、gene-calling error 或 rearrangement。novelty 需要 GCF、结构和实验链条。</span>
+<span id="cb10-241"><a href="#cb10-241" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-242"><a href="#cb10-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-245"><a href="#cb10-245" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb10-246"><a href="#cb10-246" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/40-bgc-natural-products-frozen"</span></span>
-<span id="cb10-247"><a href="#cb10-247" aria-hidden="true" tabindex="-1"></a>fragmentation <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"fragmentation-sensitivity.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb10-248"><a href="#cb10-248" aria-hidden="true" tabindex="-1"></a>positive <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"salinispora-positive-control.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb10-249"><a href="#cb10-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-250"><a href="#cb10-250" aria-hidden="true" tabindex="-1"></a>fragmentation <span class="sc">|&gt;</span></span>
-<span id="cb10-251"><a href="#cb10-251" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Tool, RecoveryClass) <span class="sc">|&gt;</span></span>
-<span id="cb10-252"><a href="#cb10-252" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Tool, <span class="fu">factor</span>(RecoveryClass,</span>
-<span id="cb10-253"><a href="#cb10-253" aria-hidden="true" tabindex="-1"></a>    <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Recovered &gt;=80%"</span>, <span class="st">"Partial 20-&lt;80%"</span>, <span class="st">"Missed &lt;20%"</span>)))</span>
-<span id="cb10-254"><a href="#cb10-254" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-255"><a href="#cb10-255" aria-hidden="true" tabindex="-1"></a>positive <span class="sc">|&gt;</span></span>
-<span id="cb10-256"><a href="#cb10-256" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(TopKnownClusterDescription, <span class="st">"salinosporamide|sporolide|salinilactam"</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb10-257"><a href="#cb10-257" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(RegionID, Products, TopKnownClusterAccession,</span>
-<span id="cb10-258"><a href="#cb10-258" aria-hidden="true" tabindex="-1"></a>         TopKnownClusterDescription, TopKnownClusterSimilarityPercent)</span>
-<span id="cb10-259"><a href="#cb10-259" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb10-243"><a href="#cb10-243" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 只保留 antiSMASH HTML"}</span>
+<span id="cb10-244"><a href="#cb10-244" aria-hidden="true" tabindex="-1"></a>HTML 适合浏览，不适合作为唯一数据资产。至少保留 JSON/GenBank、region ledger、命令、版本、database hashes 和 compact summary。</span>
+<span id="cb10-245"><a href="#cb10-245" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-246"><a href="#cb10-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-247"><a href="#cb10-247" aria-hidden="true" tabindex="-1"></a><span class="fu">## 检查 fragmentation 与已知正控</span></span>
+<span id="cb10-248"><a href="#cb10-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-251"><a href="#cb10-251" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb10-252"><a href="#cb10-252" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/40-bgc-natural-products-frozen"</span></span>
+<span id="cb10-253"><a href="#cb10-253" aria-hidden="true" tabindex="-1"></a>fragmentation <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"fragmentation-sensitivity.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-254"><a href="#cb10-254" aria-hidden="true" tabindex="-1"></a>positive <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"salinispora-positive-control.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-255"><a href="#cb10-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-256"><a href="#cb10-256" aria-hidden="true" tabindex="-1"></a>fragmentation <span class="sc">|&gt;</span></span>
+<span id="cb10-257"><a href="#cb10-257" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(Tool, RecoveryClass) <span class="sc">|&gt;</span></span>
+<span id="cb10-258"><a href="#cb10-258" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(Tool, <span class="fu">factor</span>(RecoveryClass,</span>
+<span id="cb10-259"><a href="#cb10-259" aria-hidden="true" tabindex="-1"></a>    <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Recovered &gt;=80%"</span>, <span class="st">"Partial 20-&lt;80%"</span>, <span class="st">"Missed &lt;20%"</span>)))</span>
 <span id="cb10-260"><a href="#cb10-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-261"><a href="#cb10-261" aria-hidden="true" tabindex="-1"></a>完整染色体上的 salinosporamide A region 得到 90% KnownClusterBlast similarity；切成 20 kb 后最佳对应 fragment 仅为 35%。这不是数据库退化，而是 context 和边界被人为切断。</span>
-<span id="cb10-262"><a href="#cb10-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-263"><a href="#cb10-263" aria-hidden="true" tabindex="-1"></a><span class="al">![以完整基因组 regions 为分母：20 kb fragments 对边界的 ≥80%、部分和缺失回收。](../figures/40-fragmentation-sensitivity.png)</span>{#fig-40-fragmentation}</span>
-<span id="cb10-264"><a href="#cb10-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-265"><a href="#cb10-265" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 call count 升级为 fragmentation recovery</span></span>
+<span id="cb10-261"><a href="#cb10-261" aria-hidden="true" tabindex="-1"></a>positive <span class="sc">|&gt;</span></span>
+<span id="cb10-262"><a href="#cb10-262" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(TopKnownClusterDescription, <span class="st">"salinosporamide|sporolide|salinilactam"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb10-263"><a href="#cb10-263" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(RegionID, Products, TopKnownClusterAccession,</span>
+<span id="cb10-264"><a href="#cb10-264" aria-hidden="true" tabindex="-1"></a>         TopKnownClusterDescription, TopKnownClusterSimilarityPercent)</span>
+<span id="cb10-265"><a href="#cb10-265" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb10-266"><a href="#cb10-266" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-267"><a href="#cb10-267" aria-hidden="true" tabindex="-1"></a>20 kb fragments 让 antiSMASH calls 从 19 增至 29，看似“发现更多”，但完整 regions 中仅 5 个被覆盖 ≥80%，14 个只部分回收。GECCO 对应为 3 个充分回收、10 个部分、2 个低于 20%。call inflation 与 boundary loss 可以同时发生，所以不能只比较每 Mb 有多少 BGC。</span>
+<span id="cb10-267"><a href="#cb10-267" aria-hidden="true" tabindex="-1"></a>完整染色体上的 salinosporamide A region 得到 90% KnownClusterBlast similarity；切成 20 kb 后最佳对应 fragment 仅为 35%。这不是数据库退化，而是 context 和边界被人为切断。</span>
 <span id="cb10-268"><a href="#cb10-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-269"><a href="#cb10-269" aria-hidden="true" tabindex="-1"></a><span class="fu">## 把 BGC regions 接回 gene catalog 与 reads</span></span>
+<span id="cb10-269"><a href="#cb10-269" aria-hidden="true" tabindex="-1"></a><span class="al">![以完整基因组 regions 为分母：20 kb fragments 对边界的 ≥80%、部分和缺失回收。](../figures/40-fragmentation-sensitivity.png)</span>{#fig-40-fragmentation}</span>
 <span id="cb10-270"><a href="#cb10-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-271"><a href="#cb10-271" aria-hidden="true" tabindex="-1"></a><span class="fu">### BGC 是邻域证据，不是 gene list {#sec-theory}</span></span>
+<span id="cb10-271"><a href="#cb10-271" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 call count 升级为 fragmentation recovery</span></span>
 <span id="cb10-272"><a href="#cb10-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-273"><a href="#cb10-273" aria-hidden="true" tabindex="-1"></a>BGC 是一组在基因组上相邻、共同参与 specialized metabolite biosynthesis 的 genes。PKS、NRPS、RiPP precursor、tailoring enzymes、transporters 与 regulators 提供不同证据。单独命中一个 ketosynthase domain，既不能确定完整 cluster，也不能证明样本产生对应化合物。</span>
+<span id="cb10-273"><a href="#cb10-273" aria-hidden="true" tabindex="-1"></a>20 kb fragments 让 antiSMASH calls 从 19 增至 29，看似“发现更多”，但完整 regions 中仅 5 个被覆盖 ≥80%，14 个只部分回收。GECCO 对应为 3 个充分回收、10 个部分、2 个低于 20%。call inflation 与 boundary loss 可以同时发生，所以不能只比较每 Mb 有多少 BGC。</span>
 <span id="cb10-274"><a href="#cb10-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-275"><a href="#cb10-275" aria-hidden="true" tabindex="-1"></a><span class="fu">### Read-weighted abundance 要从 BGC 内 genes 守恒汇总</span></span>
+<span id="cb10-275"><a href="#cb10-275" aria-hidden="true" tabindex="-1"></a><span class="fu">## 把 BGC regions 接回 gene catalog 与 reads</span></span>
 <span id="cb10-276"><a href="#cb10-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-277"><a href="#cb10-277" aria-hidden="true" tabindex="-1"></a>一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：</span>
+<span id="cb10-277"><a href="#cb10-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### BGC 是邻域证据，不是 gene list {#sec-theory}</span></span>
 <span id="cb10-278"><a href="#cb10-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-279"><a href="#cb10-279" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb10-280"><a href="#cb10-280" aria-hidden="true" tabindex="-1"></a>A_{rs}=\sum_{g\in r}w_{gr}C_{gs},</span>
-<span id="cb10-281"><a href="#cb10-281" aria-hidden="true" tabindex="-1"></a>\qquad</span>
-<span id="cb10-282"><a href="#cb10-282" aria-hidden="true" tabindex="-1"></a>P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.</span>
-<span id="cb10-283"><a href="#cb10-283" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb10-279"><a href="#cb10-279" aria-hidden="true" tabindex="-1"></a>BGC 是一组在基因组上相邻、共同参与 specialized metabolite biosynthesis 的 genes。PKS、NRPS、RiPP precursor、tailoring enzymes、transporters 与 regulators 提供不同证据。单独命中一个 ketosynthase domain，既不能确定完整 cluster，也不能证明样本产生对应化合物。</span>
+<span id="cb10-280"><a href="#cb10-280" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-281"><a href="#cb10-281" aria-hidden="true" tabindex="-1"></a><span class="fu">### Read-weighted abundance 要从 BGC 内 genes 守恒汇总</span></span>
+<span id="cb10-282"><a href="#cb10-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-283"><a href="#cb10-283" aria-hidden="true" tabindex="-1"></a>一个 gene 若被多个重叠 regions 包含，先按 region 数量分配权重 (w_{gr}=1/k_g)，再汇总样本 (s) 的 raw reads：</span>
 <span id="cb10-284"><a href="#cb10-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-285"><a href="#cb10-285" aria-hidden="true" tabindex="-1"></a>这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。</span>
-<span id="cb10-286"><a href="#cb10-286" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-289"><a href="#cb10-289" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb10-290"><a href="#cb10-290" aria-hidden="true" tabindex="-1"></a>bgc <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"coassembly-bgc-abundance.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb10-291"><a href="#cb10-291" aria-hidden="true" tabindex="-1"></a>types <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"bgc-type-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-285"><a href="#cb10-285" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-286"><a href="#cb10-286" aria-hidden="true" tabindex="-1"></a>A_{rs}=\sum_{g\in r}w_{gr}C_{gs},</span>
+<span id="cb10-287"><a href="#cb10-287" aria-hidden="true" tabindex="-1"></a>\qquad</span>
+<span id="cb10-288"><a href="#cb10-288" aria-hidden="true" tabindex="-1"></a>P_{rs}=100\frac{A_{rs}}{\sum_g C_{gs}}.</span>
+<span id="cb10-289"><a href="#cb10-289" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb10-290"><a href="#cb10-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-291"><a href="#cb10-291" aria-hidden="true" tabindex="-1"></a>这里 (P_{rs}) 是 catalog-assigned read mass，不是细胞比例，也不等于 metabolite concentration。</span>
 <span id="cb10-292"><a href="#cb10-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-293"><a href="#cb10-293" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(bgc) <span class="sc">==</span> <span class="dv">71</span>)</span>
-<span id="cb10-294"><a href="#cb10-294" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(types<span class="sc">$</span>FractionalRegions) <span class="sc">==</span> <span class="dv">71</span>)</span>
-<span id="cb10-295"><a href="#cb10-295" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MappedFractionalGenes) <span class="sc">==</span> <span class="dv">1499</span>)</span>
-<span id="cb10-296"><a href="#cb10-296" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MOCK1FractionalRawReads) <span class="sc">==</span> <span class="dv">69790</span>)</span>
-<span id="cb10-297"><a href="#cb10-297" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MOCK2FractionalRawReads) <span class="sc">==</span> <span class="dv">68816</span>)</span>
-<span id="cb10-298"><a href="#cb10-298" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-299"><a href="#cb10-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-300"><a href="#cb10-300" aria-hidden="true" tabindex="-1"></a>1,499 个 BGC 内 genes 全部找到 catalog membership；其 read mass 占全部 assigned reads 的 2.507%（MOCK1）和 2.478%（MOCK2）。这些比例只描述当前 assembly/catalog 可追踪的 BGC-associated sequence mass。</span>
-<span id="cb10-301"><a href="#cb10-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-302"><a href="#cb10-302" aria-hidden="true" tabindex="-1"></a><span class="al">![类别按 multi-category region 分数计数，并分别展示 region、gene 与两样本 read mass 的守恒构成。](../figures/40-bgc-type-profile.png)</span>{#fig-40-types}</span>
-<span id="cb10-303"><a href="#cb10-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-304"><a href="#cb10-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### DeepBGC 放在何处</span></span>
+<span id="cb10-295"><a href="#cb10-295" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb10-296"><a href="#cb10-296" aria-hidden="true" tabindex="-1"></a>bgc <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"coassembly-bgc-abundance.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-297"><a href="#cb10-297" aria-hidden="true" tabindex="-1"></a>types <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"bgc-type-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb10-298"><a href="#cb10-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-299"><a href="#cb10-299" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(bgc) <span class="sc">==</span> <span class="dv">71</span>)</span>
+<span id="cb10-300"><a href="#cb10-300" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(types<span class="sc">$</span>FractionalRegions) <span class="sc">==</span> <span class="dv">71</span>)</span>
+<span id="cb10-301"><a href="#cb10-301" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MappedFractionalGenes) <span class="sc">==</span> <span class="dv">1499</span>)</span>
+<span id="cb10-302"><a href="#cb10-302" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MOCK1FractionalRawReads) <span class="sc">==</span> <span class="dv">69790</span>)</span>
+<span id="cb10-303"><a href="#cb10-303" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">sum</span>(bgc<span class="sc">$</span>MOCK2FractionalRawReads) <span class="sc">==</span> <span class="dv">68816</span>)</span>
+<span id="cb10-304"><a href="#cb10-304" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb10-305"><a href="#cb10-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a>DeepBGC 的价值是提供不同于 curated rules 的序列模型 sensitivity branch <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span>。若加入，应锁定 DeepBGC package、downloaded model 与 classifer hashes，并用相同 reciprocal-overlap rule 对齐 regions。不能把 DeepBGC probability、GECCO probability 和 antiSMASH categories 拼成一个未经校准的“总分”。当前主闭环选择 GECCO，是为了保留可运行的现代 Python 环境、domain-level introspection 和稳定 TSV/GenBank outputs。</span>
+<span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a>1,499 个 BGC 内 genes 全部找到 catalog membership；其 read mass 占全部 assigned reads 的 2.507%（MOCK1）和 2.478%（MOCK2）。这些比例只描述当前 assembly/catalog 可追踪的 BGC-associated sequence mass。</span>
 <span id="cb10-307"><a href="#cb10-307" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单个 regions 升级为 GCF 与 paired omics</span></span>
+<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a><span class="al">![类别按 multi-category region 分数计数，并分别展示 region、gene 与两样本 read mass 的守恒构成。](../figures/40-bgc-type-profile.png)</span>{#fig-40-types}</span>
 <span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a>队列级 discovery 应进一步用 BiG-SCAPE/BiG-SLiCE 聚成 gene-cluster families（GCFs），按 sample 做 prevalence/abundance，再与 metabolomics features 通过 sample-matched analysis 关联。相关不等于产物归属；确证仍需培养、表达、MS/MS、isotope tracing、heterologous expression 或基因敲除。</span>
+<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a><span class="fu">### DeepBGC 放在何处</span></span>
 <span id="cb10-311"><a href="#cb10-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 fragment 数增多解释为 BGC richness 上升"}</span>
-<span id="cb10-313"><a href="#cb10-313" aria-hidden="true" tabindex="-1"></a>同一条染色体切成 20 kb 后，antiSMASH 由 19 变成 29 个 calls，但 14/19 完整 regions 只得到部分回收。先做 boundary recovery，再谈 richness。</span>
-<span id="cb10-314"><a href="#cb10-314" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a>DeepBGC 的价值是提供不同于 curated rules 的序列模型 sensitivity branch <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span>。若加入，应锁定 DeepBGC package、downloaded model 与 classifer hashes，并用相同 reciprocal-overlap rule 对齐 regions。不能把 DeepBGC probability、GECCO probability 和 antiSMASH categories 拼成一个未经校准的“总分”。当前主闭环选择 GECCO，是为了保留可运行的现代 Python 环境、domain-level introspection 和稳定 TSV/GenBank outputs。</span>
+<span id="cb10-313"><a href="#cb10-313" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-314"><a href="#cb10-314" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单个 regions 升级为 GCF 与 paired omics</span></span>
 <span id="cb10-315"><a href="#cb10-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-316"><a href="#cb10-316" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. BGC presence 等同表达或产物"}</span>
-<span id="cb10-317"><a href="#cb10-317" aria-hidden="true" tabindex="-1"></a>DNA 层面的 region 和 read abundance 都不能回答是否转录、翻译或合成化合物。至少增加 metatranscriptomics 或 metabolomics；机制性结论需要实验验证。</span>
-<span id="cb10-318"><a href="#cb10-318" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-319"><a href="#cb10-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-320"><a href="#cb10-320" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存与结果核对</span></span>
+<span id="cb10-316"><a href="#cb10-316" aria-hidden="true" tabindex="-1"></a>队列级 discovery 应进一步用 BiG-SCAPE/BiG-SLiCE 聚成 gene-cluster families（GCFs），按 sample 做 prevalence/abundance，再与 metabolomics features 通过 sample-matched analysis 关联。相关不等于产物归属；确证仍需培养、表达、MS/MS、isotope tracing、heterologous expression 或基因敲除。</span>
+<span id="cb10-317"><a href="#cb10-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-318"><a href="#cb10-318" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 fragment 数增多解释为 BGC richness 上升"}</span>
+<span id="cb10-319"><a href="#cb10-319" aria-hidden="true" tabindex="-1"></a>同一条染色体切成 20 kb 后，antiSMASH 由 19 变成 29 个 calls，但 14/19 完整 regions 只得到部分回收。先做 boundary recovery，再谈 richness。</span>
+<span id="cb10-320"><a href="#cb10-320" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-321"><a href="#cb10-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-322"><a href="#cb10-322" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb10-323"><a href="#cb10-323" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article40_bgc.py <span class="dt">\</span></span>
-<span id="cb10-324"><a href="#cb10-324" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-325"><a href="#cb10-325" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/40-bgc-natural-products-frozen</span>
-<span id="cb10-326"><a href="#cb10-326" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-327"><a href="#cb10-327" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article40_bgc.py <span class="dt">\</span></span>
-<span id="cb10-328"><a href="#cb10-328" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb10-329"><a href="#cb10-329" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/40-bgc-natural-products-frozen <span class="dt">\</span></span>
-<span id="cb10-330"><a href="#cb10-330" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/40-bgc-natural-products <span class="dt">\</span></span>
-<span id="cb10-331"><a href="#cb10-331" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="at">--chapter</span> chapters/40-bgc-natural-products.qmd</span>
-<span id="cb10-332"><a href="#cb10-332" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb10-333"><a href="#cb10-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-334"><a href="#cb10-334" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 把 ML probability 当跨工具可比概率"}</span>
-<span id="cb10-335"><a href="#cb10-335" aria-hidden="true" tabindex="-1"></a>GECCO/DeepBGC 的 scores 来自不同模型、训练集和 calibration；antiSMASH 是 rule evidence。应分别报告，再按坐标 overlap 对齐。</span>
-<span id="cb10-336"><a href="#cb10-336" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb10-337"><a href="#cb10-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-338"><a href="#cb10-338" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明基因簇完整性与相似性边界 {#sec-methods}</span></span>
+<span id="cb10-322"><a href="#cb10-322" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. BGC presence 等同表达或产物"}</span>
+<span id="cb10-323"><a href="#cb10-323" aria-hidden="true" tabindex="-1"></a>DNA 层面的 region 和 read abundance 都不能回答是否转录、翻译或合成化合物。至少增加 metatranscriptomics 或 metabolomics；机制性结论需要实验验证。</span>
+<span id="cb10-324"><a href="#cb10-324" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb10-325"><a href="#cb10-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-326"><a href="#cb10-326" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存与结果核对</span></span>
+<span id="cb10-327"><a href="#cb10-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-328"><a href="#cb10-328" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb10-329"><a href="#cb10-329" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article40_bgc.py <span class="dt">\</span></span>
+<span id="cb10-330"><a href="#cb10-330" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-331"><a href="#cb10-331" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/40-bgc-natural-products-frozen</span>
+<span id="cb10-332"><a href="#cb10-332" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-333"><a href="#cb10-333" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article40_bgc.py <span class="dt">\</span></span>
+<span id="cb10-334"><a href="#cb10-334" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb10-335"><a href="#cb10-335" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/40-bgc-natural-products-frozen <span class="dt">\</span></span>
+<span id="cb10-336"><a href="#cb10-336" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/40-bgc-natural-products <span class="dt">\</span></span>
+<span id="cb10-337"><a href="#cb10-337" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="at">--chapter</span> chapters/40-bgc-natural-products.qmd</span>
+<span id="cb10-338"><a href="#cb10-338" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb10-339"><a href="#cb10-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-340"><a href="#cb10-340" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb10-341"><a href="#cb10-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-342"><a href="#cb10-342" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Biosynthetic gene clusters (BGCs) were predicted from bacterial assemblies with antiSMASH v8.0.4 and GECCO v0.10.3. antiSMASH was run with bacterial taxon settings, Prodigal v2.6.3 (</span><span class="in">`prodigal`</span><span class="at"> for complete genomes and </span><span class="in">`prodigal-m`</span><span class="at"> for fragmented/metagenomic contigs), minimal core detection, KnownClusterBlast, and ClusterCompare. Databases were checksum-locked to PFAM v35.0, MIBiG v4.0, and MITE v1.3. GECCO used a probability threshold of 0.8 and a minimum of three coding sequences. Cross-tool support required at least 25% reciprocal coordinate overlap on the same sequence. Fragmentation sensitivity was quantified by splitting the 5,183,331-bp *Salinispora tropica* CNB-440 chromosome into deterministic 20-kb fragments and measuring union coverage of complete-genome BGC regions. Metagenomic analyses used 675 checksum-locked co-assembly contigs ≥20 kb (39,665,540 bp). BGC-contained Prodigal genes were linked through the nonredundant gene-catalog membership table and summarized using audited raw read assignments; genes assigned to multiple overlapping regions were fractionally allocated. Random and hashing interfaces used seed 20260740. MIBiG similarity was treated as similarity to characterized references, not as evidence of compound novelty or metabolite production.</span></span>
+<span id="cb10-340"><a href="#cb10-340" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 把 ML probability 当跨工具可比概率"}</span>
+<span id="cb10-341"><a href="#cb10-341" aria-hidden="true" tabindex="-1"></a>GECCO/DeepBGC 的 scores 来自不同模型、训练集和 calibration；antiSMASH 是 rule evidence。应分别报告，再按坐标 overlap 对齐。</span>
+<span id="cb10-342"><a href="#cb10-342" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb10-343"><a href="#cb10-343" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-344"><a href="#cb10-344" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb10-344"><a href="#cb10-344" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明基因簇完整性与相似性边界 {#sec-methods}</span></span>
 <span id="cb10-345"><a href="#cb10-345" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-346"><a href="#cb10-346" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; antiSMASH and GECCO detected 71 and 21 BGC regions, respectively, on metagenomic contigs ≥20 kb; 17 regions from each tool had reciprocal coordinate support. The 71 antiSMASH regions contained 1,499 gene-catalog members and accounted for 69,790 and 68,816 assigned reads in MOCK1 and MOCK2. In the complete-genome fragmentation control, only 5/19 antiSMASH and 3/15 GECCO regions retained ≥80% coordinate coverage after 20-kb fragmentation, demonstrating substantial boundary sensitivity. Of the metagenomic antiSMASH regions, 3, 31, 36, and 1 had high, intermediate, low, and unavailable best MIBiG 4.0 region-to-region scores, respectively; low similarity was used for candidate prioritization rather than claimed as chemical novelty.</span></span>
+<span id="cb10-346"><a href="#cb10-346" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb10-347"><a href="#cb10-347" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-348"><a href="#cb10-348" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb10-348"><a href="#cb10-348" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Biosynthetic gene clusters (BGCs) were predicted from bacterial assemblies with antiSMASH v8.0.4 and GECCO v0.10.3. antiSMASH was run with bacterial taxon settings, Prodigal v2.6.3 (</span><span class="in">`prodigal`</span><span class="at"> for complete genomes and </span><span class="in">`prodigal-m`</span><span class="at"> for fragmented/metagenomic contigs), minimal core detection, KnownClusterBlast, and ClusterCompare. Databases were checksum-locked to PFAM v35.0, MIBiG v4.0, and MITE v1.3. GECCO used a probability threshold of 0.8 and a minimum of three coding sequences. Cross-tool support required at least 25% reciprocal coordinate overlap on the same sequence. Fragmentation sensitivity was quantified by splitting the 5,183,331-bp *Salinispora tropica* CNB-440 chromosome into deterministic 20-kb fragments and measuring union coverage of complete-genome BGC regions. Metagenomic analyses used 675 checksum-locked co-assembly contigs ≥20 kb (39,665,540 bp). BGC-contained Prodigal genes were linked through the nonredundant gene-catalog membership table and summarized using audited raw read assignments; genes assigned to multiple overlapping regions were fractionally allocated. Random and hashing interfaces used seed 20260740. MIBiG similarity was treated as similarity to characterized references, not as evidence of compound novelty or metabolite production.</span></span>
 <span id="cb10-349"><a href="#cb10-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-350"><a href="#cb10-350" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>输入 assembly FASTA；先记录 assembler、版本、minimum contig length、N50 和 circularity。短 reads 研究建议主分析从 ≥10–20 kb contigs 或高质量 MAGs 起步，同时保留全 contig sensitivity branch。</span>
-<span id="cb10-351"><a href="#cb10-351" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>固定 antiSMASH、GECCO/DeepBGC、gene finder 与 database/model versions；把 PFAM、MIBiG、MITE 或 model bundle 的 hashes 写入 manifest。</span>
-<span id="cb10-352"><a href="#cb10-352" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>选一个已知 BGC-rich complete genome 做 positive control，再把它按你的 contig-length distribution 切碎，而不是只用统一 20 kb。</span>
-<span id="cb10-353"><a href="#cb10-353" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>为每个工具导出 <span class="in">`sequence/start/end/type/score/edge`</span> ledger；预注册 reciprocal-overlap threshold，不按结果临时调门槛。</span>
-<span id="cb10-354"><a href="#cb10-354" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 gene coordinates 接到 nonredundant catalog membership，再接每个样本的 raw count/CPM；处理 overlapping regions 时做 fractional allocation 或明确优先级。</span>
-<span id="cb10-355"><a href="#cb10-355" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>队列比较使用 GCF abundance/prevalence，并把 batch、body site、sequencing depth、assembly quality 和 host taxonomy 纳入模型。</span>
-<span id="cb10-356"><a href="#cb10-356" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>低 MIBiG similarity 候选先做 contig extension、domain architecture、synteny、GCF clustering 和 contamination 检查，再进入 metabolomics/实验验证。</span>
-<span id="cb10-357"><a href="#cb10-357" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>交付时保留 JSON/GenBank/TSV、compact tables、commands、resource logs、checksums 与三种图形格式。</span>
-<span id="cb10-358"><a href="#cb10-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-359"><a href="#cb10-359" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb10-360"><a href="#cb10-360" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-361"><a href="#cb10-361" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Tool、BGC category 与 recovery state 使用固定、色盲友好色板；图内全部使用英文。</span>
-<span id="cb10-362"><a href="#cb10-362" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Yield 图同时写清输入 context，不把 complete genome 与 metagenome fragment 当同一 denominator。</span>
-<span id="cb10-363"><a href="#cb10-363" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Fragmentation 图以完整 regions 为分母，图注给出 fragment size 和 recovery threshold。</span>
-<span id="cb10-364"><a href="#cb10-364" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Type composition 使用 fractional allocation，避免一个 hybrid PKS/NRPS region 被重复计数两次。</span>
-<span id="cb10-365"><a href="#cb10-365" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Similarity–abundance 图的 y 轴取 log scale，并保留零 abundance（<span class="in">`reads + 1`</span>）；MIBiG score 不改名为 novelty score。</span>
-<span id="cb10-366"><a href="#cb10-366" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>所有主图同时导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。</span>
-<span id="cb10-367"><a href="#cb10-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-368"><a href="#cb10-368" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb10-369"><a href="#cb10-369" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-370"><a href="#cb10-370" aria-hidden="true" tabindex="-1"></a>BGC 不是单基因清单：用完整基因组、确定性碎片和真实共组装，拆开工具边界、碎片化、MIBiG 相似度与 read-weighted abundance。</span>
-<span id="cb10-371"><a href="#cb10-371" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-372"><a href="#cb10-372" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb10-350"><a href="#cb10-350" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb10-351"><a href="#cb10-351" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-352"><a href="#cb10-352" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; antiSMASH and GECCO detected 71 and 21 BGC regions, respectively, on metagenomic contigs ≥20 kb; 17 regions from each tool had reciprocal coordinate support. The 71 antiSMASH regions contained 1,499 gene-catalog members and accounted for 69,790 and 68,816 assigned reads in MOCK1 and MOCK2. In the complete-genome fragmentation control, only 5/19 antiSMASH and 3/15 GECCO regions retained ≥80% coordinate coverage after 20-kb fragmentation, demonstrating substantial boundary sensitivity. Of the metagenomic antiSMASH regions, 3, 31, 36, and 1 had high, intermediate, low, and unavailable best MIBiG 4.0 region-to-region scores, respectively; low similarity was used for candidate prioritization rather than claimed as chemical novelty.</span></span>
+<span id="cb10-353"><a href="#cb10-353" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-354"><a href="#cb10-354" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb10-355"><a href="#cb10-355" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-356"><a href="#cb10-356" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>输入 assembly FASTA；先记录 assembler、版本、minimum contig length、N50 和 circularity。短 reads 研究建议主分析从 ≥10–20 kb contigs 或高质量 MAGs 起步，同时保留全 contig sensitivity branch。</span>
+<span id="cb10-357"><a href="#cb10-357" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>固定 antiSMASH、GECCO/DeepBGC、gene finder 与 database/model versions；把 PFAM、MIBiG、MITE 或 model bundle 的 hashes 写入 manifest。</span>
+<span id="cb10-358"><a href="#cb10-358" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>选一个已知 BGC-rich complete genome 做 positive control，再把它按你的 contig-length distribution 切碎，而不是只用统一 20 kb。</span>
+<span id="cb10-359"><a href="#cb10-359" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>为每个工具导出 <span class="in">`sequence/start/end/type/score/edge`</span> ledger；预注册 reciprocal-overlap threshold，不按结果临时调门槛。</span>
+<span id="cb10-360"><a href="#cb10-360" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 gene coordinates 接到 nonredundant catalog membership，再接每个样本的 raw count/CPM；处理 overlapping regions 时做 fractional allocation 或明确优先级。</span>
+<span id="cb10-361"><a href="#cb10-361" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>队列比较使用 GCF abundance/prevalence，并把 batch、body site、sequencing depth、assembly quality 和 host taxonomy 纳入模型。</span>
+<span id="cb10-362"><a href="#cb10-362" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>低 MIBiG similarity 候选先做 contig extension、domain architecture、synteny、GCF clustering 和 contamination 检查，再进入 metabolomics/实验验证。</span>
+<span id="cb10-363"><a href="#cb10-363" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>交付时保留 JSON/GenBank/TSV、compact tables、commands、resource logs、checksums 与三种图形格式。</span>
+<span id="cb10-364"><a href="#cb10-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-365"><a href="#cb10-365" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb10-366"><a href="#cb10-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-367"><a href="#cb10-367" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Tool、BGC category 与 recovery state 使用固定、色盲友好色板；图内全部使用英文。</span>
+<span id="cb10-368"><a href="#cb10-368" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Yield 图同时写清输入 context，不把 complete genome 与 metagenome fragment 当同一 denominator。</span>
+<span id="cb10-369"><a href="#cb10-369" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Fragmentation 图以完整 regions 为分母，图注给出 fragment size 和 recovery threshold。</span>
+<span id="cb10-370"><a href="#cb10-370" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Type composition 使用 fractional allocation，避免一个 hybrid PKS/NRPS region 被重复计数两次。</span>
+<span id="cb10-371"><a href="#cb10-371" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>Similarity–abundance 图的 y 轴取 log scale，并保留零 abundance（<span class="in">`reads + 1`</span>）；MIBiG score 不改名为 novelty score。</span>
+<span id="cb10-372"><a href="#cb10-372" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>所有主图同时导出 PDF、350-dpi PNG 和 LZW TIFF；PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。</span>
 <span id="cb10-373"><a href="#cb10-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-374"><a href="#cb10-374" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*S. tropica* CNB-440 complete genome 与 secondary metabolome <span class="co">[</span><span class="ot">@udwary2007salinispora</span><span class="co">]</span></span>
-<span id="cb10-375"><a href="#cb10-375" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*Nostoc* PCC 7120 complete genome <span class="co">[</span><span class="ot">@kaneko2001nostoc</span><span class="co">]</span></span>
-<span id="cb10-376"><a href="#cb10-376" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>antiSMASH 8 <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span></span>
-<span id="cb10-377"><a href="#cb10-377" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GECCO <span class="co">[</span><span class="ot">@carroll2021gecco</span><span class="co">]</span></span>
-<span id="cb10-378"><a href="#cb10-378" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DeepBGC <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span></span>
-<span id="cb10-379"><a href="#cb10-379" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIBiG 4.0 <span class="co">[</span><span class="ot">@zdouc2025mibig4</span><span class="co">]</span></span>
+<span id="cb10-374"><a href="#cb10-374" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb10-375"><a href="#cb10-375" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-376"><a href="#cb10-376" aria-hidden="true" tabindex="-1"></a>BGC 不是单基因清单：用完整基因组、确定性碎片和真实共组装，拆开工具边界、碎片化、MIBiG 相似度与 read-weighted abundance。</span>
+<span id="cb10-377"><a href="#cb10-377" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-378"><a href="#cb10-378" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb10-379"><a href="#cb10-379" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-380"><a href="#cb10-380" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*S. tropica* CNB-440 complete genome 与 secondary metabolome <span class="co">[</span><span class="ot">@udwary2007salinispora</span><span class="co">]</span></span>
+<span id="cb10-381"><a href="#cb10-381" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*Nostoc* PCC 7120 complete genome <span class="co">[</span><span class="ot">@kaneko2001nostoc</span><span class="co">]</span></span>
+<span id="cb10-382"><a href="#cb10-382" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>antiSMASH 8 <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span></span>
+<span id="cb10-383"><a href="#cb10-383" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GECCO <span class="co">[</span><span class="ot">@carroll2021gecco</span><span class="co">]</span></span>
+<span id="cb10-384"><a href="#cb10-384" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DeepBGC <span class="co">[</span><span class="ot">@hannigan2019deepbgc</span><span class="co">]</span></span>
+<span id="cb10-385"><a href="#cb10-385" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIBiG 4.0 <span class="co">[</span><span class="ot">@zdouc2025mibig4</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

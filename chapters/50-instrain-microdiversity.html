@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">两个样本的同一物种，能否称为同株？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">两个样本的同一物种，能否称为同株？</a>
+  <ul class="collapse">
+  <li><a href="#相似度接近百分之百仍可能需要拒绝判断" id="toc-相似度接近百分之百仍可能需要拒绝判断" class="nav-link" data-scroll-target="#相似度接近百分之百仍可能需要拒绝判断">相似度接近百分之百，仍可能需要拒绝判断</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -998,13 +1030,13 @@ div.csl-indent {
 <p>本次实跑使用 <strong>24 CPU cores</strong>。两个 <code>inStrain profile</code> 分别耗时 <strong>432.32 秒</strong>和 <strong>418.05 秒</strong>，峰值 RAM <strong>3.721 GiB</strong>；<code>inStrain compare</code> 耗时 <strong>28.32 秒</strong>、峰值 RAM <strong>0.670 GiB</strong>。工作目录约 <strong>497 MB</strong>，另有两份 306.6/329.2 MB BAM 和 58 MB reference catalog。建议准备 <strong>16 GB RAM、24 cores、5 GB 可用磁盘、约 20 分钟</strong>；4–8 cores 也能跑，但会更慢。没有服务器时，可直接读取 <code>data/small/50-instrain-microdiversity-frozen/</code> 的规范化表重画图；要重新调用 SNPs，建议使用 HPC 或云主机，并先在 1–2 个样本上核对 BAM/reference 坐标。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="相似度接近百分之百，仍可能需要拒绝判断">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>相似度接近百分之百，仍可能需要拒绝判断
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1034,6 +1066,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="相似度接近百分之百仍可能需要拒绝判断" class="level3">
+<h3 class="anchored" data-anchor-id="相似度接近百分之百仍可能需要拒绝判断">相似度接近百分之百，仍可能需要拒绝判断</h3>
+<p>高相似度只针对共同可比较的位置。本例某 SGB 的 popANI 很高但可比范围只有 35.87%，所以保留拒判比把它强行归入同株更符合证据。低覆盖位置没有观察到差异，不等于这些位置已经证明相同。</p>
+<p>样本内混合菌株还会影响共识与等位基因分布。应把微多样性、可比较范围及参考偏差一并解释；当前操作性同株支持不包含传播方向。不同深度下得到的差异数也不能直接按数量比较，因为被检验的位置集合不同。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1175,7 +1212,9 @@ div.csl-indent {
 <section id="sec-theory" class="level3">
 <h3 class="anchored" data-anchor-id="sec-theory">Nucleotide diversity（核苷酸多样性）描述样本内变异</h3>
 <p>对一个可比较位点，若等位基因频率为 (p_1,ldots,p_k)，其 nucleotide diversity 可写为</p>
-<p>[ = 1 - _{i=1}^{k} p_i^2. ]</p>
+<p><span class="math display">\[
+\pi = 1 - \sum_{i=1}^{k} p_i^2.
+\]</span></p>
 <p>把通过 coverage、allele-frequency 与 FDR 条件的位点汇总到 genome，得到样本内群体的平均成对差异。它不是物种 abundance，也不是两个样本的距离；高值可来自真实多菌株共存，也可来自 cross-mapping、污染或重复区域。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SAMPLE <span class="kw">in</span> MOCK1 MOCK2<span class="kw">;</span> <span class="cf">do</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 <span class="dt">\</span></span>
@@ -1961,7 +2000,7 @@ Olm, Matthew R., Alexander Crits-Christoph, Keith Bouma-Gregson, Brian A. Firek,
 <span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>本次实跑使用 **24 CPU cores**。两个 `inStrain profile` 分别耗时 **432.32 秒**和 **418.05 秒**，峰值 RAM **3.721 GiB**；`inStrain compare` 耗时 **28.32 秒**、峰值 RAM **0.670 GiB**。工作目录约 **497 MB**，另有两份 306.6/329.2 MB BAM 和 58 MB reference catalog。建议准备 **16 GB RAM、24 cores、5 GB 可用磁盘、约 20 分钟**；4--8 cores 也能跑，但会更慢。没有服务器时，可直接读取 <span class="in">`data/small/50-instrain-microdiversity-frozen/`</span> 的规范化表重画图；要重新调用 SNPs，建议使用 HPC 或云主机，并先在 1--2 个样本上核对 BAM/reference 坐标。</span>
 <span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="相似度接近百分之百，仍可能需要拒绝判断"}</span>
 <span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>相似度要与可比较的基因组范围一起解释；低覆盖或小重叠不能支持强同株结论。</span>
 <span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -1975,310 +2014,316 @@ Olm, Matthew R., Alexander Crits-Christoph, Keith Bouma-Gregson, Brian A. Firek,
 <span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="al">![SNV density 必须和 depth、被评估的 genome bases 一起报告。](../figures/50-snv-density.png)</span>{#fig-50-snv}</span>
 <span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a><span class="fu">### 相似度接近百分之百，仍可能需要拒绝判断</span></span>
 <span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/50/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 0.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>高相似度只针对共同可比较的位置。本例某 SGB 的 popANI 很高但可比范围只有 35.87%，所以保留拒判比把它强行归入同株更符合证据。低覆盖位置没有观察到差异，不等于这些位置已经证明相同。</span>
 <span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/50/download.R)</span>。</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>样本内混合菌株还会影响共识与等位基因分布。应把微多样性、可比较范围及参考偏差一并解释；当前操作性同株支持不包含传播方向。不同深度下得到的差异数也不能直接按数量比较，因为被检验的位置集合不同。</span>
 <span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-50</span></span>
-<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/50/files.tsv"</span>))</span>
-<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
-<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
-<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 本次固定对象 <span class="pp">|</span> 生成与审计方式 <span class="pp">|</span></span>
-<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reads <span class="pp">|</span> PRJEB52977 / ERR9765746、ERR9765747；fastp 后分别 1,999,853、1,999,888 pairs <span class="pp">|</span> ENA 公开 Illumina reads；固定子集、read SHA-256 已记录 <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
-<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reference catalog <span class="pp">|</span> 24 个 <span class="in">`SGB_001`</span>--<span class="in">`SGB_024`</span>，58 MB <span class="pp">|</span> 两样本共组装、分箱、CheckM2/GUNC 质控后以 dRep 3.6.2 在 95% ANI 去冗余；每个 representative 保留 sequence SHA-256 <span class="pp">|</span></span>
-<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> BAM <span class="pp">|</span> 306.6 MB 与 329.2 MB <span class="pp">|</span> Strobealign 0.17.0 通过 CoverM 0.8.0 对共同 catalog 竞争性回贴；缓存的是 coordinate-sorted **unfiltered BAM** <span class="pp">|</span></span>
-<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Taxonomy <span class="pp">|</span> GTDB release R232 <span class="pp">|</span> 只用于图表注释，不参与 SNV calling 或同株阈值 <span class="pp">|</span></span>
-<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>已知 mock 组成没有用于筛选 genome、修正变异或决定同株标签。<span class="in">`prepare_article50_instrain.py`</span> 先验证 Article 45/46/48 固化证据的 SHA-256，再重建带稳定 SGB 前缀的 concatenated FASTA 与 scaffold-to-bin map。若本地没有 BAM，可从同一公开 reads 与固化 representatives 重新执行 <span class="in">`prepare_article48_coverm.py`</span> 和 <span class="in">`run_article48_coverm.py`</span>；BAM 的即时来源、mapper 和过滤状态都会写入 <span class="in">`sample-ledger.tsv`</span>。</span>
-<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> env create <span class="at">-f</span> env/instrain.yml</span>
-<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> list <span class="at">-n</span> metagenome-instrain-2026.07 <span class="at">--explicit</span> <span class="dt">\</span></span>
-<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> env/instrain-linux-64.lock</span>
-<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 inStrain profile <span class="at">--version</span></span>
-<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 samtools <span class="at">--version</span></span>
-<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a>该环境锁定 inStrain 1.10.0、Python 3.8.20、Biopython 1.74、SAMtools 1.23.1 与 Prodigal 2.6.3。inStrain 1.10.0 对 Biopython 有旧版约束，因此 Python 版本也显式锁定。</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/50/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 0.2 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/50/download.R)</span>。</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-50</span></span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/50/files.tsv"</span>))</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 本次固定对象 <span class="pp">|</span> 生成与审计方式 <span class="pp">|</span></span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reads <span class="pp">|</span> PRJEB52977 / ERR9765746、ERR9765747；fastp 后分别 1,999,853、1,999,888 pairs <span class="pp">|</span> ENA 公开 Illumina reads；固定子集、read SHA-256 已记录 <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reference catalog <span class="pp">|</span> 24 个 <span class="in">`SGB_001`</span>--<span class="in">`SGB_024`</span>，58 MB <span class="pp">|</span> 两样本共组装、分箱、CheckM2/GUNC 质控后以 dRep 3.6.2 在 95% ANI 去冗余；每个 representative 保留 sequence SHA-256 <span class="pp">|</span></span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> BAM <span class="pp">|</span> 306.6 MB 与 329.2 MB <span class="pp">|</span> Strobealign 0.17.0 通过 CoverM 0.8.0 对共同 catalog 竞争性回贴；缓存的是 coordinate-sorted **unfiltered BAM** <span class="pp">|</span></span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Taxonomy <span class="pp">|</span> GTDB release R232 <span class="pp">|</span> 只用于图表注释，不参与 SNV calling 或同株阈值 <span class="pp">|</span></span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a>已知 mock 组成没有用于筛选 genome、修正变异或决定同株标签。<span class="in">`prepare_article50_instrain.py`</span> 先验证 Article 45/46/48 固化证据的 SHA-256，再重建带稳定 SGB 前缀的 concatenated FASTA 与 scaffold-to-bin map。若本地没有 BAM，可从同一公开 reads 与固化 representatives 重新执行 <span class="in">`prepare_article48_coverm.py`</span> 和 <span class="in">`run_article48_coverm.py`</span>；BAM 的即时来源、mapper 和过滤状态都会写入 <span class="in">`sample-ledger.tsv`</span>。</span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> env create <span class="at">-f</span> env/instrain.yml</span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> list <span class="at">-n</span> metagenome-instrain-2026.07 <span class="at">--explicit</span> <span class="dt">\</span></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> env/instrain-linux-64.lock</span>
 <span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>))</span>
-<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
-<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260750</span>)</span>
-<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">"MOCK1"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"MOCK2"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
-<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Same-strain call"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>,</span>
-<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Below one or both gates"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
-<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
-<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">135</span>,</span>
-<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb8-132"><a href="#cb8-132" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb8-133"><a href="#cb8-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb8-134"><a href="#cb8-134" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb8-135"><a href="#cb8-135" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb8-136"><a href="#cb8-136" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-137"><a href="#cb8-137" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-138"><a href="#cb8-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-139"><a href="#cb8-139" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb8-140"><a href="#cb8-140" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-141"><a href="#cb8-141" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重建并核对输入坐标 {#sec-code}</span></span>
-<span id="cb8-142"><a href="#cb8-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-143"><a href="#cb8-143" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb8-144"><a href="#cb8-144" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb8-145"><a href="#cb8-145" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article50"</span></span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 inStrain profile <span class="at">--version</span></span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 samtools <span class="at">--version</span></span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a>该环境锁定 inStrain 1.10.0、Python 3.8.20、Biopython 1.74、SAMtools 1.23.1 与 Prodigal 2.6.3。inStrain 1.10.0 对 Biopython 有旧版约束，因此 Python 版本也显式锁定。</span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260750</span>)</span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a>  <span class="st">"MOCK1"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"MOCK2"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Same-strain call"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>,</span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Below one or both gates"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-132"><a href="#cb8-132" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">135</span>,</span>
+<span id="cb8-133"><a href="#cb8-133" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb8-134"><a href="#cb8-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-135"><a href="#cb8-135" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb8-136"><a href="#cb8-136" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb8-137"><a href="#cb8-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb8-138"><a href="#cb8-138" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb8-139"><a href="#cb8-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb8-140"><a href="#cb8-140" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb8-141"><a href="#cb8-141" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb8-142"><a href="#cb8-142" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-143"><a href="#cb8-143" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb8-144"><a href="#cb8-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-145"><a href="#cb8-145" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
 <span id="cb8-146"><a href="#cb8-146" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-147"><a href="#cb8-147" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article50_instrain.py <span class="dt">\</span></span>
-<span id="cb8-148"><a href="#cb8-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
-<span id="cb8-149"><a href="#cb8-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-150"><a href="#cb8-150" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-ledger.tsv"</span></span>
-<span id="cb8-151"><a href="#cb8-151" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-ledger.tsv"</span></span>
-<span id="cb8-152"><a href="#cb8-152" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span></span>
-<span id="cb8-153"><a href="#cb8-153" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-154"><a href="#cb8-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-155"><a href="#cb8-155" aria-hidden="true" tabindex="-1"></a><span class="in">`article50-sgb-catalog.fna`</span> 的 contig header 写成 <span class="in">`SGB_###~original_contig`</span>，与 BAM header 完全一致；<span class="in">`.stb`</span> 文件把每条 contig 映射回一个 SGB。若 FASTA、BAM 与 <span class="in">`.stb`</span> 不在同一坐标系，inStrain 可能跳过 contigs，结果即使返回 0 也没有生物学意义。</span>
-<span id="cb8-156"><a href="#cb8-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-157"><a href="#cb8-157" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. BAM 与 reference FASTA 坐标不一致"}</span>
-<span id="cb8-158"><a href="#cb8-158" aria-hidden="true" tabindex="-1"></a>contig 名、长度或顺序版本错配会造成大批 <span class="in">`no_length`</span>/missing-scaffold 记录。先比较 BAM header、FASTA index 与 <span class="in">`.stb`</span>，再解释任何零值。</span>
-<span id="cb8-159"><a href="#cb8-159" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-147"><a href="#cb8-147" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重建并核对输入坐标 {#sec-code}</span></span>
+<span id="cb8-148"><a href="#cb8-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-149"><a href="#cb8-149" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb8-150"><a href="#cb8-150" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb8-151"><a href="#cb8-151" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article50"</span></span>
+<span id="cb8-152"><a href="#cb8-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-153"><a href="#cb8-153" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article50_instrain.py <span class="dt">\</span></span>
+<span id="cb8-154"><a href="#cb8-154" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb8-155"><a href="#cb8-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-156"><a href="#cb8-156" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/genome-ledger.tsv"</span></span>
+<span id="cb8-157"><a href="#cb8-157" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-ledger.tsv"</span></span>
+<span id="cb8-158"><a href="#cb8-158" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span></span>
+<span id="cb8-159"><a href="#cb8-159" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb8-160"><a href="#cb8-160" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-161"><a href="#cb8-161" aria-hidden="true" tabindex="-1"></a><span class="fu">## 对每个样本做 genome-wide profile</span></span>
+<span id="cb8-161"><a href="#cb8-161" aria-hidden="true" tabindex="-1"></a><span class="in">`article50-sgb-catalog.fna`</span> 的 contig header 写成 <span class="in">`SGB_###~original_contig`</span>，与 BAM header 完全一致；<span class="in">`.stb`</span> 文件把每条 contig 映射回一个 SGB。若 FASTA、BAM 与 <span class="in">`.stb`</span> 不在同一坐标系，inStrain 可能跳过 contigs，结果即使返回 0 也没有生物学意义。</span>
 <span id="cb8-162"><a href="#cb8-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-163"><a href="#cb8-163" aria-hidden="true" tabindex="-1"></a><span class="fu">### Nucleotide diversity（核苷酸多样性）描述样本内变异 {#sec-theory}</span></span>
-<span id="cb8-164"><a href="#cb8-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-165"><a href="#cb8-165" aria-hidden="true" tabindex="-1"></a>对一个可比较位点，若等位基因频率为 (p_1,ldots,p_k)，其 nucleotide diversity 可写为</span>
+<span id="cb8-163"><a href="#cb8-163" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. BAM 与 reference FASTA 坐标不一致"}</span>
+<span id="cb8-164"><a href="#cb8-164" aria-hidden="true" tabindex="-1"></a>contig 名、长度或顺序版本错配会造成大批 <span class="in">`no_length`</span>/missing-scaffold 记录。先比较 BAM header、FASTA index 与 <span class="in">`.stb`</span>，再解释任何零值。</span>
+<span id="cb8-165"><a href="#cb8-165" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-166"><a href="#cb8-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-167"><a href="#cb8-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-168"><a href="#cb8-168" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb8-169"><a href="#cb8-169" aria-hidden="true" tabindex="-1"></a>\pi = 1 - \sum_{i=1}^{k} p_i^2.</span>
-<span id="cb8-170"><a href="#cb8-170" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb8-171"><a href="#cb8-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a>把通过 coverage、allele-frequency 与 FDR 条件的位点汇总到 genome，得到样本内群体的平均成对差异。它不是物种 abundance，也不是两个样本的距离；高值可来自真实多菌株共存，也可来自 cross-mapping、污染或重复区域。</span>
+<span id="cb8-167"><a href="#cb8-167" aria-hidden="true" tabindex="-1"></a><span class="fu">## 对每个样本做 genome-wide profile</span></span>
+<span id="cb8-168"><a href="#cb8-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-169"><a href="#cb8-169" aria-hidden="true" tabindex="-1"></a><span class="fu">### Nucleotide diversity（核苷酸多样性）描述样本内变异 {#sec-theory}</span></span>
+<span id="cb8-170"><a href="#cb8-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-171"><a href="#cb8-171" aria-hidden="true" tabindex="-1"></a>对一个可比较位点，若等位基因频率为 (p_1,ldots,p_k)，其 nucleotide diversity 可写为</span>
+<span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-173"><a href="#cb8-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SAMPLE <span class="kw">in</span> MOCK1 MOCK2<span class="kw">;</span> <span class="cf">do</span></span>
-<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a>  <span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 <span class="dt">\</span></span>
-<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a>    inStrain profile <span class="dt">\</span></span>
-<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a>    <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/</span><span class="va">${SAMPLE}</span><span class="st">.identity95.unfiltered.bam"</span> <span class="dt">\</span></span>
-<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a>    <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-sgb-catalog.fna"</span> <span class="dt">\</span></span>
-<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/</span><span class="va">${SAMPLE}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a>    <span class="at">-p</span> 24 <span class="dt">\</span></span>
-<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>    <span class="at">-s</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span> <span class="dt">\</span></span>
-<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_read_ani</span> 0.95 <span class="dt">\</span></span>
-<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_mapq</span> 2 <span class="dt">\</span></span>
-<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>    <span class="at">--pairing_filter</span> paired_only <span class="dt">\</span></span>
-<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_cov</span> 5 <span class="dt">\</span></span>
-<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_freq</span> 0.05 <span class="dt">\</span></span>
-<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>    <span class="at">--fdr</span> 1e-06 <span class="dt">\</span></span>
-<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">--rarefied_coverage</span> 1000000000 <span class="dt">\</span></span>
-<span id="cb8-190"><a href="#cb8-190" aria-hidden="true" tabindex="-1"></a>    <span class="at">--skip_mm_profiling</span> <span class="dt">\</span></span>
-<span id="cb8-191"><a href="#cb8-191" aria-hidden="true" tabindex="-1"></a>    <span class="at">--skip_plot_generation</span> <span class="dt">\</span></span>
-<span id="cb8-192"><a href="#cb8-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">--force_compress</span></span>
-<span id="cb8-193"><a href="#cb8-193" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
-<span id="cb8-194"><a href="#cb8-194" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-195"><a href="#cb8-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-196"><a href="#cb8-196" aria-hidden="true" tabindex="-1"></a><span class="in">`--min_read_ani 0.95`</span> 是 read-to-reference identity gate，<span class="in">`--min_cov 5`</span> 是位点进入变异统计的 coverage gate，二者不能互换。<span class="in">`paired_only`</span> 会移除 singleton；实跑后 MOCK1/MOCK2 分别保留 1,422,929 和 1,421,391 read pairs，过滤掉 2.1% 与 1.8% 的 pairs。</span>
-<span id="cb8-197"><a href="#cb8-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-198"><a href="#cb8-198" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="为什么把 rarefied coverage 设为 1,000,000,000？"}</span>
-<span id="cb8-199"><a href="#cb8-199" aria-hidden="true" tabindex="-1"></a>inStrain 1.10.0 的 rarefied nucleotide-diversity 分支调用未暴露 CLI seed 的 NumPy 随机抽样。为了满足确定性要求，本次把 rarefaction depth 设到任何 genome 都达不到的 1,000,000,000×，使随机分支不可达；正文只报告 observed-depth <span class="in">`nucl_diversity`</span>。原生表的 <span class="in">`nucl_diversity_rarefied=0.0`</span> 是禁用哨兵，不是生物学零值；规范化表同时保留原值，并将报告字段转为 <span class="in">`NA`</span>。若研究必须比较等深度 π，应使用带显式、逐 genome seed 的审计版本，而不是引用这里的哨兵。</span>
-<span id="cb8-200"><a href="#cb8-200" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a>\pi = 1 - \sum_{i=1}^{k} p_i^2.</span>
+<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a>把通过 coverage、allele-frequency 与 FDR 条件的位点汇总到 genome，得到样本内群体的平均成对差异。它不是物种 abundance，也不是两个样本的距离；高值可来自真实多菌株共存，也可来自 cross-mapping、污染或重复区域。</span>
+<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> SAMPLE <span class="kw">in</span> MOCK1 MOCK2<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>  <span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 <span class="dt">\</span></span>
+<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>    inStrain profile <span class="dt">\</span></span>
+<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>    <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/</span><span class="va">${SAMPLE}</span><span class="st">.identity95.unfiltered.bam"</span> <span class="dt">\</span></span>
+<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>    <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-sgb-catalog.fna"</span> <span class="dt">\</span></span>
+<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/</span><span class="va">${SAMPLE}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a>    <span class="at">-p</span> 24 <span class="dt">\</span></span>
+<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>    <span class="at">-s</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span> <span class="dt">\</span></span>
+<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_read_ani</span> 0.95 <span class="dt">\</span></span>
+<span id="cb8-190"><a href="#cb8-190" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_mapq</span> 2 <span class="dt">\</span></span>
+<span id="cb8-191"><a href="#cb8-191" aria-hidden="true" tabindex="-1"></a>    <span class="at">--pairing_filter</span> paired_only <span class="dt">\</span></span>
+<span id="cb8-192"><a href="#cb8-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_cov</span> 5 <span class="dt">\</span></span>
+<span id="cb8-193"><a href="#cb8-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">--min_freq</span> 0.05 <span class="dt">\</span></span>
+<span id="cb8-194"><a href="#cb8-194" aria-hidden="true" tabindex="-1"></a>    <span class="at">--fdr</span> 1e-06 <span class="dt">\</span></span>
+<span id="cb8-195"><a href="#cb8-195" aria-hidden="true" tabindex="-1"></a>    <span class="at">--rarefied_coverage</span> 1000000000 <span class="dt">\</span></span>
+<span id="cb8-196"><a href="#cb8-196" aria-hidden="true" tabindex="-1"></a>    <span class="at">--skip_mm_profiling</span> <span class="dt">\</span></span>
+<span id="cb8-197"><a href="#cb8-197" aria-hidden="true" tabindex="-1"></a>    <span class="at">--skip_plot_generation</span> <span class="dt">\</span></span>
+<span id="cb8-198"><a href="#cb8-198" aria-hidden="true" tabindex="-1"></a>    <span class="at">--force_compress</span></span>
+<span id="cb8-199"><a href="#cb8-199" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb8-200"><a href="#cb8-200" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb8-201"><a href="#cb8-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-202"><a href="#cb8-202" aria-hidden="true" tabindex="-1"></a><span class="al">![5× breadth gate 将“有 reads”与“足够进行 genome-wide 微多样性估计”分开。](../figures/50-profile-detection-audit.png)</span>{#fig-50-breadth}</span>
+<span id="cb8-202"><a href="#cb8-202" aria-hidden="true" tabindex="-1"></a><span class="in">`--min_read_ani 0.95`</span> 是 read-to-reference identity gate，<span class="in">`--min_cov 5`</span> 是位点进入变异统计的 coverage gate，二者不能互换。<span class="in">`paired_only`</span> 会移除 singleton；实跑后 MOCK1/MOCK2 分别保留 1,422,929 和 1,421,391 read pairs，过滤掉 2.1% 与 1.8% 的 pairs。</span>
 <span id="cb8-203"><a href="#cb8-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-204"><a href="#cb8-204" aria-hidden="true" tabindex="-1"></a>每个样本均有 11 个 SGB 通过 50% breadth-at-5× 门槛。MOCK1 的这些 SGB 的 nucleotide diversity 中位数为 0.000388（范围 0.000259--0.000694），MOCK2 为 0.000434（0.000273--0.000708）。对应 SNV density 中位数分别为每 Mbp assessed 242 与 223；只有同时报告被评估的 bp 和 coverage，这些密度才可解释。</span>
-<span id="cb8-205"><a href="#cb8-205" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-206"><a href="#cb8-206" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 SNV count 升级为显式分母</span></span>
+<span id="cb8-204"><a href="#cb8-204" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="为什么把 rarefied coverage 设为 1,000,000,000？"}</span>
+<span id="cb8-205"><a href="#cb8-205" aria-hidden="true" tabindex="-1"></a>inStrain 1.10.0 的 rarefied nucleotide-diversity 分支调用未暴露 CLI seed 的 NumPy 随机抽样。为了满足确定性要求，本次把 rarefaction depth 设到任何 genome 都达不到的 1,000,000,000×，使随机分支不可达；正文只报告 observed-depth <span class="in">`nucl_diversity`</span>。原生表的 <span class="in">`nucl_diversity_rarefied=0.0`</span> 是禁用哨兵，不是生物学零值；规范化表同时保留原值，并将报告字段转为 <span class="in">`NA`</span>。若研究必须比较等深度 π，应使用带显式、逐 genome seed 的审计版本，而不是引用这里的哨兵。</span>
+<span id="cb8-206"><a href="#cb8-206" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-207"><a href="#cb8-207" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-208"><a href="#cb8-208" aria-hidden="true" tabindex="-1"></a>SNV count 随 genome length、coverage 和 callable fraction 增长。图中使用 <span class="in">`SNVs / bases reaching &gt;=5x × 10^6`</span>，同时保留 raw SNV count、considered bp、mean coverage 与 breadth；没有 callable denominator 的“某组 SNV 更多”很容易只是深度差异。</span>
+<span id="cb8-208"><a href="#cb8-208" aria-hidden="true" tabindex="-1"></a><span class="al">![5× breadth gate 将“有 reads”与“足够进行 genome-wide 微多样性估计”分开。](../figures/50-profile-detection-audit.png)</span>{#fig-50-breadth}</span>
 <span id="cb8-209"><a href="#cb8-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-210"><a href="#cb8-210" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从工具默认 rarefaction 升级为可重放的随机性契约</span></span>
+<span id="cb8-210"><a href="#cb8-210" aria-hidden="true" tabindex="-1"></a>每个样本均有 11 个 SGB 通过 50% breadth-at-5× 门槛。MOCK1 的这些 SGB 的 nucleotide diversity 中位数为 0.000388（范围 0.000259--0.000694），MOCK2 为 0.000434（0.000273--0.000708）。对应 SNV density 中位数分别为每 Mbp assessed 242 与 223；只有同时报告被评估的 bp 和 coverage，这些密度才可解释。</span>
 <span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-212"><a href="#cb8-212" aria-hidden="true" tabindex="-1"></a>无法注入 seed 的随机指标不应混入确定性主分析。本次禁用 rarefied π，保留 observed-depth π；若后续实现显式 seed，应先在同一 BAM 上连续重跑并比较 checksum，再把 rarefaction 作为 sensitivity analysis，而不是静默替换主结果。</span>
+<span id="cb8-212"><a href="#cb8-212" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 SNV count 升级为显式分母</span></span>
 <span id="cb8-213"><a href="#cb8-213" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-214"><a href="#cb8-214" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把低 coverage 的 π 当成真实低多样性"}</span>
-<span id="cb8-215"><a href="#cb8-215" aria-hidden="true" tabindex="-1"></a>没有足够 reads 时，次要等位基因无法被观察，π 会向零偏。先设 callable breadth/depth 门槛，再比较通过门槛的 genomes。</span>
-<span id="cb8-216"><a href="#cb8-216" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-214"><a href="#cb8-214" aria-hidden="true" tabindex="-1"></a>SNV count 随 genome length、coverage 和 callable fraction 增长。图中使用 <span class="in">`SNVs / bases reaching &gt;=5x × 10^6`</span>，同时保留 raw SNV count、considered bp、mean coverage 与 breadth；没有 callable denominator 的“某组 SNV 更多”很容易只是深度差异。</span>
+<span id="cb8-215"><a href="#cb8-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-216"><a href="#cb8-216" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从工具默认 rarefaction 升级为可重放的随机性契约</span></span>
 <span id="cb8-217"><a href="#cb8-217" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-218"><a href="#cb8-218" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 cached unfiltered BAM 当成已按 CoverM 过滤"}</span>
-<span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a>本次 BAM 只缓存 coordinate-sorted alignments；inStrain 用 <span class="in">`min_read_ani`</span>、MAPQ 与 pair policy 重新过滤。不能把 CoverM 最终 read count 与 BAM 总 alignment 数混用。</span>
-<span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 用两个非重复样本做组间显著性检验"}</span>
-<span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a>ERR9765746/ERR9765747 是 composition 不同的 mocks。这里的 π 与 strain-call 比较是方法演示和描述性审计，不能替代具有生物学重复的统计设计。</span>
-<span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-226"><a href="#cb8-226" aria-hidden="true" tabindex="-1"></a><span class="fu">## 两样本 population comparison</span></span>
+<span id="cb8-218"><a href="#cb8-218" aria-hidden="true" tabindex="-1"></a>无法注入 seed 的随机指标不应混入确定性主分析。本次禁用 rarefied π，保留 observed-depth π；若后续实现显式 seed，应先在同一 BAM 上连续重跑并比较 checksum，再把 rarefaction 作为 sensitivity analysis，而不是静默替换主结果。</span>
+<span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把低 coverage 的 π 当成真实低多样性"}</span>
+<span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a>没有足够 reads 时，次要等位基因无法被观察，π 会向零偏。先设 callable breadth/depth 门槛，再比较通过门槛的 genomes。</span>
+<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 cached unfiltered BAM 当成已按 CoverM 过滤"}</span>
+<span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a>本次 BAM 只缓存 coordinate-sorted alignments；inStrain 用 <span class="in">`min_read_ani`</span>、MAPQ 与 pair policy 重新过滤。不能把 CoverM 最终 read count 与 BAM 总 alignment 数混用。</span>
+<span id="cb8-226"><a href="#cb8-226" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-227"><a href="#cb8-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-228"><a href="#cb8-228" aria-hidden="true" tabindex="-1"></a><span class="fu">### conANI 与 popANI 描述样本间一致性</span></span>
-<span id="cb8-229"><a href="#cb8-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-230"><a href="#cb8-230" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Consensus ANI（conANI）**比较两个样本各位点的主等位基因；主等位基因不同就计为差异。</span>
-<span id="cb8-231"><a href="#cb8-231" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Population ANI（popANI）**只要两个样本在该位点共享至少一个检测到的等位基因，就视为一致，因此通常不低于 conANI，更适合寻找潜在共享菌株 <span class="co">[</span><span class="ot">@olm2021instrain</span><span class="co">]</span>。</span>
-<span id="cb8-232"><a href="#cb8-232" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-233"><a href="#cb8-233" aria-hidden="true" tabindex="-1"></a><span class="fu">### Genome compared 决定“这个 ANI 覆盖了多少证据”</span></span>
-<span id="cb8-234"><a href="#cb8-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-235"><a href="#cb8-235" aria-hidden="true" tabindex="-1"></a>99.9999% identity 若只来自 genome 的一小段，不能支持全基因组同株结论。本次预设双门槛：<span class="in">`popANI &gt;=99.999%`</span> 且 <span class="in">`percent genome compared &gt;=50%`</span>。这是可审计的 reporting rule，不是跨物种、跨 read length、跨研究通用的自然常数。</span>
-<span id="cb8-236"><a href="#cb8-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-237"><a href="#cb8-237" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb8-238"><a href="#cb8-238" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么同株阈值不能脱离时间、生态位和测序设计？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb8-239"><a href="#cb8-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-240"><a href="#cb8-240" aria-hidden="true" tabindex="-1"></a>突变率、重组、样本间时间间隔、reference completeness、read length、测序错误率、平均 depth 与群体复杂度都会改变可观测差异。短时间尺度的传播研究通常需要极严格的 popANI 和足够大的 genome overlap；远距离或长期生态比较若机械套用同一阈值，会把真实相关菌株拆开。阈值应在研究设计前确定，并用阴性样本对、已知共享样本对或模拟 spike-in 做灵敏度分析。</span>
-<span id="cb8-241"><a href="#cb8-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-242"><a href="#cb8-242" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb8-243"><a href="#cb8-243" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-244"><a href="#cb8-244" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb8-245"><a href="#cb8-245" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 <span class="dt">\</span></span>
-<span id="cb8-246"><a href="#cb8-246" aria-hidden="true" tabindex="-1"></a>  inStrain compare <span class="dt">\</span></span>
-<span id="cb8-247"><a href="#cb8-247" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/MOCK1"</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/MOCK2"</span> <span class="dt">\</span></span>
-<span id="cb8-248"><a href="#cb8-248" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/comparison/MOCK1-vs-MOCK2"</span> <span class="dt">\</span></span>
-<span id="cb8-249"><a href="#cb8-249" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="dt">\</span></span>
-<span id="cb8-250"><a href="#cb8-250" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span> <span class="dt">\</span></span>
-<span id="cb8-251"><a href="#cb8-251" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_cov</span> 5 <span class="dt">\</span></span>
-<span id="cb8-252"><a href="#cb8-252" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_freq</span> 0.05 <span class="dt">\</span></span>
-<span id="cb8-253"><a href="#cb8-253" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fdr</span> 1e-06 <span class="dt">\</span></span>
-<span id="cb8-254"><a href="#cb8-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database_mode</span> <span class="dt">\</span></span>
-<span id="cb8-255"><a href="#cb8-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">--breadth</span> 0.5 <span class="dt">\</span></span>
-<span id="cb8-256"><a href="#cb8-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani_threshold</span> 0.99999 <span class="dt">\</span></span>
-<span id="cb8-257"><a href="#cb8-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coverage_treshold</span> 0.5 <span class="dt">\</span></span>
-<span id="cb8-258"><a href="#cb8-258" aria-hidden="true" tabindex="-1"></a>  <span class="at">--store_mismatch_locations</span> <span class="dt">\</span></span>
-<span id="cb8-259"><a href="#cb8-259" aria-hidden="true" tabindex="-1"></a>  <span class="at">--skip_plot_generation</span> <span class="dt">\</span></span>
-<span id="cb8-260"><a href="#cb8-260" aria-hidden="true" tabindex="-1"></a>  <span class="at">--force_compress</span></span>
-<span id="cb8-261"><a href="#cb8-261" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-262"><a href="#cb8-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-263"><a href="#cb8-263" aria-hidden="true" tabindex="-1"></a><span class="in">`--coverage_treshold`</span> 是 inStrain 1.10.0 命令行中保留的原始拼写。<span class="in">`--database_mode`</span> 先按 genome 聚合比较；最终报告仍重新应用明确的 99.999% popANI 与 50% genome-overlap 双门槛。</span>
-<span id="cb8-264"><a href="#cb8-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-265"><a href="#cb8-265" aria-hidden="true" tabindex="-1"></a><span class="al">![11 个可比较 SGB 中，10 个通过双门槛；SGB_001 因 genome overlap 不足而被挡在外面。](../figures/50-popani-overlap.png)</span>{#fig-50-popani}</span>
-<span id="cb8-266"><a href="#cb8-266" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-267"><a href="#cb8-267" aria-hidden="true" tabindex="-1"></a>11 个 comparisons 的 popANI 范围为 99.999893%--100%，可比较 genome 比例却横跨 35.87%--99.87%。<span class="in">`SGB_001`</span> 只有 938,002 bp 可比较、存在 1 个 population SNP；虽然 identity 极高，证据覆盖不足，所以 <span class="in">`SameStrainRule=FALSE`</span>。其余 10 个 SGB 通过双门槛，但这里只能称为“按预设规则的 same-strain calls”，不能把两个 mock samples 写成传播事件。</span>
+<span id="cb8-228"><a href="#cb8-228" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 用两个非重复样本做组间显著性检验"}</span>
+<span id="cb8-229"><a href="#cb8-229" aria-hidden="true" tabindex="-1"></a>ERR9765746/ERR9765747 是 composition 不同的 mocks。这里的 π 与 strain-call 比较是方法演示和描述性审计，不能替代具有生物学重复的统计设计。</span>
+<span id="cb8-230"><a href="#cb8-230" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-231"><a href="#cb8-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-232"><a href="#cb8-232" aria-hidden="true" tabindex="-1"></a><span class="fu">## 两样本 population comparison</span></span>
+<span id="cb8-233"><a href="#cb8-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-234"><a href="#cb8-234" aria-hidden="true" tabindex="-1"></a><span class="fu">### conANI 与 popANI 描述样本间一致性</span></span>
+<span id="cb8-235"><a href="#cb8-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-236"><a href="#cb8-236" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Consensus ANI（conANI）**比较两个样本各位点的主等位基因；主等位基因不同就计为差异。</span>
+<span id="cb8-237"><a href="#cb8-237" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Population ANI（popANI）**只要两个样本在该位点共享至少一个检测到的等位基因，就视为一致，因此通常不低于 conANI，更适合寻找潜在共享菌株 <span class="co">[</span><span class="ot">@olm2021instrain</span><span class="co">]</span>。</span>
+<span id="cb8-238"><a href="#cb8-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-239"><a href="#cb8-239" aria-hidden="true" tabindex="-1"></a><span class="fu">### Genome compared 决定“这个 ANI 覆盖了多少证据”</span></span>
+<span id="cb8-240"><a href="#cb8-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-241"><a href="#cb8-241" aria-hidden="true" tabindex="-1"></a>99.9999% identity 若只来自 genome 的一小段，不能支持全基因组同株结论。本次预设双门槛：<span class="in">`popANI &gt;=99.999%`</span> 且 <span class="in">`percent genome compared &gt;=50%`</span>。这是可审计的 reporting rule，不是跨物种、跨 read length、跨研究通用的自然常数。</span>
+<span id="cb8-242"><a href="#cb8-242" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-243"><a href="#cb8-243" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb8-244"><a href="#cb8-244" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么同株阈值不能脱离时间、生态位和测序设计？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb8-245"><a href="#cb8-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-246"><a href="#cb8-246" aria-hidden="true" tabindex="-1"></a>突变率、重组、样本间时间间隔、reference completeness、read length、测序错误率、平均 depth 与群体复杂度都会改变可观测差异。短时间尺度的传播研究通常需要极严格的 popANI 和足够大的 genome overlap；远距离或长期生态比较若机械套用同一阈值，会把真实相关菌株拆开。阈值应在研究设计前确定，并用阴性样本对、已知共享样本对或模拟 spike-in 做灵敏度分析。</span>
+<span id="cb8-247"><a href="#cb8-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-248"><a href="#cb8-248" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb8-249"><a href="#cb8-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-250"><a href="#cb8-250" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb8-251"><a href="#cb8-251" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-instrain-2026.07 <span class="dt">\</span></span>
+<span id="cb8-252"><a href="#cb8-252" aria-hidden="true" tabindex="-1"></a>  inStrain compare <span class="dt">\</span></span>
+<span id="cb8-253"><a href="#cb8-253" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/MOCK1"</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/profiles/MOCK2"</span> <span class="dt">\</span></span>
+<span id="cb8-254"><a href="#cb8-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/comparison/MOCK1-vs-MOCK2"</span> <span class="dt">\</span></span>
+<span id="cb8-255"><a href="#cb8-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 24 <span class="dt">\</span></span>
+<span id="cb8-256"><a href="#cb8-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">-s</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/inputs/article50-scaffold-to-bin.tsv"</span> <span class="dt">\</span></span>
+<span id="cb8-257"><a href="#cb8-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_cov</span> 5 <span class="dt">\</span></span>
+<span id="cb8-258"><a href="#cb8-258" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_freq</span> 0.05 <span class="dt">\</span></span>
+<span id="cb8-259"><a href="#cb8-259" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fdr</span> 1e-06 <span class="dt">\</span></span>
+<span id="cb8-260"><a href="#cb8-260" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database_mode</span> <span class="dt">\</span></span>
+<span id="cb8-261"><a href="#cb8-261" aria-hidden="true" tabindex="-1"></a>  <span class="at">--breadth</span> 0.5 <span class="dt">\</span></span>
+<span id="cb8-262"><a href="#cb8-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ani_threshold</span> 0.99999 <span class="dt">\</span></span>
+<span id="cb8-263"><a href="#cb8-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coverage_treshold</span> 0.5 <span class="dt">\</span></span>
+<span id="cb8-264"><a href="#cb8-264" aria-hidden="true" tabindex="-1"></a>  <span class="at">--store_mismatch_locations</span> <span class="dt">\</span></span>
+<span id="cb8-265"><a href="#cb8-265" aria-hidden="true" tabindex="-1"></a>  <span class="at">--skip_plot_generation</span> <span class="dt">\</span></span>
+<span id="cb8-266"><a href="#cb8-266" aria-hidden="true" tabindex="-1"></a>  <span class="at">--force_compress</span></span>
+<span id="cb8-267"><a href="#cb8-267" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb8-268"><a href="#cb8-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-269"><a href="#cb8-269" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“物种检出”升级为 5× genome breadth {#sec-audit}</span></span>
+<span id="cb8-269"><a href="#cb8-269" aria-hidden="true" tabindex="-1"></a><span class="in">`--coverage_treshold`</span> 是 inStrain 1.10.0 命令行中保留的原始拼写。<span class="in">`--database_mode`</span> 先按 genome 聚合比较；最终报告仍重新应用明确的 99.999% popANI 与 50% genome-overlap 双门槛。</span>
 <span id="cb8-270"><a href="#cb8-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-271"><a href="#cb8-271" aria-hidden="true" tabindex="-1"></a>在 1× depth/breadth 口径下可能看见一个 SGB，并不代表足以做 SNV inference。本次 24 个 SGB 在较宽松 abundance 审计中均可检出，但按 <span class="in">`breadth_minCov &gt;=50%`</span> 且 <span class="in">`min_cov=5`</span> 只剩 11 个。报告微多样性时必须写清 coverage 是平均 depth、任意覆盖 breadth，还是达到 minimum site depth 的 breadth。</span>
+<span id="cb8-271"><a href="#cb8-271" aria-hidden="true" tabindex="-1"></a><span class="al">![11 个可比较 SGB 中，10 个通过双门槛；SGB_001 因 genome overlap 不足而被挡在外面。](../figures/50-popani-overlap.png)</span>{#fig-50-popani}</span>
 <span id="cb8-272"><a href="#cb8-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-273"><a href="#cb8-273" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从高 ANI 升级为 identity × overlap</span></span>
+<span id="cb8-273"><a href="#cb8-273" aria-hidden="true" tabindex="-1"></a>11 个 comparisons 的 popANI 范围为 99.999893%--100%，可比较 genome 比例却横跨 35.87%--99.87%。<span class="in">`SGB_001`</span> 只有 938,002 bp 可比较、存在 1 个 population SNP；虽然 identity 极高，证据覆盖不足，所以 <span class="in">`SameStrainRule=FALSE`</span>。其余 10 个 SGB 通过双门槛，但这里只能称为“按预设规则的 same-strain calls”，不能把两个 mock samples 写成传播事件。</span>
 <span id="cb8-274"><a href="#cb8-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-275"><a href="#cb8-275" aria-hidden="true" tabindex="-1"></a><span class="in">`SGB_001`</span> 是最直接的反例：99.999893% popANI 看似足够，但 35.87% overlap 未过门槛。只按 ANI 排名会把局部一致误写成全基因组同株；只按 overlap 又会忽略真正的 SNP distance。两维应并列展示。</span>
+<span id="cb8-275"><a href="#cb8-275" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“物种检出”升级为 5× genome breadth {#sec-audit}</span></span>
 <span id="cb8-276"><a href="#cb8-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-277"><a href="#cb8-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“same strain”升级为研究语境中的证据等级</span></span>
+<span id="cb8-277"><a href="#cb8-277" aria-hidden="true" tabindex="-1"></a>在 1× depth/breadth 口径下可能看见一个 SGB，并不代表足以做 SNV inference。本次 24 个 SGB 在较宽松 abundance 审计中均可检出，但按 <span class="in">`breadth_minCov &gt;=50%`</span> 且 <span class="in">`min_cov=5`</span> 只剩 11 个。报告微多样性时必须写清 coverage 是平均 depth、任意覆盖 breadth，还是达到 minimum site depth 的 breadth。</span>
 <span id="cb8-278"><a href="#cb8-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-279"><a href="#cb8-279" aria-hidden="true" tabindex="-1"></a>两个公开 mock 不是病例接触对，也不是 longitudinal host samples。同株标签只说明当前 reference、filters 和阈值下的 sequence compatibility。真正的传播研究还需时间窗口、流行病学联系、阴性样本对、可能的环境来源、测序批次与污染排查。</span>
+<span id="cb8-279"><a href="#cb8-279" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从高 ANI 升级为 identity × overlap</span></span>
 <span id="cb8-280"><a href="#cb8-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-281"><a href="#cb8-281" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 只报告 popANI，不报告 compared fraction"}</span>
-<span id="cb8-282"><a href="#cb8-282" aria-hidden="true" tabindex="-1"></a>局部高度保守区域也能给出接近 100% 的 identity。至少同时报告 compared bases、percent genome compared、population SNPs 与 threshold。</span>
-<span id="cb8-283"><a href="#cb8-283" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-281"><a href="#cb8-281" aria-hidden="true" tabindex="-1"></a><span class="in">`SGB_001`</span> 是最直接的反例：99.999893% popANI 看似足够，但 35.87% overlap 未过门槛。只按 ANI 排名会把局部一致误写成全基因组同株；只按 overlap 又会忽略真正的 SNP distance。两维应并列展示。</span>
+<span id="cb8-282"><a href="#cb8-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-283"><a href="#cb8-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“same strain”升级为研究语境中的证据等级</span></span>
 <span id="cb8-284"><a href="#cb8-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-285"><a href="#cb8-285" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 popANI=100% 写成两个样本完全相同"}</span>
-<span id="cb8-286"><a href="#cb8-286" aria-hidden="true" tabindex="-1"></a>它只表示可比较、可调用位点没有 population-level difference；未覆盖区域、结构变异、质粒和 reference 外序列仍可能不同。</span>
-<span id="cb8-287"><a href="#cb8-287" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb8-288"><a href="#cb8-288" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-289"><a href="#cb8-289" aria-hidden="true" tabindex="-1"></a><span class="fu">## 规范化、保存、作图与结果核对</span></span>
+<span id="cb8-285"><a href="#cb8-285" aria-hidden="true" tabindex="-1"></a>两个公开 mock 不是病例接触对，也不是 longitudinal host samples。同株标签只说明当前 reference、filters 和阈值下的 sequence compatibility。真正的传播研究还需时间窗口、流行病学联系、阴性样本对、可能的环境来源、测序批次与污染排查。</span>
+<span id="cb8-286"><a href="#cb8-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-287"><a href="#cb8-287" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 只报告 popANI，不报告 compared fraction"}</span>
+<span id="cb8-288"><a href="#cb8-288" aria-hidden="true" tabindex="-1"></a>局部高度保守区域也能给出接近 100% 的 identity。至少同时报告 compared bases、percent genome compared、population SNPs 与 threshold。</span>
+<span id="cb8-289"><a href="#cb8-289" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-290"><a href="#cb8-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-291"><a href="#cb8-291" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb8-292"><a href="#cb8-292" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article50_instrain.py <span class="dt">\</span></span>
-<span id="cb8-293"><a href="#cb8-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-294"><a href="#cb8-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-instrain-2026.07 <span class="at">--threads</span> 24</span>
-<span id="cb8-295"><a href="#cb8-295" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-296"><a href="#cb8-296" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article50_instrain.py <span class="dt">\</span></span>
-<span id="cb8-297"><a href="#cb8-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
-<span id="cb8-298"><a href="#cb8-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-299"><a href="#cb8-299" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article50_instrain.R <span class="dt">\</span></span>
-<span id="cb8-300"><a href="#cb8-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary"</span> <span class="at">--output-dir</span> figures</span>
+<span id="cb8-291"><a href="#cb8-291" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 popANI=100% 写成两个样本完全相同"}</span>
+<span id="cb8-292"><a href="#cb8-292" aria-hidden="true" tabindex="-1"></a>它只表示可比较、可调用位点没有 population-level difference；未覆盖区域、结构变异、质粒和 reference 外序列仍可能不同。</span>
+<span id="cb8-293"><a href="#cb8-293" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-294"><a href="#cb8-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-295"><a href="#cb8-295" aria-hidden="true" tabindex="-1"></a><span class="fu">## 规范化、保存、作图与结果核对</span></span>
+<span id="cb8-296"><a href="#cb8-296" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-297"><a href="#cb8-297" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb8-298"><a href="#cb8-298" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article50_instrain.py <span class="dt">\</span></span>
+<span id="cb8-299"><a href="#cb8-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-300"><a href="#cb8-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-instrain-2026.07 <span class="at">--threads</span> 24</span>
 <span id="cb8-301"><a href="#cb8-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-302"><a href="#cb8-302" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article50_instrain.py <span class="dt">\</span></span>
-<span id="cb8-303"><a href="#cb8-303" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-304"><a href="#cb8-304" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/50-instrain-microdiversity-frozen</span>
-<span id="cb8-305"><a href="#cb8-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-306"><a href="#cb8-306" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article50_instrain.py <span class="dt">\</span></span>
-<span id="cb8-307"><a href="#cb8-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-308"><a href="#cb8-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/50-instrain-microdiversity-frozen <span class="dt">\</span></span>
-<span id="cb8-309"><a href="#cb8-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/50-instrain-microdiversity <span class="dt">\</span></span>
-<span id="cb8-310"><a href="#cb8-310" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb8-311"><a href="#cb8-311" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/50-instrain-microdiversity.qmd</span>
-<span id="cb8-312"><a href="#cb8-312" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb8-313"><a href="#cb8-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-314"><a href="#cb8-314" aria-hidden="true" tabindex="-1"></a>冻结包保留 24-SGB/2-sample coordinate、规范化 profile、native genome-wide tables、comparison table、read-filter audit、命令、版本、GNU-time 资源记录与全部 SHA-256；大 BAM 和 inStrain HDF5/pickle 工作文件留在产物区，不进入 git。</span>
-<span id="cb8-315"><a href="#cb8-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-316"><a href="#cb8-316" aria-hidden="true" tabindex="-1"></a><span class="fu">## 报告变异比较的有效范围 {#sec-methods}</span></span>
-<span id="cb8-317"><a href="#cb8-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-318"><a href="#cb8-318" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
+<span id="cb8-302"><a href="#cb8-302" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article50_instrain.py <span class="dt">\</span></span>
+<span id="cb8-303"><a href="#cb8-303" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb8-304"><a href="#cb8-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-305"><a href="#cb8-305" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article50_instrain.R <span class="dt">\</span></span>
+<span id="cb8-306"><a href="#cb8-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary"</span> <span class="at">--output-dir</span> figures</span>
+<span id="cb8-307"><a href="#cb8-307" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-308"><a href="#cb8-308" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article50_instrain.py <span class="dt">\</span></span>
+<span id="cb8-309"><a href="#cb8-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-310"><a href="#cb8-310" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/50-instrain-microdiversity-frozen</span>
+<span id="cb8-311"><a href="#cb8-311" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-312"><a href="#cb8-312" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article50_instrain.py <span class="dt">\</span></span>
+<span id="cb8-313"><a href="#cb8-313" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-314"><a href="#cb8-314" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/50-instrain-microdiversity-frozen <span class="dt">\</span></span>
+<span id="cb8-315"><a href="#cb8-315" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/50-instrain-microdiversity <span class="dt">\</span></span>
+<span id="cb8-316"><a href="#cb8-316" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb8-317"><a href="#cb8-317" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/50-instrain-microdiversity.qmd</span>
+<span id="cb8-318"><a href="#cb8-318" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb8-319"><a href="#cb8-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-320"><a href="#cb8-320" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-four checksum-identified representatives from a dRep v3.6.2 95%-ANI species-level genome-bin catalog were concatenated after prefixing every scaffold with a stable </span><span class="in">`SGB_###`</span><span class="at"> identifier. Coordinate-sorted unfiltered BAM files generated by competitive Strobealign v0.17.0 mapping through CoverM v0.8.0 were obtained for fixed clean-read subsets of PRJEB52977 runs ERR9765746 and ERR9765747. BAM files were indexed with SAMtools v1.23.1 and profiled with inStrain v1.10.0 under Python v3.8.20 using 24 threads, minimum read ANI 0.95, minimum MAPQ 2, paired reads only, minimum site coverage 5, minimum allele frequency 0.05, and FDR 1e-6. Genomes were considered adequately profiled when at least 50% of the reference reached 5x coverage. The two profiles were compared in database mode using the same coverage, frequency and FDR settings. Same-strain calls required popANI &gt;=99.999% and &gt;=50% of the genome compared. The unseeded rarefied-diversity path in inStrain v1.10.0 was disabled by setting </span><span class="in">`--rarefied_coverage 1000000000`</span><span class="at">; only observed-depth nucleotide diversity was reported. Plot jitter used seed 20260750. Input and output checksums, native tables, filtering logs, commands, software versions and GNU-time resource measurements were retained; known mock composition was not used for profiling or strain classification.</span></span>
+<span id="cb8-320"><a href="#cb8-320" aria-hidden="true" tabindex="-1"></a>冻结包保留 24-SGB/2-sample coordinate、规范化 profile、native genome-wide tables、comparison table、read-filter audit、命令、版本、GNU-time 资源记录与全部 SHA-256；大 BAM 和 inStrain HDF5/pickle 工作文件留在产物区，不进入 git。</span>
 <span id="cb8-321"><a href="#cb8-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-322"><a href="#cb8-322" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb8-322"><a href="#cb8-322" aria-hidden="true" tabindex="-1"></a><span class="fu">## 报告变异比较的有效范围 {#sec-methods}</span></span>
 <span id="cb8-323"><a href="#cb8-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-324"><a href="#cb8-324" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; After inStrain read filtering, 1,422,929 and 1,421,391 read pairs remained for ERR9765746 and ERR9765747, respectively. Eleven of 24 SGBs in each sample had at least 50% of their reference sequence covered at &gt;=5x. Median observed-depth nucleotide diversity among these SGBs was 3.88e-4 (range, 2.59e-4--6.94e-4) and 4.34e-4 (2.73e-4--7.08e-4), respectively. Eleven genomes were compared across samples, with popANI ranging from 99.999893% to 100% and the fraction of genome compared ranging from 35.87% to 99.87%. Ten genomes met the prespecified dual same-strain criterion. SGB_001 did not meet the criterion despite 99.999893% popANI because only 35.87% of its genome was compared. These calls were treated as sequence-based operational classifications rather than evidence of transmission.</span></span>
+<span id="cb8-324"><a href="#cb8-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb8-325"><a href="#cb8-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-326"><a href="#cb8-326" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb8-326"><a href="#cb8-326" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-four checksum-identified representatives from a dRep v3.6.2 95%-ANI species-level genome-bin catalog were concatenated after prefixing every scaffold with a stable </span><span class="in">`SGB_###`</span><span class="at"> identifier. Coordinate-sorted unfiltered BAM files generated by competitive Strobealign v0.17.0 mapping through CoverM v0.8.0 were obtained for fixed clean-read subsets of PRJEB52977 runs ERR9765746 and ERR9765747. BAM files were indexed with SAMtools v1.23.1 and profiled with inStrain v1.10.0 under Python v3.8.20 using 24 threads, minimum read ANI 0.95, minimum MAPQ 2, paired reads only, minimum site coverage 5, minimum allele frequency 0.05, and FDR 1e-6. Genomes were considered adequately profiled when at least 50% of the reference reached 5x coverage. The two profiles were compared in database mode using the same coverage, frequency and FDR settings. Same-strain calls required popANI &gt;=99.999% and &gt;=50% of the genome compared. The unseeded rarefied-diversity path in inStrain v1.10.0 was disabled by setting </span><span class="in">`--rarefied_coverage 1000000000`</span><span class="at">; only observed-depth nucleotide diversity was reported. Plot jitter used seed 20260750. Input and output checksums, native tables, filtering logs, commands, software versions and GNU-time resource measurements were retained; known mock composition was not used for profiling or strain classification.</span></span>
 <span id="cb8-327"><a href="#cb8-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-328"><a href="#cb8-328" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>使用同一版本、去冗余并带稳定 genome IDs 的 reference catalog；FASTA、BAM header 与 <span class="in">`.stb`</span> 必须逐 contig 对齐。</span>
-<span id="cb8-329"><a href="#cb8-329" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>对所有样本采用完全一致的 mapper、read ANI、aligned fraction、MAPQ、pair 与 duplicate policy，并保存 unfiltered/filtered read fate。</span>
-<span id="cb8-330"><a href="#cb8-330" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>先画 depth--breadth 分布，再预注册 callable-genome gate；不要看完结果后按组修改阈值。</span>
-<span id="cb8-331"><a href="#cb8-331" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>同时导出 coverage、breadth at minimum coverage、π、SNV/SNS counts、callable bases、conANI、popANI、compared bases 和 percent compared。</span>
-<span id="cb8-332"><a href="#cb8-332" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>对 read ANI、minimum coverage、minimum allele frequency、FDR 与 genome-overlap threshold 至少各做一档 sensitivity analysis。</span>
-<span id="cb8-333"><a href="#cb8-333" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>若同一物种可能存在多株，补做 linkage/haplotype 或 strain deconvolution；一个 consensus profile 不能完整描述复杂混合群体。</span>
-<span id="cb8-334"><a href="#cb8-334" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>传播问题应建立 case-pair/negative-pair 设计，联合时间、地点、接触关系和批次信息；先定义“shared strain”，再看结果。</span>
-<span id="cb8-335"><a href="#cb8-335" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若需要 rarefied diversity，使用提供显式 seed 的实现或记录可审计补丁，并验证重复运行 checksum；不要把不可控抽样混入主表。</span>
-<span id="cb8-336"><a href="#cb8-336" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-337"><a href="#cb8-337" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb8-338"><a href="#cb8-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-339"><a href="#cb8-339" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>π 图用 paired slope 连接同一 SGB，在 log scale 上显示数量级；只标极值，避免 22 个标签遮挡。</span>
-<span id="cb8-340"><a href="#cb8-340" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>SNV density 图把 coverage 放在 x 轴、SNVs per assessed Mbp 放在 y 轴；两轴都用适合稀疏范围的 log scale。</span>
-<span id="cb8-341"><a href="#cb8-341" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>detection 图显式画出 50% breadth gate，点大小表示 SNV burden，避免把 gate 藏在表格筛选里。</span>
-<span id="cb8-342"><a href="#cb8-342" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>strain-call 图同时画 50% overlap 竖线与 10 differences/Mbp（99.999% popANI）横线；颜色只表示是否通过双门槛。</span>
-<span id="cb8-343"><a href="#cb8-343" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内样本名、轴、图例和注释全为英文，PDF 保留矢量元素，PNG/TIFF 以 350 dpi 输出，TIFF 使用 LZW compression。</span>
+<span id="cb8-328"><a href="#cb8-328" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb8-329"><a href="#cb8-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-330"><a href="#cb8-330" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; After inStrain read filtering, 1,422,929 and 1,421,391 read pairs remained for ERR9765746 and ERR9765747, respectively. Eleven of 24 SGBs in each sample had at least 50% of their reference sequence covered at &gt;=5x. Median observed-depth nucleotide diversity among these SGBs was 3.88e-4 (range, 2.59e-4--6.94e-4) and 4.34e-4 (2.73e-4--7.08e-4), respectively. Eleven genomes were compared across samples, with popANI ranging from 99.999893% to 100% and the fraction of genome compared ranging from 35.87% to 99.87%. Ten genomes met the prespecified dual same-strain criterion. SGB_001 did not meet the criterion despite 99.999893% popANI because only 35.87% of its genome was compared. These calls were treated as sequence-based operational classifications rather than evidence of transmission.</span></span>
+<span id="cb8-331"><a href="#cb8-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-332"><a href="#cb8-332" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb8-333"><a href="#cb8-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-334"><a href="#cb8-334" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>使用同一版本、去冗余并带稳定 genome IDs 的 reference catalog；FASTA、BAM header 与 <span class="in">`.stb`</span> 必须逐 contig 对齐。</span>
+<span id="cb8-335"><a href="#cb8-335" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>对所有样本采用完全一致的 mapper、read ANI、aligned fraction、MAPQ、pair 与 duplicate policy，并保存 unfiltered/filtered read fate。</span>
+<span id="cb8-336"><a href="#cb8-336" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>先画 depth--breadth 分布，再预注册 callable-genome gate；不要看完结果后按组修改阈值。</span>
+<span id="cb8-337"><a href="#cb8-337" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>同时导出 coverage、breadth at minimum coverage、π、SNV/SNS counts、callable bases、conANI、popANI、compared bases 和 percent compared。</span>
+<span id="cb8-338"><a href="#cb8-338" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>对 read ANI、minimum coverage、minimum allele frequency、FDR 与 genome-overlap threshold 至少各做一档 sensitivity analysis。</span>
+<span id="cb8-339"><a href="#cb8-339" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>若同一物种可能存在多株，补做 linkage/haplotype 或 strain deconvolution；一个 consensus profile 不能完整描述复杂混合群体。</span>
+<span id="cb8-340"><a href="#cb8-340" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>传播问题应建立 case-pair/negative-pair 设计，联合时间、地点、接触关系和批次信息；先定义“shared strain”，再看结果。</span>
+<span id="cb8-341"><a href="#cb8-341" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若需要 rarefied diversity，使用提供显式 seed 的实现或记录可审计补丁，并验证重复运行 checksum；不要把不可控抽样混入主表。</span>
+<span id="cb8-342"><a href="#cb8-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-343"><a href="#cb8-343" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
 <span id="cb8-344"><a href="#cb8-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-345"><a href="#cb8-345" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb8-346"><a href="#cb8-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-347"><a href="#cb8-347" aria-hidden="true" tabindex="-1"></a>同物种检出不等于同株：必须把样本内多样性、SNV density、popANI 与真正可比较的基因组比例同时审计。</span>
-<span id="cb8-348"><a href="#cb8-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-349"><a href="#cb8-349" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb8-345"><a href="#cb8-345" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>π 图用 paired slope 连接同一 SGB，在 log scale 上显示数量级；只标极值，避免 22 个标签遮挡。</span>
+<span id="cb8-346"><a href="#cb8-346" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>SNV density 图把 coverage 放在 x 轴、SNVs per assessed Mbp 放在 y 轴；两轴都用适合稀疏范围的 log scale。</span>
+<span id="cb8-347"><a href="#cb8-347" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>detection 图显式画出 50% breadth gate，点大小表示 SNV burden，避免把 gate 藏在表格筛选里。</span>
+<span id="cb8-348"><a href="#cb8-348" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>strain-call 图同时画 50% overlap 竖线与 10 differences/Mbp（99.999% popANI）横线；颜色只表示是否通过双门槛。</span>
+<span id="cb8-349"><a href="#cb8-349" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内样本名、轴、图例和注释全为英文，PDF 保留矢量元素，PNG/TIFF 以 350 dpi 输出，TIFF 使用 LZW compression。</span>
 <span id="cb8-350"><a href="#cb8-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-351"><a href="#cb8-351" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>inStrain 方法、population microdiversity 与 shared-strain detection <span class="co">[</span><span class="ot">@olm2021instrain</span><span class="co">]</span></span>
-<span id="cb8-352"><a href="#cb8-352" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>inStrain profile/compare 参数与输出定义 <span class="co">[</span><span class="ot">@instrain2026documentation</span><span class="co">]</span></span>
-<span id="cb8-353"><a href="#cb8-353" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
-<span id="cb8-354"><a href="#cb8-354" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>95% ANI 非冗余 genome catalog <span class="co">[</span><span class="ot">@olm2017drep</span><span class="co">]</span></span>
+<span id="cb8-351"><a href="#cb8-351" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb8-352"><a href="#cb8-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-353"><a href="#cb8-353" aria-hidden="true" tabindex="-1"></a>同物种检出不等于同株：必须把样本内多样性、SNV density、popANI 与真正可比较的基因组比例同时审计。</span>
+<span id="cb8-354"><a href="#cb8-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-355"><a href="#cb8-355" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb8-356"><a href="#cb8-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-357"><a href="#cb8-357" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>inStrain 方法、population microdiversity 与 shared-strain detection <span class="co">[</span><span class="ot">@olm2021instrain</span><span class="co">]</span></span>
+<span id="cb8-358"><a href="#cb8-358" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>inStrain profile/compare 参数与输出定义 <span class="co">[</span><span class="ot">@instrain2026documentation</span><span class="co">]</span></span>
+<span id="cb8-359"><a href="#cb8-359" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb8-360"><a href="#cb8-360" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>95% ANI 非冗余 genome catalog <span class="co">[</span><span class="ot">@olm2017drep</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

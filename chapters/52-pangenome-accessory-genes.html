@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">属于同一物种，为什么功能基因仍然不同？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">属于同一物种，为什么功能基因仍然不同？</a>
+  <ul class="collapse">
+  <li><a href="#基因未检出何时才能解释为真正缺失" id="toc-基因未检出何时才能解释为真正缺失" class="nav-link" data-scroll-target="#基因未检出何时才能解释为真正缺失">基因未检出，何时才能解释为真正缺失？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -1000,13 +1032,13 @@ div.csl-indent {
 <p>本次从官方预计算 mapping profiles 起步，PanPhlAn 3.1 主分析耗时 <strong>8.83 秒、峰值 RAM 0.148 GiB</strong>；敏感性分支耗时 <strong>6.59 秒、峰值 RAM 0.113 GiB</strong>。全工作目录约 <strong>240 MB</strong>，实际 profiling 为单进程。按这一入口建议准备 <strong>1–2 CPU cores、2 GB RAM、1 GB 可用磁盘、5 分钟</strong>。若从 25 个原始 FASTQ 重新做 Bowtie2 mapping，建议 <strong>8–16 cores、32 GB RAM、至少 300 GB 临时磁盘</strong>，耗时会随读长、深度和压缩格式从数小时增加到数天。没有服务器时，可直接读取 <code>data/small/52-panphlan-pangenome-frozen/</code> 中校验过的 presence/absence 矩阵和汇总表重画下游图。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="基因未检出，何时才能解释为真正缺失">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>基因未检出，何时才能解释为真正缺失
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1016,6 +1048,11 @@ div.csl-indent {
 <section id="sec-target" class="level2">
 <h2 class="anchored" data-anchor-id="sec-target">属于同一物种，为什么功能基因仍然不同？</h2>
 <p>PanPhlAn 方法论文 Figure 3 用 <em>E. rectale</em> 与 <em>A. muciniphila</em> 展示大规模种内 population genomics：每个样本先被表示成 gene-family presence/absence profile，再按 gene content 观察菌株群体结构 <span class="citation" data-cites="scholz2016panphlan">(<a href="02-three-analysis-layers.html#ref-scholz2016panphlan" role="doc-biblioref">Scholz 等 2016年</a>)</span>。这里复现的是同一类 <em>E. rectale</em> 泛基因组图，不声称重现论文全部样本或原始版式；输入来自 PanPhlAn 3 官方 25-sample 教程 <span class="citation" data-cites="segatalab2022panphlan3tutorial">(<a href="02-three-analysis-layers.html#ref-segatalab2022panphlan3tutorial" role="doc-biblioref">Segata Lab 2022年</a>)</span>。</p>
+<section id="基因未检出何时才能解释为真正缺失" class="level3">
+<h3 class="anchored" data-anchor-id="基因未检出何时才能解释为真正缺失">基因未检出，何时才能解释为真正缺失？</h3>
+<p>read-based 泛基因组分析受目标物种深度和参考集合限制。低深度样本中的零可能只是未检出；参考中不存在的家族则根本不在当前搜索范围。只有先确认样本具备足够信息，才能比较 presence/absence，不能把所有未见条目都改名为菌株缺失。</p>
+<p>本例的 operational core 来自 22 个合格样本，95% 阈值描述的是这些样本中的检出频率，不是该物种所有成员的必需基因。重复来源、地理结构及混合菌株都可能影响分类。基因组成差异支持种内遗传多样性，但不会单独证明表达、表型或功能改变。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1268,13 +1305,19 @@ UniRef90_A0A095XLP0     1                     0       1       1</code></pre>
 <section id="presenceabsence-来自归一化覆盖平台而不是有一条-read-就算存在" class="level3">
 <h3 class="anchored" data-anchor-id="presenceabsence-来自归一化覆盖平台而不是有一条-read-就算存在">Presence/absence 来自归一化覆盖平台，而不是“有一条 read 就算存在”</h3>
 <p>对样本 (i) 与 gene family (g)，PanPhlAn 先得到 read coverage (c_{ig})，再用该样本的覆盖平台估计物种内基因的基准拷贝水平。归一化值过低判 absent，落在明确平台内判 present，过高则提示 multicopy。默认 gene-level 阈值为：</p>
-<p>[ z_{ig}&lt;0.25absent, z_{ig}&gt;0.50present, z_{ig}&gt;1.50multicopy. ]</p>
+<p><span class="math display">\[
+z_{ig}&lt;0.25\Rightarrow absent,\qquad
+z_{ig}&gt;0.50\Rightarrow present,\qquad
+z_{ig}&gt;1.50\Rightarrow multicopy.
+\]</span></p>
 <p>样本本身还需通过 median coverage、left-side plateau 与 right-side plateau 三道门。这样能减少低深度随机命中被误判为基因存在，但阈值也会改变哪些样本进入分析。</p>
 </section>
 <section id="coreaccessory-与-rare-都必须带上分母" class="level3">
 <h3 class="anchored" data-anchor-id="coreaccessory-与-rare-都必须带上分母">Core、accessory 与 rare 都必须带上分母</h3>
 <p>这里的 operational prevalence 定义为：</p>
-<p>[ p_g=. ]</p>
+<p><span class="math display">\[
+p_g=\frac{\sum_{i=1}^{n} I(g\text{ present in }i)}{n}.
+\]</span></p>
 <ul>
 <li><code>Core &gt;=95%</code>：(p_g)；主分析 22 个样本时等价于至少 21 个样本检出。</li>
 <li><code>Accessory 5-&lt;95%</code>：(0.05p_g&lt;0.95)。</li>
@@ -1408,7 +1451,9 @@ UniRef90_A0A095XLP0     1                     0       1       1</code></pre>
 <section id="gene-content-tree-与-species-phylogeny-不可互换" class="level3">
 <h3 class="anchored" data-anchor-id="gene-content-tree-与-species-phylogeny-不可互换">Gene-content tree 与 species phylogeny 不可互换</h3>
 <p>Jaccard distance 只比较 binary gene content：</p>
-<p>[ d_J(A,B)=1-. ]</p>
+<p><span class="math display">\[
+d_J(A,B)=1-\frac{|A\cap B|}{|A\cup B|}.
+\]</span></p>
 <p>它会受基因获得/丢失、质粒和噬菌体、mapping bias、阈值及数据库覆盖影响。StrainPhlAn 或 core-genome phylogeny 比较的是同源 marker/core sequence 的 nucleotide substitutions。二者回答不同问题：gene-content dendrogram 适合找“功能型相似”的样本，不能当作物种演化树，更不能仅凭近邻断言传播。</p>
 <details>
 <summary>
@@ -2067,7 +2112,7 @@ Suzek, Baris E., Hongzhan Huang, Peter McGarvey, Raja Mazumder, 和 Cathy H. Wu.
 <span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>本次从官方预计算 mapping profiles 起步，PanPhlAn 3.1 主分析耗时 **8.83 秒、峰值 RAM 0.148 GiB**；敏感性分支耗时 **6.59 秒、峰值 RAM 0.113 GiB**。全工作目录约 **240 MB**，实际 profiling 为单进程。按这一入口建议准备 **1--2 CPU cores、2 GB RAM、1 GB 可用磁盘、5 分钟**。若从 25 个原始 FASTQ 重新做 Bowtie2 mapping，建议 **8--16 cores、32 GB RAM、至少 300 GB 临时磁盘**，耗时会随读长、深度和压缩格式从数小时增加到数天。没有服务器时，可直接读取 <span class="in">`data/small/52-panphlan-pangenome-frozen/`</span> 中校验过的 presence/absence 矩阵和汇总表重画下游图。</span>
 <span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="基因未检出，何时才能解释为真正缺失"}</span>
 <span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>参考集合和检出规则共同定义附属基因；未检出与真实缺失要区分，基因存在仍不等于表达。</span>
 <span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2080,425 +2125,431 @@ Suzek, Baris E., Hongzhan Huang, Peter McGarvey, Raja Mazumder, 和 Cathy H. Wu.
 <span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="fu">### 基因未检出，何时才能解释为真正缺失？</span></span>
 <span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/52/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 3.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>read-based 泛基因组分析受目标物种深度和参考集合限制。低深度样本中的零可能只是未检出；参考中不存在的家族则根本不在当前搜索范围。只有先确认样本具备足够信息，才能比较 presence/absence，不能把所有未见条目都改名为菌株缺失。</span>
 <span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/52/download.R)</span>。</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>本例的 operational core 来自 22 个合格样本，95% 阈值描述的是这些样本中的检出频率，不是该物种所有成员的必需基因。重复来源、地理结构及混合菌株都可能影响分类。基因组成差异支持种内遗传多样性，但不会单独证明表达、表型或功能改变。</span>
 <span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-52</span></span>
-<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/52/files.tsv"</span>))</span>
-<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
-<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
-<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 固定对象 <span class="pp">|</span> 完整性与来源 <span class="pp">|</span></span>
-<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 参考泛基因组 <span class="pp">|</span> 官方 <span class="in">`Eubacterium_rectale.tar.bz2`</span>；15 references、11,069 UniRef90 families <span class="pp">|</span> 83,327,158 bytes；官方 MD5 <span class="in">`87b111ad1612930d34ab17f9e0f09e34`</span>；固定 SHA-256 <span class="in">`411d8736790ef591e8131d58e096d68a15c477bc21eb39b41c337af950d4dfc6`</span> <span class="pp">|</span></span>
-<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 真实 mapping profiles <span class="pp">|</span> 官方教程 25 个 stool metagenomes，13 studies、9 countries <span class="pp">|</span> 3,714,090 bytes；SHA-256 <span class="in">`5f9bfecbe3e5459e06f48677076b49a4a37263935ac8cff8422cf1ef6bc9bc50`</span> <span class="pp">|</span></span>
-<span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Profiling source <span class="pp">|</span> PanPhlAn 3.1 <span class="in">`panphlan_profiling.py`</span> <span class="pp">|</span> Git commit <span class="in">`4294c3f5c92be9b9ef7d61b69df43e7f27c51601`</span>；source SHA-256 <span class="in">`901b4dc3710a26145dca064216d62769772b743db55683a956b66253565e7480`</span> <span class="pp">|</span></span>
-<span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 教程定义 <span class="pp">|</span> PanPhlAn 3 wiki <span class="pp">|</span> commit <span class="in">`328be1e6074015c5183668913ed5e0cf0f879fe5`</span> <span class="pp">|</span></span>
-<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a>官方 mapping archive 保存为 <span class="in">`.csv.bz2`</span>，而固定 commit 的 profiling 入口直接按文本读取目录文件。准备脚本先核对整个归档 SHA-256，再逐文件做标准 bzip2 解压；每个压缩文件与解压文件的 bytes、SHA-256、样本别名、study 和 country 都写入 <span class="in">`sample-metadata.tsv`</span>。这一步只改变封装与规范化样本名，不改变任何 coverage 数值。</span>
-<span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a>官方 annotation snapshot 没有声明独立 release 号，因此不能凭空补一个数据库版本。这里用归档 SHA-256、每个成员的 SHA-256 和 PanPhlAn source commit 锁定内容；Methods 明确写成 “checksum-locked bundled annotation snapshot”。</span>
-<span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> env/panphlan.yml</span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/52/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 3.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/52/download.R)</span>。</span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-52</span></span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/52/files.tsv"</span>))</span>
+<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
+<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
+<span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 固定对象 <span class="pp">|</span> 完整性与来源 <span class="pp">|</span></span>
+<span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 参考泛基因组 <span class="pp">|</span> 官方 <span class="in">`Eubacterium_rectale.tar.bz2`</span>；15 references、11,069 UniRef90 families <span class="pp">|</span> 83,327,158 bytes；官方 MD5 <span class="in">`87b111ad1612930d34ab17f9e0f09e34`</span>；固定 SHA-256 <span class="in">`411d8736790ef591e8131d58e096d68a15c477bc21eb39b41c337af950d4dfc6`</span> <span class="pp">|</span></span>
+<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 真实 mapping profiles <span class="pp">|</span> 官方教程 25 个 stool metagenomes，13 studies、9 countries <span class="pp">|</span> 3,714,090 bytes；SHA-256 <span class="in">`5f9bfecbe3e5459e06f48677076b49a4a37263935ac8cff8422cf1ef6bc9bc50`</span> <span class="pp">|</span></span>
+<span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Profiling source <span class="pp">|</span> PanPhlAn 3.1 <span class="in">`panphlan_profiling.py`</span> <span class="pp">|</span> Git commit <span class="in">`4294c3f5c92be9b9ef7d61b69df43e7f27c51601`</span>；source SHA-256 <span class="in">`901b4dc3710a26145dca064216d62769772b743db55683a956b66253565e7480`</span> <span class="pp">|</span></span>
+<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 教程定义 <span class="pp">|</span> PanPhlAn 3 wiki <span class="pp">|</span> commit <span class="in">`328be1e6074015c5183668913ed5e0cf0f879fe5`</span> <span class="pp">|</span></span>
+<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a>官方 mapping archive 保存为 <span class="in">`.csv.bz2`</span>，而固定 commit 的 profiling 入口直接按文本读取目录文件。准备脚本先核对整个归档 SHA-256，再逐文件做标准 bzip2 解压；每个压缩文件与解压文件的 bytes、SHA-256、样本别名、study 和 country 都写入 <span class="in">`sample-metadata.tsv`</span>。这一步只改变封装与规范化样本名，不改变任何 coverage 数值。</span>
+<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a>官方 annotation snapshot 没有声明独立 release 号，因此不能凭空补一个数据库版本。这里用归档 SHA-256、每个成员的 SHA-256 和 PanPhlAn source commit 锁定内容；Methods 明确写成 “checksum-locked bundled annotation snapshot”。</span>
 <span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a><span class="co"># 或从 exact Linux lock 重建：</span></span>
-<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
-<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/panphlan-linux-64.lock</span>
-<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 python <span class="at">-V</span></span>
-<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 bowtie2 <span class="at">--version</span></span>
-<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 samtools <span class="at">--version</span></span>
-<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a>实跑环境为 PanPhlAn profiling source 3.1、Python 3.12.13、NumPy 2.3.5、Pandas 3.0.5、Bowtie2 2.5.5 与 SAMtools 1.23.1。后两者为从 FASTQ mapping 准备的环境锁；本次计算读取官方 mapping profiles，没有重新运行 Bowtie2/SAMtools。</span>
-<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
-<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>,</span>
-<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggrepel"</span>, <span class="st">"patchwork"</span>, <span class="st">"ggdendro"</span>, <span class="st">"vegan"</span>, <span class="st">"ape"</span></span>
-<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> env create <span class="at">-f</span> env/panphlan.yml</span>
+<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a><span class="co"># 或从 exact Linux lock 重建：</span></span>
+<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
+<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/panphlan-linux-64.lock</span>
+<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 python <span class="at">-V</span></span>
+<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 bowtie2 <span class="at">--version</span></span>
+<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 samtools <span class="at">--version</span></span>
+<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a>实跑环境为 PanPhlAn profiling source 3.1、Python 3.12.13、NumPy 2.3.5、Pandas 3.0.5、Bowtie2 2.5.5 与 SAMtools 1.23.1。后两者为从 FASTQ mapping 准备的环境锁；本次计算读取官方 mapping profiles，没有重新运行 Bowtie2/SAMtools。</span>
 <span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
-<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
-<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggdendro)</span>
-<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260752</span>)</span>
-<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a>  <span class="st">"AUT"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"CHN"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>, <span class="st">"DEU"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
-<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a>  <span class="st">"FJI"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"GBR"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>, <span class="st">"NLD"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>,</span>
-<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a>  <span class="st">"RUS"</span> <span class="ot">=</span> <span class="st">"#F0E442"</span>, <span class="st">"SWE"</span> <span class="ot">=</span> <span class="st">"#6A3D9A"</span>, <span class="st">"USA"</span> <span class="ot">=</span> <span class="st">"#8C564B"</span></span>
-<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb12-125"><a href="#cb12-125" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb12-126"><a href="#cb12-126" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb12-128"><a href="#cb12-128" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb12-129"><a href="#cb12-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
-<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb12-131"><a href="#cb12-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb12-132"><a href="#cb12-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb12-133"><a href="#cb12-133" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">200</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
-<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb12-138"><a href="#cb12-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-139"><a href="#cb12-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-142"><a href="#cb12-142" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb12-145"><a href="#cb12-145" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载、校验并登记真实输入 {#sec-code}</span></span>
-<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a><span class="fu">### 物种 abundance 与菌株 gene repertoire 是两个问题 {#sec-theory}</span></span>
+<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
+<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>,</span>
+<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggrepel"</span>, <span class="st">"patchwork"</span>, <span class="st">"ggdendro"</span>, <span class="st">"vegan"</span>, <span class="st">"ape"</span></span>
+<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggdendro)</span>
+<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260752</span>)</span>
+<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-125"><a href="#cb12-125" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb12-126"><a href="#cb12-126" aria-hidden="true" tabindex="-1"></a>  <span class="st">"AUT"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"CHN"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>, <span class="st">"DEU"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a>  <span class="st">"FJI"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"GBR"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>, <span class="st">"NLD"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>,</span>
+<span id="cb12-128"><a href="#cb12-128" aria-hidden="true" tabindex="-1"></a>  <span class="st">"RUS"</span> <span class="ot">=</span> <span class="st">"#F0E442"</span>, <span class="st">"SWE"</span> <span class="ot">=</span> <span class="st">"#6A3D9A"</span>, <span class="st">"USA"</span> <span class="ot">=</span> <span class="st">"#8C564B"</span></span>
+<span id="cb12-129"><a href="#cb12-129" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb12-131"><a href="#cb12-131" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb12-132"><a href="#cb12-132" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb12-133"><a href="#cb12-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
+<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb12-138"><a href="#cb12-138" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb12-139"><a href="#cb12-139" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-142"><a href="#cb12-142" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">200</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
+<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-145"><a href="#cb12-145" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-154"><a href="#cb12-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 一类 marker-based profiler 回答“样本里有哪些物种、相对丰度多少”；PanPhlAn 把 reads 比对到目标物种的参考泛基因组，回答“目标物种在这个样本中的优势菌株可能携带哪些 gene families” <span class="co">[</span><span class="ot">@beghini2021biobakery; @scholz2016panphlan</span><span class="co">]</span>。因此，同样检出 *E. rectale* 的两个样本可以共享核心代谢骨架，却在转运、移动元件、环境响应和其他附属功能上不同。</span>
+<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
 <span id="cb12-156"><a href="#cb12-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article52"</span></span>
+<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载、校验并登记真实输入 {#sec-code}</span></span>
+<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a><span class="fu">### 物种 abundance 与菌株 gene repertoire 是两个问题 {#sec-theory}</span></span>
 <span id="cb12-160"><a href="#cb12-160" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article52_panphlan.py <span class="dt">\</span></span>
-<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-manifest.tsv"</span></span>
-<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/sample-metadata.tsv"</span></span>
-<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
-<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a>准备脚本在任何解包或 profiling 前验证两个官方 archive，并再次验证 25 个 decoded profiles、9 个 pangenome members 与两份 pinned source。若 URL 内容漂移、下载截断或本地文件被改动，runner 会在反序列化和矩阵计算前停止。</span>
-<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-172"><a href="#cb12-172" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先检查样本是否足以代表单一菌株 {#sec-audit}</span></span>
-<span id="cb12-173"><a href="#cb12-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a>主分支的 22 个保留样本中，13 个被 PanPhlAn 的 fixed <span class="in">`out-of-plateau &gt;0.20`</span> 规则标记为 potential multi-strain。这个比例足以改变解释策略：presence/absence heatmap 可用于发现候选 gene-content modules，但不能把每一列都称作已解析的单菌株 genome。若研究结论依赖精确 haplotype，应增加培养分离株、long-read/MAG、DESMAN 类拆分或纵向一致性证据。</span>
+<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 一类 marker-based profiler 回答“样本里有哪些物种、相对丰度多少”；PanPhlAn 把 reads 比对到目标物种的参考泛基因组，回答“目标物种在这个样本中的优势菌株可能携带哪些 gene families” <span class="co">[</span><span class="ot">@beghini2021biobakery; @scholz2016panphlan</span><span class="co">]</span>。因此，同样检出 *E. rectale* 的两个样本可以共享核心代谢骨架，却在转运、移动元件、环境响应和其他附属功能上不同。</span>
+<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article52"</span></span>
+<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article52_panphlan.py <span class="dt">\</span></span>
+<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-manifest.tsv"</span></span>
+<span id="cb12-172"><a href="#cb12-172" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/sample-metadata.tsv"</span></span>
+<span id="cb12-173"><a href="#cb12-173" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
+<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-175"><a href="#cb12-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-176"><a href="#cb12-176" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把低覆盖缺失当成真正 gene loss"}</span>
-<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a>低深度会把 present gene 推向 0。先看 median coverage 与 plateau，报告被过滤样本；不要把主分支未纳入的样本强行补零。presence/absence 不是测序深度无关的绝对真值。</span>
-<span id="cb12-178"><a href="#cb12-178" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-176"><a href="#cb12-176" aria-hidden="true" tabindex="-1"></a>准备脚本在任何解包或 profiling 前验证两个官方 archive，并再次验证 25 个 decoded profiles、9 个 pangenome members 与两份 pinned source。若 URL 内容漂移、下载截断或本地文件被改动，runner 会在反序列化和矩阵计算前停止。</span>
+<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-178"><a href="#cb12-178" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先检查样本是否足以代表单一菌株 {#sec-audit}</span></span>
 <span id="cb12-179"><a href="#cb12-179" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行主阈值</span></span>
+<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a>主分支的 22 个保留样本中，13 个被 PanPhlAn 的 fixed <span class="in">`out-of-plateau &gt;0.20`</span> 规则标记为 potential multi-strain。这个比例足以改变解释策略：presence/absence heatmap 可用于发现候选 gene-content modules，但不能把每一列都称作已解析的单菌株 genome。若研究结论依赖精确 haplotype，应增加培养分离株、long-read/MAG、DESMAN 类拆分或纵向一致性证据。</span>
 <span id="cb12-181"><a href="#cb12-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
-<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a>  python <span class="st">"</span><span class="va">$WORK</span><span class="st">/software/panphlan_profiling.py"</span> <span class="dt">\</span></span>
-<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/decoded-maps"</span> <span class="dt">\</span></span>
-<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/pangenome/Eubacterium_rectale/Eubacterium_rectale_pangenome.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_matrix</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/primary-matrix.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_covmat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/coverage-matrix.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_idx</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/primary-index.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_coverage</span> 2 <span class="dt">\</span></span>
-<span id="cb12-191"><a href="#cb12-191" aria-hidden="true" tabindex="-1"></a>  <span class="at">--left_max</span> 1.25 <span class="dt">\</span></span>
-<span id="cb12-192"><a href="#cb12-192" aria-hidden="true" tabindex="-1"></a>  <span class="at">--right_min</span> 0.75 <span class="dt">\</span></span>
-<span id="cb12-193"><a href="#cb12-193" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_non_present</span> 0.25 <span class="dt">\</span></span>
-<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_present</span> 0.5 <span class="dt">\</span></span>
-<span id="cb12-195"><a href="#cb12-195" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_multicopy</span> 1.5 <span class="dt">\</span></span>
-<span id="cb12-196"><a href="#cb12-196" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_ref</span> <span class="at">-v</span></span>
-<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a>主阈值保留 22/25 个 metagenome samples 和 15/15 个 references。<span class="in">`RA023`</span>、<span class="in">`SRS011302`</span> 与 <span class="in">`W1.27.ST`</span> 的 median coverage 和 right-side plateau 都通过，但 left-side ratios 分别为 1.33、1.49 与 1.48，高于 <span class="in">`--left_max 1.25`</span>，因此被排除。</span>
-<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a>结果表的前几列长这样：</span>
-<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-203"><a href="#cb12-203" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
-<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a><span class="in">GeneFamily              CCMD34381688ST-21-0  G78505  G88884  G88970</span></span>
-<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A069A530     0                     0       0       0</span></span>
-<span id="cb12-206"><a href="#cb12-206" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A076YZQ3     1                     0       1       0</span></span>
-<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A095XLP0     1                     0       1       1</span></span>
-<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a><span class="in">`1`</span> 表示在该样本的归一化覆盖平台上判 present，<span class="in">`0`</span> 表示判 absent；它不是 read count，也不是未经校正的 coverage。</span>
-<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把 mixed-strain profile 当成一株完整基因组"}</span>
-<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a>potential multi-strain warning 表示 coverage curve 与单一平台不完全相容。多个菌株的基因集合可能叠加；热图中的一列不一定对应可培养的单一 genome。</span>
-<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把低覆盖缺失当成真正 gene loss"}</span>
+<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a>低深度会把 present gene 推向 0。先看 median coverage 与 plateau，报告被过滤样本；不要把主分支未纳入的样本强行补零。presence/absence 不是测序深度无关的绝对真值。</span>
+<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行主阈值</span></span>
+<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
+<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a>  python <span class="st">"</span><span class="va">$WORK</span><span class="st">/software/panphlan_profiling.py"</span> <span class="dt">\</span></span>
+<span id="cb12-191"><a href="#cb12-191" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/decoded-maps"</span> <span class="dt">\</span></span>
+<span id="cb12-192"><a href="#cb12-192" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/pangenome/Eubacterium_rectale/Eubacterium_rectale_pangenome.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-193"><a href="#cb12-193" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_matrix</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/primary-matrix.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_covmat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/coverage-matrix.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-195"><a href="#cb12-195" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_idx</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/primary-index.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-196"><a href="#cb12-196" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_coverage</span> 2 <span class="dt">\</span></span>
+<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a>  <span class="at">--left_max</span> 1.25 <span class="dt">\</span></span>
+<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a>  <span class="at">--right_min</span> 0.75 <span class="dt">\</span></span>
+<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_non_present</span> 0.25 <span class="dt">\</span></span>
+<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_present</span> 0.5 <span class="dt">\</span></span>
+<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_multicopy</span> 1.5 <span class="dt">\</span></span>
+<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_ref</span> <span class="at">-v</span></span>
+<span id="cb12-203"><a href="#cb12-203" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a>主阈值保留 22/25 个 metagenome samples 和 15/15 个 references。<span class="in">`RA023`</span>、<span class="in">`SRS011302`</span> 与 <span class="in">`W1.27.ST`</span> 的 median coverage 和 right-side plateau 都通过，但 left-side ratios 分别为 1.33、1.49 与 1.48，高于 <span class="in">`--left_max 1.25`</span>，因此被排除。</span>
+<span id="cb12-206"><a href="#cb12-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a>结果表的前几列长这样：</span>
+<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a><span class="in">GeneFamily              CCMD34381688ST-21-0  G78505  G88884  G88970</span></span>
+<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A069A530     0                     0       0       0</span></span>
+<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A076YZQ3     1                     0       1       0</span></span>
+<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a><span class="in">UniRef90_A0A095XLP0     1                     0       1       1</span></span>
+<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-215"><a href="#cb12-215" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a><span class="al">![主阈值保留的 22 个样本中，11,069 个 gene families 的 operational core、accessory、rare 与未检出分区。≥95% 是显式分析定义，不是天然边界。](../figures/52-pangenome-prevalence.png)</span>{#fig-52-prevalence}</span>
+<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a><span class="in">`1`</span> 表示在该样本的归一化覆盖平台上判 present，<span class="in">`0`</span> 表示判 absent；它不是 read count，也不是未经校正的 coverage。</span>
 <span id="cb12-217"><a href="#cb12-217" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a><span class="fu">## 只改变样本 plateau gate，做敏感性分支</span></span>
-<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
-<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a>  python <span class="st">"</span><span class="va">$WORK</span><span class="st">/software/panphlan_profiling.py"</span> <span class="dt">\</span></span>
-<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">--i_covmat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/coverage-matrix.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/pangenome/Eubacterium_rectale/Eubacterium_rectale_pangenome.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_matrix</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/sensitive-matrix.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_idx</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/sensitive-index.tsv"</span> <span class="dt">\</span></span>
-<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_coverage</span> 1 <span class="dt">\</span></span>
-<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--left_max</span> 1.70 <span class="dt">\</span></span>
-<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--right_min</span> 0.30 <span class="dt">\</span></span>
-<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_non_present</span> 0.25 <span class="dt">\</span></span>
-<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_present</span> 0.5 <span class="dt">\</span></span>
-<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_multicopy</span> 1.5 <span class="dt">\</span></span>
-<span id="cb12-233"><a href="#cb12-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_ref</span> <span class="at">-v</span></span>
-<span id="cb12-234"><a href="#cb12-234" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-236"><a href="#cb12-236" aria-hidden="true" tabindex="-1"></a>敏感性分支沿用同一份 raw coverage matrix，只放宽 sample-level plateau gates，因而 25 个样本全部保留。两支共同的 22 个样本使用完全相同的 gene-level thresholds，其 11,069 × 22 个 binary calls 逐位一致；变化来自新增三个样本和 prevalence 分母改变，而不是暗中重写 gene calls。</span>
-<span id="cb12-237"><a href="#cb12-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-238"><a href="#cb12-238" aria-hidden="true" tabindex="-1"></a><span class="al">![25 个真实样本的 median normalized coverage 与 left-side plateau ratio。三个橙色样本只因主分支 left-side gate 被排除；三角形表示 potential multi-strain warning。](../figures/52-plateau-sensitivity.png)</span>{#fig-52-plateau}</span>
-<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-240"><a href="#cb12-240" aria-hidden="true" tabindex="-1"></a><span class="fu">### 对 gene-content structure 只做描述性检查</span></span>
+<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把 mixed-strain profile 当成一株完整基因组"}</span>
+<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a>potential multi-strain warning 表示 coverage curve 与单一平台不完全相容。多个菌株的基因集合可能叠加；热图中的一列不一定对应可培养的单一 genome。</span>
+<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a><span class="al">![主阈值保留的 22 个样本中，11,069 个 gene families 的 operational core、accessory、rare 与未检出分区。≥95% 是显式分析定义，不是天然边界。](../figures/52-pangenome-prevalence.png)</span>{#fig-52-prevalence}</span>
+<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a><span class="fu">## 只改变样本 plateau gate，做敏感性分支</span></span>
+<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
+<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a>  python <span class="st">"</span><span class="va">$WORK</span><span class="st">/software/panphlan_profiling.py"</span> <span class="dt">\</span></span>
+<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--i_covmat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/coverage-matrix.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/pangenome/Eubacterium_rectale/Eubacterium_rectale_pangenome.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_matrix</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/sensitive-matrix.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--o_idx</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/output/sensitive-index.tsv"</span> <span class="dt">\</span></span>
+<span id="cb12-233"><a href="#cb12-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_coverage</span> 1 <span class="dt">\</span></span>
+<span id="cb12-234"><a href="#cb12-234" aria-hidden="true" tabindex="-1"></a>  <span class="at">--left_max</span> 1.70 <span class="dt">\</span></span>
+<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a>  <span class="at">--right_min</span> 0.30 <span class="dt">\</span></span>
+<span id="cb12-236"><a href="#cb12-236" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_non_present</span> 0.25 <span class="dt">\</span></span>
+<span id="cb12-237"><a href="#cb12-237" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_present</span> 0.5 <span class="dt">\</span></span>
+<span id="cb12-238"><a href="#cb12-238" aria-hidden="true" tabindex="-1"></a>  <span class="at">--th_multicopy</span> 1.5 <span class="dt">\</span></span>
+<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_ref</span> <span class="at">-v</span></span>
+<span id="cb12-240"><a href="#cb12-240" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-241"><a href="#cb12-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a>22 个样本产生 231 个非独立样本对。同 study 16 对、同 country 异 study 45 对、异 country 170 对，Jaccard distance 中位数依次为 **0.3670、0.3664、0.4357**。异 country 样本对整体更远，但 country 与 study、疾病、年龄、建库和实验室混杂；样本对又共享端点，不能把 231 对当 231 个独立重复做普通秩和检验。</span>
+<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a>敏感性分支沿用同一份 raw coverage matrix，只放宽 sample-level plateau gates，因而 25 个样本全部保留。两支共同的 22 个样本使用完全相同的 gene-level thresholds，其 11,069 × 22 个 binary calls 逐位一致；变化来自新增三个样本和 prevalence 分母改变，而不是暗中重写 gene calls。</span>
 <span id="cb12-243"><a href="#cb12-243" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a>最近的 <span class="in">`SZAXPI003417-4`</span> 与 <span class="in">`T2D-025`</span> 的 Jaccard distance 仍为 **0.2407**。它们只能算 gene-content 近邻，不能由此宣称 same strain、传播或共同来源。若要比较 marker phylogeny 与 gene-content clustering，应在相同样本集合上分别运行 StrainPhlAn 与 PanPhlAn，再用明确的 distance concordance 或树拓扑方法比较，不能把两张树凭视觉强行对齐。</span>
+<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a><span class="al">![25 个真实样本的 median normalized coverage 与 left-side plateau ratio。三个橙色样本只因主分支 left-side gate 被排除；三角形表示 potential multi-strain warning。](../figures/52-plateau-sensitivity.png)</span>{#fig-52-plateau}</span>
 <span id="cb12-245"><a href="#cb12-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="用 gene-content dendrogram 代替系统发育树"}</span>
-<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a>Jaccard clustering 没有 nucleotide substitution model，也不处理同源重组。需要演化关系时，用相同样本上的 marker/core alignment、显式模型和 branch support。</span>
-<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a><span class="fu">### 对 gene-content structure 只做描述性检查</span></span>
+<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a>22 个样本产生 231 个非独立样本对。同 study 16 对、同 country 异 study 45 对、异 country 170 对，Jaccard distance 中位数依次为 **0.3670、0.3664、0.4357**。异 country 样本对整体更远，但 country 与 study、疾病、年龄、建库和实验室混杂；样本对又共享端点，不能把 231 对当 231 个独立重复做普通秩和检验。</span>
 <span id="cb12-249"><a href="#cb12-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-250"><a href="#cb12-250" aria-hidden="true" tabindex="-1"></a><span class="fu">## 由 presence/absence 矩阵计算 prevalence、Jaccard 与 PCoA</span></span>
+<span id="cb12-250"><a href="#cb12-250" aria-hidden="true" tabindex="-1"></a>最近的 <span class="in">`SZAXPI003417-4`</span> 与 <span class="in">`T2D-025`</span> 的 Jaccard distance 仍为 **0.2407**。它们只能算 gene-content 近邻，不能由此宣称 same strain、传播或共同来源。若要比较 marker phylogeny 与 gene-content clustering，应在相同样本集合上分别运行 StrainPhlAn 与 PanPhlAn，再用明确的 distance concordance 或树拓扑方法比较，不能把两张树凭视觉强行对齐。</span>
 <span id="cb12-251"><a href="#cb12-251" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a><span class="fu">### Presence/absence 来自归一化覆盖平台，而不是“有一条 read 就算存在”</span></span>
-<span id="cb12-253"><a href="#cb12-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-254"><a href="#cb12-254" aria-hidden="true" tabindex="-1"></a>对样本 (i) 与 gene family (g)，PanPhlAn 先得到 read coverage (c_{ig})，再用该样本的覆盖平台估计物种内基因的基准拷贝水平。归一化值过低判 absent，落在明确平台内判 present，过高则提示 multicopy。默认 gene-level 阈值为：</span>
+<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="用 gene-content dendrogram 代替系统发育树"}</span>
+<span id="cb12-253"><a href="#cb12-253" aria-hidden="true" tabindex="-1"></a>Jaccard clustering 没有 nucleotide substitution model，也不处理同源重组。需要演化关系时，用相同样本上的 marker/core alignment、显式模型和 branch support。</span>
+<span id="cb12-254"><a href="#cb12-254" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-255"><a href="#cb12-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-257"><a href="#cb12-257" aria-hidden="true" tabindex="-1"></a>z_{ig}&lt;0.25\Rightarrow absent,\qquad</span>
-<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a>z_{ig}&gt;0.50\Rightarrow present,\qquad</span>
-<span id="cb12-259"><a href="#cb12-259" aria-hidden="true" tabindex="-1"></a>z_{ig}&gt;1.50\Rightarrow multicopy.</span>
-<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="fu">## 由 presence/absence 矩阵计算 prevalence、Jaccard 与 PCoA</span></span>
+<span id="cb12-257"><a href="#cb12-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a><span class="fu">### Presence/absence 来自归一化覆盖平台，而不是“有一条 read 就算存在”</span></span>
+<span id="cb12-259"><a href="#cb12-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a>对样本 (i) 与 gene family (g)，PanPhlAn 先得到 read coverage (c_{ig})，再用该样本的覆盖平台估计物种内基因的基准拷贝水平。归一化值过低判 absent，落在明确平台内判 present，过高则提示 multicopy。默认 gene-level 阈值为：</span>
 <span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a>样本本身还需通过 median coverage、left-side plateau 与 right-side plateau 三道门。这样能减少低深度随机命中被误判为基因存在，但阈值也会改变哪些样本进入分析。</span>
-<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a><span class="fu">### Core、accessory 与 rare 都必须带上分母</span></span>
-<span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a>这里的 operational prevalence 定义为：</span>
+<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a>z_{ig}&lt;0.25\Rightarrow absent,\qquad</span>
+<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a>z_{ig}&gt;0.50\Rightarrow present,\qquad</span>
+<span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a>z_{ig}&gt;1.50\Rightarrow multicopy.</span>
+<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb12-267"><a href="#cb12-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a>p_g=\frac{\sum_{i=1}^{n} I(g\text{ present in }i)}{n}.</span>
-<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a>样本本身还需通过 median coverage、left-side plateau 与 right-side plateau 三道门。这样能减少低深度随机命中被误判为基因存在，但阈值也会改变哪些样本进入分析。</span>
+<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a><span class="fu">### Core、accessory 与 rare 都必须带上分母</span></span>
 <span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Core &gt;=95%`</span>：(p_g\ge0.95)；主分析 22 个样本时等价于至少 21 个样本检出。</span>
-<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Accessory 5-&lt;95%`</span>：(0.05\le p_g&lt;0.95)。</span>
-<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Rare &gt;0-&lt;5%`</span>：(0&lt;p_g&lt;0.05)；在 (n=22) 时就是 singleton。</span>
-<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Undetected`</span>：这批宏基因组均未检出，但 gene family 可因 <span class="in">`--add_ref`</span> 保留在参考泛基因组矩阵中。</span>
-<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a>分母一变，边界就可能变。主分析 22 个样本得到 1,591 个 ≥95% core；宽松分支纳入全部 25 个样本后为 1,571 个。报告“core genome 大小”时不写样本数、过滤与阈值，数字没有可比性。</span>
-<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a>pa <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
-<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/52-panphlan-pangenome-frozen/primary-presence-absence.tsv.gz"</span>,</span>
-<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
-<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/52-panphlan-pangenome-frozen/sample-filter-audit.tsv"</span>,</span>
-<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>sample_cols <span class="ot">&lt;-</span> meta <span class="sc">|&gt;</span> <span class="fu">filter</span>(PrimaryRetained) <span class="sc">|&gt;</span> <span class="fu">pull</span>(Sample)</span>
-<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> pa <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="fu">all_of</span>(sample_cols)) <span class="sc">|&gt;</span> <span class="fu">as.matrix</span>()</span>
-<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(x) <span class="ot">&lt;-</span> pa[[<span class="dv">1</span>]]</span>
-<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>prevalence <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(x)</span>
-<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a>partition <span class="ot">&lt;-</span> <span class="fu">case_when</span>(</span>
-<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;=</span> <span class="fl">0.95</span> <span class="sc">~</span> <span class="st">"Core &gt;=95%"</span>,</span>
-<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;=</span> <span class="fl">0.05</span> <span class="sc">~</span> <span class="st">"Accessory 5-&lt;95%"</span>,</span>
-<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;</span> <span class="dv">0</span>     <span class="sc">~</span> <span class="st">"Rare &gt;0-&lt;5%"</span>,</span>
-<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a>  <span class="cn">TRUE</span>               <span class="sc">~</span> <span class="st">"Undetected"</span></span>
-<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>jaccard <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(<span class="fu">t</span>(x), <span class="at">method =</span> <span class="st">"jaccard"</span>, <span class="at">binary =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>ordination <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">pcoa</span>(jaccard, <span class="at">correction =</span> <span class="st">"none"</span>)</span>
-<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a>这里的 PCoA 前两条正特征值轴解释正特征值总和的 21.6% 与 15.1%。二维图只展示距离结构的一部分；不要根据点在二维空间里“看起来靠近”就替代完整距离矩阵或系统发育证据。</span>
+<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a>这里的 operational prevalence 定义为：</span>
+<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a>p_g=\frac{\sum_{i=1}^{n} I(g\text{ present in }i)}{n}.</span>
+<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Core &gt;=95%`</span>：(p_g\ge0.95)；主分析 22 个样本时等价于至少 21 个样本检出。</span>
+<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Accessory 5-&lt;95%`</span>：(0.05\le p_g&lt;0.95)。</span>
+<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Rare &gt;0-&lt;5%`</span>：(0&lt;p_g&lt;0.05)；在 (n=22) 时就是 singleton。</span>
+<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Undetected`</span>：这批宏基因组均未检出，但 gene family 可因 <span class="in">`--add_ref`</span> 保留在参考泛基因组矩阵中。</span>
+<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>分母一变，边界就可能变。主分析 22 个样本得到 1,591 个 ≥95% core；宽松分支纳入全部 25 个样本后为 1,571 个。报告“core genome 大小”时不写样本数、过滤与阈值，数字没有可比性。</span>
+<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a>pa <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
+<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/52-panphlan-pangenome-frozen/primary-presence-absence.tsv.gz"</span>,</span>
+<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>meta <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
+<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/52-panphlan-pangenome-frozen/sample-filter-audit.tsv"</span>,</span>
+<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>sample_cols <span class="ot">&lt;-</span> meta <span class="sc">|&gt;</span> <span class="fu">filter</span>(PrimaryRetained) <span class="sc">|&gt;</span> <span class="fu">pull</span>(Sample)</span>
+<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> pa <span class="sc">|&gt;</span> <span class="fu">select</span>(<span class="fu">all_of</span>(sample_cols)) <span class="sc">|&gt;</span> <span class="fu">as.matrix</span>()</span>
+<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(x) <span class="ot">&lt;-</span> pa[[<span class="dv">1</span>]]</span>
+<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>prevalence <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(x)</span>
+<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a>partition <span class="ot">&lt;-</span> <span class="fu">case_when</span>(</span>
+<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;=</span> <span class="fl">0.95</span> <span class="sc">~</span> <span class="st">"Core &gt;=95%"</span>,</span>
+<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;=</span> <span class="fl">0.05</span> <span class="sc">~</span> <span class="st">"Accessory 5-&lt;95%"</span>,</span>
+<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a>  prevalence <span class="sc">&gt;</span> <span class="dv">0</span>     <span class="sc">~</span> <span class="st">"Rare &gt;0-&lt;5%"</span>,</span>
+<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a>  <span class="cn">TRUE</span>               <span class="sc">~</span> <span class="st">"Undetected"</span></span>
+<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a><span class="fu">### 再检查 core/accessory 是否依赖阈值</span></span>
-<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a>主分支与敏感性分支的 category transition 为：</span>
+<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a>jaccard <span class="ot">&lt;-</span> vegan<span class="sc">::</span><span class="fu">vegdist</span>(<span class="fu">t</span>(x), <span class="at">method =</span> <span class="st">"jaccard"</span>, <span class="at">binary =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a>ordination <span class="ot">&lt;-</span> ape<span class="sc">::</span><span class="fu">pcoa</span>(jaccard, <span class="at">correction =</span> <span class="st">"none"</span>)</span>
+<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 主分支 → 敏感性分支 <span class="pp">|</span> Gene families <span class="pp">|</span></span>
-<span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
-<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Core → Core <span class="pp">|</span> 1,571 <span class="pp">|</span></span>
-<span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Core → Accessory <span class="pp">|</span> 20 <span class="pp">|</span></span>
-<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Accessory → Accessory <span class="pp">|</span> 4,542 <span class="pp">|</span></span>
-<span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rare → Accessory <span class="pp">|</span> 335 <span class="pp">|</span></span>
-<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rare → Rare <span class="pp">|</span> 1,278 <span class="pp">|</span></span>
-<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Accessory <span class="pp">|</span> 17 <span class="pp">|</span></span>
-<span id="cb12-319"><a href="#cb12-319" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Rare <span class="pp">|</span> 442 <span class="pp">|</span></span>
-<span id="cb12-320"><a href="#cb12-320" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Undetected <span class="pp">|</span> 2,864 <span class="pp">|</span></span>
-<span id="cb12-321"><a href="#cb12-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-322"><a href="#cb12-322" aria-hidden="true" tabindex="-1"></a>这不是软件不稳定：共同 22 个样本的 binary calls 完全相同。新增三个合格样本改变了分母，也让原先未检出的参考 gene families 获得宏基因组证据。发表时应至少给出一个 sample-filter sensitivity，并把 core cutoff 与有效 (n) 同时写进图注。</span>
-<span id="cb12-323"><a href="#cb12-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-324"><a href="#cb12-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### 检查注释，而不是把通用 term 当功能金标准</span></span>
-<span id="cb12-325"><a href="#cb12-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-326"><a href="#cb12-326" aria-hidden="true" tabindex="-1"></a>官方 pangenome annotation 文件覆盖 11,061/11,069 个 gene families；8 个没有 annotation row。原文件还有 5 行被拼接了重复 header，清洗器按行号登记、只保留前 8 个合法字段，并保留修复动作。主分析中，core families 的 Pfam 与 KO 注释率分别为 87.3% 与 23.4%，accessory families 只有 53.0% 与 7.8%。因此，“没有 KO”不等于“没有功能”，“有一个宽泛 Pfam”也不等于已确定生物学表型。</span>
+<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a>这里的 PCoA 前两条正特征值轴解释正特征值总和的 21.6% 与 15.1%。二维图只展示距离结构的一部分；不要根据点在二维空间里“看起来靠近”就替代完整距离矩阵或系统发育证据。</span>
+<span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a><span class="fu">### 再检查 core/accessory 是否依赖阈值</span></span>
+<span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a>主分支与敏感性分支的 category transition 为：</span>
+<span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 主分支 → 敏感性分支 <span class="pp">|</span> Gene families <span class="pp">|</span></span>
+<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|</span></span>
+<span id="cb12-319"><a href="#cb12-319" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Core → Core <span class="pp">|</span> 1,571 <span class="pp">|</span></span>
+<span id="cb12-320"><a href="#cb12-320" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Core → Accessory <span class="pp">|</span> 20 <span class="pp">|</span></span>
+<span id="cb12-321"><a href="#cb12-321" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Accessory → Accessory <span class="pp">|</span> 4,542 <span class="pp">|</span></span>
+<span id="cb12-322"><a href="#cb12-322" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rare → Accessory <span class="pp">|</span> 335 <span class="pp">|</span></span>
+<span id="cb12-323"><a href="#cb12-323" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Rare → Rare <span class="pp">|</span> 1,278 <span class="pp">|</span></span>
+<span id="cb12-324"><a href="#cb12-324" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Accessory <span class="pp">|</span> 17 <span class="pp">|</span></span>
+<span id="cb12-325"><a href="#cb12-325" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Rare <span class="pp">|</span> 442 <span class="pp">|</span></span>
+<span id="cb12-326"><a href="#cb12-326" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Undetected → Undetected <span class="pp">|</span> 2,864 <span class="pp">|</span></span>
 <span id="cb12-327"><a href="#cb12-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-328"><a href="#cb12-328" aria-hidden="true" tabindex="-1"></a><span class="al">![在 prevalence 接近 50% 的已注释 accessory families 中，按固定排序选取 20 个展示。蓝色表示 present；标签只给出 UniRef90 suffix 与第一个可用 KO/Pfam/GO term。](../figures/52-accessory-gene-heatmap.png)</span>{#fig-52-accessory}</span>
+<span id="cb12-328"><a href="#cb12-328" aria-hidden="true" tabindex="-1"></a>这不是软件不稳定：共同 22 个样本的 binary calls 完全相同。新增三个合格样本改变了分母，也让原先未检出的参考 gene families 获得宏基因组证据。发表时应至少给出一个 sample-filter sensitivity，并把 core cutoff 与有效 (n) 同时写进图注。</span>
 <span id="cb12-329"><a href="#cb12-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a>尤其不要从通用 GO/KO/Pfam 直接推出抗性、毒力、BGC、质粒或噬菌体防御。ARG 应用锁版本 CARD 做 identity/coverage 与 resistance-model 审计 <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>；virulence 用 VFDB 并区分毒力决定子与普通 housekeeping homolog <span class="co">[</span><span class="ot">@liu2022vfdb</span><span class="co">]</span>；BGC 要在 contig/genome context 上运行 antiSMASH 等工具 <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span>。质粒、prophage 与 defense system 同样需要序列上下文和专用数据库。PanPhlAn heatmap 的职责是给出候选，不是签发功能结论。</span>
+<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a><span class="fu">### 检查注释，而不是把通用 term 当功能金标准</span></span>
 <span id="cb12-331"><a href="#cb12-331" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-332"><a href="#cb12-332" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="筛到一个 term 就写成 ARG、VF 或 BGC"}</span>
-<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a>UniRef/GO/KO/Pfam 是候选注释层。高风险功能需要专库、版本、identity/coverage cutoff、contig context 与阴阳性对照；BGC 更不能脱离基因邻域。</span>
-<span id="cb12-334"><a href="#cb12-334" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-332"><a href="#cb12-332" aria-hidden="true" tabindex="-1"></a>官方 pangenome annotation 文件覆盖 11,061/11,069 个 gene families；8 个没有 annotation row。原文件还有 5 行被拼接了重复 header，清洗器按行号登记、只保留前 8 个合法字段，并保留修复动作。主分析中，core families 的 Pfam 与 KO 注释率分别为 87.3% 与 23.4%，accessory families 只有 53.0% 与 7.8%。因此，“没有 KO”不等于“没有功能”，“有一个宽泛 Pfam”也不等于已确定生物学表型。</span>
+<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-334"><a href="#cb12-334" aria-hidden="true" tabindex="-1"></a><span class="al">![在 prevalence 接近 50% 的已注释 accessory families 中，按固定排序选取 20 个展示。蓝色表示 present；标签只给出 UniRef90 suffix 与第一个可用 KO/Pfam/GO term。](../figures/52-accessory-gene-heatmap.png)</span>{#fig-52-accessory}</span>
 <span id="cb12-335"><a href="#cb12-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-336"><a href="#cb12-336" aria-hidden="true" tabindex="-1"></a><span class="al">![基于 binary gene-family calls 的 Jaccard PCoA。颜色是 country metadata，只用于描述性审计，没有参与 presence/absence calling。](../figures/52-gene-content-pcoa.png)</span>{#fig-52-pcoa}</span>
+<span id="cb12-336"><a href="#cb12-336" aria-hidden="true" tabindex="-1"></a>尤其不要从通用 GO/KO/Pfam 直接推出抗性、毒力、BGC、质粒或噬菌体防御。ARG 应用锁版本 CARD 做 identity/coverage 与 resistance-model 审计 <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>；virulence 用 VFDB 并区分毒力决定子与普通 housekeeping homolog <span class="co">[</span><span class="ot">@liu2022vfdb</span><span class="co">]</span>；BGC 要在 contig/genome context 上运行 antiSMASH 等工具 <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span>。质粒、prophage 与 defense system 同样需要序列上下文和专用数据库。PanPhlAn heatmap 的职责是给出候选，不是签发功能结论。</span>
 <span id="cb12-337"><a href="#cb12-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-338"><a href="#cb12-338" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 Jaccard 矩阵的 average-linkage dendrogram。它是 gene-content clustering，不是由同源序列替换模型推断的 species phylogeny。](../figures/52-gene-content-dendrogram.png)</span>{#fig-52-dendrogram}</span>
-<span id="cb12-339"><a href="#cb12-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-340"><a href="#cb12-340" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总、作图、保存与结果核对</span></span>
+<span id="cb12-338"><a href="#cb12-338" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="筛到一个 term 就写成 ARG、VF 或 BGC"}</span>
+<span id="cb12-339"><a href="#cb12-339" aria-hidden="true" tabindex="-1"></a>UniRef/GO/KO/Pfam 是候选注释层。高风险功能需要专库、版本、identity/coverage cutoff、contig context 与阴阳性对照；BGC 更不能脱离基因邻域。</span>
+<span id="cb12-340"><a href="#cb12-340" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-341"><a href="#cb12-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-342"><a href="#cb12-342" aria-hidden="true" tabindex="-1"></a><span class="fu">### Gene-content tree 与 species phylogeny 不可互换</span></span>
+<span id="cb12-342"><a href="#cb12-342" aria-hidden="true" tabindex="-1"></a><span class="al">![基于 binary gene-family calls 的 Jaccard PCoA。颜色是 country metadata，只用于描述性审计，没有参与 presence/absence calling。](../figures/52-gene-content-pcoa.png)</span>{#fig-52-pcoa}</span>
 <span id="cb12-343"><a href="#cb12-343" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-344"><a href="#cb12-344" aria-hidden="true" tabindex="-1"></a>Jaccard distance 只比较 binary gene content：</span>
+<span id="cb12-344"><a href="#cb12-344" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 Jaccard 矩阵的 average-linkage dendrogram。它是 gene-content clustering，不是由同源序列替换模型推断的 species phylogeny。](../figures/52-gene-content-dendrogram.png)</span>{#fig-52-dendrogram}</span>
 <span id="cb12-345"><a href="#cb12-345" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-346"><a href="#cb12-346" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-347"><a href="#cb12-347" aria-hidden="true" tabindex="-1"></a>d_J(A,B)=1-\frac{|A\cap B|}{|A\cup B|}.</span>
-<span id="cb12-348"><a href="#cb12-348" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-346"><a href="#cb12-346" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总、作图、保存与结果核对</span></span>
+<span id="cb12-347"><a href="#cb12-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-348"><a href="#cb12-348" aria-hidden="true" tabindex="-1"></a><span class="fu">### Gene-content tree 与 species phylogeny 不可互换</span></span>
 <span id="cb12-349"><a href="#cb12-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-350"><a href="#cb12-350" aria-hidden="true" tabindex="-1"></a>它会受基因获得/丢失、质粒和噬菌体、mapping bias、阈值及数据库覆盖影响。StrainPhlAn 或 core-genome phylogeny 比较的是同源 marker/core sequence 的 nucleotide substitutions。二者回答不同问题：gene-content dendrogram 适合找“功能型相似”的样本，不能当作物种演化树，更不能仅凭近邻断言传播。</span>
+<span id="cb12-350"><a href="#cb12-350" aria-hidden="true" tabindex="-1"></a>Jaccard distance 只比较 binary gene content：</span>
 <span id="cb12-351"><a href="#cb12-351" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-352"><a href="#cb12-352" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb12-353"><a href="#cb12-353" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么多菌株共存会让 presence/absence 失真？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb12-354"><a href="#cb12-354" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-355"><a href="#cb12-355" aria-hidden="true" tabindex="-1"></a>PanPhlAn 的单个样本 profile 近似目标物种中优势信号的组合。若两个菌株同时存在，菌株 A 与菌株 B 的基因集合会在 reads 层面叠加，产生一个自然界未必存在的“合成基因型”；共享区域的 cross-mapping 也会进一步模糊边界。程序用 out-of-plateau coverage 给出潜在 multi-strain warning，但 warning 不是菌株拆分。主分析 22 个保留样本中有 13 个出现该提示，因此 accessory gene 的逐样本解释应保持保守。</span>
-<span id="cb12-356"><a href="#cb12-356" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-357"><a href="#cb12-357" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb12-358"><a href="#cb12-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-359"><a href="#cb12-359" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-360"><a href="#cb12-360" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article52_panphlan.py <span class="dt">\</span></span>
-<span id="cb12-361"><a href="#cb12-361" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-362"><a href="#cb12-362" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-panphlan-2026.07</span>
-<span id="cb12-363"><a href="#cb12-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-364"><a href="#cb12-364" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
-<span id="cb12-365"><a href="#cb12-365" aria-hidden="true" tabindex="-1"></a>  python scripts/summarize_article52_panphlan.py <span class="dt">\</span></span>
-<span id="cb12-366"><a href="#cb12-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb12-367"><a href="#cb12-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-368"><a href="#cb12-368" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article52_panphlan.R <span class="dt">\</span></span>
-<span id="cb12-369"><a href="#cb12-369" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="at">--output-dir</span> figures</span>
-<span id="cb12-370"><a href="#cb12-370" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-371"><a href="#cb12-371" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article52_panphlan.py <span class="dt">\</span></span>
-<span id="cb12-372"><a href="#cb12-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-373"><a href="#cb12-373" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/52-panphlan-pangenome-frozen</span>
-<span id="cb12-374"><a href="#cb12-374" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-375"><a href="#cb12-375" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article52_panphlan.py <span class="dt">\</span></span>
-<span id="cb12-376"><a href="#cb12-376" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-377"><a href="#cb12-377" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/52-panphlan-pangenome-frozen <span class="dt">\</span></span>
-<span id="cb12-378"><a href="#cb12-378" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/52-panphlan-pangenome <span class="dt">\</span></span>
-<span id="cb12-379"><a href="#cb12-379" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb12-380"><a href="#cb12-380" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/52-pangenome-accessory-genes.qmd</span>
-<span id="cb12-381"><a href="#cb12-381" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-382"><a href="#cb12-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-383"><a href="#cb12-383" aria-hidden="true" tabindex="-1"></a>Runner 会把主分析完整复跑一次，并对 presence/absence、plateau index 与 coverage matrix 做 SHA-256 比对；三份 artifact 均 byte-identical。没有请求 PanPhlAn 的随机 native coverage plot，Python hash 与 BLAS 线程也被固定。R 图中的标签避让使用 <span class="in">`set.seed(20260752)`</span>。</span>
-<span id="cb12-384"><a href="#cb12-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-385"><a href="#cb12-385" aria-hidden="true" tabindex="-1"></a><span class="fu">### 检查参考偏倚与数据库身份</span></span>
-<span id="cb12-386"><a href="#cb12-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-387"><a href="#cb12-387" aria-hidden="true" tabindex="-1"></a>参考集合的 15 个 genomes 共有 11,069 个 UniRef90 families，但 25 个真实样本的 raw coverage matrix 只出现 10,703 个；另外 366 个 families 通过 <span class="in">`--add_ref`</span> 留在最终矩阵。参考 strict core 为 1,335 个，而宏基因组主分支 strict core 为 1,429 个、≥95% operational core 为 1,591 个。两套“core”来自不同采样过程，不能混写。</span>
+<span id="cb12-352"><a href="#cb12-352" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-353"><a href="#cb12-353" aria-hidden="true" tabindex="-1"></a>d_J(A,B)=1-\frac{|A\cap B|}{|A\cup B|}.</span>
+<span id="cb12-354"><a href="#cb12-354" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-355"><a href="#cb12-355" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-356"><a href="#cb12-356" aria-hidden="true" tabindex="-1"></a>它会受基因获得/丢失、质粒和噬菌体、mapping bias、阈值及数据库覆盖影响。StrainPhlAn 或 core-genome phylogeny 比较的是同源 marker/core sequence 的 nucleotide substitutions。二者回答不同问题：gene-content dendrogram 适合找“功能型相似”的样本，不能当作物种演化树，更不能仅凭近邻断言传播。</span>
+<span id="cb12-357"><a href="#cb12-357" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-358"><a href="#cb12-358" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb12-359"><a href="#cb12-359" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么多菌株共存会让 presence/absence 失真？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb12-360"><a href="#cb12-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-361"><a href="#cb12-361" aria-hidden="true" tabindex="-1"></a>PanPhlAn 的单个样本 profile 近似目标物种中优势信号的组合。若两个菌株同时存在，菌株 A 与菌株 B 的基因集合会在 reads 层面叠加，产生一个自然界未必存在的“合成基因型”；共享区域的 cross-mapping 也会进一步模糊边界。程序用 out-of-plateau coverage 给出潜在 multi-strain warning，但 warning 不是菌株拆分。主分析 22 个保留样本中有 13 个出现该提示，因此 accessory gene 的逐样本解释应保持保守。</span>
+<span id="cb12-362"><a href="#cb12-362" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-363"><a href="#cb12-363" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb12-364"><a href="#cb12-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-365"><a href="#cb12-365" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-366"><a href="#cb12-366" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article52_panphlan.py <span class="dt">\</span></span>
+<span id="cb12-367"><a href="#cb12-367" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-368"><a href="#cb12-368" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-panphlan-2026.07</span>
+<span id="cb12-369"><a href="#cb12-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-370"><a href="#cb12-370" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
+<span id="cb12-371"><a href="#cb12-371" aria-hidden="true" tabindex="-1"></a>  python scripts/summarize_article52_panphlan.py <span class="dt">\</span></span>
+<span id="cb12-372"><a href="#cb12-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
+<span id="cb12-373"><a href="#cb12-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-374"><a href="#cb12-374" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article52_panphlan.R <span class="dt">\</span></span>
+<span id="cb12-375"><a href="#cb12-375" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="at">--output-dir</span> figures</span>
+<span id="cb12-376"><a href="#cb12-376" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-377"><a href="#cb12-377" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article52_panphlan.py <span class="dt">\</span></span>
+<span id="cb12-378"><a href="#cb12-378" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-379"><a href="#cb12-379" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/52-panphlan-pangenome-frozen</span>
+<span id="cb12-380"><a href="#cb12-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-381"><a href="#cb12-381" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article52_panphlan.py <span class="dt">\</span></span>
+<span id="cb12-382"><a href="#cb12-382" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-383"><a href="#cb12-383" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/52-panphlan-pangenome-frozen <span class="dt">\</span></span>
+<span id="cb12-384"><a href="#cb12-384" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/52-panphlan-pangenome <span class="dt">\</span></span>
+<span id="cb12-385"><a href="#cb12-385" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb12-386"><a href="#cb12-386" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/52-pangenome-accessory-genes.qmd</span>
+<span id="cb12-387"><a href="#cb12-387" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-388"><a href="#cb12-388" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-389"><a href="#cb12-389" aria-hidden="true" tabindex="-1"></a>UniRef90 是相似序列聚类坐标，不是永恒不变的基因身份 <span class="co">[</span><span class="ot">@suzek2007uniref</span><span class="co">]</span>。换 PanPhlAn pangenome、UniRef release 或参考 genome collection，gene-family universe 与 core/accessory 计数都会改变。当前官方 annotation snapshot 没有可报告的语义版本，故以 archive hash 和 member hashes 锁定；这比猜版本可靠，但也限制了跨数据库直接比较。</span>
+<span id="cb12-389"><a href="#cb12-389" aria-hidden="true" tabindex="-1"></a>Runner 会把主分析完整复跑一次，并对 presence/absence、plateau index 与 coverage matrix 做 SHA-256 比对；三份 artifact 均 byte-identical。没有请求 PanPhlAn 的随机 native coverage plot，Python hash 与 BLAS 线程也被固定。R 图中的标签避让使用 <span class="in">`set.seed(20260752)`</span>。</span>
 <span id="cb12-390"><a href="#cb12-390" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-391"><a href="#cb12-391" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把所有样本对当独立重复"}</span>
-<span id="cb12-392"><a href="#cb12-392" aria-hidden="true" tabindex="-1"></a>同一个样本出现在许多 pairwise distances 中，普通 t test 或 Wilcoxon 会产生伪重复。若要正式检验 geography/study effect，应在样本层面建模、限制置换层级，并验证跨 cohort 可重复性。</span>
-<span id="cb12-393"><a href="#cb12-393" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-391"><a href="#cb12-391" aria-hidden="true" tabindex="-1"></a><span class="fu">### 检查参考偏倚与数据库身份</span></span>
+<span id="cb12-392"><a href="#cb12-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-393"><a href="#cb12-393" aria-hidden="true" tabindex="-1"></a>参考集合的 15 个 genomes 共有 11,069 个 UniRef90 families，但 25 个真实样本的 raw coverage matrix 只出现 10,703 个；另外 366 个 families 通过 <span class="in">`--add_ref`</span> 留在最终矩阵。参考 strict core 为 1,335 个，而宏基因组主分支 strict core 为 1,429 个、≥95% operational core 为 1,591 个。两套“core”来自不同采样过程，不能混写。</span>
 <span id="cb12-394"><a href="#cb12-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-395"><a href="#cb12-395" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录泛基因组参照与存在缺失规则 {#sec-methods}</span></span>
+<span id="cb12-395"><a href="#cb12-395" aria-hidden="true" tabindex="-1"></a>UniRef90 是相似序列聚类坐标，不是永恒不变的基因身份 <span class="co">[</span><span class="ot">@suzek2007uniref</span><span class="co">]</span>。换 PanPhlAn pangenome、UniRef release 或参考 genome collection，gene-family universe 与 core/accessory 计数都会改变。当前官方 annotation snapshot 没有可报告的语义版本，故以 archive hash 和 member hashes 锁定；这比猜版本可靠，但也限制了跨数据库直接比较。</span>
 <span id="cb12-396"><a href="#cb12-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-397"><a href="#cb12-397" aria-hidden="true" tabindex="-1"></a>**Methods template**</span>
-<span id="cb12-398"><a href="#cb12-398" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-399"><a href="#cb12-399" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Species-specific gene repertoires were profiled with PanPhlAn profiling source v3.1 (commit 4294c3f5c92be9b9ef7d61b69df43e7f27c51601; Python 3.12.13 and NumPy 2.3.5). We used the official *Eubacterium rectale* tutorial pangenome comprising 15 reference genomes and 11,069 UniRef90 gene families (archive SHA-256: 411d8736790ef591e8131d58e096d68a15c477bc21eb39b41c337af950d4dfc6) together with 25 official metagenomic mapping profiles (archive SHA-256: 5f9bfecbe3e5459e06f48677076b49a4a37263935ac8cff8422cf1ef6bc9bc50). Samples were retained using a minimum median coverage of 2, a maximum left-side plateau ratio of 1.25, and a minimum right-side plateau ratio of 0.75. Gene families were called absent below 0.25 normalized coverage, present above 0.50, and multicopy above 1.50. Reference genomes were retained with </span><span class="in">`--add_ref`</span><span class="at">. A sensitivity analysis used sample-level thresholds of 1, 1.70, and 0.30 while preserving the gene-level thresholds and the precomputed coverage matrix. Operational core, accessory, rare, and undetected families were defined as prevalence ≥95%, 5%--&lt;95%, &gt;0%--&lt;5%, and 0%, respectively, among retained metagenomic samples. Pairwise gene-content dissimilarity was quantified using binary Jaccard distance. The bundled functional annotation snapshot did not declare a semantic database release and was therefore locked by archive and member SHA-256 checksums. No randomized native coverage plot was requested; deterministic plotting used seed 20260752.</span></span>
+<span id="cb12-397"><a href="#cb12-397" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="把所有样本对当独立重复"}</span>
+<span id="cb12-398"><a href="#cb12-398" aria-hidden="true" tabindex="-1"></a>同一个样本出现在许多 pairwise distances 中，普通 t test 或 Wilcoxon 会产生伪重复。若要正式检验 geography/study effect，应在样本层面建模、限制置换层级，并验证跨 cohort 可重复性。</span>
+<span id="cb12-399"><a href="#cb12-399" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-400"><a href="#cb12-400" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-401"><a href="#cb12-401" aria-hidden="true" tabindex="-1"></a>**Results template**</span>
+<span id="cb12-401"><a href="#cb12-401" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录泛基因组参照与存在缺失规则 {#sec-methods}</span></span>
 <span id="cb12-402"><a href="#cb12-402" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-403"><a href="#cb12-403" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of 25 metagenomic samples, 22 passed the primary PanPhlAn plateau filters and all 15 reference genomes were retained. Among 11,069 pangenome gene families, 1,591 were operational core, 4,542 accessory, 1,613 rare, and 3,323 were not detected in the retained metagenomes. The median inferred repertoire contained 3,191 families per sample (range 2,713--3,648). Thirteen retained samples received a potential multi-strain warning. A sensitivity branch retained all 25 samples and yielded 1,571 operational core families; calls for the 22 shared samples were identical between branches. Median Jaccard distances were 0.3670 for within-study pairs, 0.3664 for same-country/different-study pairs, and 0.4357 for different-country pairs; these descriptive strata were not treated as independent replicates.</span></span>
+<span id="cb12-403"><a href="#cb12-403" aria-hidden="true" tabindex="-1"></a>**Methods template**</span>
 <span id="cb12-404"><a href="#cb12-404" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-405"><a href="#cb12-405" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb12-405"><a href="#cb12-405" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Species-specific gene repertoires were profiled with PanPhlAn profiling source v3.1 (commit 4294c3f5c92be9b9ef7d61b69df43e7f27c51601; Python 3.12.13 and NumPy 2.3.5). We used the official *Eubacterium rectale* tutorial pangenome comprising 15 reference genomes and 11,069 UniRef90 gene families (archive SHA-256: 411d8736790ef591e8131d58e096d68a15c477bc21eb39b41c337af950d4dfc6) together with 25 official metagenomic mapping profiles (archive SHA-256: 5f9bfecbe3e5459e06f48677076b49a4a37263935ac8cff8422cf1ef6bc9bc50). Samples were retained using a minimum median coverage of 2, a maximum left-side plateau ratio of 1.25, and a minimum right-side plateau ratio of 0.75. Gene families were called absent below 0.25 normalized coverage, present above 0.50, and multicopy above 1.50. Reference genomes were retained with </span><span class="in">`--add_ref`</span><span class="at">. A sensitivity analysis used sample-level thresholds of 1, 1.70, and 0.30 while preserving the gene-level thresholds and the precomputed coverage matrix. Operational core, accessory, rare, and undetected families were defined as prevalence ≥95%, 5%--&lt;95%, &gt;0%--&lt;5%, and 0%, respectively, among retained metagenomic samples. Pairwise gene-content dissimilarity was quantified using binary Jaccard distance. The bundled functional annotation snapshot did not declare a semantic database release and was therefore locked by archive and member SHA-256 checksums. No randomized native coverage plot was requested; deterministic plotting used seed 20260752.</span></span>
 <span id="cb12-406"><a href="#cb12-406" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-407"><a href="#cb12-407" aria-hidden="true" tabindex="-1"></a>至少需要四类输入：</span>
+<span id="cb12-407"><a href="#cb12-407" aria-hidden="true" tabindex="-1"></a>**Results template**</span>
 <span id="cb12-408"><a href="#cb12-408" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-409"><a href="#cb12-409" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>每个样本去接头、去宿主后的 shotgun FASTQ；</span>
-<span id="cb12-410"><a href="#cb12-410" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>目标物种名称与版本锁定的 PanPhlAn pangenome，包括 Bowtie2 indexes、pangenome TSV 和 annotation；</span>
-<span id="cb12-411"><a href="#cb12-411" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>一张一行一个样本的 metadata 表，至少含 <span class="in">`Sample`</span>、<span class="in">`Study`</span>、<span class="in">`Country`</span> 或你的主要设计变量；</span>
-<span id="cb12-412"><a href="#cb12-412" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>足够深的目标物种 coverage。物种丰度很低时，不要靠放宽阈值制造 profile。</span>
-<span id="cb12-413"><a href="#cb12-413" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-414"><a href="#cb12-414" aria-hidden="true" tabindex="-1"></a>从 FASTQ mapping 的标准入口是：</span>
-<span id="cb12-415"><a href="#cb12-415" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-416"><a href="#cb12-416" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-417"><a href="#cb12-417" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
-<span id="cb12-418"><a href="#cb12-418" aria-hidden="true" tabindex="-1"></a>  panphlan_map.py <span class="dt">\</span></span>
-<span id="cb12-419"><a href="#cb12-419" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> clean/SAMPLE.fastq.bz2 <span class="dt">\</span></span>
-<span id="cb12-420"><a href="#cb12-420" aria-hidden="true" tabindex="-1"></a>  <span class="at">--indexes</span> db/TARGET_SPECIES/TARGET_SPECIES <span class="dt">\</span></span>
-<span id="cb12-421"><a href="#cb12-421" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> db/TARGET_SPECIES/TARGET_SPECIES_pangenome.tsv <span class="dt">\</span></span>
-<span id="cb12-422"><a href="#cb12-422" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> map_results/SAMPLE.csv.bz2 <span class="dt">\</span></span>
-<span id="cb12-423"><a href="#cb12-423" aria-hidden="true" tabindex="-1"></a>  <span class="at">--nproc</span> 8 <span class="at">--min_read_length</span> 70 <span class="at">-v</span></span>
-<span id="cb12-424"><a href="#cb12-424" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-425"><a href="#cb12-425" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-426"><a href="#cb12-426" aria-hidden="true" tabindex="-1"></a>然后把所有样本的 mapping results 放进同一目录，先按默认/预注册阈值运行，再做 sample gate 与 gene gate 的敏感性分析。每次分析都保存：</span>
-<span id="cb12-427"><a href="#cb12-427" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-428"><a href="#cb12-428" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>pangenome archive 与成员 checksum、参考 genomes 清单、UniRef/annotation snapshot 身份；</span>
-<span id="cb12-429"><a href="#cb12-429" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>每个样本的 median、left、right、out-of-plateau 指标和过滤理由；</span>
-<span id="cb12-430"><a href="#cb12-430" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>原始 coverage matrix、plateau index、binary presence/absence matrix；</span>
-<span id="cb12-431"><a href="#cb12-431" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>core/accessory 定义中的有效样本数与 cutoff；</span>
-<span id="cb12-432"><a href="#cb12-432" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>multi-strain warnings 和专库功能验证结果。</span>
+<span id="cb12-409"><a href="#cb12-409" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of 25 metagenomic samples, 22 passed the primary PanPhlAn plateau filters and all 15 reference genomes were retained. Among 11,069 pangenome gene families, 1,591 were operational core, 4,542 accessory, 1,613 rare, and 3,323 were not detected in the retained metagenomes. The median inferred repertoire contained 3,191 families per sample (range 2,713--3,648). Thirteen retained samples received a potential multi-strain warning. A sensitivity branch retained all 25 samples and yielded 1,571 operational core families; calls for the 22 shared samples were identical between branches. Median Jaccard distances were 0.3670 for within-study pairs, 0.3664 for same-country/different-study pairs, and 0.4357 for different-country pairs; these descriptive strata were not treated as independent replicates.</span></span>
+<span id="cb12-410"><a href="#cb12-410" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-411"><a href="#cb12-411" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb12-412"><a href="#cb12-412" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-413"><a href="#cb12-413" aria-hidden="true" tabindex="-1"></a>至少需要四类输入：</span>
+<span id="cb12-414"><a href="#cb12-414" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-415"><a href="#cb12-415" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>每个样本去接头、去宿主后的 shotgun FASTQ；</span>
+<span id="cb12-416"><a href="#cb12-416" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>目标物种名称与版本锁定的 PanPhlAn pangenome，包括 Bowtie2 indexes、pangenome TSV 和 annotation；</span>
+<span id="cb12-417"><a href="#cb12-417" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>一张一行一个样本的 metadata 表，至少含 <span class="in">`Sample`</span>、<span class="in">`Study`</span>、<span class="in">`Country`</span> 或你的主要设计变量；</span>
+<span id="cb12-418"><a href="#cb12-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>足够深的目标物种 coverage。物种丰度很低时，不要靠放宽阈值制造 profile。</span>
+<span id="cb12-419"><a href="#cb12-419" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-420"><a href="#cb12-420" aria-hidden="true" tabindex="-1"></a>从 FASTQ mapping 的标准入口是：</span>
+<span id="cb12-421"><a href="#cb12-421" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-422"><a href="#cb12-422" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-423"><a href="#cb12-423" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-panphlan-2026.07 <span class="dt">\</span></span>
+<span id="cb12-424"><a href="#cb12-424" aria-hidden="true" tabindex="-1"></a>  panphlan_map.py <span class="dt">\</span></span>
+<span id="cb12-425"><a href="#cb12-425" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> clean/SAMPLE.fastq.bz2 <span class="dt">\</span></span>
+<span id="cb12-426"><a href="#cb12-426" aria-hidden="true" tabindex="-1"></a>  <span class="at">--indexes</span> db/TARGET_SPECIES/TARGET_SPECIES <span class="dt">\</span></span>
+<span id="cb12-427"><a href="#cb12-427" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> db/TARGET_SPECIES/TARGET_SPECIES_pangenome.tsv <span class="dt">\</span></span>
+<span id="cb12-428"><a href="#cb12-428" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> map_results/SAMPLE.csv.bz2 <span class="dt">\</span></span>
+<span id="cb12-429"><a href="#cb12-429" aria-hidden="true" tabindex="-1"></a>  <span class="at">--nproc</span> 8 <span class="at">--min_read_length</span> 70 <span class="at">-v</span></span>
+<span id="cb12-430"><a href="#cb12-430" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-431"><a href="#cb12-431" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-432"><a href="#cb12-432" aria-hidden="true" tabindex="-1"></a>然后把所有样本的 mapping results 放进同一目录，先按默认/预注册阈值运行，再做 sample gate 与 gene gate 的敏感性分析。每次分析都保存：</span>
 <span id="cb12-433"><a href="#cb12-433" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-434"><a href="#cb12-434" aria-hidden="true" tabindex="-1"></a>若目标物种没有合适的 PanPhlAn database，不要把近缘物种数据库硬套上去。可改用 MIDAS2 的 species pangenome、anvi'o pangenomics，或从高质量 isolates/MAGs 构建版本锁定的 species-specific gene catalog；但 reference dereplication、gene clustering identity、fragmentation、contamination 与 annotation provenance 必须重新审计。</span>
-<span id="cb12-435"><a href="#cb12-435" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-436"><a href="#cb12-436" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb12-437"><a href="#cb12-437" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-438"><a href="#cb12-438" aria-hidden="true" tabindex="-1"></a>五张图分别承担不同问题，避免把所有信息塞进一张热图：</span>
+<span id="cb12-434"><a href="#cb12-434" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>pangenome archive 与成员 checksum、参考 genomes 清单、UniRef/annotation snapshot 身份；</span>
+<span id="cb12-435"><a href="#cb12-435" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>每个样本的 median、left、right、out-of-plateau 指标和过滤理由；</span>
+<span id="cb12-436"><a href="#cb12-436" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>原始 coverage matrix、plateau index、binary presence/absence matrix；</span>
+<span id="cb12-437"><a href="#cb12-437" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>core/accessory 定义中的有效样本数与 cutoff；</span>
+<span id="cb12-438"><a href="#cb12-438" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>multi-strain warnings 和专库功能验证结果。</span>
 <span id="cb12-439"><a href="#cb12-439" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-440"><a href="#cb12-440" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>prevalence spectrum 先交代分母、cutoff 与各分区规模；</span>
-<span id="cb12-441"><a href="#cb12-441" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Jaccard PCoA 展示低维 gene-content structure；</span>
-<span id="cb12-442"><a href="#cb12-442" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>dendrogram 明确写出 average linkage 和 Jaccard branch height，并在标题中声明它不是 species phylogeny；</span>
-<span id="cb12-443"><a href="#cb12-443" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>accessory heatmap 只展示固定规则选出的 20 个高变、已有 annotation 的候选 features；</span>
-<span id="cb12-444"><a href="#cb12-444" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>plateau audit 把三个被排除样本和两个 left-side thresholds 直接画出来。</span>
+<span id="cb12-440"><a href="#cb12-440" aria-hidden="true" tabindex="-1"></a>若目标物种没有合适的 PanPhlAn database，不要把近缘物种数据库硬套上去。可改用 MIDAS2 的 species pangenome、anvi'o pangenomics，或从高质量 isolates/MAGs 构建版本锁定的 species-specific gene catalog；但 reference dereplication、gene clustering identity、fragmentation、contamination 与 annotation provenance 必须重新审计。</span>
+<span id="cb12-441"><a href="#cb12-441" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-442"><a href="#cb12-442" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb12-443"><a href="#cb12-443" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-444"><a href="#cb12-444" aria-hidden="true" tabindex="-1"></a>五张图分别承担不同问题，避免把所有信息塞进一张热图：</span>
 <span id="cb12-445"><a href="#cb12-445" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-446"><a href="#cb12-446" aria-hidden="true" tabindex="-1"></a>颜色采用色觉友好方案；<span class="in">`country`</span>、<span class="in">`Primary status`</span>、<span class="in">`Call`</span>、坐标与图注均为英文。标签避让固定 seed，不让重渲染改变文字位置。每张图同步导出 PDF、350 dpi PNG 与 LZW-compressed 350 dpi TIFF：</span>
-<span id="cb12-447"><a href="#cb12-447" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-448"><a href="#cb12-448" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb12-449"><a href="#cb12-449" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(</span>
-<span id="cb12-450"><a href="#cb12-450" aria-hidden="true" tabindex="-1"></a>  p_pcoa,</span>
-<span id="cb12-451"><a href="#cb12-451" aria-hidden="true" tabindex="-1"></a>  <span class="st">"figures/52-gene-content-pcoa"</span>,</span>
-<span id="cb12-452"><a href="#cb12-452" aria-hidden="true" tabindex="-1"></a>  <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">155</span>, <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span></span>
-<span id="cb12-453"><a href="#cb12-453" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-454"><a href="#cb12-454" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-455"><a href="#cb12-455" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-456"><a href="#cb12-456" aria-hidden="true" tabindex="-1"></a>R 4.4.1、ggplot2 3.5.2、dplyr 1.1.4、readr 2.1.5、ggrepel 0.9.5、patchwork 1.3.2 与 ggdendro 0.2.0 的版本均写入冻结包。</span>
-<span id="cb12-457"><a href="#cb12-457" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-458"><a href="#cb12-458" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb12-459"><a href="#cb12-459" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-460"><a href="#cb12-460" aria-hidden="true" tabindex="-1"></a>同一物种仍可携带不同功能基因；用 PanPhlAn 区分 operational core、accessory、rare 与参考集合限定。</span>
+<span id="cb12-446"><a href="#cb12-446" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>prevalence spectrum 先交代分母、cutoff 与各分区规模；</span>
+<span id="cb12-447"><a href="#cb12-447" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Jaccard PCoA 展示低维 gene-content structure；</span>
+<span id="cb12-448"><a href="#cb12-448" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>dendrogram 明确写出 average linkage 和 Jaccard branch height，并在标题中声明它不是 species phylogeny；</span>
+<span id="cb12-449"><a href="#cb12-449" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>accessory heatmap 只展示固定规则选出的 20 个高变、已有 annotation 的候选 features；</span>
+<span id="cb12-450"><a href="#cb12-450" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>plateau audit 把三个被排除样本和两个 left-side thresholds 直接画出来。</span>
+<span id="cb12-451"><a href="#cb12-451" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-452"><a href="#cb12-452" aria-hidden="true" tabindex="-1"></a>颜色采用色觉友好方案；<span class="in">`country`</span>、<span class="in">`Primary status`</span>、<span class="in">`Call`</span>、坐标与图注均为英文。标签避让固定 seed，不让重渲染改变文字位置。每张图同步导出 PDF、350 dpi PNG 与 LZW-compressed 350 dpi TIFF：</span>
+<span id="cb12-453"><a href="#cb12-453" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-454"><a href="#cb12-454" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb12-455"><a href="#cb12-455" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(</span>
+<span id="cb12-456"><a href="#cb12-456" aria-hidden="true" tabindex="-1"></a>  p_pcoa,</span>
+<span id="cb12-457"><a href="#cb12-457" aria-hidden="true" tabindex="-1"></a>  <span class="st">"figures/52-gene-content-pcoa"</span>,</span>
+<span id="cb12-458"><a href="#cb12-458" aria-hidden="true" tabindex="-1"></a>  <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">155</span>, <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span></span>
+<span id="cb12-459"><a href="#cb12-459" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-460"><a href="#cb12-460" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-461"><a href="#cb12-461" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-462"><a href="#cb12-462" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb12-462"><a href="#cb12-462" aria-hidden="true" tabindex="-1"></a>R 4.4.1、ggplot2 3.5.2、dplyr 1.1.4、readr 2.1.5、ggrepel 0.9.5、patchwork 1.3.2 与 ggdendro 0.2.0 的版本均写入冻结包。</span>
 <span id="cb12-463"><a href="#cb12-463" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-464"><a href="#cb12-464" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PanPhlAn 方法与 *E. rectale* population-genomics 示例：<span class="co">[</span><span class="ot">@scholz2016panphlan</span><span class="co">]</span></span>
-<span id="cb12-465"><a href="#cb12-465" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PanPhlAn 3 官方 25-sample 教程与 pangenome/mapping assets：<span class="co">[</span><span class="ot">@segatalab2022panphlan3tutorial</span><span class="co">]</span></span>
-<span id="cb12-466"><a href="#cb12-466" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>bioBakery 3 taxonomic、functional 与 strain-level profiling 框架：<span class="co">[</span><span class="ot">@beghini2021biobakery</span><span class="co">]</span></span>
-<span id="cb12-467"><a href="#cb12-467" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>UniRef gene-family coordinate：<span class="co">[</span><span class="ot">@suzek2007uniref</span><span class="co">]</span></span>
-<span id="cb12-468"><a href="#cb12-468" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>专用功能验证数据库与工具：CARD <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>、VFDB <span class="co">[</span><span class="ot">@liu2022vfdb</span><span class="co">]</span>、antiSMASH <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span></span>
+<span id="cb12-464"><a href="#cb12-464" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb12-465"><a href="#cb12-465" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-466"><a href="#cb12-466" aria-hidden="true" tabindex="-1"></a>同一物种仍可携带不同功能基因；用 PanPhlAn 区分 operational core、accessory、rare 与参考集合限定。</span>
+<span id="cb12-467"><a href="#cb12-467" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-468"><a href="#cb12-468" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb12-469"><a href="#cb12-469" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-470"><a href="#cb12-470" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PanPhlAn 方法与 *E. rectale* population-genomics 示例：<span class="co">[</span><span class="ot">@scholz2016panphlan</span><span class="co">]</span></span>
+<span id="cb12-471"><a href="#cb12-471" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PanPhlAn 3 官方 25-sample 教程与 pangenome/mapping assets：<span class="co">[</span><span class="ot">@segatalab2022panphlan3tutorial</span><span class="co">]</span></span>
+<span id="cb12-472"><a href="#cb12-472" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>bioBakery 3 taxonomic、functional 与 strain-level profiling 框架：<span class="co">[</span><span class="ot">@beghini2021biobakery</span><span class="co">]</span></span>
+<span id="cb12-473"><a href="#cb12-473" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>UniRef gene-family coordinate：<span class="co">[</span><span class="ot">@suzek2007uniref</span><span class="co">]</span></span>
+<span id="cb12-474"><a href="#cb12-474" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>专用功能验证数据库与工具：CARD <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>、VFDB <span class="co">[</span><span class="ot">@liu2022vfdb</span><span class="co">]</span>、antiSMASH <span class="co">[</span><span class="ot">@blin2025antismash8</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

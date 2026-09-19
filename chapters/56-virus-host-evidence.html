@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">一条病毒—宿主预测，距离证实还有多远？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">一条病毒—宿主预测，距离证实还有多远？</a>
+  <ul class="collapse">
+  <li><a href="#超出适用范围的预测为什么容易显得可信" id="toc-超出适用范围的预测为什么容易显得可信" class="nav-link" data-scroll-target="#超出适用范围的预测为什么容易显得可信">超出适用范围的预测为什么容易显得可信？</a></li>
+  </ul></li>
   <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">重建论文级 aggregate evidence</a>
   <ul class="collapse">
   <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">最高等级不是“同一 MAG”，而是可检查的整合边界</a></li>
@@ -999,13 +1031,13 @@ div.csl-indent {
 <p>只读取固化证据表并重画 5 组图，<strong>4 CPU、4 GB RAM、100 MB 磁盘、耗时约 1 分钟</strong>。已验证的 iPHoP v1.4.2 Conda 软件环境本身占约 <strong>4.9 GB</strong>；程序下载器提示完整宿主库约需 <strong>300 GB</strong>，测试库约 <strong>9 GB</strong>。论文报告的 <code>Sept_2021_pub</code> 数据库上，5 条完整噬菌体、6 CPU 的完整预测约 <strong>12 分钟</strong>，但未报告 RAM。队列级正式运行可保守预留 <strong>16–32 CPU、32–64 GB RAM、至少 400 GB 磁盘，耗时数小时到数天</strong>；这是规划上界，不冒充实测 benchmark。没有服务器时，用 <code>data/small/56-virus-host-evidence-frozen/</code> 完成证据审计和出图；命令烟雾测试可用官方 test database，正式生物学结论转到 HPC 或云端的完整、锁版本数据库运行。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="超出适用范围的预测为什么容易显得可信">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>超出适用范围的预测为什么容易显得可信
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1035,6 +1067,11 @@ div.csl-indent {
 </figure>
 </div>
 <p>MIUViG 对 host prediction 的归纳提供了更上位的判读框架：宿主—病毒序列相似性通常最可靠；composition 方法通常难以可靠下探到 genus 以下；跨样本 abundance profile 仍属预测，并需要稳健 FDR <span class="citation" data-cites="roux2019miuvig">(<a href="02-three-analysis-layers.html#ref-roux2019miuvig" role="doc-biblioref"><span class="nocase">Roux 等</span> 2019年</a>)</span>。</p>
+<section id="超出适用范围的预测为什么容易显得可信" class="level3">
+<h3 class="anchored" data-anchor-id="超出适用范围的预测为什么容易显得可信">超出适用范围的预测为什么容易显得可信？</h3>
+<p>本例把不属于目标适用域的序列作为负对照，仍出现 1,018 次宿主调用，占 8,128 条序列的 12.5%。这说明“软件返回了标签”与“问题在该模型的适用范围内”是两件事。内部得分只能在其定义和评估范围内解读，不能自动变成任意新样本上的感染概率。</p>
+<p>若多种证据共享参考库、相似性基础或训练来源，它们的一致也不是完全独立的支持。应允许未判定，并明确模型适用域、缺失证据和候选解释的不确定性。序列层的关联判断不能代替实际感染证据，也不足以推出宿主范围或传播能力。</p>
+</section>
 </section>
 <section id="sec-code" class="level2">
 <h2 class="anchored" data-anchor-id="sec-code">重建论文级 aggregate evidence</h2>
@@ -1200,7 +1237,10 @@ div.csl-indent {
 <h3 class="anchored" data-anchor-id="iphop-是证据整合器不是独立实验">iPHoP 是证据整合器，不是独立实验</h3>
 <p>iPHoP v1.0 的 composite score 汇总四路分数：最佳 BLAST、最佳 CRISPR、十个 host-based classifiers 形成的 combined-hosts RF，以及 RaFAH <span class="citation" data-cites="coutinho2021rafah">(<a href="02-three-analysis-layers.html#ref-coutinho2021rafah" role="doc-biblioref">Coutinho 等 2021年</a>)</span>。它没有把 long-read、Hi-C 或 co-abundance 纳入同一分数。因此，报告 <code>score=94</code> 时必须同时保留 <code>List of methods</code>，不能只留宿主名与总分。</p>
 <p>模型输出的 confidence score 是测试集上经验 PPV 的重新标定。名义关系可写为：</p>
-<p>[ - -. ]</p>
+<p><span class="math display">\[
+\widehat{\mathrm{FDR}} \approx 1-\widehat{\mathrm{PPV}}
+\approx 1-\frac{\mathrm{score}}{100}.
+\]</span></p>
 <p>所以 score ≥90 对应约 ≤10% FDR，score ≥95 对应约 ≤5% FDR；论文也明确提醒，这个 FDR 依赖测试集组成，只能视作近似校准，不是某一条边“90% 真实”的实验概率。</p>
 <div id="fig-56-confidence" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -1991,7 +2031,7 @@ Zhang, Ruohan, Milot Mirdita, Eli Levy Karin, Claire Norroy, Clovis Galiez, 和 
 <span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>只读取固化证据表并重画 5 组图，**4 CPU、4 GB RAM、100 MB 磁盘、耗时约 1 分钟**。已验证的 iPHoP v1.4.2 Conda 软件环境本身占约 **4.9 GB**；程序下载器提示完整宿主库约需 **300 GB**，测试库约 **9 GB**。论文报告的 `Sept_2021_pub` 数据库上，5 条完整噬菌体、6 CPU 的完整预测约 **12 分钟**，但未报告 RAM。队列级正式运行可保守预留 **16--32 CPU、32--64 GB RAM、至少 400 GB 磁盘，耗时数小时到数天**；这是规划上界，不冒充实测 benchmark。没有服务器时，用 <span class="in">`data/small/56-virus-host-evidence-frozen/`</span> 完成证据审计和出图；命令烟雾测试可用官方 test database，正式生物学结论转到 HPC 或云端的完整、锁版本数据库运行。</span>
 <span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="超出适用范围的预测为什么容易显得可信"}</span>
 <span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>不同证据不能压成一个无条件的宿主标签；预测结果应保留冲突、不确定性与尚未验证的范围。</span>
 <span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2014,338 +2054,344 @@ Zhang, Ruohan, Milot Mirdita, Eli Levy Karin, Claire Norroy, Clovis Galiez, 和 
 <span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>MIUViG 对 host prediction 的归纳提供了更上位的判读框架：宿主—病毒序列相似性通常最可靠；composition 方法通常难以可靠下探到 genus 以下；跨样本 abundance profile 仍属预测，并需要稳健 FDR <span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span>。</span>
 <span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重建论文级 aggregate evidence {#sec-code}</span></span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a><span class="fu">### 超出适用范围的预测为什么容易显得可信？</span></span>
 <span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最高等级不是“同一 MAG”，而是可检查的整合边界 {#sec-theory}</span></span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>本例把不属于目标适用域的序列作为负对照，仍出现 1,018 次宿主调用，占 8,128 条序列的 12.5%。这说明“软件返回了标签”与“问题在该模型的适用范围内”是两件事。内部得分只能在其定义和评估范围内解读，不能自动变成任意新样本上的感染概率。</span>
 <span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>真正强的 integrated prophage 证据应同时看到：</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a>若多种证据共享参考库、相似性基础或训练来源，它们的一致也不是完全独立的支持。应允许未判定，并明确模型适用域、缺失证据和候选解释的不确定性。序列层的关联判断不能代替实际感染证据，也不足以推出宿主范围或传播能力。</span>
 <span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>病毒区段两侧为可归属宿主的 cellular sequence；</span>
-<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>左右 junction 与 assembly graph 不支持明显嵌合；</span>
-<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>宿主片段的 coverage、GC、taxonomy 与 MAG 主体一致；</span>
-<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>病毒区段没有被单独 viral contig 误分箱进 MAG；</span>
-<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>若有 reads，跨 junction 的 paired-end 或 long-read 支持可复核。</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重建论文级 aggregate evidence {#sec-code}</span></span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最高等级不是“同一 MAG”，而是可检查的整合边界 {#sec-theory}</span></span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>真正强的 integrated prophage 证据应同时看到：</span>
 <span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>“同一 bin”只说明分箱器根据 coverage/composition 把 contigs 放在一起，而这些特征恰好也是病毒 contig 最容易误导分箱器的地方。没有 flanks 和 junction，只能写 **co-binned candidate**，不能写 “the virus infects this MAG”。</span>
-<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article56"</span></span>
-<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/56-virus-host-evidence-frozen"</span></span>
-<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article56_host_evidence.py <span class="dt">\</span></span>
-<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
-<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/source-assertions.tsv"</span></span>
-<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/benchmark-scope.tsv"</span></span>
-<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/negative-control.tsv"</span></span>
-<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary.json"</span></span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>病毒区段两侧为可归属宿主的 cellular sequence；</span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>左右 junction 与 assembly graph 不支持明显嵌合；</span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>宿主片段的 coverage、GC、taxonomy 与 MAG 主体一致；</span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>病毒区段没有被单独 viral contig 误分箱进 MAG；</span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>若有 reads，跨 junction 的 paired-end 或 long-read 支持可复核。</span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>“同一 bin”只说明分箱器根据 coverage/composition 把 contigs 放在一起，而这些特征恰好也是病毒 contig 最容易误导分箱器的地方。没有 flanks 和 junction，只能写 **co-binned candidate**，不能写 “the virus infects this MAG”。</span>
+<span id="cb6-77"><a href="#cb6-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-78"><a href="#cb6-78" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb6-79"><a href="#cb6-79" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb6-80"><a href="#cb6-80" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article56"</span></span>
+<span id="cb6-81"><a href="#cb6-81" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/56-virus-host-evidence-frozen"</span></span>
+<span id="cb6-82"><a href="#cb6-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-83"><a href="#cb6-83" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article56_host_evidence.py <span class="dt">\</span></span>
+<span id="cb6-84"><a href="#cb6-84" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-85"><a href="#cb6-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
 <span id="cb6-86"><a href="#cb6-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a><span class="co"># 不下载数据库时，直接读取已固化的同一组小表</span></span>
-<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/evidence-hierarchy.tsv"</span></span>
-<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/confidence-contract.tsv"</span></span>
-<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a><span class="in">`benchmark-scope.tsv`</span> 的开头应为 1,870 条 held-out viruses、170 个 host genera、949 条 temperate 与 663 条 virulent；<span class="in">`negative-control.tsv`</span> 应给出 8,128、1,018 与派生的 12.524606%。派生值和论文直接报告值由 <span class="in">`ValueStatus`</span> 分开。</span>
-<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把“作者使用的工具”升级为“今天可检查的边” {#sec-audit}</span></span>
-<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a>iPHoP 的重要进步不是简单投票，而是用 held-out test set 把不同工具分数转为经验 PPV，再组合一致的证据。当前分析仍需补三件事：</span>
+<span id="cb6-87"><a href="#cb6-87" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb6-88"><a href="#cb6-88" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/source-assertions.tsv"</span></span>
+<span id="cb6-89"><a href="#cb6-89" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/benchmark-scope.tsv"</span></span>
+<span id="cb6-90"><a href="#cb6-90" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/negative-control.tsv"</span></span>
+<span id="cb6-91"><a href="#cb6-91" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary.json"</span></span>
+<span id="cb6-92"><a href="#cb6-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-93"><a href="#cb6-93" aria-hidden="true" tabindex="-1"></a><span class="co"># 不下载数据库时，直接读取已固化的同一组小表</span></span>
+<span id="cb6-94"><a href="#cb6-94" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/evidence-hierarchy.tsv"</span></span>
+<span id="cb6-95"><a href="#cb6-95" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/confidence-contract.tsv"</span></span>
+<span id="cb6-96"><a href="#cb6-96" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb6-97"><a href="#cb6-97" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>在每条边上保存 **main method**，因为 score 92 的 CRISPR 主导边与 k-mer/RF 主导边并不等价；</span>
-<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 long-read、Hi-C、prophage junction 与 co-abundance 作为**外部证据列**加入，而不是篡改 iPHoP score；</span>
-<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>报告冲突，例如 CRISPR 指向属 A、Hi-C 指向属 B；不能只保留更符合故事的一票。</span>
+<span id="cb6-98"><a href="#cb6-98" aria-hidden="true" tabindex="-1"></a><span class="in">`benchmark-scope.tsv`</span> 的开头应为 1,870 条 held-out viruses、170 个 host genera、949 条 temperate 与 663 条 virulent；<span class="in">`negative-control.tsv`</span> 应给出 8,128、1,018 与派生的 12.524606%。派生值和论文直接报告值由 <span class="in">`ValueStatus`</span> 分开。</span>
+<span id="cb6-99"><a href="#cb6-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-100"><a href="#cb6-100" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把“作者使用的工具”升级为“今天可检查的边” {#sec-audit}</span></span>
 <span id="cb6-101"><a href="#cb6-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a><span class="fu">## 在真实 vOTU 目录上运行 iPHoP</span></span>
+<span id="cb6-102"><a href="#cb6-102" aria-hidden="true" tabindex="-1"></a>iPHoP 的重要进步不是简单投票，而是用 held-out test set 把不同工具分数转为经验 PPV，再组合一致的证据。当前分析仍需补三件事：</span>
 <span id="cb6-103"><a href="#cb6-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a>输入必须是经过病毒识别、质量评估和 95% ANI / 85% AF 去冗余后的 vOTU representatives；不要把同一病毒的近重复 contigs 当独立 query。下面用第 55 篇固化的 15 噬菌体公开参考目录作为命令输入，运行结果写到仓库外或 <span class="in">`results/`</span>，不在渲染时重算。</span>
-<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a><span class="va">VIRUSES</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/55-virus-taxonomy-abundance-frozen/raw/cook15-phage-reference.fna"</span></span>
-<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a><span class="va">IPHOP_DB</span><span class="op">=</span>/data/db/iphop-sept21/Sept_2021_pub</span>
-<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a><span class="va">OUT</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/56-virus-host-evidence/iphop"</span></span>
+<span id="cb6-104"><a href="#cb6-104" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>在每条边上保存 **main method**，因为 score 92 的 CRISPR 主导边与 k-mer/RF 主导边并不等价；</span>
+<span id="cb6-105"><a href="#cb6-105" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 long-read、Hi-C、prophage junction 与 co-abundance 作为**外部证据列**加入，而不是篡改 iPHoP score；</span>
+<span id="cb6-106"><a href="#cb6-106" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>报告冲突，例如 CRISPR 指向属 A、Hi-C 指向属 B；不能只保留更符合故事的一票。</span>
+<span id="cb6-107"><a href="#cb6-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-108"><a href="#cb6-108" aria-hidden="true" tabindex="-1"></a><span class="fu">## 在真实 vOTU 目录上运行 iPHoP</span></span>
+<span id="cb6-109"><a href="#cb6-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-110"><a href="#cb6-110" aria-hidden="true" tabindex="-1"></a>输入必须是经过病毒识别、质量评估和 95% ANI / 85% AF 去冗余后的 vOTU representatives；不要把同一病毒的近重复 contigs 当独立 query。下面用第 55 篇固化的 15 噬菌体公开参考目录作为命令输入，运行结果写到仓库外或 <span class="in">`results/`</span>，不在渲染时重算。</span>
 <span id="cb6-111"><a href="#cb6-111" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a><span class="bu">test</span> <span class="at">-s</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span></span>
-<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a><span class="bu">test</span> <span class="at">-s</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">/md5checkfile.txt"</span></span>
-<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a><span class="co"># 以 75 输出完整候选集合，再在统计脚本中预注册 90 为主阈值、95 为敏感性阈值</span></span>
-<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> run <span class="at">-n</span> metagenome-virus-host-2026.07 iphop predict <span class="dt">\</span></span>
-<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fa_file</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">--db_dir</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out_dir</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">--num_threads</span> 16 <span class="dt">\</span></span>
-<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_score</span> 75 <span class="dt">\</span></span>
-<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_tsv_output</span></span>
-<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/Date_and_version.log"</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/analysis-version.log"</span></span>
-<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">/md5checkfile.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/input-database.sha256"</span></span>
-<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>这段命令只定义可复现路径，不把未实际取得的逐病毒输出写进结果段。正式运行完成后，至少保留：</span>
+<span id="cb6-112"><a href="#cb6-112" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb6-113"><a href="#cb6-113" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb6-114"><a href="#cb6-114" aria-hidden="true" tabindex="-1"></a><span class="va">VIRUSES</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/55-virus-taxonomy-abundance-frozen/raw/cook15-phage-reference.fna"</span></span>
+<span id="cb6-115"><a href="#cb6-115" aria-hidden="true" tabindex="-1"></a><span class="va">IPHOP_DB</span><span class="op">=</span>/data/db/iphop-sept21/Sept_2021_pub</span>
+<span id="cb6-116"><a href="#cb6-116" aria-hidden="true" tabindex="-1"></a><span class="va">OUT</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/results/56-virus-host-evidence/iphop"</span></span>
+<span id="cb6-117"><a href="#cb6-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-118"><a href="#cb6-118" aria-hidden="true" tabindex="-1"></a><span class="bu">test</span> <span class="at">-s</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span></span>
+<span id="cb6-119"><a href="#cb6-119" aria-hidden="true" tabindex="-1"></a><span class="bu">test</span> <span class="at">-s</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">/md5checkfile.txt"</span></span>
+<span id="cb6-120"><a href="#cb6-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-121"><a href="#cb6-121" aria-hidden="true" tabindex="-1"></a><span class="co"># 以 75 输出完整候选集合，再在统计脚本中预注册 90 为主阈值、95 为敏感性阈值</span></span>
+<span id="cb6-122"><a href="#cb6-122" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> run <span class="at">-n</span> metagenome-virus-host-2026.07 iphop predict <span class="dt">\</span></span>
+<span id="cb6-123"><a href="#cb6-123" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fa_file</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">--db_dir</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a>  <span class="at">--out_dir</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--num_threads</span> 16 <span class="dt">\</span></span>
+<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_score</span> 75 <span class="dt">\</span></span>
+<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>  <span class="at">--add_tsv_output</span></span>
 <span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Host_prediction_to_genus_m75.csv/tsv`</span>；</span>
-<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Host_prediction_to_genome_m75.csv/tsv`</span>；</span>
-<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Detailed_output_by_tool.csv/tsv`</span>；</span>
-<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Date_and_version.log`</span>、命令、FASTA 与数据库 manifest checksum；</span>
-<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>未通过 90 的候选，供 75/90/95 sensitivity analysis，而不是删掉后失去审计能力。</span>
+<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/Date_and_version.log"</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/analysis-version.log"</span></span>
+<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">$VIRUSES</span><span class="st">"</span> <span class="st">"</span><span class="va">$IPHOP_DB</span><span class="st">/md5checkfile.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$OUT</span><span class="st">/input-database.sha256"</span></span>
+<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>这段命令只定义可复现路径，不把未实际取得的逐病毒输出写进结果段。正式运行完成后，至少保留：</span>
 <span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a><span class="fu">## 每条病毒只选一个预注册主候选，同时保留证据串</span></span>
-<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a>pred_all <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
-<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/iphop/Host_prediction_to_genus_m75.csv"</span>,</span>
-<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(</span>
-<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a>    <span class="at">virus_id =</span> Virus,</span>
-<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>    <span class="at">rafah_nearest_aai =</span> <span class="st">`</span><span class="at">AAI to closest RaFAH reference</span><span class="st">`</span>,</span>
-<span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a>    <span class="at">host_lineage =</span> <span class="st">`</span><span class="at">Host genus</span><span class="st">`</span>,</span>
-<span id="cb6-151"><a href="#cb6-151" aria-hidden="true" tabindex="-1"></a>    <span class="at">iphop_score =</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Confidence score</span><span class="st">`</span>),</span>
-<span id="cb6-152"><a href="#cb6-152" aria-hidden="true" tabindex="-1"></a>    <span class="at">method_scores =</span> <span class="st">`</span><span class="at">List of methods</span><span class="st">`</span></span>
-<span id="cb6-153"><a href="#cb6-153" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb6-154"><a href="#cb6-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(virus_id, <span class="fu">desc</span>(iphop_score), host_lineage)</span>
-<span id="cb6-155"><a href="#cb6-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-156"><a href="#cb6-156" aria-hidden="true" tabindex="-1"></a><span class="co"># 一条病毒可能有多个候选属；主表按 score 最大、host lineage 字典序稳定破平</span></span>
-<span id="cb6-157"><a href="#cb6-157" aria-hidden="true" tabindex="-1"></a>pred_best <span class="ot">&lt;-</span> pred_all <span class="sc">%&gt;%</span></span>
-<span id="cb6-158"><a href="#cb6-158" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(virus_id) <span class="sc">%&gt;%</span></span>
-<span id="cb6-159"><a href="#cb6-159" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb6-160"><a href="#cb6-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb6-161"><a href="#cb6-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb6-162"><a href="#cb6-162" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary_method =</span> <span class="fu">str_extract</span>(method_scores, <span class="st">"^[^; ]+"</span>),</span>
-<span id="cb6-163"><a href="#cb6-163" aria-hidden="true" tabindex="-1"></a>    <span class="at">score_class =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-164"><a href="#cb6-164" aria-hidden="true" tabindex="-1"></a>      iphop_score <span class="sc">&gt;=</span> <span class="dv">95</span> <span class="sc">~</span> <span class="st">"Very high (&gt;=95)"</span>,</span>
-<span id="cb6-165"><a href="#cb6-165" aria-hidden="true" tabindex="-1"></a>      iphop_score <span class="sc">&gt;=</span> <span class="dv">90</span> <span class="sc">~</span> <span class="st">"High (90-94.9)"</span>,</span>
-<span id="cb6-166"><a href="#cb6-166" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Exploratory (75-89.9)"</span></span>
-<span id="cb6-167"><a href="#cb6-167" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb6-168"><a href="#cb6-168" aria-hidden="true" tabindex="-1"></a>    <span class="at">main_signal =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-169"><a href="#cb6-169" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> <span class="st">"Virus-host sequence alignment"</span>,</span>
-<span id="cb6-170"><a href="#cb6-170" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"CRISPR"</span> <span class="sc">~</span> <span class="st">"CRISPR spacer match"</span>,</span>
-<span id="cb6-171"><a href="#cb6-171" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"RaFAH"</span> <span class="sc">~</span> <span class="st">"Reference-phage protein content"</span>,</span>
-<span id="cb6-172"><a href="#cb6-172" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"iPHoP-RF"</span>, <span class="st">"iPHoP_RF"</span>) <span class="sc">~</span> <span class="st">"Integrated host-based prediction"</span>,</span>
-<span id="cb6-173"><a href="#cb6-173" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Inspect detailed output"</span></span>
-<span id="cb6-174"><a href="#cb6-174" aria-hidden="true" tabindex="-1"></a>    ),</span>
-<span id="cb6-175"><a href="#cb6-175" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary_report =</span> iphop_score <span class="sc">&gt;=</span> <span class="dv">90</span></span>
-<span id="cb6-176"><a href="#cb6-176" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-177"><a href="#cb6-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-178"><a href="#cb6-178" aria-hidden="true" tabindex="-1"></a><span class="fu">write_tsv</span>(</span>
-<span id="cb6-179"><a href="#cb6-179" aria-hidden="true" tabindex="-1"></a>  pred_best,</span>
-<span id="cb6-180"><a href="#cb6-180" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/virus-host-predictions-audited.tsv"</span></span>
-<span id="cb6-181"><a href="#cb6-181" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-182"><a href="#cb6-182" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Host_prediction_to_genus_m75.csv/tsv`</span>；</span>
+<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Host_prediction_to_genome_m75.csv/tsv`</span>；</span>
+<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Detailed_output_by_tool.csv/tsv`</span>；</span>
+<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Date_and_version.log`</span>、命令、FASTA 与数据库 manifest checksum；</span>
+<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>未通过 90 的候选，供 75/90/95 sensitivity analysis，而不是删掉后失去审计能力。</span>
+<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a><span class="fu">## 每条病毒只选一个预注册主候选，同时保留证据串</span></span>
+<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>pred_all <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(</span>
+<span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/iphop/Host_prediction_to_genus_m75.csv"</span>,</span>
+<span id="cb6-151"><a href="#cb6-151" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb6-152"><a href="#cb6-152" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-153"><a href="#cb6-153" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(</span>
+<span id="cb6-154"><a href="#cb6-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">virus_id =</span> Virus,</span>
+<span id="cb6-155"><a href="#cb6-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">rafah_nearest_aai =</span> <span class="st">`</span><span class="at">AAI to closest RaFAH reference</span><span class="st">`</span>,</span>
+<span id="cb6-156"><a href="#cb6-156" aria-hidden="true" tabindex="-1"></a>    <span class="at">host_lineage =</span> <span class="st">`</span><span class="at">Host genus</span><span class="st">`</span>,</span>
+<span id="cb6-157"><a href="#cb6-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">iphop_score =</span> <span class="fu">as.numeric</span>(<span class="st">`</span><span class="at">Confidence score</span><span class="st">`</span>),</span>
+<span id="cb6-158"><a href="#cb6-158" aria-hidden="true" tabindex="-1"></a>    <span class="at">method_scores =</span> <span class="st">`</span><span class="at">List of methods</span><span class="st">`</span></span>
+<span id="cb6-159"><a href="#cb6-159" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb6-160"><a href="#cb6-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(virus_id, <span class="fu">desc</span>(iphop_score), host_lineage)</span>
+<span id="cb6-161"><a href="#cb6-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-162"><a href="#cb6-162" aria-hidden="true" tabindex="-1"></a><span class="co"># 一条病毒可能有多个候选属；主表按 score 最大、host lineage 字典序稳定破平</span></span>
+<span id="cb6-163"><a href="#cb6-163" aria-hidden="true" tabindex="-1"></a>pred_best <span class="ot">&lt;-</span> pred_all <span class="sc">%&gt;%</span></span>
+<span id="cb6-164"><a href="#cb6-164" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(virus_id) <span class="sc">%&gt;%</span></span>
+<span id="cb6-165"><a href="#cb6-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_head</span>(<span class="at">n =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-166"><a href="#cb6-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb6-167"><a href="#cb6-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb6-168"><a href="#cb6-168" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary_method =</span> <span class="fu">str_extract</span>(method_scores, <span class="st">"^[^; ]+"</span>),</span>
+<span id="cb6-169"><a href="#cb6-169" aria-hidden="true" tabindex="-1"></a>    <span class="at">score_class =</span> <span class="fu">case_when</span>(</span>
+<span id="cb6-170"><a href="#cb6-170" aria-hidden="true" tabindex="-1"></a>      iphop_score <span class="sc">&gt;=</span> <span class="dv">95</span> <span class="sc">~</span> <span class="st">"Very high (&gt;=95)"</span>,</span>
+<span id="cb6-171"><a href="#cb6-171" aria-hidden="true" tabindex="-1"></a>      iphop_score <span class="sc">&gt;=</span> <span class="dv">90</span> <span class="sc">~</span> <span class="st">"High (90-94.9)"</span>,</span>
+<span id="cb6-172"><a href="#cb6-172" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Exploratory (75-89.9)"</span></span>
+<span id="cb6-173"><a href="#cb6-173" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb6-174"><a href="#cb6-174" aria-hidden="true" tabindex="-1"></a>    <span class="at">main_signal =</span> <span class="fu">case_when</span>(</span>
+<span id="cb6-175"><a href="#cb6-175" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"blast"</span> <span class="sc">~</span> <span class="st">"Virus-host sequence alignment"</span>,</span>
+<span id="cb6-176"><a href="#cb6-176" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"CRISPR"</span> <span class="sc">~</span> <span class="st">"CRISPR spacer match"</span>,</span>
+<span id="cb6-177"><a href="#cb6-177" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">==</span> <span class="st">"RaFAH"</span> <span class="sc">~</span> <span class="st">"Reference-phage protein content"</span>,</span>
+<span id="cb6-178"><a href="#cb6-178" aria-hidden="true" tabindex="-1"></a>      primary_method <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"iPHoP-RF"</span>, <span class="st">"iPHoP_RF"</span>) <span class="sc">~</span> <span class="st">"Integrated host-based prediction"</span>,</span>
+<span id="cb6-179"><a href="#cb6-179" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Inspect detailed output"</span></span>
+<span id="cb6-180"><a href="#cb6-180" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb6-181"><a href="#cb6-181" aria-hidden="true" tabindex="-1"></a>    <span class="at">primary_report =</span> iphop_score <span class="sc">&gt;=</span> <span class="dv">90</span></span>
+<span id="cb6-182"><a href="#cb6-182" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb6-183"><a href="#cb6-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-184"><a href="#cb6-184" aria-hidden="true" tabindex="-1"></a>若同一 query 有两个 ≥90 的候选 host genera，不要把第二名静默删掉。主网络可保留最高分，supplement 仍应列出全部候选、分差与 evidence string；差值很小时标记 <span class="in">`ambiguous_host=TRUE`</span>。</span>
-<span id="cb6-185"><a href="#cb6-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-186"><a href="#cb6-186" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常攻击的十个点"}</span>
-<span id="cb6-187"><a href="#cb6-187" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>把 <span class="in">`same MAG/bin`</span> 写成 integrated prophage，却没有 host flanks、junction reads 或 assembly graph；</span>
-<span id="cb6-188"><a href="#cb6-188" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>只报告 iPHoP score，不报告 <span class="in">`List of methods`</span> 与 main method；</span>
-<span id="cb6-189"><a href="#cb6-189" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>使用 mutable <span class="in">`latest`</span> database，不留 release、manifest 与运行日期；</span>
-<span id="cb6-190"><a href="#cb6-190" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>把 score 90 解释成这条边有 90% 实验真实性；</span>
-<span id="cb6-191"><a href="#cb6-191" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>混入真核病毒后仍强制分配细菌/古菌宿主；</span>
-<span id="cb6-192"><a href="#cb6-192" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>对短、低完整度 contigs 降阈值，却不做 sensitivity analysis；</span>
-<span id="cb6-193"><a href="#cb6-193" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>认为三个 composition classifiers 是三份独立证据；</span>
-<span id="cb6-194"><a href="#cb6-194" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用几十个高度相关样本做 co-abundance，并忽略 subject、batch 与 compositionality；</span>
-<span id="cb6-195"><a href="#cb6-195" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>网络只保留最高分候选，不披露近分第二候选和证据冲突；</span>
-<span id="cb6-196"><a href="#cb6-196" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>从 host linkage 直接跳到 active infection、host range 或 causal effect。</span>
-<span id="cb6-197"><a href="#cb6-197" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb6-198"><a href="#cb6-198" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-199"><a href="#cb6-199" aria-hidden="true" tabindex="-1"></a><span class="fu">## 把物理证据放在独立列，不塞回 iPHoP score</span></span>
-<span id="cb6-200"><a href="#cb6-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-201"><a href="#cb6-201" aria-hidden="true" tabindex="-1"></a><span class="fu">### CRISPR 很强，但强度取决于 spacer 所属与错配门槛</span></span>
-<span id="cb6-202"><a href="#cb6-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-203"><a href="#cb6-203" aria-hidden="true" tabindex="-1"></a>CRISPR spacer 是宿主免疫记忆，方向上比 composition 更接近真实接触。iPHoP 论文的基准流程要求 spacer 长度 ≥25 nt、总体少于 8 个 mismatch、complexity score &lt;0.6；Figure 1 的严格比较只接受 ≤2 mismatches。短 spacer、低复杂序列、宽松错配和错误归属的 CRISPR array 都会抬高假阳性。SpacePHARER 等工具可提高搜索灵敏度，但仍需报告 spacer 长度、mismatch、alignment coverage 与承载 array 的 host contig <span class="co">[</span><span class="ot">@zhang2021spacepharer</span><span class="co">]</span>。</span>
+<span id="cb6-184"><a href="#cb6-184" aria-hidden="true" tabindex="-1"></a><span class="fu">write_tsv</span>(</span>
+<span id="cb6-185"><a href="#cb6-185" aria-hidden="true" tabindex="-1"></a>  pred_best,</span>
+<span id="cb6-186"><a href="#cb6-186" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/virus-host-predictions-audited.tsv"</span></span>
+<span id="cb6-187"><a href="#cb6-187" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-188"><a href="#cb6-188" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb6-189"><a href="#cb6-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-190"><a href="#cb6-190" aria-hidden="true" tabindex="-1"></a>若同一 query 有两个 ≥90 的候选 host genera，不要把第二名静默删掉。主网络可保留最高分，supplement 仍应列出全部候选、分差与 evidence string；差值很小时标记 <span class="in">`ambiguous_host=TRUE`</span>。</span>
+<span id="cb6-191"><a href="#cb6-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-192"><a href="#cb6-192" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常攻击的十个点"}</span>
+<span id="cb6-193"><a href="#cb6-193" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>把 <span class="in">`same MAG/bin`</span> 写成 integrated prophage，却没有 host flanks、junction reads 或 assembly graph；</span>
+<span id="cb6-194"><a href="#cb6-194" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>只报告 iPHoP score，不报告 <span class="in">`List of methods`</span> 与 main method；</span>
+<span id="cb6-195"><a href="#cb6-195" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>使用 mutable <span class="in">`latest`</span> database，不留 release、manifest 与运行日期；</span>
+<span id="cb6-196"><a href="#cb6-196" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>把 score 90 解释成这条边有 90% 实验真实性；</span>
+<span id="cb6-197"><a href="#cb6-197" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>混入真核病毒后仍强制分配细菌/古菌宿主；</span>
+<span id="cb6-198"><a href="#cb6-198" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>对短、低完整度 contigs 降阈值，却不做 sensitivity analysis；</span>
+<span id="cb6-199"><a href="#cb6-199" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>认为三个 composition classifiers 是三份独立证据；</span>
+<span id="cb6-200"><a href="#cb6-200" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用几十个高度相关样本做 co-abundance，并忽略 subject、batch 与 compositionality；</span>
+<span id="cb6-201"><a href="#cb6-201" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>网络只保留最高分候选，不披露近分第二候选和证据冲突；</span>
+<span id="cb6-202"><a href="#cb6-202" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>从 host linkage 直接跳到 active infection、host range 或 causal effect。</span>
+<span id="cb6-203"><a href="#cb6-203" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb6-204"><a href="#cb6-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-205"><a href="#cb6-205" aria-hidden="true" tabindex="-1"></a><span class="fu">### Long-read 与 Hi-C 是物理连接，但并非天然无偏</span></span>
+<span id="cb6-205"><a href="#cb6-205" aria-hidden="true" tabindex="-1"></a><span class="fu">## 把物理证据放在独立列，不塞回 iPHoP score</span></span>
 <span id="cb6-206"><a href="#cb6-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-207"><a href="#cb6-207" aria-hidden="true" tabindex="-1"></a>单条高质量 long read 跨过病毒—宿主边界时，证据接近整合 junction；Hi-C/meta3C 则测量同一细胞内或空间邻近 DNA 的 proximity contact <span class="co">[</span><span class="ot">@marbouty2017proximity; @bickhart2019assignment</span><span class="co">]</span>。两者都需要独立质控：</span>
+<span id="cb6-207"><a href="#cb6-207" aria-hidden="true" tabindex="-1"></a><span class="fu">### CRISPR 很强，但强度取决于 spacer 所属与错配门槛</span></span>
 <span id="cb6-208"><a href="#cb6-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-209"><a href="#cb6-209" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>long read 要检查 mapping quality、跨界长度、嵌合 read 与重复序列；</span>
-<span id="cb6-210"><a href="#cb6-210" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Hi-C 要控制交联、restriction-site density、宿主与病毒 abundance、index hopping、跨样本污染；</span>
-<span id="cb6-211"><a href="#cb6-211" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>至少报告支持 read/contact 数、标准化方法、空白/模拟群落与重复一致性。</span>
+<span id="cb6-209"><a href="#cb6-209" aria-hidden="true" tabindex="-1"></a>CRISPR spacer 是宿主免疫记忆，方向上比 composition 更接近真实接触。iPHoP 论文的基准流程要求 spacer 长度 ≥25 nt、总体少于 8 个 mismatch、complexity score &lt;0.6；Figure 1 的严格比较只接受 ≤2 mismatches。短 spacer、低复杂序列、宽松错配和错误归属的 CRISPR array 都会抬高假阳性。SpacePHARER 等工具可提高搜索灵敏度，但仍需报告 spacer 长度、mismatch、alignment coverage 与承载 array 的 host contig <span class="co">[</span><span class="ot">@zhang2021spacepharer</span><span class="co">]</span>。</span>
+<span id="cb6-210"><a href="#cb6-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-211"><a href="#cb6-211" aria-hidden="true" tabindex="-1"></a><span class="fu">### Long-read 与 Hi-C 是物理连接，但并非天然无偏</span></span>
 <span id="cb6-212"><a href="#cb6-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-213"><a href="#cb6-213" aria-hidden="true" tabindex="-1"></a>Hi-C 接触支持“物理共处或关联”，不自动证明正在复制；单一时间点也不能证明感染方向。</span>
+<span id="cb6-213"><a href="#cb6-213" aria-hidden="true" tabindex="-1"></a>单条高质量 long read 跨过病毒—宿主边界时，证据接近整合 junction；Hi-C/meta3C 则测量同一细胞内或空间邻近 DNA 的 proximity contact <span class="co">[</span><span class="ot">@marbouty2017proximity; @bickhart2019assignment</span><span class="co">]</span>。两者都需要独立质控：</span>
 <span id="cb6-214"><a href="#cb6-214" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-215"><a href="#cb6-215" aria-hidden="true" tabindex="-1"></a><span class="fu">### iPHoP 是证据整合器，不是独立实验</span></span>
-<span id="cb6-216"><a href="#cb6-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-217"><a href="#cb6-217" aria-hidden="true" tabindex="-1"></a>iPHoP v1.0 的 composite score 汇总四路分数：最佳 BLAST、最佳 CRISPR、十个 host-based classifiers 形成的 combined-hosts RF，以及 RaFAH <span class="co">[</span><span class="ot">@coutinho2021rafah</span><span class="co">]</span>。它没有把 long-read、Hi-C 或 co-abundance 纳入同一分数。因此，报告 <span class="in">`score=94`</span> 时必须同时保留 <span class="in">`List of methods`</span>，不能只留宿主名与总分。</span>
+<span id="cb6-215"><a href="#cb6-215" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>long read 要检查 mapping quality、跨界长度、嵌合 read 与重复序列；</span>
+<span id="cb6-216"><a href="#cb6-216" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Hi-C 要控制交联、restriction-site density、宿主与病毒 abundance、index hopping、跨样本污染；</span>
+<span id="cb6-217"><a href="#cb6-217" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>至少报告支持 read/contact 数、标准化方法、空白/模拟群落与重复一致性。</span>
 <span id="cb6-218"><a href="#cb6-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-219"><a href="#cb6-219" aria-hidden="true" tabindex="-1"></a>模型输出的 confidence score 是测试集上经验 PPV 的重新标定。名义关系可写为：</span>
+<span id="cb6-219"><a href="#cb6-219" aria-hidden="true" tabindex="-1"></a>Hi-C 接触支持“物理共处或关联”，不自动证明正在复制；单一时间点也不能证明感染方向。</span>
 <span id="cb6-220"><a href="#cb6-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-221"><a href="#cb6-221" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb6-222"><a href="#cb6-222" aria-hidden="true" tabindex="-1"></a>\widehat{\mathrm{FDR}} \approx 1-\widehat{\mathrm{PPV}}</span>
-<span id="cb6-223"><a href="#cb6-223" aria-hidden="true" tabindex="-1"></a>\approx 1-\frac{\mathrm{score}}{100}.</span>
-<span id="cb6-224"><a href="#cb6-224" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb6-225"><a href="#cb6-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-226"><a href="#cb6-226" aria-hidden="true" tabindex="-1"></a>所以 score ≥90 对应约 ≤10% FDR，score ≥95 对应约 ≤5% FDR；论文也明确提醒，这个 FDR 依赖测试集组成，只能视作近似校准，不是某一条边“90% 真实”的实验概率。</span>
-<span id="cb6-227"><a href="#cb6-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-228"><a href="#cb6-228" aria-hidden="true" tabindex="-1"></a><span class="al">![Relationship between the minimum iPHoP confidence score and its nominal empirical FDR contract.](../figures/56-confidence-contract.png)</span>{#fig-56-confidence}</span>
-<span id="cb6-229"><a href="#cb6-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-230"><a href="#cb6-230" aria-hidden="true" tabindex="-1"></a><span class="fu">### Reference-phage 与 composition 的失败方式不同</span></span>
+<span id="cb6-221"><a href="#cb6-221" aria-hidden="true" tabindex="-1"></a><span class="fu">### iPHoP 是证据整合器，不是独立实验</span></span>
+<span id="cb6-222"><a href="#cb6-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-223"><a href="#cb6-223" aria-hidden="true" tabindex="-1"></a>iPHoP v1.0 的 composite score 汇总四路分数：最佳 BLAST、最佳 CRISPR、十个 host-based classifiers 形成的 combined-hosts RF，以及 RaFAH <span class="co">[</span><span class="ot">@coutinho2021rafah</span><span class="co">]</span>。它没有把 long-read、Hi-C 或 co-abundance 纳入同一分数。因此，报告 <span class="in">`score=94`</span> 时必须同时保留 <span class="in">`List of methods`</span>，不能只留宿主名与总分。</span>
+<span id="cb6-224"><a href="#cb6-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-225"><a href="#cb6-225" aria-hidden="true" tabindex="-1"></a>模型输出的 confidence score 是测试集上经验 PPV 的重新标定。名义关系可写为：</span>
+<span id="cb6-226"><a href="#cb6-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-227"><a href="#cb6-227" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb6-228"><a href="#cb6-228" aria-hidden="true" tabindex="-1"></a>\widehat{\mathrm{FDR}} \approx 1-\widehat{\mathrm{PPV}}</span>
+<span id="cb6-229"><a href="#cb6-229" aria-hidden="true" tabindex="-1"></a>\approx 1-\frac{\mathrm{score}}{100}.</span>
+<span id="cb6-230"><a href="#cb6-230" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb6-231"><a href="#cb6-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-232"><a href="#cb6-232" aria-hidden="true" tabindex="-1"></a>在论文基准中，score-filtered alignment-based 方法可达到 &gt;80% PPV；RaFAH 的 FDR &lt;5% 且 recall 最高，但明显偏向有近缘参考噬菌体的 query。相反，WIsH 等 k-mer/composition 方法 <span class="co">[</span><span class="ot">@galiez2017wish</span><span class="co">]</span> 对 novel viruses 覆盖更广，却更容易把共享生态位、短 contig 或错误宿主域当成宿主适应信号。两种方法一致是加分，方法共享同一参考库或同一 composition 特征时却不能当作完全独立的“两票”。</span>
+<span id="cb6-232"><a href="#cb6-232" aria-hidden="true" tabindex="-1"></a>所以 score ≥90 对应约 ≤10% FDR，score ≥95 对应约 ≤5% FDR；论文也明确提醒，这个 FDR 依赖测试集组成，只能视作近似校准，不是某一条边“90% 真实”的实验概率。</span>
 <span id="cb6-233"><a href="#cb6-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-234"><a href="#cb6-234" aria-hidden="true" tabindex="-1"></a><span class="fu">### Co-abundance 是候选生成器，不是感染证明</span></span>
+<span id="cb6-234"><a href="#cb6-234" aria-hidden="true" tabindex="-1"></a><span class="al">![Relationship between the minimum iPHoP confidence score and its nominal empirical FDR contract.](../figures/56-confidence-contract.png)</span>{#fig-56-confidence}</span>
 <span id="cb6-235"><a href="#cb6-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-236"><a href="#cb6-236" aria-hidden="true" tabindex="-1"></a>病毒与细菌在多个样本或时间点同升同降，可能来自真实感染，也可能来自共同饮食、抗生素暴露、批次、环境梯度、组成型数据闭合效应或同一受试者的重复测量。相关网络尤其容易产生间接边与符号反转 <span class="co">[</span><span class="ot">@coenen2018limitations</span><span class="co">]</span>。主结果至少要有足够独立样本、协变量控制、重复测量结构、multiple-testing FDR，以及 leave-one-subject/cohort 或 lagged sensitivity analysis。</span>
+<span id="cb6-236"><a href="#cb6-236" aria-hidden="true" tabindex="-1"></a><span class="fu">### Reference-phage 与 composition 的失败方式不同</span></span>
 <span id="cb6-237"><a href="#cb6-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-238"><a href="#cb6-238" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence hierarchy for virus-host assignment. The rank denotes directness and does not replace method-specific calibration.](../figures/56-evidence-ladder.png)</span>{#fig-56-ladder}</span>
+<span id="cb6-238"><a href="#cb6-238" aria-hidden="true" tabindex="-1"></a>在论文基准中，score-filtered alignment-based 方法可达到 &gt;80% PPV；RaFAH 的 FDR &lt;5% 且 recall 最高，但明显偏向有近缘参考噬菌体的 query。相反，WIsH 等 k-mer/composition 方法 <span class="co">[</span><span class="ot">@galiez2017wish</span><span class="co">]</span> 对 novel viruses 覆盖更广，却更容易把共享生态位、短 contig 或错误宿主域当成宿主适应信号。两种方法一致是加分，方法共享同一参考库或同一 composition 特征时却不能当作完全独立的“两票”。</span>
 <span id="cb6-239"><a href="#cb6-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-240"><a href="#cb6-240" aria-hidden="true" tabindex="-1"></a>最终账本一条边一行，至少包含：</span>
+<span id="cb6-240"><a href="#cb6-240" aria-hidden="true" tabindex="-1"></a><span class="fu">### Co-abundance 是候选生成器，不是感染证明</span></span>
 <span id="cb6-241"><a href="#cb6-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-242"><a href="#cb6-242" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Column <span class="pp">|</span> Meaning <span class="pp">|</span></span>
-<span id="cb6-243"><a href="#cb6-243" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
-<span id="cb6-244"><a href="#cb6-244" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`virus_id`</span>, <span class="in">`votu_id`</span> <span class="pp">|</span> stable query and nonredundant viral unit <span class="pp">|</span></span>
-<span id="cb6-245"><a href="#cb6-245" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`host_genome_id`</span>, <span class="in">`host_lineage`</span> <span class="pp">|</span> exact host candidate and versioned taxonomy <span class="pp">|</span></span>
-<span id="cb6-246"><a href="#cb6-246" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`prophage_both_flanks`</span>, <span class="in">`junction_reads`</span> <span class="pp">|</span> integrated-prophage evidence <span class="pp">|</span></span>
-<span id="cb6-247"><a href="#cb6-247" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`crispr_spacer_id`</span>, <span class="in">`spacer_length`</span>, <span class="in">`mismatches`</span> <span class="pp">|</span> CRISPR evidence and threshold audit <span class="pp">|</span></span>
-<span id="cb6-248"><a href="#cb6-248" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`long_read_count`</span>, <span class="in">`hic_contacts_norm`</span> <span class="pp">|</span> physical linkage, kept outside iPHoP <span class="pp">|</span></span>
-<span id="cb6-249"><a href="#cb6-249" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iphop_score`</span>, <span class="in">`primary_method`</span>, <span class="in">`method_scores`</span> <span class="pp">|</span> calibrated computational prediction <span class="pp">|</span></span>
-<span id="cb6-250"><a href="#cb6-250" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`coabundance_rho`</span>, <span class="in">`coabundance_q`</span> <span class="pp">|</span> ecological association, never direct proof <span class="pp">|</span></span>
-<span id="cb6-251"><a href="#cb6-251" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`evidence_rank`</span>, <span class="in">`conflict_flag`</span>, <span class="in">`claim_ceiling`</span> <span class="pp">|</span> final reporting contract <span class="pp">|</span></span>
-<span id="cb6-252"><a href="#cb6-252" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`software_version`</span>, <span class="in">`database_release`</span> <span class="pp">|</span> provenance <span class="pp">|</span></span>
-<span id="cb6-253"><a href="#cb6-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-254"><a href="#cb6-254" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb6-255"><a href="#cb6-255" aria-hidden="true" tabindex="-1"></a>rank_order <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb6-256"><a href="#cb6-256" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Integrated prophage + host flanks"</span> <span class="ot">=</span> <span class="dv">1</span>L,</span>
-<span id="cb6-257"><a href="#cb6-257" aria-hidden="true" tabindex="-1"></a>  <span class="st">"CRISPR spacer match"</span> <span class="ot">=</span> <span class="dv">2</span>L,</span>
-<span id="cb6-258"><a href="#cb6-258" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Long-read / Hi-C linkage"</span> <span class="ot">=</span> <span class="dv">3</span>L,</span>
-<span id="cb6-259"><a href="#cb6-259" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Reference-phage protein content"</span> <span class="ot">=</span> <span class="dv">4</span>L,</span>
-<span id="cb6-260"><a href="#cb6-260" aria-hidden="true" tabindex="-1"></a>  <span class="st">"k-mer / composition"</span> <span class="ot">=</span> <span class="dv">5</span>L,</span>
-<span id="cb6-261"><a href="#cb6-261" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Co-abundance"</span> <span class="ot">=</span> <span class="dv">6</span>L</span>
-<span id="cb6-262"><a href="#cb6-262" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-263"><a href="#cb6-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-264"><a href="#cb6-264" aria-hidden="true" tabindex="-1"></a><span class="co"># evidence_long 应来自真实工具输出，每行是一条 virus-host-evidence 记录</span></span>
-<span id="cb6-265"><a href="#cb6-265" aria-hidden="true" tabindex="-1"></a>edge_audit <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
-<span id="cb6-266"><a href="#cb6-266" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/evidence-long.tsv"</span>,</span>
-<span id="cb6-267"><a href="#cb6-267" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb6-268"><a href="#cb6-268" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb6-269"><a href="#cb6-269" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">evidence_rank =</span> <span class="fu">unname</span>(rank_order[evidence_type])) <span class="sc">%&gt;%</span></span>
-<span id="cb6-270"><a href="#cb6-270" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(virus_id, host_genome_id) <span class="sc">%&gt;%</span></span>
-<span id="cb6-271"><a href="#cb6-271" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
-<span id="cb6-272"><a href="#cb6-272" aria-hidden="true" tabindex="-1"></a>    <span class="at">best_evidence_rank =</span> <span class="fu">min</span>(evidence_rank, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb6-273"><a href="#cb6-273" aria-hidden="true" tabindex="-1"></a>    <span class="at">evidence_types =</span> <span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">unique</span>(evidence_type)), <span class="at">collapse =</span> <span class="st">";"</span>),</span>
-<span id="cb6-274"><a href="#cb6-274" aria-hidden="true" tabindex="-1"></a>    <span class="at">independent_channels =</span> <span class="fu">n_distinct</span>(evidence_channel),</span>
-<span id="cb6-275"><a href="#cb6-275" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb6-276"><a href="#cb6-276" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb6-277"><a href="#cb6-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-278"><a href="#cb6-278" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyNA</span>(edge_audit<span class="sc">$</span>best_evidence_rank))</span>
-<span id="cb6-279"><a href="#cb6-279" aria-hidden="true" tabindex="-1"></a><span class="fu">write_tsv</span>(edge_audit, <span class="st">"results/56-virus-host-evidence/edge-audit.tsv"</span>)</span>
-<span id="cb6-280"><a href="#cb6-280" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb6-281"><a href="#cb6-281" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-282"><a href="#cb6-282" aria-hidden="true" tabindex="-1"></a><span class="in">`independent_channels`</span> 统计实验或信号家族，不统计软件数量。同一组 k-mer 特征被三个分类器重复使用仍是一类 composition evidence。</span>
+<span id="cb6-242"><a href="#cb6-242" aria-hidden="true" tabindex="-1"></a>病毒与细菌在多个样本或时间点同升同降，可能来自真实感染，也可能来自共同饮食、抗生素暴露、批次、环境梯度、组成型数据闭合效应或同一受试者的重复测量。相关网络尤其容易产生间接边与符号反转 <span class="co">[</span><span class="ot">@coenen2018limitations</span><span class="co">]</span>。主结果至少要有足够独立样本、协变量控制、重复测量结构、multiple-testing FDR，以及 leave-one-subject/cohort 或 lagged sensitivity analysis。</span>
+<span id="cb6-243"><a href="#cb6-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-244"><a href="#cb6-244" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence hierarchy for virus-host assignment. The rank denotes directness and does not replace method-specific calibration.](../figures/56-evidence-ladder.png)</span>{#fig-56-ladder}</span>
+<span id="cb6-245"><a href="#cb6-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-246"><a href="#cb6-246" aria-hidden="true" tabindex="-1"></a>最终账本一条边一行，至少包含：</span>
+<span id="cb6-247"><a href="#cb6-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-248"><a href="#cb6-248" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Column <span class="pp">|</span> Meaning <span class="pp">|</span></span>
+<span id="cb6-249"><a href="#cb6-249" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|</span></span>
+<span id="cb6-250"><a href="#cb6-250" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`virus_id`</span>, <span class="in">`votu_id`</span> <span class="pp">|</span> stable query and nonredundant viral unit <span class="pp">|</span></span>
+<span id="cb6-251"><a href="#cb6-251" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`host_genome_id`</span>, <span class="in">`host_lineage`</span> <span class="pp">|</span> exact host candidate and versioned taxonomy <span class="pp">|</span></span>
+<span id="cb6-252"><a href="#cb6-252" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`prophage_both_flanks`</span>, <span class="in">`junction_reads`</span> <span class="pp">|</span> integrated-prophage evidence <span class="pp">|</span></span>
+<span id="cb6-253"><a href="#cb6-253" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`crispr_spacer_id`</span>, <span class="in">`spacer_length`</span>, <span class="in">`mismatches`</span> <span class="pp">|</span> CRISPR evidence and threshold audit <span class="pp">|</span></span>
+<span id="cb6-254"><a href="#cb6-254" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`long_read_count`</span>, <span class="in">`hic_contacts_norm`</span> <span class="pp">|</span> physical linkage, kept outside iPHoP <span class="pp">|</span></span>
+<span id="cb6-255"><a href="#cb6-255" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`iphop_score`</span>, <span class="in">`primary_method`</span>, <span class="in">`method_scores`</span> <span class="pp">|</span> calibrated computational prediction <span class="pp">|</span></span>
+<span id="cb6-256"><a href="#cb6-256" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`coabundance_rho`</span>, <span class="in">`coabundance_q`</span> <span class="pp">|</span> ecological association, never direct proof <span class="pp">|</span></span>
+<span id="cb6-257"><a href="#cb6-257" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`evidence_rank`</span>, <span class="in">`conflict_flag`</span>, <span class="in">`claim_ceiling`</span> <span class="pp">|</span> final reporting contract <span class="pp">|</span></span>
+<span id="cb6-258"><a href="#cb6-258" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`software_version`</span>, <span class="in">`database_release`</span> <span class="pp">|</span> provenance <span class="pp">|</span></span>
+<span id="cb6-259"><a href="#cb6-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-260"><a href="#cb6-260" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb6-261"><a href="#cb6-261" aria-hidden="true" tabindex="-1"></a>rank_order <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb6-262"><a href="#cb6-262" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Integrated prophage + host flanks"</span> <span class="ot">=</span> <span class="dv">1</span>L,</span>
+<span id="cb6-263"><a href="#cb6-263" aria-hidden="true" tabindex="-1"></a>  <span class="st">"CRISPR spacer match"</span> <span class="ot">=</span> <span class="dv">2</span>L,</span>
+<span id="cb6-264"><a href="#cb6-264" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Long-read / Hi-C linkage"</span> <span class="ot">=</span> <span class="dv">3</span>L,</span>
+<span id="cb6-265"><a href="#cb6-265" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Reference-phage protein content"</span> <span class="ot">=</span> <span class="dv">4</span>L,</span>
+<span id="cb6-266"><a href="#cb6-266" aria-hidden="true" tabindex="-1"></a>  <span class="st">"k-mer / composition"</span> <span class="ot">=</span> <span class="dv">5</span>L,</span>
+<span id="cb6-267"><a href="#cb6-267" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Co-abundance"</span> <span class="ot">=</span> <span class="dv">6</span>L</span>
+<span id="cb6-268"><a href="#cb6-268" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-269"><a href="#cb6-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-270"><a href="#cb6-270" aria-hidden="true" tabindex="-1"></a><span class="co"># evidence_long 应来自真实工具输出，每行是一条 virus-host-evidence 记录</span></span>
+<span id="cb6-271"><a href="#cb6-271" aria-hidden="true" tabindex="-1"></a>edge_audit <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
+<span id="cb6-272"><a href="#cb6-272" aria-hidden="true" tabindex="-1"></a>  <span class="st">"results/56-virus-host-evidence/evidence-long.tsv"</span>,</span>
+<span id="cb6-273"><a href="#cb6-273" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb6-274"><a href="#cb6-274" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb6-275"><a href="#cb6-275" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">evidence_rank =</span> <span class="fu">unname</span>(rank_order[evidence_type])) <span class="sc">%&gt;%</span></span>
+<span id="cb6-276"><a href="#cb6-276" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(virus_id, host_genome_id) <span class="sc">%&gt;%</span></span>
+<span id="cb6-277"><a href="#cb6-277" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb6-278"><a href="#cb6-278" aria-hidden="true" tabindex="-1"></a>    <span class="at">best_evidence_rank =</span> <span class="fu">min</span>(evidence_rank, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-279"><a href="#cb6-279" aria-hidden="true" tabindex="-1"></a>    <span class="at">evidence_types =</span> <span class="fu">paste</span>(<span class="fu">sort</span>(<span class="fu">unique</span>(evidence_type)), <span class="at">collapse =</span> <span class="st">";"</span>),</span>
+<span id="cb6-280"><a href="#cb6-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">independent_channels =</span> <span class="fu">n_distinct</span>(evidence_channel),</span>
+<span id="cb6-281"><a href="#cb6-281" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb6-282"><a href="#cb6-282" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb6-283"><a href="#cb6-283" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-284"><a href="#cb6-284" aria-hidden="true" tabindex="-1"></a><span class="fu">### Host database 缺属时，属名会显得过度精确</span></span>
-<span id="cb6-285"><a href="#cb6-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-286"><a href="#cb6-286" aria-hidden="true" tabindex="-1"></a>论文移除真实宿主属后，score 90/95 下多数 query 不再给预测；仍给出的候选常落在真实宿主同 family。作者因此建议：novel host genera 较多时用 score ≥90，并按 **family rank** 解释。对环境样本，local MAGs 能增加候选宿主覆盖，但 MAG contamination、CRISPR array 缺失与分类错误也会进入数据库。加入 local MAGs 前必须完成 CheckM2/GUNC/GTDB-Tk 质量与 taxonomy 审计，并把 custom database 当成新 release。</span>
+<span id="cb6-284"><a href="#cb6-284" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="sc">!</span><span class="fu">anyNA</span>(edge_audit<span class="sc">$</span>best_evidence_rank))</span>
+<span id="cb6-285"><a href="#cb6-285" aria-hidden="true" tabindex="-1"></a><span class="fu">write_tsv</span>(edge_audit, <span class="st">"results/56-virus-host-evidence/edge-audit.tsv"</span>)</span>
+<span id="cb6-286"><a href="#cb6-286" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb6-287"><a href="#cb6-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-288"><a href="#cb6-288" aria-hidden="true" tabindex="-1"></a><span class="fu">### Partial genomes 主要损失 recall，不允许因此降低主阈值</span></span>
+<span id="cb6-288"><a href="#cb6-288" aria-hidden="true" tabindex="-1"></a><span class="in">`independent_channels`</span> 统计实验或信号家族，不统计软件数量。同一组 k-mer 特征被三个分类器重复使用仍是一类 composition evidence。</span>
 <span id="cb6-289"><a href="#cb6-289" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-290"><a href="#cb6-290" aria-hidden="true" tabindex="-1"></a>iPHoP 对 20 kb、10 kb、5 kb、1 kb 以及多种 completeness 的片段做过重复抽样。片段越短，high-score prediction 越少；score 90/95 的 FDR 与完整 genome 大致相近，而 score 75 的错误略升。正确升级方式是承认“不出结果”，而不是为短 contig 把阈值降到 75 再当主结论。长度、CheckV completeness 与末端状态应进入每条边的 supplement。</span>
+<span id="cb6-290"><a href="#cb6-290" aria-hidden="true" tabindex="-1"></a><span class="fu">### Host database 缺属时，属名会显得过度精确</span></span>
 <span id="cb6-291"><a href="#cb6-291" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-292"><a href="#cb6-292" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重画证据等级、校准与负对照</span></span>
+<span id="cb6-292"><a href="#cb6-292" aria-hidden="true" tabindex="-1"></a>论文移除真实宿主属后，score 90/95 下多数 query 不再给预测；仍给出的候选常落在真实宿主同 family。作者因此建议：novel host genera 较多时用 score ≥90，并按 **family rank** 解释。对环境样本，local MAGs 能增加候选宿主覆盖，但 MAG contamination、CRISPR array 缺失与分类错误也会进入数据库。加入 local MAGs 前必须完成 CheckM2/GUNC/GTDB-Tk 质量与 taxonomy 审计，并把 custom database 当成新 release。</span>
 <span id="cb6-293"><a href="#cb6-293" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-294"><a href="#cb6-294" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb6-295"><a href="#cb6-295" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article56_host_evidence.R <span class="dt">\</span></span>
-<span id="cb6-296"><a href="#cb6-296" aria-hidden="true" tabindex="-1"></a>  data/small/56-virus-host-evidence-frozen <span class="dt">\</span></span>
-<span id="cb6-297"><a href="#cb6-297" aria-hidden="true" tabindex="-1"></a>  figures</span>
-<span id="cb6-298"><a href="#cb6-298" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb6-294"><a href="#cb6-294" aria-hidden="true" tabindex="-1"></a><span class="fu">### Partial genomes 主要损失 recall，不允许因此降低主阈值</span></span>
+<span id="cb6-295"><a href="#cb6-295" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-296"><a href="#cb6-296" aria-hidden="true" tabindex="-1"></a>iPHoP 对 20 kb、10 kb、5 kb、1 kb 以及多种 completeness 的片段做过重复抽样。片段越短，high-score prediction 越少；score 90/95 的 FDR 与完整 genome 大致相近，而 score 75 的错误略升。正确升级方式是承认“不出结果”，而不是为短 contig 把阈值降到 75 再当主结论。长度、CheckV completeness 与末端状态应进入每条边的 supplement。</span>
+<span id="cb6-297"><a href="#cb6-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-298"><a href="#cb6-298" aria-hidden="true" tabindex="-1"></a><span class="fu">## 重画证据等级、校准与负对照</span></span>
 <span id="cb6-299"><a href="#cb6-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-300"><a href="#cb6-300" aria-hidden="true" tabindex="-1"></a>图形脚本固定 <span class="in">`set.seed(20260756)`</span>、因子顺序、色盲友好配色和 350 dpi。所有图中文字为英文。</span>
-<span id="cb6-301"><a href="#cb6-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-302"><a href="#cb6-302" aria-hidden="true" tabindex="-1"></a><span class="fu">### 域错配负对照必须进入常规 QA</span></span>
-<span id="cb6-303"><a href="#cb6-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-304"><a href="#cb6-304" aria-hidden="true" tabindex="-1"></a>8,128 条 RefSeq r214 真核病毒中，1,018 条得到错误的细菌/古菌宿主，错误率为 12.5%；其中 85% 来自 k-mer comparison，90% 的 score &lt;90。640 条错误属于 Riboviria，155 条属于 Monodnaviria。这四个百分比的 denominator 不完全相同、类别也可重叠，不能加成 100%。</span>
+<span id="cb6-300"><a href="#cb6-300" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb6-301"><a href="#cb6-301" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article56_host_evidence.R <span class="dt">\</span></span>
+<span id="cb6-302"><a href="#cb6-302" aria-hidden="true" tabindex="-1"></a>  data/small/56-virus-host-evidence-frozen <span class="dt">\</span></span>
+<span id="cb6-303"><a href="#cb6-303" aria-hidden="true" tabindex="-1"></a>  figures</span>
+<span id="cb6-304"><a href="#cb6-304" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb6-305"><a href="#cb6-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-306"><a href="#cb6-306" aria-hidden="true" tabindex="-1"></a><span class="al">![False prokaryotic-host assignments among 8,128 eukaryotic-virus controls and diagnostics among the 1,018 errors.](../figures/56-negative-control.png)</span>{#fig-56-negative}</span>
+<span id="cb6-306"><a href="#cb6-306" aria-hidden="true" tabindex="-1"></a>图形脚本固定 <span class="in">`set.seed(20260756)`</span>、因子顺序、色盲友好配色和 350 dpi。所有图中文字为英文。</span>
 <span id="cb6-307"><a href="#cb6-307" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-308"><a href="#cb6-308" aria-hidden="true" tabindex="-1"></a>正式流程应先用病毒 taxonomy/host-domain classifier 排除明确 eukaryotic viruses，再跑 iPHoP；同时混入已知 eukaryotic-virus negatives、随机打乱 query labels 或跨样本空白作为错误监控。域筛选不是为了让网络更“干净”，而是因为 iPHoP 的目标域本来就是 bacteriophages 与 archaeoviruses。</span>
+<span id="cb6-308"><a href="#cb6-308" aria-hidden="true" tabindex="-1"></a><span class="fu">### 域错配负对照必须进入常规 QA</span></span>
 <span id="cb6-309"><a href="#cb6-309" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-310"><a href="#cb6-310" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不让网络图越过证据天花板</span></span>
+<span id="cb6-310"><a href="#cb6-310" aria-hidden="true" tabindex="-1"></a>8,128 条 RefSeq r214 真核病毒中，1,018 条得到错误的细菌/古菌宿主，错误率为 12.5%；其中 85% 来自 k-mer comparison，90% 的 score &lt;90。640 条错误属于 Riboviria，155 条属于 Monodnaviria。这四个百分比的 denominator 不完全相同、类别也可重叠，不能加成 100%。</span>
 <span id="cb6-311"><a href="#cb6-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-312"><a href="#cb6-312" aria-hidden="true" tabindex="-1"></a><span class="al">![Reporting matrix linking each evidence type to the maximum defensible host resolution and biological claim.](../figures/56-claim-ceiling.png)</span>{#fig-56-ceiling}</span>
+<span id="cb6-312"><a href="#cb6-312" aria-hidden="true" tabindex="-1"></a><span class="al">![False prokaryotic-host assignments among 8,128 eukaryotic-virus controls and diagnostics among the 1,018 errors.](../figures/56-negative-control.png)</span>{#fig-56-negative}</span>
 <span id="cb6-313"><a href="#cb6-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-314"><a href="#cb6-314" aria-hidden="true" tabindex="-1"></a>即使整合型 prophage 或 Hi-C 物理连接很强，也不能单凭这一条边声称“当前正在裂解感染”或“病毒导致宿主表型”。active infection 需要转录、复制中间体、时间序列、VLP/细胞分级或培养证据；causality 需要干预与合适对照。</span>
+<span id="cb6-314"><a href="#cb6-314" aria-hidden="true" tabindex="-1"></a>正式流程应先用病毒 taxonomy/host-domain classifier 排除明确 eukaryotic viruses，再跑 iPHoP；同时混入已知 eukaryotic-virus negatives、随机打乱 query labels 或跨样本空白作为错误监控。域筛选不是为了让网络更“干净”，而是因为 iPHoP 的目标域本来就是 bacteriophages 与 archaeoviruses。</span>
 <span id="cb6-315"><a href="#cb6-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-316"><a href="#cb6-316" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="最小审计表"}</span>
-<span id="cb6-317"><a href="#cb6-317" aria-hidden="true" tabindex="-1"></a>至少交付 <span class="in">`virus_id`</span>、<span class="in">`host_id/lineage`</span>、<span class="in">`best_evidence_rank`</span>、每类原始证据列、iPHoP score、main method、all method scores、query length/completeness、domain screen、database release、conflict flag 与 claim ceiling。网络图只是这张表的视图。</span>
-<span id="cb6-318"><a href="#cb6-318" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb6-316"><a href="#cb6-316" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不让网络图越过证据天花板</span></span>
+<span id="cb6-317"><a href="#cb6-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-318"><a href="#cb6-318" aria-hidden="true" tabindex="-1"></a><span class="al">![Reporting matrix linking each evidence type to the maximum defensible host resolution and biological claim.](../figures/56-claim-ceiling.png)</span>{#fig-56-ceiling}</span>
 <span id="cb6-319"><a href="#cb6-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-320"><a href="#cb6-320" aria-hidden="true" tabindex="-1"></a><span class="fu">## 区分宿主预测与独立验证 {#sec-methods}</span></span>
+<span id="cb6-320"><a href="#cb6-320" aria-hidden="true" tabindex="-1"></a>即使整合型 prophage 或 Hi-C 物理连接很强，也不能单凭这一条边声称“当前正在裂解感染”或“病毒导致宿主表型”。active infection 需要转录、复制中间体、时间序列、VLP/细胞分级或培养证据；causality 需要干预与合适对照。</span>
 <span id="cb6-321"><a href="#cb6-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-322"><a href="#cb6-322" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb6-323"><a href="#cb6-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-324"><a href="#cb6-324" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Viral host links were evaluated using a preregistered evidence hierarchy. Integrated prophage assignments required viral sequence bounded by taxonomically consistent host sequence and support for both integration junctions; co-binning within a MAG alone was not considered sufficient. CRISPR links retained spacers of at least 25 nt and recorded spacer length, mismatch count, complexity, and the genome carrying the array. Physical links from long reads or Hi-C were stored as independent evidence channels and were not incorporated into computational confidence scores. Host-genus predictions were generated with iPHoP v1.4.2 using the </span><span class="in">`{DATABASE_RELEASE}`</span><span class="at"> database and </span><span class="in">`{N_THREADS}`</span><span class="at"> threads. All candidates were exported at a minimum score of 75; score ≥90 was preregistered for the primary analysis and score ≥95 for a stringent sensitivity analysis. The highest-scoring host genus was used in the primary network with deterministic lexical tie-breaking, while all alternative candidates and per-method scores were retained. Viral host-domain classification was performed before prokaryotic host prediction. Host links based only on composition or co-abundance were labelled predictive, and multiple testing in co-abundance analysis was controlled by the Benjamini--Hochberg procedure. Software, database manifests, commands, and input checksums were archived.</span></span>
+<span id="cb6-322"><a href="#cb6-322" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="最小审计表"}</span>
+<span id="cb6-323"><a href="#cb6-323" aria-hidden="true" tabindex="-1"></a>至少交付 <span class="in">`virus_id`</span>、<span class="in">`host_id/lineage`</span>、<span class="in">`best_evidence_rank`</span>、每类原始证据列、iPHoP score、main method、all method scores、query length/completeness、domain screen、database release、conflict flag 与 claim ceiling。网络图只是这张表的视图。</span>
+<span id="cb6-324"><a href="#cb6-324" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb6-325"><a href="#cb6-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-326"><a href="#cb6-326" aria-hidden="true" tabindex="-1"></a>忠实复现论文 benchmark 时，把软件与数据库改成 <span class="in">`iPHoP v1.0`</span> 和 <span class="in">`iPHoP_db_Sept21 (GTDB r202; IMG as of 2021-07-07; GEM catalog)`</span>，不要写 v1.4.2。</span>
+<span id="cb6-326"><a href="#cb6-326" aria-hidden="true" tabindex="-1"></a><span class="fu">## 区分宿主预测与独立验证 {#sec-methods}</span></span>
 <span id="cb6-327"><a href="#cb6-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-328"><a href="#cb6-328" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb6-328"><a href="#cb6-328" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb6-329"><a href="#cb6-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-330"><a href="#cb6-330" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of {N_VOTU} nonredundant vOTUs, {N_SCORE90} received at least one iPHoP host-genus prediction with a confidence score ≥90 and {N_SCORE95} remained at ≥95. The primary predictions were supported mainly by {MAIN_METHOD_SUMMARY}. Orthogonal evidence supported {N_ORTHOGONAL} links: {N_PROPHAGE} integrated-prophage junctions, {N_CRISPR} strict CRISPR matches, and {N_PHYSICAL} long-read or Hi-C links. {N_CONFLICT} links showed disagreement between evidence channels and were reported as ambiguous. Composition-only and co-abundance-only links were treated as candidate associations. After host-domain screening, {N_EUK_EXCLUDED} putative eukaryotic viruses were excluded from prokaryotic-host assignment. Predictions for host lineages poorly represented in the reference database were interpreted at family rather than genus rank.</span></span>
+<span id="cb6-330"><a href="#cb6-330" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Viral host links were evaluated using a preregistered evidence hierarchy. Integrated prophage assignments required viral sequence bounded by taxonomically consistent host sequence and support for both integration junctions; co-binning within a MAG alone was not considered sufficient. CRISPR links retained spacers of at least 25 nt and recorded spacer length, mismatch count, complexity, and the genome carrying the array. Physical links from long reads or Hi-C were stored as independent evidence channels and were not incorporated into computational confidence scores. Host-genus predictions were generated with iPHoP v1.4.2 using the </span><span class="in">`{DATABASE_RELEASE}`</span><span class="at"> database and </span><span class="in">`{N_THREADS}`</span><span class="at"> threads. All candidates were exported at a minimum score of 75; score ≥90 was preregistered for the primary analysis and score ≥95 for a stringent sensitivity analysis. The highest-scoring host genus was used in the primary network with deterministic lexical tie-breaking, while all alternative candidates and per-method scores were retained. Viral host-domain classification was performed before prokaryotic host prediction. Host links based only on composition or co-abundance were labelled predictive, and multiple testing in co-abundance analysis was controlled by the Benjamini--Hochberg procedure. Software, database manifests, commands, and input checksums were archived.</span></span>
 <span id="cb6-331"><a href="#cb6-331" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-332"><a href="#cb6-332" aria-hidden="true" tabindex="-1"></a>对当前固化的论文 benchmark，可写：</span>
+<span id="cb6-332"><a href="#cb6-332" aria-hidden="true" tabindex="-1"></a>忠实复现论文 benchmark 时，把软件与数据库改成 <span class="in">`iPHoP v1.0`</span> 和 <span class="in">`iPHoP_db_Sept21 (GTDB r202; IMG as of 2021-07-07; GEM catalog)`</span>，不要写 v1.4.2。</span>
 <span id="cb6-333"><a href="#cb6-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-334"><a href="#cb6-334" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; The held-out benchmark comprised 1,870 viruses spanning 170 host genera. iPHoP confidence scores were empirically calibrated, with the default score threshold of 90 corresponding to an estimated FDR below 10%. In a domain-mismatched negative control, 1,018 of 8,128 eukaryotic viruses received an erroneous bacterial or archaeal host prediction; 85% of these errors originated from k-mer comparisons and 90% had scores below 90.</span></span>
+<span id="cb6-334"><a href="#cb6-334" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
 <span id="cb6-335"><a href="#cb6-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-336"><a href="#cb6-336" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb6-336"><a href="#cb6-336" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of {N_VOTU} nonredundant vOTUs, {N_SCORE90} received at least one iPHoP host-genus prediction with a confidence score ≥90 and {N_SCORE95} remained at ≥95. The primary predictions were supported mainly by {MAIN_METHOD_SUMMARY}. Orthogonal evidence supported {N_ORTHOGONAL} links: {N_PROPHAGE} integrated-prophage junctions, {N_CRISPR} strict CRISPR matches, and {N_PHYSICAL} long-read or Hi-C links. {N_CONFLICT} links showed disagreement between evidence channels and were reported as ambiguous. Composition-only and co-abundance-only links were treated as candidate associations. After host-domain screening, {N_EUK_EXCLUDED} putative eukaryotic viruses were excluded from prokaryotic-host assignment. Predictions for host lineages poorly represented in the reference database were interpreted at family rather than genus rank.</span></span>
 <span id="cb6-337"><a href="#cb6-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-338"><a href="#cb6-338" aria-hidden="true" tabindex="-1"></a>开始前准备六类输入：</span>
+<span id="cb6-338"><a href="#cb6-338" aria-hidden="true" tabindex="-1"></a>对当前固化的论文 benchmark，可写：</span>
 <span id="cb6-339"><a href="#cb6-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-340"><a href="#cb6-340" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**非冗余病毒目录**：vOTU representative FASTA、95% ANI/85% AF clustering、CheckV quality/completeness、virus taxonomy 与 host-domain label；</span>
-<span id="cb6-341"><a href="#cb6-341" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**候选宿主目录**：高质量 bacterial/archaeal MAGs 或 isolates、GTDB taxonomy、CheckM2/GUNC 审计、稳定 genome IDs；</span>
-<span id="cb6-342"><a href="#cb6-342" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**整合证据**：prophage coordinates、两侧 host flanks、junction reads、assembly graph；</span>
-<span id="cb6-343"><a href="#cb6-343" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**CRISPR 证据**：array 所属 contig/genome、spacer sequence/length、mismatch、coverage、complexity；</span>
-<span id="cb6-344"><a href="#cb6-344" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**物理证据**：long-read alignments 或 Hi-C contacts、MAPQ、contact normalization、controls 与 replicate；</span>
-<span id="cb6-345"><a href="#cb6-345" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**生态证据**：同一批样本中的病毒与宿主 abundance、subject/time/batch/covariates；样本不足时不画共丰度网络。</span>
-<span id="cb6-346"><a href="#cb6-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-347"><a href="#cb6-347" aria-hidden="true" tabindex="-1"></a>推荐按以下顺序落表：</span>
-<span id="cb6-348"><a href="#cb6-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-349"><a href="#cb6-349" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先做病毒域分类，明确排除 eukaryotic-virus queries；</span>
-<span id="cb6-350"><a href="#cb6-350" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用明确 release 的完整 iPHoP database 跑所有 vOTU，导出 score ≥75 候选；</span>
-<span id="cb6-351"><a href="#cb6-351" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 90 主阈值与 95 敏感性阈值，保留 main method 和全部 method scores；</span>
-<span id="cb6-352"><a href="#cb6-352" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>加入 local MAGs 时生成新 database release，分别比较 default/custom database；</span>
-<span id="cb6-353"><a href="#cb6-353" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>独立计算 prophage、CRISPR、long-read/Hi-C 与 co-abundance 表；</span>
-<span id="cb6-354"><a href="#cb6-354" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>按最高证据等级选主边，同时保留 alternative hosts 和 conflict flag；</span>
-<span id="cb6-355"><a href="#cb6-355" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>先交付 evidence ledger，再从它生成主图网络和 supplement；</span>
-<span id="cb6-356"><a href="#cb6-356" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用已知真核病毒、空白、打乱标签和 leave-one-subject/cohort 做假阳性与稳健性审计。</span>
-<span id="cb6-357"><a href="#cb6-357" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-358"><a href="#cb6-358" aria-hidden="true" tabindex="-1"></a>如果只有短 contigs 和少量横断面样本，最诚实的结果常是“若干 score ≥90 的预测候选，属级解释受数据库覆盖限制”，而不是一张密集的感染网络。</span>
-<span id="cb6-359"><a href="#cb6-359" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-360"><a href="#cb6-360" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb6-361"><a href="#cb6-361" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-362"><a href="#cb6-362" aria-hidden="true" tabindex="-1"></a>一张可投稿的病毒—宿主图应把视觉编码留给证据，而不是只按 phylum 上色：</span>
+<span id="cb6-340"><a href="#cb6-340" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; The held-out benchmark comprised 1,870 viruses spanning 170 host genera. iPHoP confidence scores were empirically calibrated, with the default score threshold of 90 corresponding to an estimated FDR below 10%. In a domain-mismatched negative control, 1,018 of 8,128 eukaryotic viruses received an erroneous bacterial or archaeal host prediction; 85% of these errors originated from k-mer comparisons and 90% had scores below 90.</span></span>
+<span id="cb6-341"><a href="#cb6-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-342"><a href="#cb6-342" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb6-343"><a href="#cb6-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-344"><a href="#cb6-344" aria-hidden="true" tabindex="-1"></a>开始前准备六类输入：</span>
+<span id="cb6-345"><a href="#cb6-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-346"><a href="#cb6-346" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**非冗余病毒目录**：vOTU representative FASTA、95% ANI/85% AF clustering、CheckV quality/completeness、virus taxonomy 与 host-domain label；</span>
+<span id="cb6-347"><a href="#cb6-347" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**候选宿主目录**：高质量 bacterial/archaeal MAGs 或 isolates、GTDB taxonomy、CheckM2/GUNC 审计、稳定 genome IDs；</span>
+<span id="cb6-348"><a href="#cb6-348" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**整合证据**：prophage coordinates、两侧 host flanks、junction reads、assembly graph；</span>
+<span id="cb6-349"><a href="#cb6-349" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**CRISPR 证据**：array 所属 contig/genome、spacer sequence/length、mismatch、coverage、complexity；</span>
+<span id="cb6-350"><a href="#cb6-350" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**物理证据**：long-read alignments 或 Hi-C contacts、MAPQ、contact normalization、controls 与 replicate；</span>
+<span id="cb6-351"><a href="#cb6-351" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**生态证据**：同一批样本中的病毒与宿主 abundance、subject/time/batch/covariates；样本不足时不画共丰度网络。</span>
+<span id="cb6-352"><a href="#cb6-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-353"><a href="#cb6-353" aria-hidden="true" tabindex="-1"></a>推荐按以下顺序落表：</span>
+<span id="cb6-354"><a href="#cb6-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-355"><a href="#cb6-355" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先做病毒域分类，明确排除 eukaryotic-virus queries；</span>
+<span id="cb6-356"><a href="#cb6-356" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用明确 release 的完整 iPHoP database 跑所有 vOTU，导出 score ≥75 候选；</span>
+<span id="cb6-357"><a href="#cb6-357" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 90 主阈值与 95 敏感性阈值，保留 main method 和全部 method scores；</span>
+<span id="cb6-358"><a href="#cb6-358" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>加入 local MAGs 时生成新 database release，分别比较 default/custom database；</span>
+<span id="cb6-359"><a href="#cb6-359" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>独立计算 prophage、CRISPR、long-read/Hi-C 与 co-abundance 表；</span>
+<span id="cb6-360"><a href="#cb6-360" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>按最高证据等级选主边，同时保留 alternative hosts 和 conflict flag；</span>
+<span id="cb6-361"><a href="#cb6-361" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>先交付 evidence ledger，再从它生成主图网络和 supplement；</span>
+<span id="cb6-362"><a href="#cb6-362" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用已知真核病毒、空白、打乱标签和 leave-one-subject/cohort 做假阳性与稳健性审计。</span>
 <span id="cb6-363"><a href="#cb6-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-364"><a href="#cb6-364" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge color** 表示最强 evidence class；</span>
-<span id="cb6-365"><a href="#cb6-365" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge width** 表示标准化 physical support 或预注册 confidence，但不要混用两种量纲；</span>
-<span id="cb6-366"><a href="#cb6-366" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge linetype** 区分 direct/physical 与 predictive；</span>
-<span id="cb6-367"><a href="#cb6-367" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**node shape** 区分 virus、bacterium、archaeon；</span>
-<span id="cb6-368"><a href="#cb6-368" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**node fill** 才用于 taxonomy 或 condition；</span>
-<span id="cb6-369"><a href="#cb6-369" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>score 75--89.9 的 exploratory edges 放 supplement 或淡灰，不与 ≥90 主边同权；</span>
-<span id="cb6-370"><a href="#cb6-370" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>冲突边保留标记，网络旁同时给 evidence-count barplot；</span>
-<span id="cb6-371"><a href="#cb6-371" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>图注写明数据库 release、score gate、候选选择规则与 edge denominator。</span>
-<span id="cb6-372"><a href="#cb6-372" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-373"><a href="#cb6-373" aria-hidden="true" tabindex="-1"></a>PDF 保留矢量文本，PNG 供网页，LZW TIFF 供期刊；默认 350 dpi。等级图与 claim matrix 使用蓝/橙及低饱和绿/黄/红，避免仅靠红绿区分。</span>
-<span id="cb6-374"><a href="#cb6-374" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-375"><a href="#cb6-375" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb6-376"><a href="#cb6-376" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-377"><a href="#cb6-377" aria-hidden="true" tabindex="-1"></a>病毒—宿主不是一列 host 标签；每条边都要记录证据来源、阈值、数据库版本、候选层级、冲突与可主张结论。</span>
+<span id="cb6-364"><a href="#cb6-364" aria-hidden="true" tabindex="-1"></a>如果只有短 contigs 和少量横断面样本，最诚实的结果常是“若干 score ≥90 的预测候选，属级解释受数据库覆盖限制”，而不是一张密集的感染网络。</span>
+<span id="cb6-365"><a href="#cb6-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-366"><a href="#cb6-366" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb6-367"><a href="#cb6-367" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-368"><a href="#cb6-368" aria-hidden="true" tabindex="-1"></a>一张可投稿的病毒—宿主图应把视觉编码留给证据，而不是只按 phylum 上色：</span>
+<span id="cb6-369"><a href="#cb6-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-370"><a href="#cb6-370" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge color** 表示最强 evidence class；</span>
+<span id="cb6-371"><a href="#cb6-371" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge width** 表示标准化 physical support 或预注册 confidence，但不要混用两种量纲；</span>
+<span id="cb6-372"><a href="#cb6-372" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**edge linetype** 区分 direct/physical 与 predictive；</span>
+<span id="cb6-373"><a href="#cb6-373" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**node shape** 区分 virus、bacterium、archaeon；</span>
+<span id="cb6-374"><a href="#cb6-374" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**node fill** 才用于 taxonomy 或 condition；</span>
+<span id="cb6-375"><a href="#cb6-375" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>score 75--89.9 的 exploratory edges 放 supplement 或淡灰，不与 ≥90 主边同权；</span>
+<span id="cb6-376"><a href="#cb6-376" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>冲突边保留标记，网络旁同时给 evidence-count barplot；</span>
+<span id="cb6-377"><a href="#cb6-377" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>图注写明数据库 release、score gate、候选选择规则与 edge denominator。</span>
 <span id="cb6-378"><a href="#cb6-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-379"><a href="#cb6-379" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb6-379"><a href="#cb6-379" aria-hidden="true" tabindex="-1"></a>PDF 保留矢量文本，PNG 供网页，LZW TIFF 供期刊；默认 350 dpi。等级图与 claim matrix 使用蓝/橙及低饱和绿/黄/红，避免仅靠红绿区分。</span>
 <span id="cb6-380"><a href="#cb6-380" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-381"><a href="#cb6-381" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>iPHoP integrated host prediction、benchmark、score calibration 与负对照：<span class="co">[</span><span class="ot">@roux2023iphop</span><span class="co">]</span></span>
-<span id="cb6-382"><a href="#cb6-382" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>病毒—宿主计算预测方法综述：<span class="co">[</span><span class="ot">@edwards2016phagehost</span><span class="co">]</span></span>
-<span id="cb6-383"><a href="#cb6-383" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG 的 host-prediction 证据分类与报告边界：<span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span></span>
-<span id="cb6-384"><a href="#cb6-384" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CRISPR spacer 搜索：<span class="co">[</span><span class="ot">@zhang2021spacepharer</span><span class="co">]</span></span>
-<span id="cb6-385"><a href="#cb6-385" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>WIsH composition-based prediction：<span class="co">[</span><span class="ot">@galiez2017wish</span><span class="co">]</span></span>
-<span id="cb6-386"><a href="#cb6-386" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RaFAH protein-content host prediction：<span class="co">[</span><span class="ot">@coutinho2021rafah</span><span class="co">]</span></span>
-<span id="cb6-387"><a href="#cb6-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Meta3C/Hi-C 与 long-read/proximity linkage：<span class="co">[</span><span class="ot">@marbouty2017proximity; @bickhart2019assignment</span><span class="co">]</span></span>
-<span id="cb6-388"><a href="#cb6-388" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>correlation-based virus--microbe inference 的局限：<span class="co">[</span><span class="ot">@coenen2018limitations</span><span class="co">]</span></span>
-<span id="cb6-389"><a href="#cb6-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>当前锁定软件坐标：<span class="co">[</span><span class="ot">@iphop2026software</span><span class="co">]</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb6-381"><a href="#cb6-381" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb6-382"><a href="#cb6-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-383"><a href="#cb6-383" aria-hidden="true" tabindex="-1"></a>病毒—宿主不是一列 host 标签；每条边都要记录证据来源、阈值、数据库版本、候选层级、冲突与可主张结论。</span>
+<span id="cb6-384"><a href="#cb6-384" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-385"><a href="#cb6-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb6-386"><a href="#cb6-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-387"><a href="#cb6-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>iPHoP integrated host prediction、benchmark、score calibration 与负对照：<span class="co">[</span><span class="ot">@roux2023iphop</span><span class="co">]</span></span>
+<span id="cb6-388"><a href="#cb6-388" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>病毒—宿主计算预测方法综述：<span class="co">[</span><span class="ot">@edwards2016phagehost</span><span class="co">]</span></span>
+<span id="cb6-389"><a href="#cb6-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIUViG 的 host-prediction 证据分类与报告边界：<span class="co">[</span><span class="ot">@roux2019miuvig</span><span class="co">]</span></span>
+<span id="cb6-390"><a href="#cb6-390" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CRISPR spacer 搜索：<span class="co">[</span><span class="ot">@zhang2021spacepharer</span><span class="co">]</span></span>
+<span id="cb6-391"><a href="#cb6-391" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>WIsH composition-based prediction：<span class="co">[</span><span class="ot">@galiez2017wish</span><span class="co">]</span></span>
+<span id="cb6-392"><a href="#cb6-392" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RaFAH protein-content host prediction：<span class="co">[</span><span class="ot">@coutinho2021rafah</span><span class="co">]</span></span>
+<span id="cb6-393"><a href="#cb6-393" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Meta3C/Hi-C 与 long-read/proximity linkage：<span class="co">[</span><span class="ot">@marbouty2017proximity; @bickhart2019assignment</span><span class="co">]</span></span>
+<span id="cb6-394"><a href="#cb6-394" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>correlation-based virus--microbe inference 的局限：<span class="co">[</span><span class="ot">@coenen2018limitations</span><span class="co">]</span></span>
+<span id="cb6-395"><a href="#cb6-395" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>当前锁定软件坐标：<span class="co">[</span><span class="ot">@iphop2026software</span><span class="co">]</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 

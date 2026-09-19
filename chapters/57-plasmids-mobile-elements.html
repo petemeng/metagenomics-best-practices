@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">同一段序列上的基因，能证明已经发生转移吗？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">同一段序列上的基因，能证明已经发生转移吗？</a>
+  <ul class="collapse">
+  <li><a href="#候选移动元件与实际转移事件之间还有哪些缺口" id="toc-候选移动元件与实际转移事件之间还有哪些缺口" class="nav-link" data-scroll-target="#候选移动元件与实际转移事件之间还有哪些缺口">候选移动元件与实际转移事件之间还有哪些缺口？</a></li>
+  </ul></li>
   <li><a href="#sec-code" id="toc-sec-code" class="nav-link" data-scroll-target="#sec-code">下载参考并验证上游身份</a>
   <ul class="collapse">
   <li><a href="#sec-theory" id="toc-sec-theory" class="nav-link" data-scroll-target="#sec-theory">“MGE”不是“质粒”的同义词</a></li>
@@ -1005,13 +1037,13 @@ div.csl-indent {
 <p>只读取固化表并重画 5 组图，<strong>4 CPU、4 GB RAM、200 MB 磁盘、耗时约 1 分钟</strong>。本次 geNomad 实跑使用 <strong>16 CPU、16 splits</strong>：10.22 Mb 的匹配参考集耗时 186.63 s、峰值 2.75 GiB RAM；84.81 Mb 共组装耗时 1,092.21 s、峰值 2.83 GiB；USA300 对照耗时 182.64 s、峰值 2.71 GiB。geNomad database v1.9 解压后约 <strong>1.47 GB</strong>。正式队列建议预留 <strong>16–32 CPU、32–64 GB RAM、至少 30 GB 临时磁盘，单个中等共组装约几十分钟至数小时</strong>；样本数、contig 数和共享存储速度都会改变耗时。没有服务器时，直接读取 <code>data/small/57-plasmids-mobile-elements-frozen/</code> 完成审计和作图；全量发现任务放到 HPC 或云端。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="候选移动元件与实际转移事件之间还有哪些缺口">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>候选移动元件与实际转移事件之间还有哪些缺口
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1037,6 +1069,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="候选移动元件与实际转移事件之间还有哪些缺口" class="level3">
+<h3 class="anchored" data-anchor-id="候选移动元件与实际转移事件之间还有哪些缺口">候选移动元件与实际转移事件之间还有哪些缺口？</h3>
+<p>在 218 个候选条目中观察到 42 个带有转移相关标记，只能说明相应序列具有某类注释证据。候选分类、标记注释、基因共定位和实际转移事件是不同层次的判断；前一层成立，不会自动补齐后一层。</p>
+<p>本例主要结果没有支持耐药基因与这些标记的共定位，因此不能把总体计数改写成“发现了耐药传播载体”。组装不完整、来源不明及数据库覆盖不足也应保留为不确定性。结果表应区分已观察到、未观察到和当前数据无法判断，而不是把它们压成一个风险分数。</p>
+</section>
 </section>
 <section id="sec-code" class="level2">
 <h2 class="anchored" data-anchor-id="sec-code">下载参考并验证上游身份</h2>
@@ -1331,7 +1368,9 @@ div.csl-indent {
 <section id="有移动潜力与观察到转移之间还差实验" class="level3">
 <h3 class="anchored" data-anchor-id="有移动潜力与观察到转移之间还差实验">“有移动潜力”与“观察到转移”之间还差实验</h3>
 <p>证据强度可以写成一个结论天花板：</p>
-<p>[ C_{max}=(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}). ]</p>
+<p><span class="math display">\[
+C_{max}=\min(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}).
+\]</span></p>
 <p>只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 <span class="citation" data-cites="pike2022broadhostmge">(<a href="02-three-analysis-layers.html#ref-pike2022broadhostmge" role="doc-biblioref">Forster 等 2022年</a>)</span>。这正是序列文章最容易漏掉的一层。</p>
 <div id="fig-57-ladder" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
@@ -2015,7 +2054,7 @@ Robertson, James, 和 John H. E. Nash. 2018年. <span>《<span>MOB-suite</span>:
 <span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>只读取固化表并重画 5 组图，**4 CPU、4 GB RAM、200 MB 磁盘、耗时约 1 分钟**。本次 geNomad 实跑使用 **16 CPU、16 splits**：10.22 Mb 的匹配参考集耗时 186.63 s、峰值 2.75 GiB RAM；84.81 Mb 共组装耗时 1,092.21 s、峰值 2.83 GiB；USA300 对照耗时 182.64 s、峰值 2.71 GiB。geNomad database v1.9 解压后约 **1.47 GB**。正式队列建议预留 **16--32 CPU、32--64 GB RAM、至少 30 GB 临时磁盘，单个中等共组装约几十分钟至数小时**；样本数、contig 数和共享存储速度都会改变耗时。没有服务器时，直接读取 <span class="in">`data/small/57-plasmids-mobile-elements-frozen/`</span> 完成审计和作图；全量发现任务放到 HPC 或云端。</span>
 <span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="候选移动元件与实际转移事件之间还有哪些缺口"}</span>
 <span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>物理共定位、可移动性推断和已观察到的转移是不同结论；没有直接证据时不宣称转移发生。</span>
 <span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2034,345 +2073,351 @@ Robertson, James, 和 John H. E. Nash. 2018年. <span>《<span>MOB-suite</span>:
 <span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a><span class="al">![Length-matched reference audit. Labels are literal GenBank sequence labels in a fixed public mock reference set.](../figures/57-reference-plasmid-audit.png)</span>{#fig-57-reference}</span>
 <span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载参考并验证上游身份 {#sec-code}</span></span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a><span class="fu">### 候选移动元件与实际转移事件之间还有哪些缺口？</span></span>
 <span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="fu">### “MGE”不是“质粒”的同义词 {#sec-theory}</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>在 218 个候选条目中观察到 42 个带有转移相关标记，只能说明相应序列具有某类注释证据。候选分类、标记注释、基因共定位和实际转移事件是不同层次的判断；前一层成立，不会自动补齐后一层。</span>
 <span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>可移动遗传元件（mobile genetic element, MGE）至少包括 plasmid、insertion sequence、transposon、integron-associated cassette、integrative and conjugative element（ICE）、integrative and mobilizable element（IME）与 prophage。它们的复制位置、边界和移动机制不同 <span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span>：</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>本例主要结果没有支持耐药基因与这些标记的共定位，因此不能把总体计数改写成“发现了耐药传播载体”。组装不完整、来源不明及数据库覆盖不足也应保留为不确定性。结果表应区分已观察到、未观察到和当前数据无法判断，而不是把它们压成一个风险分数。</span>
 <span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 对象 <span class="pp">|</span> 常见位置 <span class="pp">|</span> 自主复制 <span class="pp">|</span> 自主转移 <span class="pp">|</span> 最低可主张结论 <span class="pp">|</span></span>
-<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|---|</span></span>
-<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Plasmid <span class="pp">|</span> 染色体外，也可能整合 <span class="pp">|</span> 常见但非必然 <span class="pp">|</span> 取决于完整 conjugation module <span class="pp">|</span> predicted plasmid sequence <span class="pp">|</span></span>
-<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ICE <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 可编码完整 conjugation machinery <span class="pp">|</span> putative ICE；需边界与模块 <span class="pp">|</span></span>
-<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IME <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 借用其他元件 machinery <span class="pp">|</span> putative mobilizable element <span class="pp">|</span></span>
-<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Integron <span class="pp">|</span> 染色体或质粒 <span class="pp">|</span> 否 <span class="pp">|</span> 本身通常不自主移动 <span class="pp">|</span> integron-associated gene cassette <span class="pp">|</span></span>
-<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IS/transposon <span class="pp">|</span> 多种复制子 <span class="pp">|</span> 否 <span class="pp">|</span> 在分子内或分子间转位 <span class="pp">|</span> transposition-associated context <span class="pp">|</span></span>
-<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Prophage <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 随宿主复制 <span class="pp">|</span> 诱导后可形成病毒粒子 <span class="pp">|</span> integrated provirus/prophage candidate <span class="pp">|</span></span>
-<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>IntegronFinder 识别 integrase、attC 与 cassette array <span class="co">[</span><span class="ot">@cury2016integronfinder</span><span class="co">]</span>；它检测的是基因捕获系统，不应自动改写成“可接合质粒”。同样，看到一个 transposase 也只能说明局部移动相关标记，不能证明整条 contig 会跨细胞转移。</span>
-<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article57"</span></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载参考并验证上游身份 {#sec-code}</span></span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="fu">### “MGE”不是“质粒”的同义词 {#sec-theory}</span></span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>可移动遗传元件（mobile genetic element, MGE）至少包括 plasmid、insertion sequence、transposon、integron-associated cassette、integrative and conjugative element（ICE）、integrative and mobilizable element（IME）与 prophage。它们的复制位置、边界和移动机制不同 <span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span>：</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 对象 <span class="pp">|</span> 常见位置 <span class="pp">|</span> 自主复制 <span class="pp">|</span> 自主转移 <span class="pp">|</span> 最低可主张结论 <span class="pp">|</span></span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|---|</span></span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Plasmid <span class="pp">|</span> 染色体外，也可能整合 <span class="pp">|</span> 常见但非必然 <span class="pp">|</span> 取决于完整 conjugation module <span class="pp">|</span> predicted plasmid sequence <span class="pp">|</span></span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> ICE <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 可编码完整 conjugation machinery <span class="pp">|</span> putative ICE；需边界与模块 <span class="pp">|</span></span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IME <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 否 <span class="pp">|</span> 借用其他元件 machinery <span class="pp">|</span> putative mobilizable element <span class="pp">|</span></span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Integron <span class="pp">|</span> 染色体或质粒 <span class="pp">|</span> 否 <span class="pp">|</span> 本身通常不自主移动 <span class="pp">|</span> integron-associated gene cassette <span class="pp">|</span></span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> IS/transposon <span class="pp">|</span> 多种复制子 <span class="pp">|</span> 否 <span class="pp">|</span> 在分子内或分子间转位 <span class="pp">|</span> transposition-associated context <span class="pp">|</span></span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Prophage <span class="pp">|</span> 染色体整合态 <span class="pp">|</span> 随宿主复制 <span class="pp">|</span> 诱导后可形成病毒粒子 <span class="pp">|</span> integrated provirus/prophage candidate <span class="pp">|</span></span>
 <span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a><span class="co"># 下载固定 commit 的 PRJEB52977 reference repository</span></span>
-<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE57_PLASMIDS</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
-<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="co"># 若要从 FASTQ 重建同一共组装，下载 ERR9765746/ERR9765747 后运行锁定流程</span></span>
-<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE30_ASSEMBLY</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a>IntegronFinder 识别 integrase、attC 与 cassette array <span class="co">[</span><span class="ot">@cury2016integronfinder</span><span class="co">]</span>；它检测的是基因捕获系统，不应自动改写成“可接合质粒”。同样，看到一个 transposase 也只能说明局部移动相关标记，不能证明整条 contig 会跨细胞转移。</span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article57"</span></span>
 <span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="co"># 四个输入均经过 bytes + SHA-256 gate；RGI 输入来自同一 co-assembly 和 USA300</span></span>
-<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article57_plasmids.py <span class="dt">\</span></span>
-<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>  <span class="at">--benchmark-repo</span> data/raw/article57/benchmark_mock <span class="dt">\</span></span>
-<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coassembly</span> data/small/30-short-read-assembly-frozen/contigs/megahit-coassembly.ge1000.fna.gz <span class="dt">\</span></span>
-<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-coassembly</span> work/article38/coassembly/coassembly.txt <span class="dt">\</span></span>
-<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-staphylococcus</span> work/article38/staphylococcus/staphylococcus.txt</span>
-<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
-<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-benchmark-labels.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span>
-<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>准备脚本不会根据结果重抽 negatives。43 条已标注质粒先按长度、<span class="in">`SeqName`</span> 排序，再对每条质粒选择尚未使用且绝对 log-length ratio 最小的 comparator；并列时依次按绝对 bp 差和 <span class="in">`SeqName`</span> 决定。</span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a><span class="co"># 下载固定 commit 的 PRJEB52977 reference repository</span></span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE57_PLASMIDS</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a><span class="co"># 若要从 FASTQ 重建同一共组装，下载 ERR9765746/ERR9765747 后运行锁定流程</span></span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE30_ASSEMBLY</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a><span class="co"># 四个输入均经过 bytes + SHA-256 gate；RGI 输入来自同一 co-assembly 和 USA300</span></span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>  <span class="at">--benchmark-repo</span> data/raw/article57/benchmark_mock <span class="dt">\</span></span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a>  <span class="at">--coassembly</span> data/small/30-short-read-assembly-frozen/contigs/megahit-coassembly.ge1000.fna.gz <span class="dt">\</span></span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-coassembly</span> work/article38/coassembly/coassembly.txt <span class="dt">\</span></span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>  <span class="at">--rgi-staphylococcus</span> work/article38/staphylococcus/staphylococcus.txt</span>
 <span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“跑一个分类器”升级为三层 benchmark {#sec-audit}</span></span>
-<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a>论文 Figure 3a 在严格训练/测试拆分和不同长度片段上比较工具；真实项目还要加两层：</span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-benchmark-labels.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 12</span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**完整参考标签层**：检查已知 plasmid 与 non-plasmid replicons；</span>
-<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**fragmented assembly 层**：检查短 contig 上的 label conflict 与 unresolved fraction；</span>
-<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**生物阳性对照层**：检查 ARG、plasmid 和 transfer marker 的 join 是否能成功。</span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a>准备脚本不会根据结果重抽 negatives。43 条已标注质粒先按长度、<span class="in">`SeqName`</span> 排序，再对每条质粒选择尚未使用且绝对 log-length ratio 最小的 comparator；并列时依次按绝对 bp 差和 <span class="in">`SeqName`</span> 决定。</span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“跑一个分类器”升级为三层 benchmark {#sec-audit}</span></span>
 <span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>本次完整序列匹配基准 precision 为 97.1%，但共组装候选中 120/218 与完整细胞复制子冲突。两者不矛盾：前者测试完整/较长参考序列，后者暴露 fragment-level failure mode。</span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>论文 Figure 3a 在严格训练/测试拆分和不同长度片段上比较工具；真实项目还要加两层：</span>
 <span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 geNomad 三条分支与精确参考检查</span></span>
-<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a><span class="fu">### geNomad score 是分类证据，不是转移概率</span></span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**完整参考标签层**：检查已知 plasmid 与 non-plasmid replicons；</span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**fragmented assembly 层**：检查短 contig 上的 label conflict 与 unresolved fraction；</span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**生物阳性对照层**：检查 ARG、plasmid 和 transfer marker 的 join 是否能成功。</span>
 <span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>geNomad 把 nucleotide sequence model 与 marker-content model 聚合为 chromosome、plasmid 和 virus scores <span class="co">[</span><span class="ot">@camargo2024genomad</span><span class="co">]</span>。短 contig 的基因少，marker branch 信息不足；重复、保守 housekeeping 区域、chromid 与染色体整合元件又会模糊类别边界。因此，分类结果要保留：</span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>本次完整序列匹配基准 precision 为 97.1%，但共组装候选中 120/218 与完整细胞复制子冲突。两者不矛盾：前者测试完整/较长参考序列，后者暴露 fragment-level failure mode。</span>
 <span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`plasmid_score`</span>、候选长度和 topology；</span>
-<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>plasmid/chromosome/virus markers 与 hallmarks；</span>
-<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>是否启用 score calibration；</span>
-<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库 release 与 filtering parameters；</span>
-<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与完整参考、assembly graph 和 reads 的独立核验。</span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 geNomad 三条分支与精确参考检查</span></span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a><span class="fu">### geNomad score 是分类证据，不是转移概率</span></span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a>geNomad 把 nucleotide sequence model 与 marker-content model 聚合为 chromosome、plasmid 和 virus scores <span class="co">[</span><span class="ot">@camargo2024genomad</span><span class="co">]</span>。短 contig 的基因少，marker branch 信息不足；重复、保守 housekeeping 区域、chromid 与染色体整合元件又会模糊类别边界。因此，分类结果要保留：</span>
 <span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>这里固定默认 <span class="in">`score ≥ 0.7`</span>，但没有启用 score calibration，所以输出中的 <span class="in">`FDR`</span> 为 <span class="in">`NA`</span>。未经 calibration 的 0.90 不能写成“90% 为真”，更不能写成“90% 可转移”。即使启用 calibration，FDR 也是特定输入批次与校准假设下的经验量，不是单条序列的实验成功率。</span>
-<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-virus-discovery-2026.07"</span></span>
-<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
-<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/virus-discovery-cache/databases/genomad_db"</span></span>
-<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article57_plasmids.py <span class="dt">\</span></span>
-<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-env</span> <span class="st">"</span><span class="va">$GENOMAD_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimap2-exe</span> <span class="st">"</span><span class="va">$ASSEMBLY_ENV</span><span class="st">/bin/minimap2"</span> <span class="dt">\</span></span>
-<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
-<span id="cb8-132"><a href="#cb8-132" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16</span>
-<span id="cb8-133"><a href="#cb8-133" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-134"><a href="#cb8-134" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
-<span id="cb8-135"><a href="#cb8-135" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-136"><a href="#cb8-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-137"><a href="#cb8-137" aria-hidden="true" tabindex="-1"></a>核心 geNomad 命令为：</span>
-<span id="cb8-138"><a href="#cb8-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-139"><a href="#cb8-139" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-140"><a href="#cb8-140" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
-<span id="cb8-141"><a href="#cb8-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="dt">\</span></span>
-<span id="cb8-142"><a href="#cb8-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">--restart</span> <span class="dt">\</span></span>
-<span id="cb8-143"><a href="#cb8-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">--disable-find-proviruses</span> <span class="dt">\</span></span>
-<span id="cb8-144"><a href="#cb8-144" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
-<span id="cb8-145"><a href="#cb8-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16 <span class="dt">\</span></span>
-<span id="cb8-146"><a href="#cb8-146" aria-hidden="true" tabindex="-1"></a>  coassembly.fna.gz <span class="dt">\</span></span>
-<span id="cb8-147"><a href="#cb8-147" aria-hidden="true" tabindex="-1"></a>  results/coassembly <span class="dt">\</span></span>
-<span id="cb8-148"><a href="#cb8-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
-<span id="cb8-149"><a href="#cb8-149" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-150"><a href="#cb8-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-151"><a href="#cb8-151" aria-hidden="true" tabindex="-1"></a>没有设置 <span class="in">`--enable-score-calibration`</span>，所以主阈值是未校准的 score ≥ 0.7，<span class="in">`FDR=NA`</span>。<span class="in">`--disable-find-proviruses`</span> 只关闭病毒区段边界寻找，不关闭 plasmid classification。精确参考审计使用 <span class="in">`minimap2 -x asm5 --secondary=no`</span>，并预注册 identity ≥95%、query coverage ≥80% 为高覆盖支持；best hit 的 label 来自固定参考 header。</span>
-<span id="cb8-152"><a href="#cb8-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-153"><a href="#cb8-153" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把 score calibration 当成分析设计，不是装饰选项</span></span>
-<span id="cb8-154"><a href="#cb8-154" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-155"><a href="#cb8-155" aria-hidden="true" tabindex="-1"></a>若一个 batch 足够大且组成适合 calibration，可启用并用 maximum FDR 过滤；若 batch 很小或由人为挑选的候选构成，composition-based calibration 也可能失真。无论选择哪条路径，都要在 Methods 写出是否 calibration、score/FDR cutoff 和序列是否先按长度过滤。当前分析明确关闭 calibration，因此绝不从 <span class="in">`NA`</span> 推断 FDR。</span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`plasmid_score`</span>、候选长度和 topology；</span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>plasmid/chromosome/virus markers 与 hallmarks；</span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>是否启用 score calibration；</span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库 release 与 filtering parameters；</span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与完整参考、assembly graph 和 reads 的独立核验。</span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a>这里固定默认 <span class="in">`score ≥ 0.7`</span>，但没有启用 score calibration，所以输出中的 <span class="in">`FDR`</span> 为 <span class="in">`NA`</span>。未经 calibration 的 0.90 不能写成“90% 为真”，更不能写成“90% 可转移”。即使启用 calibration，FDR 也是特定输入批次与校准假设下的经验量，不是单条序列的实验成功率。</span>
+<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-virus-discovery-2026.07"</span></span>
+<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a><span class="va">GENOMAD_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/virus-discovery-cache/databases/genomad_db"</span></span>
+<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-132"><a href="#cb8-132" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-133"><a href="#cb8-133" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-134"><a href="#cb8-134" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-db</span> <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-135"><a href="#cb8-135" aria-hidden="true" tabindex="-1"></a>  <span class="at">--genomad-env</span> <span class="st">"</span><span class="va">$GENOMAD_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-136"><a href="#cb8-136" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minimap2-exe</span> <span class="st">"</span><span class="va">$ASSEMBLY_ENV</span><span class="st">/bin/minimap2"</span> <span class="dt">\</span></span>
+<span id="cb8-137"><a href="#cb8-137" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb8-138"><a href="#cb8-138" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16</span>
+<span id="cb8-139"><a href="#cb8-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-140"><a href="#cb8-140" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
+<span id="cb8-141"><a href="#cb8-141" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-142"><a href="#cb8-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-143"><a href="#cb8-143" aria-hidden="true" tabindex="-1"></a>核心 geNomad 命令为：</span>
+<span id="cb8-144"><a href="#cb8-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-145"><a href="#cb8-145" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-146"><a href="#cb8-146" aria-hidden="true" tabindex="-1"></a><span class="ex">genomad</span> end-to-end <span class="dt">\</span></span>
+<span id="cb8-147"><a href="#cb8-147" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cleanup</span> <span class="dt">\</span></span>
+<span id="cb8-148"><a href="#cb8-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">--restart</span> <span class="dt">\</span></span>
+<span id="cb8-149"><a href="#cb8-149" aria-hidden="true" tabindex="-1"></a>  <span class="at">--disable-find-proviruses</span> <span class="dt">\</span></span>
+<span id="cb8-150"><a href="#cb8-150" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb8-151"><a href="#cb8-151" aria-hidden="true" tabindex="-1"></a>  <span class="at">--splits</span> 16 <span class="dt">\</span></span>
+<span id="cb8-152"><a href="#cb8-152" aria-hidden="true" tabindex="-1"></a>  coassembly.fna.gz <span class="dt">\</span></span>
+<span id="cb8-153"><a href="#cb8-153" aria-hidden="true" tabindex="-1"></a>  results/coassembly <span class="dt">\</span></span>
+<span id="cb8-154"><a href="#cb8-154" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$GENOMAD_DB</span><span class="st">"</span></span>
+<span id="cb8-155"><a href="#cb8-155" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb8-156"><a href="#cb8-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-157"><a href="#cb8-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 CARD-RGI 独立识别 ARG</span></span>
+<span id="cb8-157"><a href="#cb8-157" aria-hidden="true" tabindex="-1"></a>没有设置 <span class="in">`--enable-score-calibration`</span>，所以主阈值是未校准的 score ≥ 0.7，<span class="in">`FDR=NA`</span>。<span class="in">`--disable-find-proviruses`</span> 只关闭病毒区段边界寻找，不关闭 plasmid classification。精确参考审计使用 <span class="in">`minimap2 -x asm5 --secondary=no`</span>，并预注册 identity ≥95%、query coverage ≥80% 为高覆盖支持；best hit 的 label 来自固定参考 header。</span>
 <span id="cb8-158"><a href="#cb8-158" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-159"><a href="#cb8-159" aria-hidden="true" tabindex="-1"></a><span class="fu">### 同一 contig 提供物理共定位，但不等于已经发生转移</span></span>
+<span id="cb8-159"><a href="#cb8-159" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把 score calibration 当成分析设计，不是装饰选项</span></span>
 <span id="cb8-160"><a href="#cb8-160" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-161"><a href="#cb8-161" aria-hidden="true" tabindex="-1"></a>ARG 与 plasmid call 位于同一 contig，比“同一样本同时检出 ARG 和质粒”强，因为至少有 assembly-level linkage；但它仍可能来自：</span>
+<span id="cb8-161"><a href="#cb8-161" aria-hidden="true" tabindex="-1"></a>若一个 batch 足够大且组成适合 calibration，可启用并用 maximum FDR 过滤；若 batch 很小或由人为挑选的候选构成，composition-based calibration 也可能失真。无论选择哪条路径，都要在 Methods 写出是否 calibration、score/FDR cutoff 和序列是否先按长度过滤。当前分析明确关闭 calibration，因此绝不从 <span class="in">`NA`</span> 推断 FDR。</span>
 <span id="cb8-162"><a href="#cb8-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-163"><a href="#cb8-163" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>短 contig 被错误分类；</span>
-<span id="cb8-164"><a href="#cb8-164" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>repeat 导致的 chimeric assembly；</span>
-<span id="cb8-165"><a href="#cb8-165" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>染色体整合的 plasmid/ICE 片段；</span>
-<span id="cb8-166"><a href="#cb8-166" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>chromid、secondary chromosome 或其他 cellular replicon；</span>
-<span id="cb8-167"><a href="#cb8-167" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG 只落在元件边界外的宿主 flank；</span>
-<span id="cb8-168"><a href="#cb8-168" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>样本中存在该结构，却没有发生当下或跨宿主转移。</span>
-<span id="cb8-169"><a href="#cb8-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-170"><a href="#cb8-170" aria-hidden="true" tabindex="-1"></a>因此，最稳妥的数据结构不是一列 <span class="in">`mobile = TRUE/FALSE`</span>，而是一张 evidence ledger：分别记录 plasmid classifier、ARG caller、transfer module、element boundary、read support、host linkage 与 experimental validation。</span>
-<span id="cb8-171"><a href="#cb8-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a>geNomad gene table 中的 AMR marker 适合提示局部功能，但不是完整 resistome 结果。ARG 主结果来自 RGI 6.0.8 + CARD 4.0.1 <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>，并只保留 model-specific threshold 已通过的 Perfect/Strict calls：</span>
-<span id="cb8-173"><a href="#cb8-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-resistome-2026.07"</span></span>
-<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a><span class="va">CARD_ROOT</span><span class="op">=</span>/data/db/card-4.0.1</span>
-<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a><span class="va">COASSEMBLY</span><span class="op">=</span>work/article57/inputs/coassembly.fna.gz</span>
-<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_OUT</span><span class="op">=</span>work/article57/rgi/coassembly</span>
-<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$(</span><span class="fu">dirname</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span><span class="va">)</span><span class="st">"</span></span>
-<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> PATH=<span class="st">"</span><span class="va">$RGI_ENV</span><span class="st">/bin:/usr/bin:/bin"</span> <span class="dt">\</span></span>
-<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>    DATA_PATH=<span class="st">"</span><span class="va">$CARD_ROOT</span><span class="st">/rgi-db"</span> <span class="dt">\</span></span>
-<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>  rgi main <span class="dt">\</span></span>
-<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>    <span class="at">-i</span> <span class="st">"</span><span class="va">$COASSEMBLY</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> contig <span class="dt">\</span></span>
-<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> DIAMOND <span class="dt">\</span></span>
-<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>    <span class="at">-n</span> 16 <span class="dt">\</span></span>
-<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>    <span class="at">--include_loose</span> <span class="dt">\</span></span>
-<span id="cb8-190"><a href="#cb8-190" aria-hidden="true" tabindex="-1"></a>    <span class="at">--clean</span> <span class="dt">\</span></span>
-<span id="cb8-191"><a href="#cb8-191" aria-hidden="true" tabindex="-1"></a>    <span class="at">--low_quality</span> <span class="dt">\</span></span>
-<span id="cb8-192"><a href="#cb8-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> PYRODIGAL <span class="dt">\</span></span>
-<span id="cb8-193"><a href="#cb8-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> wgs</span>
-<span id="cb8-194"><a href="#cb8-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-195"><a href="#cb8-195" aria-hidden="true" tabindex="-1"></a><span class="co"># Loose 只留作 sensitivity ledger，不进入主 ARG 集</span></span>
-<span id="cb8-196"><a href="#cb8-196" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">'NR==1 || $6=="Perfect" || $6=="Strict"'</span> <span class="dt">\</span></span>
-<span id="cb8-197"><a href="#cb8-197" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.primary.tsv"</span></span>
-<span id="cb8-198"><a href="#cb8-198" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-199"><a href="#cb8-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-200"><a href="#cb8-200" aria-hidden="true" tabindex="-1"></a>RGI 的阈值是每个 CARD model 自己定义的规则，不应再用统一 identity 矩形取代。<span class="in">`--include_loose`</span> 便于审计召回边界，但主图和主结论始终只用 Perfect/Strict。</span>
-<span id="cb8-201"><a href="#cb8-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-202"><a href="#cb8-202" aria-hidden="true" tabindex="-1"></a><span class="fu">### ARG mobility 要区分六个等级</span></span>
-<span id="cb8-203"><a href="#cb8-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-204"><a href="#cb8-204" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 6**：ARG 与 MGE 只在样本层共现；</span>
-<span id="cb8-205"><a href="#cb8-205" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 5**：ARG 附近有 integrase/transposase/integron marker；</span>
-<span id="cb8-206"><a href="#cb8-206" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 4**：ARG 与独立 plasmid call 在同一 contig；</span>
-<span id="cb8-207"><a href="#cb8-207" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 3**：再加系统级 transfer marker；</span>
-<span id="cb8-208"><a href="#cb8-208" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 2**：closed/boundary-resolved element、read support 与宿主连接齐全；</span>
-<span id="cb8-209"><a href="#cb8-209" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 1**：mating、transformation 或 transduction 实验确认受体获得该元件。</span>
-<span id="cb8-210"><a href="#cb8-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a>图表、Results 与摘要中的动词必须跟等级一致：<span class="in">`co-occurred`</span>、<span class="in">`was located on a predicted plasmid contig`</span>、<span class="in">`encoded a putative transfer module`</span>、<span class="in">`was experimentally transferred`</span> 不能互换。</span>
-<span id="cb8-212"><a href="#cb8-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-213"><a href="#cb8-213" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常攻击的十二个点"}</span>
-<span id="cb8-214"><a href="#cb8-214" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>把每条 plasmid-positive contig 当成完整、独立质粒；</span>
-<span id="cb8-215"><a href="#cb8-215" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 geNomad score 当成转移概率；</span>
-<span id="cb8-216"><a href="#cb8-216" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>calibration 关闭却报告 FDR，或把 <span class="in">`NA`</span> 当 0；</span>
-<span id="cb8-217"><a href="#cb8-217" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>只报默认 threshold，不报软件和 database release；</span>
-<span id="cb8-218"><a href="#cb8-218" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 <span class="in">`conjugation_genes`</span> 单列宣称完整 conjugation system；</span>
-<span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>ARG 与质粒仅在样本层共现，却写成 plasmid-borne ARG；</span>
-<span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>同一 contig 就写“已经发生水平转移”；</span>
-<span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用 geNomad 内部 AMR marker 代替独立 CARD/AMRFinderPlus screen；</span>
-<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>只展示候选，不做完整 cellular replicon 负对照；</span>
-<span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>没有 ARG-bearing plasmid 阳性对照，无法区分真阴性与 join/pipeline 失败；</span>
-<span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a><span class="ss">11. </span>把 DTR、环状 assembly 或 replicon marker 等同于可接合；</span>
-<span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a><span class="ss">12. </span>短读长无法解析 repeat 和宿主连接，却把宿主与 host range 写到种/菌株级。</span>
-<span id="cb8-226"><a href="#cb8-226" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb8-227"><a href="#cb8-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-228"><a href="#cb8-228" aria-hidden="true" tabindex="-1"></a><span class="fu">## 合并候选、ARG、转移标记和参考支持</span></span>
-<span id="cb8-229"><a href="#cb8-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-230"><a href="#cb8-230" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer-related marker 不等于完整 conjugation system</span></span>
-<span id="cb8-231"><a href="#cb8-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-232"><a href="#cb8-232" aria-hidden="true" tabindex="-1"></a>geNomad 的 <span class="in">`conjugation_genes`</span> 来自 marker 注释，可用于筛候选；官方输出说明也明确提醒，单凭这一列不足以判断元件是 conjugative 还是 mobilizable。正式分类应检查 relaxase、type IV coupling protein、mating-pair formation system 与 oriT 是否构成一致模块，可用 MacSyFinder/CONJscan 做系统级检测 <span class="co">[</span><span class="ot">@abby2014macsyfinder</span><span class="co">]</span>。质粒重建和 typing 可再用 MOB-suite <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>，整合元件则结合 IntegronFinder、ICE/IME 边界与宿主染色体上下游。</span>
+<span id="cb8-163"><a href="#cb8-163" aria-hidden="true" tabindex="-1"></a><span class="fu">## 用 CARD-RGI 独立识别 ARG</span></span>
+<span id="cb8-164"><a href="#cb8-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-165"><a href="#cb8-165" aria-hidden="true" tabindex="-1"></a><span class="fu">### 同一 contig 提供物理共定位，但不等于已经发生转移</span></span>
+<span id="cb8-166"><a href="#cb8-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-167"><a href="#cb8-167" aria-hidden="true" tabindex="-1"></a>ARG 与 plasmid call 位于同一 contig，比“同一样本同时检出 ARG 和质粒”强，因为至少有 assembly-level linkage；但它仍可能来自：</span>
+<span id="cb8-168"><a href="#cb8-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-169"><a href="#cb8-169" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>短 contig 被错误分类；</span>
+<span id="cb8-170"><a href="#cb8-170" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>repeat 导致的 chimeric assembly；</span>
+<span id="cb8-171"><a href="#cb8-171" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>染色体整合的 plasmid/ICE 片段；</span>
+<span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>chromid、secondary chromosome 或其他 cellular replicon；</span>
+<span id="cb8-173"><a href="#cb8-173" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG 只落在元件边界外的宿主 flank；</span>
+<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>样本中存在该结构，却没有发生当下或跨宿主转移。</span>
+<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a>因此，最稳妥的数据结构不是一列 <span class="in">`mobile = TRUE/FALSE`</span>，而是一张 evidence ledger：分别记录 plasmid classifier、ARG caller、transfer module、element boundary、read support、host linkage 与 experimental validation。</span>
+<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a>geNomad gene table 中的 AMR marker 适合提示局部功能，但不是完整 resistome 结果。ARG 主结果来自 RGI 6.0.8 + CARD 4.0.1 <span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span>，并只保留 model-specific threshold 已通过的 Perfect/Strict calls：</span>
+<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-resistome-2026.07"</span></span>
+<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a><span class="va">CARD_ROOT</span><span class="op">=</span>/data/db/card-4.0.1</span>
+<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a><span class="va">COASSEMBLY</span><span class="op">=</span>work/article57/inputs/coassembly.fna.gz</span>
+<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a><span class="va">RGI_OUT</span><span class="op">=</span>work/article57/rgi/coassembly</span>
+<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">$(</span><span class="fu">dirname</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span><span class="va">)</span><span class="st">"</span></span>
+<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> PATH=<span class="st">"</span><span class="va">$RGI_ENV</span><span class="st">/bin:/usr/bin:/bin"</span> <span class="dt">\</span></span>
+<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>    DATA_PATH=<span class="st">"</span><span class="va">$CARD_ROOT</span><span class="st">/rgi-db"</span> <span class="dt">\</span></span>
+<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>  rgi main <span class="dt">\</span></span>
+<span id="cb8-190"><a href="#cb8-190" aria-hidden="true" tabindex="-1"></a>    <span class="at">-i</span> <span class="st">"</span><span class="va">$COASSEMBLY</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-191"><a href="#cb8-191" aria-hidden="true" tabindex="-1"></a>    <span class="at">-o</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-192"><a href="#cb8-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t</span> contig <span class="dt">\</span></span>
+<span id="cb8-193"><a href="#cb8-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> DIAMOND <span class="dt">\</span></span>
+<span id="cb8-194"><a href="#cb8-194" aria-hidden="true" tabindex="-1"></a>    <span class="at">-n</span> 16 <span class="dt">\</span></span>
+<span id="cb8-195"><a href="#cb8-195" aria-hidden="true" tabindex="-1"></a>    <span class="at">--include_loose</span> <span class="dt">\</span></span>
+<span id="cb8-196"><a href="#cb8-196" aria-hidden="true" tabindex="-1"></a>    <span class="at">--clean</span> <span class="dt">\</span></span>
+<span id="cb8-197"><a href="#cb8-197" aria-hidden="true" tabindex="-1"></a>    <span class="at">--low_quality</span> <span class="dt">\</span></span>
+<span id="cb8-198"><a href="#cb8-198" aria-hidden="true" tabindex="-1"></a>    <span class="at">-g</span> PYRODIGAL <span class="dt">\</span></span>
+<span id="cb8-199"><a href="#cb8-199" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> wgs</span>
+<span id="cb8-200"><a href="#cb8-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-201"><a href="#cb8-201" aria-hidden="true" tabindex="-1"></a><span class="co"># Loose 只留作 sensitivity ledger，不进入主 ARG 集</span></span>
+<span id="cb8-202"><a href="#cb8-202" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="at">-F</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">'NR==1 || $6=="Perfect" || $6=="Strict"'</span> <span class="dt">\</span></span>
+<span id="cb8-203"><a href="#cb8-203" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.txt"</span> <span class="op">&gt;</span> <span class="st">"</span><span class="va">$RGI_OUT</span><span class="st">.primary.tsv"</span></span>
+<span id="cb8-204"><a href="#cb8-204" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-205"><a href="#cb8-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-206"><a href="#cb8-206" aria-hidden="true" tabindex="-1"></a>RGI 的阈值是每个 CARD model 自己定义的规则，不应再用统一 identity 矩形取代。<span class="in">`--include_loose`</span> 便于审计召回边界，但主图和主结论始终只用 Perfect/Strict。</span>
+<span id="cb8-207"><a href="#cb8-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-208"><a href="#cb8-208" aria-hidden="true" tabindex="-1"></a><span class="fu">### ARG mobility 要区分六个等级</span></span>
+<span id="cb8-209"><a href="#cb8-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-210"><a href="#cb8-210" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 6**：ARG 与 MGE 只在样本层共现；</span>
+<span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 5**：ARG 附近有 integrase/transposase/integron marker；</span>
+<span id="cb8-212"><a href="#cb8-212" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 4**：ARG 与独立 plasmid call 在同一 contig；</span>
+<span id="cb8-213"><a href="#cb8-213" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 3**：再加系统级 transfer marker；</span>
+<span id="cb8-214"><a href="#cb8-214" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 2**：closed/boundary-resolved element、read support 与宿主连接齐全；</span>
+<span id="cb8-215"><a href="#cb8-215" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Level 1**：mating、transformation 或 transduction 实验确认受体获得该元件。</span>
+<span id="cb8-216"><a href="#cb8-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-217"><a href="#cb8-217" aria-hidden="true" tabindex="-1"></a>图表、Results 与摘要中的动词必须跟等级一致：<span class="in">`co-occurred`</span>、<span class="in">`was located on a predicted plasmid contig`</span>、<span class="in">`encoded a putative transfer module`</span>、<span class="in">`was experimentally transferred`</span> 不能互换。</span>
+<span id="cb8-218"><a href="#cb8-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-219"><a href="#cb8-219" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常攻击的十二个点"}</span>
+<span id="cb8-220"><a href="#cb8-220" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>把每条 plasmid-positive contig 当成完整、独立质粒；</span>
+<span id="cb8-221"><a href="#cb8-221" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>把 geNomad score 当成转移概率；</span>
+<span id="cb8-222"><a href="#cb8-222" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>calibration 关闭却报告 FDR，或把 <span class="in">`NA`</span> 当 0；</span>
+<span id="cb8-223"><a href="#cb8-223" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>只报默认 threshold，不报软件和 database release；</span>
+<span id="cb8-224"><a href="#cb8-224" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 <span class="in">`conjugation_genes`</span> 单列宣称完整 conjugation system；</span>
+<span id="cb8-225"><a href="#cb8-225" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>ARG 与质粒仅在样本层共现，却写成 plasmid-borne ARG；</span>
+<span id="cb8-226"><a href="#cb8-226" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>同一 contig 就写“已经发生水平转移”；</span>
+<span id="cb8-227"><a href="#cb8-227" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>用 geNomad 内部 AMR marker 代替独立 CARD/AMRFinderPlus screen；</span>
+<span id="cb8-228"><a href="#cb8-228" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>只展示候选，不做完整 cellular replicon 负对照；</span>
+<span id="cb8-229"><a href="#cb8-229" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>没有 ARG-bearing plasmid 阳性对照，无法区分真阴性与 join/pipeline 失败；</span>
+<span id="cb8-230"><a href="#cb8-230" aria-hidden="true" tabindex="-1"></a><span class="ss">11. </span>把 DTR、环状 assembly 或 replicon marker 等同于可接合；</span>
+<span id="cb8-231"><a href="#cb8-231" aria-hidden="true" tabindex="-1"></a><span class="ss">12. </span>短读长无法解析 repeat 和宿主连接，却把宿主与 host range 写到种/菌株级。</span>
+<span id="cb8-232"><a href="#cb8-232" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-233"><a href="#cb8-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-234"><a href="#cb8-234" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-235"><a href="#cb8-235" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article57_plasmids.py <span class="dt">\</span></span>
-<span id="cb8-236"><a href="#cb8-236" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-237"><a href="#cb8-237" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb8-238"><a href="#cb8-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-239"><a href="#cb8-239" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/reference-metrics.tsv"</span></span>
-<span id="cb8-240"><a href="#cb8-240" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/arg-context-summary.tsv"</span></span>
-<span id="cb8-241"><a href="#cb8-241" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/usa300-replicon-audit.tsv"</span></span>
-<span id="cb8-242"><a href="#cb8-242" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/summary.json"</span></span>
-<span id="cb8-243"><a href="#cb8-243" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb8-234"><a href="#cb8-234" aria-hidden="true" tabindex="-1"></a><span class="fu">## 合并候选、ARG、转移标记和参考支持</span></span>
+<span id="cb8-235"><a href="#cb8-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-236"><a href="#cb8-236" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer-related marker 不等于完整 conjugation system</span></span>
+<span id="cb8-237"><a href="#cb8-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-238"><a href="#cb8-238" aria-hidden="true" tabindex="-1"></a>geNomad 的 <span class="in">`conjugation_genes`</span> 来自 marker 注释，可用于筛候选；官方输出说明也明确提醒，单凭这一列不足以判断元件是 conjugative 还是 mobilizable。正式分类应检查 relaxase、type IV coupling protein、mating-pair formation system 与 oriT 是否构成一致模块，可用 MacSyFinder/CONJscan 做系统级检测 <span class="co">[</span><span class="ot">@abby2014macsyfinder</span><span class="co">]</span>。质粒重建和 typing 可再用 MOB-suite <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>，整合元件则结合 IntegronFinder、ICE/IME 边界与宿主染色体上下游。</span>
+<span id="cb8-239"><a href="#cb8-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-240"><a href="#cb8-240" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-241"><a href="#cb8-241" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-242"><a href="#cb8-242" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-243"><a href="#cb8-243" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
 <span id="cb8-244"><a href="#cb8-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-245"><a href="#cb8-245" aria-hidden="true" tabindex="-1"></a>共组装的 218 条候选长 1,005--87,818 bp，中位数 3,459.5 bp；210 条无 terminal repeat，7 条 DTR，1 条 ITR。42 条有 conjugation-related marker，2 条有 geNomad 内部 AMR marker，但 **0/34** 个外部 CARD Perfect/Strict calls 位于 geNomad plasmid candidates 上。两套 AMR 注释不一致时，不能择一套更“好看”的结果；应保留 marker source、阈值和候选坐标，必要时人工复核蛋白域和 alignment。</span>
-<span id="cb8-246"><a href="#cb8-246" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-247"><a href="#cb8-247" aria-hidden="true" tabindex="-1"></a><span class="al">![Candidate length, geNomad score, transfer-related markers, and exact-reference audit. A triangle denotes high-coverage conflict with a complete cellular reference replicon.](../figures/57-coassembly-plasmid-evidence.png)</span>{#fig-57-candidates}</span>
-<span id="cb8-248"><a href="#cb8-248" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-249"><a href="#cb8-249" aria-hidden="true" tabindex="-1"></a>对 218 条候选与 399 条完整 mock 参考做精确比对后：</span>
+<span id="cb8-245"><a href="#cb8-245" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/reference-metrics.tsv"</span></span>
+<span id="cb8-246"><a href="#cb8-246" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/arg-context-summary.tsv"</span></span>
+<span id="cb8-247"><a href="#cb8-247" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/usa300-replicon-audit.tsv"</span></span>
+<span id="cb8-248"><a href="#cb8-248" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/summary.json"</span></span>
+<span id="cb8-249"><a href="#cb8-249" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb8-250"><a href="#cb8-250" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-251"><a href="#cb8-251" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>70 条在 identity ≥95%、query coverage ≥80% 时 best-hit 到已标注质粒；</span>
-<span id="cb8-252"><a href="#cb8-252" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>120 条在同一阈值下 best-hit 到完整细胞复制子；</span>
-<span id="cb8-253"><a href="#cb8-253" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>28 条没有高覆盖参考支持。</span>
+<span id="cb8-251"><a href="#cb8-251" aria-hidden="true" tabindex="-1"></a>共组装的 218 条候选长 1,005--87,818 bp，中位数 3,459.5 bp；210 条无 terminal repeat，7 条 DTR，1 条 ITR。42 条有 conjugation-related marker，2 条有 geNomad 内部 AMR marker，但 **0/34** 个外部 CARD Perfect/Strict calls 位于 geNomad plasmid candidates 上。两套 AMR 注释不一致时，不能择一套更“好看”的结果；应保留 marker source、阈值和候选坐标，必要时人工复核蛋白域和 alignment。</span>
+<span id="cb8-252"><a href="#cb8-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-253"><a href="#cb8-253" aria-hidden="true" tabindex="-1"></a><span class="al">![Candidate length, geNomad score, transfer-related markers, and exact-reference audit. A triangle denotes high-coverage conflict with a complete cellular reference replicon.](../figures/57-coassembly-plasmid-evidence.png)</span>{#fig-57-candidates}</span>
 <span id="cb8-254"><a href="#cb8-254" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-255"><a href="#cb8-255" aria-hidden="true" tabindex="-1"></a>第二类是 **complete-cellular-reference conflict**，不是一句话判死刑：染色体可能含整合元件或与质粒共享区段；但在这个拥有精确组成参考的 mock 中，它是非常强的短片段误分类/边界混淆警报。主结果必须把它与“reference-plasmid supported”分开。</span>
+<span id="cb8-255"><a href="#cb8-255" aria-hidden="true" tabindex="-1"></a>对 218 条候选与 399 条完整 mock 参考做精确比对后：</span>
 <span id="cb8-256"><a href="#cb8-256" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-257"><a href="#cb8-257" aria-hidden="true" tabindex="-1"></a><span class="fu">## 让阳性对照检查整条证据链</span></span>
-<span id="cb8-258"><a href="#cb8-258" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-259"><a href="#cb8-259" aria-hidden="true" tabindex="-1"></a>USA300 <span class="in">`GCA_000013465.1`</span> 有 4 条参考复制子，其中 3 条 header 标为 plasmid。geNomad 全部检出：pUSA01 score 0.9901，pUSA02 0.9942，pUSA03 0.9922。RGI 在 pUSA02 检出 <span class="in">`tet(45)`</span>，在 pUSA03 检出 <span class="in">`mupA`</span> 和 <span class="in">`ErmC`</span>；pUSA03 同时有 4 个 transfer-related markers。</span>
+<span id="cb8-257"><a href="#cb8-257" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>70 条在 identity ≥95%、query coverage ≥80% 时 best-hit 到已标注质粒；</span>
+<span id="cb8-258"><a href="#cb8-258" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>120 条在同一阈值下 best-hit 到完整细胞复制子；</span>
+<span id="cb8-259"><a href="#cb8-259" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>28 条没有高覆盖参考支持。</span>
 <span id="cb8-260"><a href="#cb8-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-261"><a href="#cb8-261" aria-hidden="true" tabindex="-1"></a><span class="al">![USA300 positive control. All three reference-labelled plasmids were detected; ARG and transfer-marker coordinates are shown separately.](../figures/57-usa300-positive-control.png)</span>{#fig-57-positive}</span>
+<span id="cb8-261"><a href="#cb8-261" aria-hidden="true" tabindex="-1"></a>第二类是 **complete-cellular-reference conflict**，不是一句话判死刑：染色体可能含整合元件或与质粒共享区段；但在这个拥有精确组成参考的 mock 中，它是非常强的短片段误分类/边界混淆警报。主结果必须把它与“reference-plasmid supported”分开。</span>
 <span id="cb8-262"><a href="#cb8-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-263"><a href="#cb8-263" aria-hidden="true" tabindex="-1"></a>这个对照证明当前软件、数据库和 join key 能找回真实 plasmid-borne ARG；它不把 mock 共组装中的 0/34 自动解释成“样本里绝无移动 ARG”。短读长组装可能没有把 ARG 与 plasmid backbone 连在同一 contig，低丰度质粒也可能未组装出来。</span>
+<span id="cb8-263"><a href="#cb8-263" aria-hidden="true" tabindex="-1"></a><span class="fu">## 让阳性对照检查整条证据链</span></span>
 <span id="cb8-264"><a href="#cb8-264" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-265"><a href="#cb8-265" aria-hidden="true" tabindex="-1"></a><span class="fu">### 质粒重建不能只靠 contig 分类</span></span>
+<span id="cb8-265"><a href="#cb8-265" aria-hidden="true" tabindex="-1"></a>USA300 <span class="in">`GCA_000013465.1`</span> 有 4 条参考复制子，其中 3 条 header 标为 plasmid。geNomad 全部检出：pUSA01 score 0.9901，pUSA02 0.9942，pUSA03 0.9922。RGI 在 pUSA02 检出 <span class="in">`tet(45)`</span>，在 pUSA03 检出 <span class="in">`mupA`</span> 和 <span class="in">`ErmC`</span>；pUSA03 同时有 4 个 transfer-related markers。</span>
 <span id="cb8-266"><a href="#cb8-266" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-267"><a href="#cb8-267" aria-hidden="true" tabindex="-1"></a>对于 short-read metagenome，优先升级为：</span>
+<span id="cb8-267"><a href="#cb8-267" aria-hidden="true" tabindex="-1"></a><span class="al">![USA300 positive control. All three reference-labelled plasmids were detected; ARG and transfer-marker coordinates are shown separately.](../figures/57-usa300-positive-control.png)</span>{#fig-57-positive}</span>
 <span id="cb8-268"><a href="#cb8-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-269"><a href="#cb8-269" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>assembly graph + paired-read linkage，检查分支与重复；</span>
-<span id="cb8-270"><a href="#cb8-270" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MOB-suite 做 plasmid reconstruction/typing，并报告 unresolved/novel replicons <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>；</span>
-<span id="cb8-271"><a href="#cb8-271" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>long-read 或 hybrid assembly 跨越 repeat、ARG 与 backbone；</span>
-<span id="cb8-272"><a href="#cb8-272" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>coverage consistency、circularization junction 与 raw-read spanning；</span>
-<span id="cb8-273"><a href="#cb8-273" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与宿主 MAG 的 differential coverage/Hi-C/long-read linkage 分开记录。</span>
+<span id="cb8-269"><a href="#cb8-269" aria-hidden="true" tabindex="-1"></a>这个对照证明当前软件、数据库和 join key 能找回真实 plasmid-borne ARG；它不把 mock 共组装中的 0/34 自动解释成“样本里绝无移动 ARG”。短读长组装可能没有把 ARG 与 plasmid backbone 连在同一 contig，低丰度质粒也可能未组装出来。</span>
+<span id="cb8-270"><a href="#cb8-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-271"><a href="#cb8-271" aria-hidden="true" tabindex="-1"></a><span class="fu">### 质粒重建不能只靠 contig 分类</span></span>
+<span id="cb8-272"><a href="#cb8-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-273"><a href="#cb8-273" aria-hidden="true" tabindex="-1"></a>对于 short-read metagenome，优先升级为：</span>
 <span id="cb8-274"><a href="#cb8-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-275"><a href="#cb8-275" aria-hidden="true" tabindex="-1"></a><span class="in">`DTR`</span> 或 circular contig 是结构支持，不自动说明能 conjugate；没有 circular signal 也不排除线性 plasmid 或未闭合片段。</span>
-<span id="cb8-276"><a href="#cb8-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-277"><a href="#cb8-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer module 要做系统级而非单基因判读</span></span>
-<span id="cb8-278"><a href="#cb8-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-279"><a href="#cb8-279" aria-hidden="true" tabindex="-1"></a>把 <span class="in">`conjugation_genes`</span> 展开为 gene coordinates，随后用 CONJscan/MacSyFinder 检查模块是否完整、方向是否合理、是否跨 contig 断裂。只有 relaxase 而没有 mating-pair formation system 时，更适合写 mobilizable candidate；完整 conjugation machinery 也只说明 genetic capacity，不是 transfer rate。</span>
+<span id="cb8-275"><a href="#cb8-275" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>assembly graph + paired-read linkage，检查分支与重复；</span>
+<span id="cb8-276"><a href="#cb8-276" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MOB-suite 做 plasmid reconstruction/typing，并报告 unresolved/novel replicons <span class="co">[</span><span class="ot">@robertson2018mobsuite</span><span class="co">]</span>；</span>
+<span id="cb8-277"><a href="#cb8-277" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>long-read 或 hybrid assembly 跨越 repeat、ARG 与 backbone；</span>
+<span id="cb8-278"><a href="#cb8-278" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>coverage consistency、circularization junction 与 raw-read spanning；</span>
+<span id="cb8-279"><a href="#cb8-279" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>与宿主 MAG 的 differential coverage/Hi-C/long-read linkage 分开记录。</span>
 <span id="cb8-280"><a href="#cb8-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-281"><a href="#cb8-281" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、绘图并做 fail-closed QA</span></span>
+<span id="cb8-281"><a href="#cb8-281" aria-hidden="true" tabindex="-1"></a><span class="in">`DTR`</span> 或 circular contig 是结构支持，不自动说明能 conjugate；没有 circular signal 也不排除线性 plasmid 或未闭合片段。</span>
 <span id="cb8-282"><a href="#cb8-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-283"><a href="#cb8-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### “有移动潜力”与“观察到转移”之间还差实验</span></span>
+<span id="cb8-283"><a href="#cb8-283" aria-hidden="true" tabindex="-1"></a><span class="fu">### transfer module 要做系统级而非单基因判读</span></span>
 <span id="cb8-284"><a href="#cb8-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-285"><a href="#cb8-285" aria-hidden="true" tabindex="-1"></a>证据强度可以写成一个结论天花板：</span>
+<span id="cb8-285"><a href="#cb8-285" aria-hidden="true" tabindex="-1"></a>把 <span class="in">`conjugation_genes`</span> 展开为 gene coordinates，随后用 CONJscan/MacSyFinder 检查模块是否完整、方向是否合理、是否跨 contig 断裂。只有 relaxase 而没有 mating-pair formation system 时，更适合写 mobilizable candidate；完整 conjugation machinery 也只说明 genetic capacity，不是 transfer rate。</span>
 <span id="cb8-286"><a href="#cb8-286" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-287"><a href="#cb8-287" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb8-288"><a href="#cb8-288" aria-hidden="true" tabindex="-1"></a>C_{max}=\min(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}).</span>
-<span id="cb8-289"><a href="#cb8-289" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb8-287"><a href="#cb8-287" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、绘图并做 fail-closed QA</span></span>
+<span id="cb8-288"><a href="#cb8-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-289"><a href="#cb8-289" aria-hidden="true" tabindex="-1"></a><span class="fu">### “有移动潜力”与“观察到转移”之间还差实验</span></span>
 <span id="cb8-290"><a href="#cb8-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-291"><a href="#cb8-291" aria-hidden="true" tabindex="-1"></a>只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 <span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span>。这正是序列文章最容易漏掉的一层。</span>
+<span id="cb8-291"><a href="#cb8-291" aria-hidden="true" tabindex="-1"></a>证据强度可以写成一个结论天花板：</span>
 <span id="cb8-292"><a href="#cb8-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-293"><a href="#cb8-293" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence hierarchy and maximum defensible mobility claim.](../figures/57-mobility-evidence-ladder.png)</span>{#fig-57-ladder}</span>
-<span id="cb8-294"><a href="#cb8-294" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-295"><a href="#cb8-295" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb8-296"><a href="#cb8-296" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article57_plasmids.R <span class="dt">\</span></span>
-<span id="cb8-297"><a href="#cb8-297" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb8-293"><a href="#cb8-293" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb8-294"><a href="#cb8-294" aria-hidden="true" tabindex="-1"></a>C_{max}=\min(C_{identity},C_{linkage},C_{machinery},C_{host},C_{experiment}).</span>
+<span id="cb8-295"><a href="#cb8-295" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb8-296"><a href="#cb8-296" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-297"><a href="#cb8-297" aria-hidden="true" tabindex="-1"></a>只要某一层缺失，最终措辞就不能越过它。Forster 等先用跨基因组共享与完整元件结构提出 broad-host-range candidates，再用 mating/conjugation assay、受体选择和基因型确认展示跨宿主转移 <span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span>。这正是序列文章最容易漏掉的一层。</span>
 <span id="cb8-298"><a href="#cb8-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-299"><a href="#cb8-299" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article57_plasmids.py <span class="dt">\</span></span>
-<span id="cb8-300"><a href="#cb8-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-301"><a href="#cb8-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-302"><a href="#cb8-302" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/57-plasmids-mobile-elements-frozen</span>
-<span id="cb8-303"><a href="#cb8-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-304"><a href="#cb8-304" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article57_plasmids.py <span class="dt">\</span></span>
-<span id="cb8-305"><a href="#cb8-305" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb8-306"><a href="#cb8-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/57-plasmids-mobile-elements-frozen <span class="dt">\</span></span>
-<span id="cb8-307"><a href="#cb8-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article57-validation <span class="dt">\</span></span>
-<span id="cb8-308"><a href="#cb8-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb8-309"><a href="#cb8-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/57-plasmids-mobile-elements.qmd</span>
-<span id="cb8-310"><a href="#cb8-310" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-311"><a href="#cb8-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-312"><a href="#cb8-312" aria-hidden="true" tabindex="-1"></a><span class="al">![All 34 co-assembly CARD Perfect/Strict calls occurred on contigs without a geNomad plasmid call. Co-location would still be prediction, not observed transfer.](../figures/57-arg-mobility-context.png)</span>{#fig-57-arg-context}</span>
-<span id="cb8-313"><a href="#cb8-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-314"><a href="#cb8-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="最小结果表"}</span>
-<span id="cb8-315"><a href="#cb8-315" aria-hidden="true" tabindex="-1"></a>至少保留 <span class="in">`candidate_id, length_bp, plasmid_score, calibrated_fdr, topology, hallmark_count, reference_support, arg_caller, arg_model, arg_tier, arg_coordinates, transfer_system, element_boundary, read_support, host_evidence, evidence_level, claim_ceiling`</span>。缺失值写 <span class="in">`NA/not tested`</span>，不要默认为阴性。</span>
-<span id="cb8-316"><a href="#cb8-316" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb8-299"><a href="#cb8-299" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence hierarchy and maximum defensible mobility claim.](../figures/57-mobility-evidence-ladder.png)</span>{#fig-57-ladder}</span>
+<span id="cb8-300"><a href="#cb8-300" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-301"><a href="#cb8-301" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb8-302"><a href="#cb8-302" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article57_plasmids.R <span class="dt">\</span></span>
+<span id="cb8-303"><a href="#cb8-303" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb8-304"><a href="#cb8-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-305"><a href="#cb8-305" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-306"><a href="#cb8-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-307"><a href="#cb8-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-308"><a href="#cb8-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/57-plasmids-mobile-elements-frozen</span>
+<span id="cb8-309"><a href="#cb8-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-310"><a href="#cb8-310" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article57_plasmids.py <span class="dt">\</span></span>
+<span id="cb8-311"><a href="#cb8-311" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb8-312"><a href="#cb8-312" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/57-plasmids-mobile-elements-frozen <span class="dt">\</span></span>
+<span id="cb8-313"><a href="#cb8-313" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article57-validation <span class="dt">\</span></span>
+<span id="cb8-314"><a href="#cb8-314" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb8-315"><a href="#cb8-315" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/57-plasmids-mobile-elements.qmd</span>
+<span id="cb8-316"><a href="#cb8-316" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb8-317"><a href="#cb8-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-318"><a href="#cb8-318" aria-hidden="true" tabindex="-1"></a><span class="fu">## 限定移动元件相关结论 {#sec-methods}</span></span>
+<span id="cb8-318"><a href="#cb8-318" aria-hidden="true" tabindex="-1"></a><span class="al">![All 34 co-assembly CARD Perfect/Strict calls occurred on contigs without a geNomad plasmid call. Co-location would still be prediction, not observed transfer.](../figures/57-arg-mobility-context.png)</span>{#fig-57-arg-context}</span>
 <span id="cb8-319"><a href="#cb8-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-320"><a href="#cb8-320" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb8-321"><a href="#cb8-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-322"><a href="#cb8-322" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Plasmid candidates were identified from 18,354 ≥1-kb MEGAHIT v1.2.9 co-assembly contigs (84,811,518 bp) derived from deterministic two-million-pair subsets of PRJEB52977 runs ERR9765746 and ERR9765747. geNomad v1.12.0 was run with database v1.9 (ICTV MSL39), 16 threads, 16 splits, the default minimum plasmid score of 0.7, and score calibration disabled; consequently, calibrated FDR values were not available. Candidate contigs were aligned to the fixed MOCK2 reference inventory (benchmark repository commit a429a3724d4593f35b8d7323b20252a6be90e1cd) using minimap2 v2.31-r1302 (</span><span class="in">`asm5`</span><span class="at">, secondary alignments disabled). Reference support required ≥95% alignment identity and ≥80% query coverage. ARGs were independently called with RGI v6.0.8 and CARD v4.0.1, retaining Perfect and Strict calls. Transfer-related marker annotations were retained as candidate evidence and were not interpreted as complete conjugation systems or observed transfer. All input assets and frozen outputs were SHA-256 audited.</span></span>
+<span id="cb8-320"><a href="#cb8-320" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="最小结果表"}</span>
+<span id="cb8-321"><a href="#cb8-321" aria-hidden="true" tabindex="-1"></a>至少保留 <span class="in">`candidate_id, length_bp, plasmid_score, calibrated_fdr, topology, hallmark_count, reference_support, arg_caller, arg_model, arg_tier, arg_coordinates, transfer_system, element_boundary, read_support, host_evidence, evidence_level, claim_ceiling`</span>。缺失值写 <span class="in">`NA/not tested`</span>，不要默认为阴性。</span>
+<span id="cb8-322"><a href="#cb8-322" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-323"><a href="#cb8-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-324"><a href="#cb8-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb8-324"><a href="#cb8-324" aria-hidden="true" tabindex="-1"></a><span class="fu">## 限定移动元件相关结论 {#sec-methods}</span></span>
 <span id="cb8-325"><a href="#cb8-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-326"><a href="#cb8-326" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; geNomad identified 218 plasmid-candidate contigs (1,005--87,818 bp), including 42 candidates with conjugation-related markers. Exact-reference auditing classified 70 candidates as reference-plasmid supported, 120 as conflicting with complete cellular reference replicons, and 28 as lacking high-coverage reference support. None of the 34 CARD Perfect/Strict calls occurred on a geNomad plasmid candidate. In the USA300 positive control (GCA_000013465.1), all three reference-labelled plasmids were detected; tet(45) occurred on pUSA02, whereas mupA and ErmC occurred on pUSA03, which also contained four transfer-related markers. These observations support candidate prioritization but do not demonstrate horizontal transfer.</span></span>
+<span id="cb8-326"><a href="#cb8-326" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb8-327"><a href="#cb8-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-328"><a href="#cb8-328" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb8-328"><a href="#cb8-328" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Plasmid candidates were identified from 18,354 ≥1-kb MEGAHIT v1.2.9 co-assembly contigs (84,811,518 bp) derived from deterministic two-million-pair subsets of PRJEB52977 runs ERR9765746 and ERR9765747. geNomad v1.12.0 was run with database v1.9 (ICTV MSL39), 16 threads, 16 splits, the default minimum plasmid score of 0.7, and score calibration disabled; consequently, calibrated FDR values were not available. Candidate contigs were aligned to the fixed MOCK2 reference inventory (benchmark repository commit a429a3724d4593f35b8d7323b20252a6be90e1cd) using minimap2 v2.31-r1302 (</span><span class="in">`asm5`</span><span class="at">, secondary alignments disabled). Reference support required ≥95% alignment identity and ≥80% query coverage. ARGs were independently called with RGI v6.0.8 and CARD v4.0.1, retaining Perfect and Strict calls. Transfer-related marker annotations were retained as candidate evidence and were not interpreted as complete conjugation systems or observed transfer. All input assets and frozen outputs were SHA-256 audited.</span></span>
 <span id="cb8-329"><a href="#cb8-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-330"><a href="#cb8-330" aria-hidden="true" tabindex="-1"></a>需要准备五类输入：</span>
+<span id="cb8-330"><a href="#cb8-330" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
 <span id="cb8-331"><a href="#cb8-331" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-332"><a href="#cb8-332" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**组装与 graph**：每个样本组装或预注册的 co-assembly，保留 contig length、coverage、GFA 与 assembler version；</span>
-<span id="cb8-333"><a href="#cb8-333" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**reads**：原始 paired reads，最好再有 long reads，用于 junction、breadth、chimerism 与 circularization 检查；</span>
-<span id="cb8-334"><a href="#cb8-334" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**独立 ARG 表**：CARD-RGI 或 AMRFinderPlus 的 model、identity、coverage、coordinates 与 database release；</span>
-<span id="cb8-335"><a href="#cb8-335" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**宿主证据**：MAG/linkage/Hi-C/long-read 信息，缺失时不要填宿主；</span>
-<span id="cb8-336"><a href="#cb8-336" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**对照**：至少一个已知 plasmid-borne ARG 阳性对照和一组完整 cellular replicons 负对照。</span>
+<span id="cb8-332"><a href="#cb8-332" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; geNomad identified 218 plasmid-candidate contigs (1,005--87,818 bp), including 42 candidates with conjugation-related markers. Exact-reference auditing classified 70 candidates as reference-plasmid supported, 120 as conflicting with complete cellular reference replicons, and 28 as lacking high-coverage reference support. None of the 34 CARD Perfect/Strict calls occurred on a geNomad plasmid candidate. In the USA300 positive control (GCA_000013465.1), all three reference-labelled plasmids were detected; tet(45) occurred on pUSA02, whereas mupA and ErmC occurred on pUSA03, which also contained four transfer-related markers. These observations support candidate prioritization but do not demonstrate horizontal transfer.</span></span>
+<span id="cb8-333"><a href="#cb8-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-334"><a href="#cb8-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb8-335"><a href="#cb8-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-336"><a href="#cb8-336" aria-hidden="true" tabindex="-1"></a>需要准备五类输入：</span>
 <span id="cb8-337"><a href="#cb8-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-338"><a href="#cb8-338" aria-hidden="true" tabindex="-1"></a>推荐的分析顺序是：</span>
-<span id="cb8-339"><a href="#cb8-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-340"><a href="#cb8-340" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先锁定最小 contig length、geNomad score/FDR policy 与数据库；</span>
-<span id="cb8-341"><a href="#cb8-341" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>分别运行 plasmid classifier 和 ARG caller，不在第一次 join 前人工挑候选；</span>
-<span id="cb8-342"><a href="#cb8-342" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用坐标连接同一 contig 上的 ARG、transfer marker 与 element boundary；</span>
-<span id="cb8-343"><a href="#cb8-343" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>对候选运行 MOB-suite、CONJscan 和 IntegronFinder，并查看 assembly graph；</span>
-<span id="cb8-344"><a href="#cb8-344" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 raw reads/long reads 验证物理连接与闭合；</span>
-<span id="cb8-345"><a href="#cb8-345" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>为每条候选赋 evidence level 和 claim ceiling；</span>
-<span id="cb8-346"><a href="#cb8-346" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>跨队列分析时按 study/library/assembler 分层，不直接比较 raw candidate counts；</span>
-<span id="cb8-347"><a href="#cb8-347" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>真正要写“transferable”或“broad host range”时，增加受体选择、空白对照和元件基因型确认的实验。</span>
-<span id="cb8-348"><a href="#cb8-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-349"><a href="#cb8-349" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="短读长的结论边界"}</span>
-<span id="cb8-350"><a href="#cb8-350" aria-hidden="true" tabindex="-1"></a>如果 ARG 和 transfer machinery 分落在不同 contigs，即使两者 coverage 高度相关，也只能写 sample-level co-occurrence 或待验证 linkage。优先补 long-read/hybrid assembly、Hi-C 或 targeted closure；不要用 abundance correlation 填补物理连接。</span>
-<span id="cb8-351"><a href="#cb8-351" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb8-352"><a href="#cb8-352" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-353"><a href="#cb8-353" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb8-338"><a href="#cb8-338" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**组装与 graph**：每个样本组装或预注册的 co-assembly，保留 contig length、coverage、GFA 与 assembler version；</span>
+<span id="cb8-339"><a href="#cb8-339" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**reads**：原始 paired reads，最好再有 long reads，用于 junction、breadth、chimerism 与 circularization 检查；</span>
+<span id="cb8-340"><a href="#cb8-340" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**独立 ARG 表**：CARD-RGI 或 AMRFinderPlus 的 model、identity、coverage、coordinates 与 database release；</span>
+<span id="cb8-341"><a href="#cb8-341" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**宿主证据**：MAG/linkage/Hi-C/long-read 信息，缺失时不要填宿主；</span>
+<span id="cb8-342"><a href="#cb8-342" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**对照**：至少一个已知 plasmid-borne ARG 阳性对照和一组完整 cellular replicons 负对照。</span>
+<span id="cb8-343"><a href="#cb8-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-344"><a href="#cb8-344" aria-hidden="true" tabindex="-1"></a>推荐的分析顺序是：</span>
+<span id="cb8-345"><a href="#cb8-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-346"><a href="#cb8-346" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>先锁定最小 contig length、geNomad score/FDR policy 与数据库；</span>
+<span id="cb8-347"><a href="#cb8-347" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>分别运行 plasmid classifier 和 ARG caller，不在第一次 join 前人工挑候选；</span>
+<span id="cb8-348"><a href="#cb8-348" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用坐标连接同一 contig 上的 ARG、transfer marker 与 element boundary；</span>
+<span id="cb8-349"><a href="#cb8-349" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>对候选运行 MOB-suite、CONJscan 和 IntegronFinder，并查看 assembly graph；</span>
+<span id="cb8-350"><a href="#cb8-350" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用 raw reads/long reads 验证物理连接与闭合；</span>
+<span id="cb8-351"><a href="#cb8-351" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>为每条候选赋 evidence level 和 claim ceiling；</span>
+<span id="cb8-352"><a href="#cb8-352" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>跨队列分析时按 study/library/assembler 分层，不直接比较 raw candidate counts；</span>
+<span id="cb8-353"><a href="#cb8-353" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>真正要写“transferable”或“broad host range”时，增加受体选择、空白对照和元件基因型确认的实验。</span>
 <span id="cb8-354"><a href="#cb8-354" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-355"><a href="#cb8-355" aria-hidden="true" tabindex="-1"></a>候选图的视觉变量各承担一个问题：x 轴为长度、y 轴为 geNomad score、颜色为 contig 上附加证据、点形为 exact-reference audit。不要再用点大小编码第五个连续变量；读者会失去判读顺序。</span>
-<span id="cb8-356"><a href="#cb8-356" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-357"><a href="#cb8-357" aria-hidden="true" tabindex="-1"></a>配色使用色盲友好的蓝、橙、绿、紫与中性灰；所有图内文字为英文。主图导出 vector PDF，同时保存 350 dpi PNG 和 LZW-compressed TIFF：</span>
+<span id="cb8-355"><a href="#cb8-355" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="短读长的结论边界"}</span>
+<span id="cb8-356"><a href="#cb8-356" aria-hidden="true" tabindex="-1"></a>如果 ARG 和 transfer machinery 分落在不同 contigs，即使两者 coverage 高度相关，也只能写 sample-level co-occurrence 或待验证 linkage。优先补 long-read/hybrid assembly、Hi-C 或 targeted closure；不要用 abundance correlation 填补物理连接。</span>
+<span id="cb8-357"><a href="#cb8-357" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb8-358"><a href="#cb8-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-359"><a href="#cb8-359" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb8-360"><a href="#cb8-360" aria-hidden="true" tabindex="-1"></a>source_table <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
-<span id="cb8-361"><a href="#cb8-361" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/57-plasmids-mobile-elements-frozen/coassembly-plasmid-candidates.tsv"</span>,</span>
-<span id="cb8-362"><a href="#cb8-362" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb8-363"><a href="#cb8-363" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-359"><a href="#cb8-359" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb8-360"><a href="#cb8-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-361"><a href="#cb8-361" aria-hidden="true" tabindex="-1"></a>候选图的视觉变量各承担一个问题：x 轴为长度、y 轴为 geNomad score、颜色为 contig 上附加证据、点形为 exact-reference audit。不要再用点大小编码第五个连续变量；读者会失去判读顺序。</span>
+<span id="cb8-362"><a href="#cb8-362" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-363"><a href="#cb8-363" aria-hidden="true" tabindex="-1"></a>配色使用色盲友好的蓝、橙、绿、紫与中性灰；所有图内文字为英文。主图导出 vector PDF，同时保存 350 dpi PNG 和 LZW-compressed TIFF：</span>
 <span id="cb8-364"><a href="#cb8-364" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-365"><a href="#cb8-365" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>ReferenceSupport)</span>
-<span id="cb8-366"><a href="#cb8-366" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>EvidenceContext)</span>
-<span id="cb8-367"><a href="#cb8-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-368"><a href="#cb8-368" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整出版图由已冻结脚本生成</span></span>
-<span id="cb8-369"><a href="#cb8-369" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(</span>
-<span id="cb8-370"><a href="#cb8-370" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Rscript"</span>,</span>
-<span id="cb8-371"><a href="#cb8-371" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
-<span id="cb8-372"><a href="#cb8-372" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen/scripts/plot_article57_plasmids.R"</span>,</span>
-<span id="cb8-373"><a href="#cb8-373" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen"</span>,</span>
-<span id="cb8-374"><a href="#cb8-374" aria-hidden="true" tabindex="-1"></a>    <span class="st">"figures"</span></span>
-<span id="cb8-375"><a href="#cb8-375" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb8-376"><a href="#cb8-376" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb8-377"><a href="#cb8-377" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb8-378"><a href="#cb8-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-379"><a href="#cb8-379" aria-hidden="true" tabindex="-1"></a>图注应写清 denominator 与 unit。例如 <span class="in">`34 CARD Perfect/Strict gene calls`</span> 不能缩写成 <span class="in">`34 ARGs`</span>，因为同一 ARG 家族可能有多个调用；<span class="in">`218 candidate contigs`</span> 也不能写成 218 个独立 plasmids。</span>
-<span id="cb8-380"><a href="#cb8-380" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-381"><a href="#cb8-381" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb8-382"><a href="#cb8-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-383"><a href="#cb8-383" aria-hidden="true" tabindex="-1"></a>质粒候选、ARG 共定位、完整转移模块与已观察传播必须分层；同一 contig 只证明物理上下文，不证明转移发生。</span>
+<span id="cb8-365"><a href="#cb8-365" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb8-366"><a href="#cb8-366" aria-hidden="true" tabindex="-1"></a>source_table <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb8-367"><a href="#cb8-367" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/57-plasmids-mobile-elements-frozen/coassembly-plasmid-candidates.tsv"</span>,</span>
+<span id="cb8-368"><a href="#cb8-368" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb8-369"><a href="#cb8-369" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-370"><a href="#cb8-370" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-371"><a href="#cb8-371" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>ReferenceSupport)</span>
+<span id="cb8-372"><a href="#cb8-372" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(source_table<span class="sc">$</span>EvidenceContext)</span>
+<span id="cb8-373"><a href="#cb8-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-374"><a href="#cb8-374" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整出版图由已冻结脚本生成</span></span>
+<span id="cb8-375"><a href="#cb8-375" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(</span>
+<span id="cb8-376"><a href="#cb8-376" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Rscript"</span>,</span>
+<span id="cb8-377"><a href="#cb8-377" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb8-378"><a href="#cb8-378" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen/scripts/plot_article57_plasmids.R"</span>,</span>
+<span id="cb8-379"><a href="#cb8-379" aria-hidden="true" tabindex="-1"></a>    <span class="st">"data/small/57-plasmids-mobile-elements-frozen"</span>,</span>
+<span id="cb8-380"><a href="#cb8-380" aria-hidden="true" tabindex="-1"></a>    <span class="st">"figures"</span></span>
+<span id="cb8-381"><a href="#cb8-381" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb8-382"><a href="#cb8-382" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-383"><a href="#cb8-383" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb8-384"><a href="#cb8-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-385"><a href="#cb8-385" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb8-385"><a href="#cb8-385" aria-hidden="true" tabindex="-1"></a>图注应写清 denominator 与 unit。例如 <span class="in">`34 CARD Perfect/Strict gene calls`</span> 不能缩写成 <span class="in">`34 ARGs`</span>，因为同一 ARG 家族可能有多个调用；<span class="in">`218 candidate contigs`</span> 也不能写成 218 个独立 plasmids。</span>
 <span id="cb8-386"><a href="#cb8-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-387"><a href="#cb8-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 方法、marker/sequence 双分支、calibration 与 benchmark：<span class="co">[</span><span class="ot">@camargo2024genomad; @genomad2026software</span><span class="co">]</span></span>
-<span id="cb8-388"><a href="#cb8-388" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 真实 mock-community 平台与参考序列：<span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
-<span id="cb8-389"><a href="#cb8-389" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG ontology、model-specific thresholds 与 CARD-RGI：<span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span></span>
-<span id="cb8-390"><a href="#cb8-390" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG-associated MGE 类型与术语边界：<span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span></span>
-<span id="cb8-391"><a href="#cb8-391" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Broad-host-range MGE、完整结构与体外转移验证：<span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span></span>
-<span id="cb8-392"><a href="#cb8-392" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Plasmid reconstruction/typing、integron 与 conjugation-system 检测：<span class="co">[</span><span class="ot">@robertson2018mobsuite; @cury2016integronfinder; @abby2014macsyfinder</span><span class="co">]</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
+<span id="cb8-387"><a href="#cb8-387" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb8-388"><a href="#cb8-388" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-389"><a href="#cb8-389" aria-hidden="true" tabindex="-1"></a>质粒候选、ARG 共定位、完整转移模块与已观察传播必须分层；同一 contig 只证明物理上下文，不证明转移发生。</span>
+<span id="cb8-390"><a href="#cb8-390" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-391"><a href="#cb8-391" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb8-392"><a href="#cb8-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-393"><a href="#cb8-393" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>geNomad 方法、marker/sequence 双分支、calibration 与 benchmark：<span class="co">[</span><span class="ot">@camargo2024genomad; @genomad2026software</span><span class="co">]</span></span>
+<span id="cb8-394"><a href="#cb8-394" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 真实 mock-community 平台与参考序列：<span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb8-395"><a href="#cb8-395" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG ontology、model-specific thresholds 与 CARD-RGI：<span class="co">[</span><span class="ot">@alcock2023card</span><span class="co">]</span></span>
+<span id="cb8-396"><a href="#cb8-396" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ARG-associated MGE 类型与术语边界：<span class="co">[</span><span class="ot">@partridge2018mgeamr</span><span class="co">]</span></span>
+<span id="cb8-397"><a href="#cb8-397" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Broad-host-range MGE、完整结构与体外转移验证：<span class="co">[</span><span class="ot">@pike2022broadhostmge</span><span class="co">]</span></span>
+<span id="cb8-398"><a href="#cb8-398" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Plasmid reconstruction/typing、integron 与 conjugation-system 检测：<span class="co">[</span><span class="ot">@robertson2018mobsuite; @cury2016integronfinder; @abby2014macsyfinder</span><span class="co">]</span></span></code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
 

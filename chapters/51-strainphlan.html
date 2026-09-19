@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">菌株树上的聚集，能支持多强的结论？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">菌株树上的聚集，能支持多强的结论？</a>
+  <ul class="collapse">
+  <li><a href="#marker-树描述的是可见标记区的谱系关系" id="toc-marker-树描述的是可见标记区的谱系关系" class="nav-link" data-scroll-target="#marker-树描述的是可见标记区的谱系关系">marker 树描述的是可见标记区的谱系关系</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -1002,13 +1034,13 @@ div.csl-indent {
 <p>本次实跑使用 <strong>24 CPU cores</strong>。PhyloPhlAn 配置生成耗时 <strong>4.13 秒</strong>；当前阈值和官方阈值两次 StrainPhlAn 分别耗时 <strong>80.82 秒</strong>与 <strong>84.08 秒</strong>，峰值 RAM 分别为 <strong>2.076 GiB</strong> 与 <strong>2.083 GiB</strong>。完整工作目录约 <strong>131 MB</strong>。从已生成 consensus marker profiles 起步，建议准备 <strong>8 GB RAM、16–24 cores、2 GB 可用磁盘、约 5 分钟</strong>；若从原始 FASTQ 运行 MetaPhlAn，耗时和磁盘取决于样本数与测序深度。没有服务器时，可读取 <code>data/small/51-strainphlan-frozen/</code> 的规范化表和树文件重画图。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="marker 树描述的是可见标记区的谱系关系">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>marker 树描述的是可见标记区的谱系关系
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1038,6 +1070,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="marker-树描述的是可见标记区的谱系关系" class="level3">
+<h3 class="anchored" data-anchor-id="marker-树描述的是可见标记区的谱系关系">marker 树描述的是可见标记区的谱系关系</h3>
+<p>25 个样本分属 13 项研究和 9 个国家，国家与研究高度重合。树上同国聚集可以来自真实群体结构，也可能包含研究与流程差异；不能仅靠颜色聚集解释为地理原因。样本对共享参与者和研究背景，距离点也不是全部独立重复。</p>
+<p>marker 缺失模式会改变共同可比较范围，物种内混合还可能让共识不代表单一克隆。应查看比对覆盖和分支支持，再解释局部聚类。树上的近距离关系提供共享线索，不提供方向、接触或具体传播事件证据。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1305,7 +1342,10 @@ div.csl-indent {
 <section id="树上的近邻不是传播证明" class="level3">
 <h3 class="anchored" data-anchor-id="树上的近邻不是传播证明">树上的近邻不是传播证明</h3>
 <p>本次描述性距离只在两个样本都为 A/C/G/T 的位点上计算：</p>
-<p>[ d_{ij}= {_{ij}}. ]</p>
+<p><span class="math display">\[
+d_{ij}=\frac{\text{nucleotide differences}_{ij}}
+{\text{comparable A/C/G/T sites}_{ij}}.
+\]</span></p>
 <p>这个未校正 p-distance 便于审计，但深分化时可能饱和，也没有利用位点替换模型。更重要的是，近邻可由共同来源、流行克隆、数据库偏倚、批次、cross-mapping 或样本污染造成。传播分析还需要纵向/接触设计、阴性样本对和更密集的全基因组 SNV 证据。</p>
 <details>
 <summary>
@@ -1961,7 +2001,7 @@ Truong, Duy Tin, Adrian Tett, Edoardo Pasolli, Curtis Huttenhower, 和 Nicola Se
 <span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>本次实跑使用 **24 CPU cores**。PhyloPhlAn 配置生成耗时 **4.13 秒**；当前阈值和官方阈值两次 StrainPhlAn 分别耗时 **80.82 秒**与 **84.08 秒**，峰值 RAM 分别为 **2.076 GiB** 与 **2.083 GiB**。完整工作目录约 **131 MB**。从已生成 consensus marker profiles 起步，建议准备 **8 GB RAM、16--24 cores、2 GB 可用磁盘、约 5 分钟**；若从原始 FASTQ 运行 MetaPhlAn，耗时和磁盘取决于样本数与测序深度。没有服务器时，可读取 <span class="in">`data/small/51-strainphlan-frozen/`</span> 的规范化表和树文件重画图。</span>
 <span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="marker 树描述的是可见标记区的谱系关系"}</span>
 <span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>树拓扑依赖 marker 覆盖与缺失模式；地理或分组聚集不自动证明传播方向。</span>
 <span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -1975,311 +2015,317 @@ Truong, Duy Tin, Adrian Tett, Edoardo Pasolli, Curtis Huttenhower, 和 Nicola Se
 <span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="al">![由同一 gap-aware marker p-distance 矩阵得到的 additive PCoA。该图用于观察结构和离群点，不替代系统发育树。](../figures/51-marker-distance-pcoa.png)</span>{#fig-51-pcoa}</span>
 <span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="fu">### marker 树描述的是可见标记区的谱系关系</span></span>
 <span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/51/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 1.4 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>25 个样本分属 13 项研究和 9 个国家，国家与研究高度重合。树上同国聚集可以来自真实群体结构，也可能包含研究与流程差异；不能仅靠颜色聚集解释为地理原因。样本对共享参与者和研究背景，距离点也不是全部独立重复。</span>
 <span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/51/download.R)</span>。</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>marker 缺失模式会改变共同可比较范围，物种内混合还可能让共识不代表单一克隆。应查看比对覆盖和分支支持，再解释局部聚类。树上的近距离关系提供共享线索，不提供方向、接触或具体传播事件证据。</span>
 <span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-51</span></span>
-<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/51/files.tsv"</span>))</span>
-<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
-<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
-<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 本次固定对象 <span class="pp">|</span> 审计证据 <span class="pp">|</span></span>
-<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Consensus markers <span class="pp">|</span> 官方教程 25 个真实 stool metagenomes，来自 13 studies、9 countries <span class="pp">|</span> 25 个 pickle 各自记录 URL、bytes、SHA-256 和 2022-08-25 last-modified <span class="pp">|</span></span>
-<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Target markers <span class="pp">|</span> <span class="in">`t__SGB4933_group.fna`</span>，187 个可用 markers <span class="pp">|</span> bioBakery 官方教程资源，SHA-256 锁定 <span class="pp">|</span></span>
-<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> References <span class="pp">|</span> 6 个官方参考基因组，其中 5 个通过最终过滤 <span class="pp">|</span> accession 文件、URL 与 SHA-256 锁定 <span class="pp">|</span></span>
-<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MetaPhlAn metadata <span class="pp">|</span> <span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103.pkl`</span> <span class="pp">|</span> 从官方未压缩 tar 的首个完整成员提取；55,986,225 bytes、SHA-256 锁定 <span class="pp">|</span></span>
-<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reproduction baseline <span class="pp">|</span> 官方 <span class="in">`.info`</span>、<span class="in">`.polymorphic`</span>、concatenated alignment 与 RAxML tree <span class="pp">|</span> 4 个原生文件逐一校验 SHA-256 <span class="pp">|</span></span>
-<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>准备脚本下载 37 个官方资产。由于 consensus profiles 和数据库 metadata 是 Python serialized objects，运行脚本会在任何反序列化前重新计算并比对全部 checksum；文件缺失、大小变化或 SHA-256 不符时立即停止。官方教程 wiki commit 固定为 <span class="in">`db372805bafe634d5c5f104f33cc9bec11d8bcdf`</span>。</span>
-<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> env create <span class="at">-f</span> env/biobakery.yml</span>
-<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> list <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="at">--explicit</span> <span class="dt">\</span></span>
-<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> env/biobakery-linux-64.lock</span>
-<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 strainphlan <span class="at">-v</span></span>
-<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 metaphlan <span class="at">--version</span></span>
-<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 phylophlan <span class="at">-v</span></span>
-<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>实跑环境为 StrainPhlAn 4.2.5、MetaPhlAn 4.2.5、PhyloPhlAn 3.2.1、MAFFT 7.526、BLAST+ 2.17.0 与 Python 3.12.13。环境锁文件标注 RAxML Bioconda package 8.2.13，但可执行文件自报 **RAxML binary 8.2.12**；Methods 必须报告程序实际输出，同时保留 **Bioconda package 8.2.13** 这一环境审计信息。</span>
-<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
-<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ape"</span>, <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"ggrepel"</span></span>
-<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"BiocManager"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(<span class="st">"BiocManager"</span>)</span>
-<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"ggtree"</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>, <span class="at">update =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
-<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggtree)</span>
-<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
-<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
-<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260751</span>)</span>
-<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>  <span class="st">"AUT"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"CHN"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>, <span class="st">"DEU"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
-<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a>  <span class="st">"FJI"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"GBR"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>, <span class="st">"NLD"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>,</span>
-<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>  <span class="st">"RUS"</span> <span class="ot">=</span> <span class="st">"#F0E442"</span>, <span class="st">"SWE"</span> <span class="ot">=</span> <span class="st">"#6A3D9A"</span>, <span class="st">"USA"</span> <span class="ot">=</span> <span class="st">"#8C564B"</span>,</span>
-<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Reference"</span> <span class="ot">=</span> <span class="st">"#555555"</span></span>
-<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
-<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">140</span>,</span>
-<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载、校验并登记输入 {#sec-code}</span></span>
-<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article51"</span></span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/51/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 1.4 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/51/download.R)</span>。</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-51</span></span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/51/files.tsv"</span>))</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据从哪里来</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 本次固定对象 <span class="pp">|</span> 审计证据 <span class="pp">|</span></span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Consensus markers <span class="pp">|</span> 官方教程 25 个真实 stool metagenomes，来自 13 studies、9 countries <span class="pp">|</span> 25 个 pickle 各自记录 URL、bytes、SHA-256 和 2022-08-25 last-modified <span class="pp">|</span></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Target markers <span class="pp">|</span> <span class="in">`t__SGB4933_group.fna`</span>，187 个可用 markers <span class="pp">|</span> bioBakery 官方教程资源，SHA-256 锁定 <span class="pp">|</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> References <span class="pp">|</span> 6 个官方参考基因组，其中 5 个通过最终过滤 <span class="pp">|</span> accession 文件、URL 与 SHA-256 锁定 <span class="pp">|</span></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MetaPhlAn metadata <span class="pp">|</span> <span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103.pkl`</span> <span class="pp">|</span> 从官方未压缩 tar 的首个完整成员提取；55,986,225 bytes、SHA-256 锁定 <span class="pp">|</span></span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Reproduction baseline <span class="pp">|</span> 官方 <span class="in">`.info`</span>、<span class="in">`.polymorphic`</span>、concatenated alignment 与 RAxML tree <span class="pp">|</span> 4 个原生文件逐一校验 SHA-256 <span class="pp">|</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>准备脚本下载 37 个官方资产。由于 consensus profiles 和数据库 metadata 是 Python serialized objects，运行脚本会在任何反序列化前重新计算并比对全部 checksum；文件缺失、大小变化或 SHA-256 不符时立即停止。官方教程 wiki commit 固定为 <span class="in">`db372805bafe634d5c5f104f33cc9bec11d8bcdf`</span>。</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装环境与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> env create <span class="at">-f</span> env/biobakery.yml</span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> list <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="at">--explicit</span> <span class="dt">\</span></span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> env/biobakery-linux-64.lock</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 strainphlan <span class="at">-v</span></span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 metaphlan <span class="at">--version</span></span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 phylophlan <span class="at">-v</span></span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>实跑环境为 StrainPhlAn 4.2.5、MetaPhlAn 4.2.5、PhyloPhlAn 3.2.1、MAFFT 7.526、BLAST+ 2.17.0 与 Python 3.12.13。环境锁文件标注 RAxML Bioconda package 8.2.13，但可执行文件自报 **RAxML binary 8.2.12**；Methods 必须报告程序实际输出，同时保留 **Bioconda package 8.2.13** 这一环境审计信息。</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ape"</span>, <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"ggrepel"</span></span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"BiocManager"</span>, <span class="at">quietly =</span> <span class="cn">TRUE</span>)) <span class="fu">install.packages</span>(<span class="st">"BiocManager"</span>)</span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>BiocManager<span class="sc">::</span><span class="fu">install</span>(<span class="st">"ggtree"</span>, <span class="at">ask =</span> <span class="cn">FALSE</span>, <span class="at">update =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ape)</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggtree)</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggrepel)</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260751</span>)</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>  <span class="st">"AUT"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"CHN"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>, <span class="st">"DEU"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>  <span class="st">"FJI"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"GBR"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>, <span class="st">"NLD"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>,</span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>  <span class="st">"RUS"</span> <span class="ot">=</span> <span class="st">"#F0E442"</span>, <span class="st">"SWE"</span> <span class="ot">=</span> <span class="st">"#6A3D9A"</span>, <span class="st">"USA"</span> <span class="ot">=</span> <span class="st">"#8C564B"</span>,</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Reference"</span> <span class="ot">=</span> <span class="st">"#555555"</span></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">140</span>,</span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
 <span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article51_strainphlan.py <span class="dt">\</span></span>
-<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
-<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/asset-manifest.tsv"</span></span>
-<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-metadata.tsv"</span></span>
-<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/run-contract.json"</span></span>
-<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>脚本会重建专用的 <span class="in">`work/article51/`</span>，不要把个人文件放进该目录。数据库 tar 总体积约 2.6 GB，但 metadata pickle 位于未压缩 tar 的第一个成员；固定 HTTP range <span class="in">`0-67108863`</span> 已覆盖该完整成员，因此无需下载本篇不使用的 Bowtie2 indices 和 marker archive。若服务器或镜像不支持 range request，应改为下载完整官方 tar，并在解包后核对同一 SHA-256。</span>
-<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先复现过滤，再检查树拓扑 {#sec-audit}</span></span>
-<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a>当前 187-marker tree 与官方 baseline 在 30 个共同 tips 上的 Robinson--Foulds distance 为 8/54，normalized RF 为 **0.148**；官方 80/80 阈值复跑得到 178 markers，RF 为 12/54，normalized RF 为 **0.222**。两者都不是 exact topology match。官方树没有记录本次显式 RAxML seed，且当前软件产生的 marker set 也与官方 <span class="in">`.info`</span> 相差 1 个，因此不应宣称逐分支复现成功；能复现的是数据流程、保留样本和总体结构，不能把不一致分支包装成生物学发现。</span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载、校验并登记输入 {#sec-code}</span></span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article51"</span></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article51_strainphlan.py <span class="dt">\</span></span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/asset-manifest.tsv"</span></span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-metadata.tsv"</span></span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/run-contract.json"</span></span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 pickle 当普通文本输入"}</span>
-<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>Serialized profiles 可在反序列化时执行对象加载逻辑。只使用可信官方来源，并在工具读取前核对固定 SHA-256；下载成功不等于内容可信或完整。</span>
-<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>脚本会重建专用的 <span class="in">`work/article51/`</span>，不要把个人文件放进该目录。数据库 tar 总体积约 2.6 GB，但 metadata pickle 位于未压缩 tar 的第一个成员；固定 HTTP range <span class="in">`0-67108863`</span> 已覆盖该完整成员，因此无需下载本篇不使用的 Bowtie2 indices 和 marker archive。若服务器或镜像不支持 range request，应改为下载完整官方 tar，并在解包后核对同一 SHA-256。</span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先复现过滤，再检查树拓扑 {#sec-audit}</span></span>
 <span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成显式 seed 的 PhyloPhlAn 配置</span></span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>当前 187-marker tree 与官方 baseline 在 30 个共同 tips 上的 Robinson--Foulds distance 为 8/54，normalized RF 为 **0.148**；官方 80/80 阈值复跑得到 178 markers，RF 为 12/54，normalized RF 为 **0.222**。两者都不是 exact topology match。官方树没有记录本次显式 RAxML seed，且当前软件产生的 marker set 也与官方 <span class="in">`.info`</span> 相差 1 个，因此不应宣称逐分支复现成功；能复现的是数据流程、保留样本和总体结构，不能把不一致分支包装成生物学发现。</span>
 <span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="dt">\</span></span>
-<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>  phylophlan_write_config_file <span class="dt">\</span></span>
-<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span> <span class="dt">\</span></span>
-<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> n <span class="at">--db_dna</span> makeblastdb <span class="at">--map_dna</span> blastn <span class="dt">\</span></span>
-<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>  <span class="at">--msa</span> mafft <span class="at">--tree1</span> raxml <span class="at">--overwrite</span></span>
-<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a><span class="co"># 将配置中唯一的 RAxML 默认值替换为：</span></span>
-<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a><span class="co"># params = -p 20260751 -m GTRCAT</span></span>
-<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a><span class="ex">rg</span> <span class="at">--</span> <span class="st">'-p 20260751|--thread 1'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span></span>
-<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a>RAxML 的 starting parsimony tree 用 <span class="in">`-p 20260751`</span> 固定；MAFFT marker alignment 固定为 <span class="in">`--thread 1`</span>，并设置 <span class="in">`PYTHONHASHSEED=0`</span>。配置若没有且只有一个默认 seed，runner 会拒绝继续，而不是静默生成不可重放的树。</span>
-<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把地理分层当描述性检查，而不是假设检验</span></span>
-<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>300 个样本对中，同研究 20 对、同国家异研究 55 对、异国家 225 对；其 p-distance 中位数分别为 0.1861、0.2144 和 0.2431。配对不是独立重复，同一研究通常又对应特定国家、疾病、年龄、建库和实验室，因此这里不做伪重复的组间 p 值。最近的一对 <span class="in">`SZAXPI003417-4`</span> 与 <span class="in">`T2D-025`</span> 来自中国的两个不同研究，p-distance 为 0.00330；这只能提示后续核查，不能证明传播。</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 pickle 当普通文本输入"}</span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a>Serialized profiles 可在反序列化时执行对象加载逻辑。只使用可信官方来源，并在工具读取前核对固定 SHA-256；下载成功不等于内容可信或完整。</span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成显式 seed 的 PhyloPhlAn 配置</span></span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="dt">\</span></span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a>  phylophlan_write_config_file <span class="dt">\</span></span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span> <span class="dt">\</span></span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> n <span class="at">--db_dna</span> makeblastdb <span class="at">--map_dna</span> blastn <span class="dt">\</span></span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a>  <span class="at">--msa</span> mafft <span class="at">--tree1</span> raxml <span class="at">--overwrite</span></span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a><span class="co"># 将配置中唯一的 RAxML 默认值替换为：</span></span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a><span class="co"># params = -p 20260751 -m GTRCAT</span></span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a><span class="ex">rg</span> <span class="at">--</span> <span class="st">'-p 20260751|--thread 1'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span></span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a><span class="al">![同研究、同国家异研究和异国家样本对的未校正 marker differences；每个样本参与多个 pair，故不进行独立样本检验。](../figures/51-pairwise-distance-strata.png)</span>{#fig-51-strata}</span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>RAxML 的 starting parsimony tree 用 <span class="in">`-p 20260751`</span> 固定；MAFFT marker alignment 固定为 <span class="in">`--thread 1`</span>，并设置 <span class="in">`PYTHONHASHSEED=0`</span>。配置若没有且只有一个默认 seed，runner 会拒绝继续，而不是静默生成不可重放的树。</span>
 <span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 忽略 marker filtering"}</span>
-<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>只报告“用了 StrainPhlAn”无法复现。至少记录 trim、sample marker completeness、marker prevalence、post-filter completeness、breadth threshold 和 retained marker count。</span>
-<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把地理分层当描述性检查，而不是假设检验</span></span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>300 个样本对中，同研究 20 对、同国家异研究 55 对、异国家 225 对；其 p-distance 中位数分别为 0.1861、0.2144 和 0.2431。配对不是独立重复，同一研究通常又对应特定国家、疾病、年龄、建库和实验室，因此这里不做伪重复的组间 p 值。最近的一对 <span class="in">`SZAXPI003417-4`</span> 与 <span class="in">`T2D-025`</span> 来自中国的两个不同研究，p-distance 为 0.00330；这只能提示后续核查，不能证明传播。</span>
 <span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a><span class="fu">## 当前显式阈值主分析</span></span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a><span class="al">![同研究、同国家异研究和异国家样本对的未校正 marker differences；每个样本参与多个 pair，故不进行独立样本检验。](../figures/51-pairwise-distance-strata.png)</span>{#fig-51-strata}</span>
 <span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a><span class="fu">### 每个样本贡献一套物种特异 consensus markers {#sec-theory}</span></span>
-<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 用 clade-specific marker genes 做物种/SGB 定量；StrainPhlAn 从目标 clade 的 marker alignments 提取每个样本的 consensus sequence，再与可选参考基因组共同对齐并建树 <span class="co">[</span><span class="ot">@blancomiguez2023metaphlan4</span><span class="co">]</span>。它避开全基因组 assembly，但只描述数据库 marker 覆盖的核心序列空间。</span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 忽略 marker filtering"}</span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>只报告“用了 StrainPhlAn”无法复现。至少记录 trim、sample marker completeness、marker prevalence、post-filter completeness、breadth threshold 和 retained marker count。</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a><span class="fu">### Marker filtering 同时控制缺失与信息量</span></span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a><span class="fu">## 当前显式阈值主分析</span></span>
 <span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>一个样本若只覆盖很少 markers，其树位置会被大量缺失字符支配；一个 marker 若只出现在少数样本中，也难以建立可比坐标。StrainPhlAn 因而先按样本 marker completeness 和 marker prevalence 双向过滤，再拼接保留下来的对齐。阈值变化会改变 alignment sites，继而改变树拓扑。</span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a><span class="fu">### 每个样本贡献一套物种特异 consensus markers {#sec-theory}</span></span>
 <span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="dt">\</span></span>
-<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a>  strainphlan <span class="dt">\</span></span>
-<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_list</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-list.txt"</span> <span class="dt">\</span></span>
-<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a>  <span class="at">--reference_list</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/reference-list.txt"</span> <span class="dt">\</span></span>
-<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/clade_markers/t__SGB4933_group.fna"</span> <span class="dt">\</span></span>
-<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/database/mpa_vJan21_CHOCOPhlAnSGB_202103.pkl"</span> <span class="dt">\</span></span>
-<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> t__SGB4933_group <span class="dt">\</span></span>
-<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/output"</span> <span class="at">-n</span> 24 <span class="dt">\</span></span>
-<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trim_sequences</span> 50 <span class="dt">\</span></span>
-<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers</span> 20 <span class="dt">\</span></span>
-<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_perc</span> 25 <span class="dt">\</span></span>
-<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">--marker_in_n_samples_perc</span> 50 <span class="dt">\</span></span>
-<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_after_filt</span> 20 <span class="dt">\</span></span>
-<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_after_filt_perc</span> 25 <span class="dt">\</span></span>
-<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>  <span class="at">--breadth_thres</span> 80 <span class="dt">\</span></span>
-<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phylophlan_mode</span> fast <span class="dt">\</span></span>
-<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phylophlan_configuration</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span> <span class="dt">\</span></span>
-<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tmp</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/tmp"</span> <span class="at">--debug</span></span>
-<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>25 个样本全部保留，6 个 references 中 5 个保留，187/187 markers 进入 18,027-site alignment。主分析选择较宽的样本完整度阈值和 50% marker prevalence；它保留信息较多，但不应脱离敏感性分支单独解释。</span>
-<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 给没有支持度的分支讲故事"}</span>
-<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a>单次 fast ML tree 的局部拓扑会随 markers、版本、模型和 seed 改变。没有 branch support 和敏感性分析时，不应把一条短内部枝解释成确定谱系。</span>
-<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>MetaPhlAn 用 clade-specific marker genes 做物种/SGB 定量；StrainPhlAn 从目标 clade 的 marker alignments 提取每个样本的 consensus sequence，再与可选参考基因组共同对齐并建树 <span class="co">[</span><span class="ot">@blancomiguez2023metaphlan4</span><span class="co">]</span>。它避开全基因组 assembly，但只描述数据库 marker 覆盖的核心序列空间。</span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a><span class="fu">### Marker filtering 同时控制缺失与信息量</span></span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a>一个样本若只覆盖很少 markers，其树位置会被大量缺失字符支配；一个 marker 若只出现在少数样本中，也难以建立可比坐标。StrainPhlAn 因而先按样本 marker completeness 和 marker prevalence 双向过滤，再拼接保留下来的对齐。阈值变化会改变 alignment sites，继而改变树拓扑。</span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-biobakery-2026.07 <span class="dt">\</span></span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a>  strainphlan <span class="dt">\</span></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_list</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/sample-list.txt"</span> <span class="dt">\</span></span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">--reference_list</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/reference-list.txt"</span> <span class="dt">\</span></span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/clade_markers/t__SGB4933_group.fna"</span> <span class="dt">\</span></span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/database/mpa_vJan21_CHOCOPhlAnSGB_202103.pkl"</span> <span class="dt">\</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> t__SGB4933_group <span class="dt">\</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/output"</span> <span class="at">-n</span> 24 <span class="dt">\</span></span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trim_sequences</span> 50 <span class="dt">\</span></span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers</span> 20 <span class="dt">\</span></span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_perc</span> 25 <span class="dt">\</span></span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--marker_in_n_samples_perc</span> 50 <span class="dt">\</span></span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_after_filt</span> 20 <span class="dt">\</span></span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample_with_n_markers_after_filt_perc</span> 25 <span class="dt">\</span></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--breadth_thres</span> 80 <span class="dt">\</span></span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phylophlan_mode</span> fast <span class="dt">\</span></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a>  <span class="at">--phylophlan_configuration</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/phylophlan-seeded.cfg"</span> <span class="dt">\</span></span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tmp</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/tmp"</span> <span class="at">--debug</span></span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a><span class="fu">## 按官方 2022 教程阈值做敏感性复跑</span></span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a>25 个样本全部保留，6 个 references 中 5 个保留，187/187 markers 进入 18,027-site alignment。主分析选择较宽的样本完整度阈值和 50% marker prevalence；它保留信息较多，但不应脱离敏感性分支单独解释。</span>
 <span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a><span class="co"># 其余参数、输入、软件、seed 和输出检查完全相同，仅替换以下三项：</span></span>
-<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a><span class="ex">--sample_with_n_markers_perc</span> 80</span>
-<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a><span class="ex">--marker_in_n_samples_perc</span> 80</span>
-<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a><span class="ex">--sample_with_n_markers_after_filt_perc</span> 80</span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 给没有支持度的分支讲故事"}</span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a>单次 fast ML tree 的局部拓扑会随 markers、版本、模型和 seed 改变。没有 branch support 和敏感性分析时，不应把一条短内部枝解释成确定谱系。</span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a><span class="fu">## 按官方 2022 教程阈值做敏感性复跑</span></span>
 <span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article51_strainphlan.py <span class="dt">\</span></span>
-<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-biobakery-2026.07 <span class="at">--threads</span> 24</span>
-<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>官方预计算 <span class="in">`.info`</span> 记录 179 个 selected markers；在 StrainPhlAn 4.2.5 中用同样的 80/80 阈值、同一输入重跑得到 178 个 markers 和 17,638 sites。阈值复跑仍保留 25 个样本与 5 个 references。这个 1-marker 差异说明软件版本、过滤实现和输入 provenance 必须与阈值一起记录。</span>
-<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把树上相邻写成传播"}</span>
-<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a>共同国家或研究中的近邻可能来自采样结构、流行克隆或批次。传播至少还需要更高分辨率 SNVs、充分 genome overlap、时间与接触信息，以及共同来源排查。</span>
-<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a><span class="co"># 其余参数、输入、软件、seed 和输出检查完全相同，仅替换以下三项：</span></span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a><span class="ex">--sample_with_n_markers_perc</span> 80</span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a><span class="ex">--marker_in_n_samples_perc</span> 80</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a><span class="ex">--sample_with_n_markers_after_filt_perc</span> 80</span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article51_strainphlan.py <span class="dt">\</span></span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">--environment</span> metagenome-biobakery-2026.07 <span class="at">--threads</span> 24</span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总距离、保存证据并结果核对</span></span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a>官方预计算 <span class="in">`.info`</span> 记录 179 个 selected markers；在 StrainPhlAn 4.2.5 中用同样的 80/80 阈值、同一输入重跑得到 178 个 markers 和 17,638 sites。阈值复跑仍保留 25 个样本与 5 个 references。这个 1-marker 差异说明软件版本、过滤实现和输入 provenance 必须与阈值一起记录。</span>
 <span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a><span class="fu">### 树上的近邻不是传播证明</span></span>
-<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a>本次描述性距离只在两个样本都为 A/C/G/T 的位点上计算：</span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把树上相邻写成传播"}</span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a>共同国家或研究中的近邻可能来自采样结构、流行克隆或批次。传播至少还需要更高分辨率 SNVs、充分 genome overlap、时间与接触信息，以及共同来源排查。</span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>d_{ij}=\frac{\text{nucleotide differences}_{ij}}</span>
-<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a>{\text{comparable A/C/G/T sites}_{ij}}.</span>
-<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a>这个未校正 p-distance 便于审计，但深分化时可能饱和，也没有利用位点替换模型。更重要的是，近邻可由共同来源、流行克隆、数据库偏倚、批次、cross-mapping 或样本污染造成。传播分析还需要纵向/接触设计、阴性样本对和更密集的全基因组 SNV 证据。</span>
-<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么 PCoA 和系统发育树会给出不同视觉印象？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a>PCoA 尝试在少数欧氏坐标中保持成对距离；系统发育树则在替换模型下寻找分支结构。距离矩阵可能不是严格欧氏的，前两轴会丢失信息；树也可能因 marker 缺失、重组、模型不适配和弱分支支持而变化。两者可用于互相审计，但不能互相替代。</span>
-<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article51_strainphlan.py <span class="dt">\</span></span>
-<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总距离、保存证据并结果核对</span></span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a><span class="fu">### 树上的近邻不是传播证明</span></span>
+<span id="cb9-266"><a href="#cb9-266" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-267"><a href="#cb9-267" aria-hidden="true" tabindex="-1"></a>本次描述性距离只在两个样本都为 A/C/G/T 的位点上计算：</span>
+<span id="cb9-268"><a href="#cb9-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-269"><a href="#cb9-269" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-270"><a href="#cb9-270" aria-hidden="true" tabindex="-1"></a>d_{ij}=\frac{\text{nucleotide differences}_{ij}}</span>
+<span id="cb9-271"><a href="#cb9-271" aria-hidden="true" tabindex="-1"></a>{\text{comparable A/C/G/T sites}_{ij}}.</span>
+<span id="cb9-272"><a href="#cb9-272" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb9-273"><a href="#cb9-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-274"><a href="#cb9-274" aria-hidden="true" tabindex="-1"></a>这个未校正 p-distance 便于审计，但深分化时可能饱和，也没有利用位点替换模型。更重要的是，近邻可由共同来源、流行克隆、数据库偏倚、批次、cross-mapping 或样本污染造成。传播分析还需要纵向/接触设计、阴性样本对和更密集的全基因组 SNV 证据。</span>
+<span id="cb9-275"><a href="#cb9-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-276"><a href="#cb9-276" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb9-277"><a href="#cb9-277" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>为什么 PCoA 和系统发育树会给出不同视觉印象？<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb9-278"><a href="#cb9-278" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-279"><a href="#cb9-279" aria-hidden="true" tabindex="-1"></a>PCoA 尝试在少数欧氏坐标中保持成对距离；系统发育树则在替换模型下寻找分支结构。距离矩阵可能不是严格欧氏的，前两轴会丢失信息；树也可能因 marker 缺失、重组、模型不适配和弱分支支持而变化。两者可用于互相审计，但不能互相替代。</span>
 <span id="cb9-280"><a href="#cb9-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article51_strainphlan.R <span class="dt">\</span></span>
-<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--output-dir</span> figures</span>
-<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article51_strainphlan.py <span class="dt">\</span></span>
-<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/51-strainphlan-frozen</span>
-<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article51_strainphlan.py <span class="dt">\</span></span>
-<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/51-strainphlan-frozen <span class="dt">\</span></span>
-<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/51-strainphlan <span class="dt">\</span></span>
-<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/51-strainphlan.qmd</span>
-<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a>冻结包保留两套 native <span class="in">`.info`</span>、polymorphism、alignment 和 tree，官方 baseline tree，输入与输出 lineage、commands、software versions、GNU-time 资源表、规范化结果和全部 SHA-256；原始 serialized profiles 与数据库 pickle 留在工作区，不进入冻结包。</span>
-<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把样本内 polymorphism 当作质量与混株信号</span></span>
-<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a>25 个样本的 marker polymorphic-sites percentage 中位数为 0.500%，范围 0.249%--0.811%。高值可能来自多菌株共存、mapping ambiguity 或真实种内多样性；低值也可能只是 depth 不足。它应与 marker coverage、read quality 和全基因组 microdiversity 联合审计，不宜直接作为“菌株更多”的定量指标。</span>
+<span id="cb9-281"><a href="#cb9-281" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb9-282"><a href="#cb9-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-283"><a href="#cb9-283" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb9-284"><a href="#cb9-284" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article51_strainphlan.py <span class="dt">\</span></span>
+<span id="cb9-285"><a href="#cb9-285" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb9-286"><a href="#cb9-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-287"><a href="#cb9-287" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article51_strainphlan.R <span class="dt">\</span></span>
+<span id="cb9-288"><a href="#cb9-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--output-dir</span> figures</span>
+<span id="cb9-289"><a href="#cb9-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-290"><a href="#cb9-290" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article51_strainphlan.py <span class="dt">\</span></span>
+<span id="cb9-291"><a href="#cb9-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-292"><a href="#cb9-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/51-strainphlan-frozen</span>
+<span id="cb9-293"><a href="#cb9-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-294"><a href="#cb9-294" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article51_strainphlan.py <span class="dt">\</span></span>
+<span id="cb9-295"><a href="#cb9-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb9-296"><a href="#cb9-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/51-strainphlan-frozen <span class="dt">\</span></span>
+<span id="cb9-297"><a href="#cb9-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/51-strainphlan <span class="dt">\</span></span>
+<span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/51-strainphlan.qmd</span>
+<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a><span class="al">![每个样本的 marker polymorphism。Country 只用于显示潜在结构，不参与 filtering 或建树。](../figures/51-polymorphism-audit.png)</span>{#fig-51-poly}</span>
+<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a>冻结包保留两套 native <span class="in">`.info`</span>、polymorphism、alignment 和 tree，官方 baseline tree，输入与输出 lineage、commands、software versions、GNU-time 资源表、规范化结果和全部 SHA-256；原始 serialized profiles 与数据库 pickle 留在工作区，不进入冻结包。</span>
 <span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单棵 fast tree 升级为带支持度与稳健性分析</span></span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把样本内 polymorphism 当作质量与混株信号</span></span>
 <span id="cb9-305"><a href="#cb9-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a>本次 <span class="in">`phylophlan_mode fast`</span> 生成一棵 seeded RAxML maximum-likelihood tree，但没有把 bootstrap 支持度当作已获得证据。正式研究应至少补充 marker-threshold sensitivity、不同 seed 重跑、重组检测/剔除，以及 bootstrap 或 ultrafast bootstrap；关键结论应在合理参数范围内保持。若目标是近期传播，进一步转向同一 reference 坐标上的全基因组 SNV、callable fraction 和时间流行病学设计。</span>
+<span id="cb9-306"><a href="#cb9-306" aria-hidden="true" tabindex="-1"></a>25 个样本的 marker polymorphic-sites percentage 中位数为 0.500%，范围 0.249%--0.811%。高值可能来自多菌株共存、mapping ambiguity 或真实种内多样性；低值也可能只是 depth 不足。它应与 marker coverage、read quality 和全基因组 microdiversity 联合审计，不宜直接作为“菌株更多”的定量指标。</span>
 <span id="cb9-307"><a href="#cb9-307" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 数据库 release 与 profiles 不匹配"}</span>
-<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a>Marker IDs、clade 名和内部 metadata 随 MetaPhlAn release 改变。本次固定 <span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103`</span>；不能把其他 release 生成的 profiles 与该 metadata pickle 混用。</span>
-<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb9-308"><a href="#cb9-308" aria-hidden="true" tabindex="-1"></a><span class="al">![每个样本的 marker polymorphism。Country 只用于显示潜在结构，不参与 filtering 或建树。](../figures/51-polymorphism-audit.png)</span>{#fig-51-poly}</span>
+<span id="cb9-309"><a href="#cb9-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-310"><a href="#cb9-310" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单棵 fast tree 升级为带支持度与稳健性分析</span></span>
 <span id="cb9-311"><a href="#cb9-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 对 300 个 pairs 做普通 Wilcoxon 检验"}</span>
-<span id="cb9-313"><a href="#cb9-313" aria-hidden="true" tabindex="-1"></a>每个样本重复出现在多个 pair 中，违反独立性。探索性比较可报告分布；正式推断应使用置换层级、mixed model 或以独立 host/cluster 为单位的设计。</span>
-<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明 marker 筛选与树的支持度 {#sec-methods}</span></span>
+<span id="cb9-312"><a href="#cb9-312" aria-hidden="true" tabindex="-1"></a>本次 <span class="in">`phylophlan_mode fast`</span> 生成一棵 seeded RAxML maximum-likelihood tree，但没有把 bootstrap 支持度当作已获得证据。正式研究应至少补充 marker-threshold sensitivity、不同 seed 重跑、重组检测/剔除，以及 bootstrap 或 ultrafast bootstrap；关键结论应在合理参数范围内保持。若目标是近期传播，进一步转向同一 reference 坐标上的全基因组 SNV、callable fraction 和时间流行病学设计。</span>
+<span id="cb9-313"><a href="#cb9-313" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-314"><a href="#cb9-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 数据库 release 与 profiles 不匹配"}</span>
+<span id="cb9-315"><a href="#cb9-315" aria-hidden="true" tabindex="-1"></a>Marker IDs、clade 名和内部 metadata 随 MetaPhlAn release 改变。本次固定 <span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103`</span>；不能把其他 release 生成的 profiles 与该 metadata pickle 混用。</span>
+<span id="cb9-316"><a href="#cb9-316" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb9-317"><a href="#cb9-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-five publicly available stool-metagenome consensus-marker profiles from 13 studies and nine countries, six reference genomes, the </span><span class="in">`t__SGB4933_group`</span><span class="at"> marker FASTA, and the official precomputed tutorial outputs were obtained from the bioBakery StrainPhlAn 4 tutorial snapshot (wiki commit db372805bafe634d5c5f104f33cc9bec11d8bcdf; assets dated 25 August 2022). All 37 assets were size- and SHA-256-verified before serialized objects were read. StrainPhlAn v4.2.5 and MetaPhlAn v4.2.5 were run with the </span><span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103`</span><span class="at"> metadata database, </span><span class="in">`--trim_sequences 50`</span><span class="at">, </span><span class="in">`--sample_with_n_markers 20`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_perc 25`</span><span class="at">, </span><span class="in">`--marker_in_n_samples_perc 50`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_after_filt 20`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_after_filt_perc 25`</span><span class="at">, </span><span class="in">`--breadth_thres 80`</span><span class="at">, and </span><span class="in">`--phylophlan_mode fast`</span><span class="at">. PhyloPhlAn v3.2.1 used BLAST+ v2.17.0, single-threaded MAFFT v7.526, and the RAxML binary v8.2.12 distributed in Bioconda package v8.2.13. The RAxML parsimony-tree seed was fixed at 20260751 (</span><span class="in">`-p 20260751`</span><span class="at">), and </span><span class="in">`PYTHONHASHSEED`</span><span class="at"> was fixed at zero. A sensitivity run used the official tutorial's 80% sample-completeness, 80% marker-prevalence and 80% post-filter-completeness thresholds. Geography and study labels were not used for filtering or phylogenetic inference. Native outputs, commands, versions, resource records and SHA-256 checksums were retained.</span></span>
+<span id="cb9-318"><a href="#cb9-318" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 对 300 个 pairs 做普通 Wilcoxon 检验"}</span>
+<span id="cb9-319"><a href="#cb9-319" aria-hidden="true" tabindex="-1"></a>每个样本重复出现在多个 pair 中，违反独立性。探索性比较可报告分布；正式推断应使用置换层级、mixed model 或以独立 host/cluster 为单位的设计。</span>
+<span id="cb9-320"><a href="#cb9-320" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb9-321"><a href="#cb9-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-322"><a href="#cb9-322" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb9-322"><a href="#cb9-322" aria-hidden="true" tabindex="-1"></a><span class="fu">## 说明 marker 筛选与树的支持度 {#sec-methods}</span></span>
 <span id="cb9-323"><a href="#cb9-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-324"><a href="#cb9-324" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; All 25 metagenome samples and five of six reference genomes were retained. Under the primary explicit thresholds, all 187 available markers contributed to an 18,027-site concatenated alignment. Median gap-aware, uncorrected p-distance among 300 sample pairs was 0.2288; descriptive medians were 0.1861 for pairs from the same study, 0.2144 for pairs from different studies in the same country, and 0.2431 for pairs from different countries. Median within-sample polymorphic-marker percentage was 0.500% (range, 0.249%--0.811%). The primary rerun and the official-threshold rerun had normalized Robinson--Foulds distances of 0.148 and 0.222, respectively, from the official precomputed tutorial tree across 30 shared tips; neither was an exact topology match. The official-threshold rerun retained 178 markers and 17,638 alignment sites, whereas the archived tutorial information file reported 179 markers. Pair strata were treated as descriptive because country, study and laboratory were confounded and pairwise observations were non-independent.</span></span>
+<span id="cb9-324"><a href="#cb9-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb9-325"><a href="#cb9-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-326"><a href="#cb9-326" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb9-326"><a href="#cb9-326" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-five publicly available stool-metagenome consensus-marker profiles from 13 studies and nine countries, six reference genomes, the </span><span class="in">`t__SGB4933_group`</span><span class="at"> marker FASTA, and the official precomputed tutorial outputs were obtained from the bioBakery StrainPhlAn 4 tutorial snapshot (wiki commit db372805bafe634d5c5f104f33cc9bec11d8bcdf; assets dated 25 August 2022). All 37 assets were size- and SHA-256-verified before serialized objects were read. StrainPhlAn v4.2.5 and MetaPhlAn v4.2.5 were run with the </span><span class="in">`mpa_vJan21_CHOCOPhlAnSGB_202103`</span><span class="at"> metadata database, </span><span class="in">`--trim_sequences 50`</span><span class="at">, </span><span class="in">`--sample_with_n_markers 20`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_perc 25`</span><span class="at">, </span><span class="in">`--marker_in_n_samples_perc 50`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_after_filt 20`</span><span class="at">, </span><span class="in">`--sample_with_n_markers_after_filt_perc 25`</span><span class="at">, </span><span class="in">`--breadth_thres 80`</span><span class="at">, and </span><span class="in">`--phylophlan_mode fast`</span><span class="at">. PhyloPhlAn v3.2.1 used BLAST+ v2.17.0, single-threaded MAFFT v7.526, and the RAxML binary v8.2.12 distributed in Bioconda package v8.2.13. The RAxML parsimony-tree seed was fixed at 20260751 (</span><span class="in">`-p 20260751`</span><span class="at">), and </span><span class="in">`PYTHONHASHSEED`</span><span class="at"> was fixed at zero. A sensitivity run used the official tutorial's 80% sample-completeness, 80% marker-prevalence and 80% post-filter-completeness thresholds. Geography and study labels were not used for filtering or phylogenetic inference. Native outputs, commands, versions, resource records and SHA-256 checksums were retained.</span></span>
 <span id="cb9-327"><a href="#cb9-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-328"><a href="#cb9-328" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用同一 MetaPhlAn release、同一 marker database 和同一 profiling 参数生成全部样本的 consensus markers；不要跨 release 拼接。</span>
-<span id="cb9-329"><a href="#cb9-329" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>先选择在足够多样本中达到充分 marker breadth 的物种；对极稀疏 clade 强行建树只会得到 missingness tree。</span>
-<span id="cb9-330"><a href="#cb9-330" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 sample completeness、marker prevalence、breadth 和最少样本数，并至少做一档更严和一档更宽的 sensitivity analysis。</span>
-<span id="cb9-331"><a href="#cb9-331" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>将 sample、host、time point、household/site、study、country、sequencing batch 和 read depth 写入独立 metadata 表；这些变量默认不参与建树。</span>
-<span id="cb9-332"><a href="#cb9-332" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>保存每次运行的 selected marker count、retained samples/references、alignment length、tree、polymorphism table、命令和版本。</span>
-<span id="cb9-333"><a href="#cb9-333" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>对关键内部枝报告 bootstrap/support；检查 alignment occupancy、composition bias、重组与异常长枝。</span>
-<span id="cb9-334"><a href="#cb9-334" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>若目标是近期共享或传播，把 StrainPhlAn 用作候选筛查，再用统一 reference 上的 genome-wide SNV、callable fraction、时间和接触信息验证。</span>
-<span id="cb9-335"><a href="#cb9-335" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若一个样本有明显多菌株信号，consensus tree 可能隐藏少数菌株；联合 inStrain、haplotype/strain deconvolution 或 isolate genomes。</span>
-<span id="cb9-336"><a href="#cb9-336" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-337"><a href="#cb9-337" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb9-338"><a href="#cb9-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-339"><a href="#cb9-339" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>树上 query samples 用圆点、reference genomes 用三角形；颜色只编码 country，并在图注声明 metadata 不参与推断。</span>
-<span id="cb9-340"><a href="#cb9-340" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>tip labels 保留稳定 sample IDs，避免用疾病组名替换样本；分支长度轴写成 <span class="in">`Substitutions per site`</span>。</span>
-<span id="cb9-341"><a href="#cb9-341" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>PCoA 只标 25 个样本并用 deterministic <span class="in">`ggrepel`</span> seed；轴标题报告 positive eigenvalues 的解释比例。</span>
-<span id="cb9-342"><a href="#cb9-342" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>pairwise distance 图同时显示 violin、boxplot、原始点和每层 pair count，图注提醒 pairs 非独立。</span>
-<span id="cb9-343"><a href="#cb9-343" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>所有图内文字为英文；PDF 保留矢量元素，PNG/TIFF 以 350 dpi 输出，TIFF 使用 LZW <span class="in">`compression = "lzw"`</span>。</span>
+<span id="cb9-328"><a href="#cb9-328" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb9-329"><a href="#cb9-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-330"><a href="#cb9-330" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; All 25 metagenome samples and five of six reference genomes were retained. Under the primary explicit thresholds, all 187 available markers contributed to an 18,027-site concatenated alignment. Median gap-aware, uncorrected p-distance among 300 sample pairs was 0.2288; descriptive medians were 0.1861 for pairs from the same study, 0.2144 for pairs from different studies in the same country, and 0.2431 for pairs from different countries. Median within-sample polymorphic-marker percentage was 0.500% (range, 0.249%--0.811%). The primary rerun and the official-threshold rerun had normalized Robinson--Foulds distances of 0.148 and 0.222, respectively, from the official precomputed tutorial tree across 30 shared tips; neither was an exact topology match. The official-threshold rerun retained 178 markers and 17,638 alignment sites, whereas the archived tutorial information file reported 179 markers. Pair strata were treated as descriptive because country, study and laboratory were confounded and pairwise observations were non-independent.</span></span>
+<span id="cb9-331"><a href="#cb9-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-332"><a href="#cb9-332" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb9-333"><a href="#cb9-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-334"><a href="#cb9-334" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用同一 MetaPhlAn release、同一 marker database 和同一 profiling 参数生成全部样本的 consensus markers；不要跨 release 拼接。</span>
+<span id="cb9-335"><a href="#cb9-335" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>先选择在足够多样本中达到充分 marker breadth 的物种；对极稀疏 clade 强行建树只会得到 missingness tree。</span>
+<span id="cb9-336"><a href="#cb9-336" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 sample completeness、marker prevalence、breadth 和最少样本数，并至少做一档更严和一档更宽的 sensitivity analysis。</span>
+<span id="cb9-337"><a href="#cb9-337" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>将 sample、host、time point、household/site、study、country、sequencing batch 和 read depth 写入独立 metadata 表；这些变量默认不参与建树。</span>
+<span id="cb9-338"><a href="#cb9-338" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>保存每次运行的 selected marker count、retained samples/references、alignment length、tree、polymorphism table、命令和版本。</span>
+<span id="cb9-339"><a href="#cb9-339" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>对关键内部枝报告 bootstrap/support；检查 alignment occupancy、composition bias、重组与异常长枝。</span>
+<span id="cb9-340"><a href="#cb9-340" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>若目标是近期共享或传播，把 StrainPhlAn 用作候选筛查，再用统一 reference 上的 genome-wide SNV、callable fraction、时间和接触信息验证。</span>
+<span id="cb9-341"><a href="#cb9-341" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若一个样本有明显多菌株信号，consensus tree 可能隐藏少数菌株；联合 inStrain、haplotype/strain deconvolution 或 isolate genomes。</span>
+<span id="cb9-342"><a href="#cb9-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-343"><a href="#cb9-343" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
 <span id="cb9-344"><a href="#cb9-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-345"><a href="#cb9-345" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb9-346"><a href="#cb9-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-347"><a href="#cb9-347" aria-hidden="true" tabindex="-1"></a>StrainPhlAn 描述同一物种 marker 序列的样本间分化；树拓扑和地理聚集不能单独证明传播。</span>
-<span id="cb9-348"><a href="#cb9-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-349"><a href="#cb9-349" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb9-345"><a href="#cb9-345" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>树上 query samples 用圆点、reference genomes 用三角形；颜色只编码 country，并在图注声明 metadata 不参与推断。</span>
+<span id="cb9-346"><a href="#cb9-346" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>tip labels 保留稳定 sample IDs，避免用疾病组名替换样本；分支长度轴写成 <span class="in">`Substitutions per site`</span>。</span>
+<span id="cb9-347"><a href="#cb9-347" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>PCoA 只标 25 个样本并用 deterministic <span class="in">`ggrepel`</span> seed；轴标题报告 positive eigenvalues 的解释比例。</span>
+<span id="cb9-348"><a href="#cb9-348" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>pairwise distance 图同时显示 violin、boxplot、原始点和每层 pair count，图注提醒 pairs 非独立。</span>
+<span id="cb9-349"><a href="#cb9-349" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>所有图内文字为英文；PDF 保留矢量元素，PNG/TIFF 以 350 dpi 输出，TIFF 使用 LZW <span class="in">`compression = "lzw"`</span>。</span>
 <span id="cb9-350"><a href="#cb9-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-351"><a href="#cb9-351" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>StrainPhlAn 的 marker-based strain phylogeny 方法与应用 <span class="co">[</span><span class="ot">@truong2017strainphlan</span><span class="co">]</span></span>
-<span id="cb9-352"><a href="#cb9-352" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaPhlAn 4 与 SGB marker framework <span class="co">[</span><span class="ot">@blancomiguez2023metaphlan4</span><span class="co">]</span></span>
-<span id="cb9-353"><a href="#cb9-353" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PhyloPhlAn 3 的系统基因组工作流 <span class="co">[</span><span class="ot">@asnicar2020phylophlan3</span><span class="co">]</span></span>
-<span id="cb9-354"><a href="#cb9-354" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RAxML 8 maximum-likelihood phylogeny <span class="co">[</span><span class="ot">@stamatakis2014raxml8</span><span class="co">]</span></span>
-<span id="cb9-355"><a href="#cb9-355" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>bioBakery StrainPhlAn 4 官方教程、输入与预计算输出 <span class="co">[</span><span class="ot">@biobakery2026strainphlan4tutorial</span><span class="co">]</span></span>
+<span id="cb9-351"><a href="#cb9-351" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb9-352"><a href="#cb9-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-353"><a href="#cb9-353" aria-hidden="true" tabindex="-1"></a>StrainPhlAn 描述同一物种 marker 序列的样本间分化；树拓扑和地理聚集不能单独证明传播。</span>
+<span id="cb9-354"><a href="#cb9-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-355"><a href="#cb9-355" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb9-356"><a href="#cb9-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-357"><a href="#cb9-357" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>StrainPhlAn 的 marker-based strain phylogeny 方法与应用 <span class="co">[</span><span class="ot">@truong2017strainphlan</span><span class="co">]</span></span>
+<span id="cb9-358"><a href="#cb9-358" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaPhlAn 4 与 SGB marker framework <span class="co">[</span><span class="ot">@blancomiguez2023metaphlan4</span><span class="co">]</span></span>
+<span id="cb9-359"><a href="#cb9-359" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PhyloPhlAn 3 的系统基因组工作流 <span class="co">[</span><span class="ot">@asnicar2020phylophlan3</span><span class="co">]</span></span>
+<span id="cb9-360"><a href="#cb9-360" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RAxML 8 maximum-likelihood phylogeny <span class="co">[</span><span class="ot">@stamatakis2014raxml8</span><span class="co">]</span></span>
+<span id="cb9-361"><a href="#cb9-361" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>bioBakery StrainPhlAn 4 官方教程、输入与预计算输出 <span class="co">[</span><span class="ot">@biobakery2026strainphlan4tutorial</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

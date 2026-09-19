@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">真核信号来自 reads 还是 contigs？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">真核信号来自 reads 还是 contigs？</a>
+  <ul class="collapse">
+  <li><a href="#真核-reads-检出与-contig-分类如何相互补充" id="toc-真核-reads-检出与-contig-分类如何相互补充" class="nav-link" data-scroll-target="#真核-reads-检出与-contig-分类如何相互补充">真核 reads 检出与 contig 分类如何相互补充？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -1006,13 +1038,13 @@ div.csl-indent {
 <p>本次实跑中，fastp 的 100 万对/2000 万对分支分别耗时 88.09 s/121.56 s，峰值 1.27/1.37 GiB RAM；EukDetect2 耗时 59.32 s、峰值 3.25 GiB；MEGAHIT 使用 <strong>32 CPU、显式 60 GB memory ceiling</strong>，实际耗时 1,599.23 s、峰值 7.08 GiB。正式队列建议 <strong>16–32 CPU、32–64 GB RAM、每样本或每共组装 100 GB 以上临时磁盘</strong>。没有服务器时，先用固化证据表完成统计与作图；read-based 检出可在小型云主机跑子集，组装和大队列放到 HPC/云端批处理。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="真核 reads 检出与 contig 分类如何相互补充">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>真核 reads 检出与 contig 分类如何相互补充
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1035,6 +1067,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="真核-reads-检出与-contig-分类如何相互补充" class="level3">
+<h3 class="anchored" data-anchor-id="真核-reads-检出与-contig-分类如何相互补充">真核 reads 检出与 contig 分类如何相互补充？</h3>
+<p>EukDetect 在 reads 层回答特定真核标记是否得到支持，EukRep 在组装片段层回答序列是否更符合真核来源。二者的输入、可见范围和输出单位不同，因此不能用 contig 数量补算某个真核物种的丰度，也不能把 reads 检出直接当作完整真核基因组恢复。</p>
+<p>本例 contig 基准的 sensitivity 为 73.76%、specificity 为 99.48%。高特异度与相当一部分真核片段漏检可以同时存在；仅展示“预测为真核”的集合会隐藏后者。解释新数据时，先判断它与基准在片段长度、组成和来源上是否相近，再讨论检出或未检出的意义。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1243,7 +1280,11 @@ Cryptococcus neoformans    22               53                0.562387  10.4050<
 <li>RPKS、RPKSB 和 RelEuk。</li>
 </ul>
 <p>三个丰度字段的分母不同。令 taxon 的 assigned marker reads 为 (r_t)，可用 marker 总长度为 (L_t) kb，样本质控后总测序碱基为 (B)：</p>
-<p>[ _t = , _t = , _t = 100. ]</p>
+<p><span class="math display">\[
+\mathrm{RPKS}_t = \frac{r_t}{L_t}, \qquad
+\mathrm{RPKSB}_t = \frac{\mathrm{RPKS}_t}{B/10^9}, \qquad
+\mathrm{RelEuk}_t = 100\frac{\mathrm{RPKSB}_t}{\sum_j \mathrm{RPKSB}_j}.
+\]</span></p>
 <p>RPKSB 适合在 library size 不同的样本间比较 marker signal；RelEuk 的分母只有通过过滤的真核 taxa。它们都不是细胞丰度：不同物种的 genome copy number、ploidy、marker recovery、裂解效率与 DNA 输入量不相同。</p>
 <p>Zymo D6300 的理论 genomic DNA 组成为八种细菌各 12%、<em>S. cerevisiae</em> 2%、<em>C. neoformans</em> 2% <span class="citation" data-cites="zymo2026d6300">(<a href="02-three-analysis-layers.html#ref-zymo2026d6300" role="doc-biblioref">Zymo Research 2026年</a>)</span>。因此，“总 DNA 分母”下两个真核各占 2%；改成“预期真核内部”才是 50%/50%。本次 EukDetect RelEuk 为 71.93%/28.07%，只能解释为 marker-space 内部比例发生偏移，不能说酵母细胞数是隐球菌的 2.56 倍。</p>
 <div id="fig-58-denominator" class="quarto-float quarto-figure quarto-figure-center anchored">
@@ -2336,7 +2377,7 @@ Zymo Research. 2026年. <em><span>ZymoBIOMICS</span> Microbial Community Standar
 <span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>本次实跑中，fastp 的 100 万对/2000 万对分支分别耗时 88.09 s/121.56 s，峰值 1.27/1.37 GiB RAM；EukDetect2 耗时 59.32 s、峰值 3.25 GiB；MEGAHIT 使用 **32 CPU、显式 60 GB memory ceiling**，实际耗时 1,599.23 s、峰值 7.08 GiB。正式队列建议 **16--32 CPU、32--64 GB RAM、每样本或每共组装 100 GB 以上临时磁盘**。没有服务器时，先用固化证据表完成统计与作图；read-based 检出可在小型云主机跑子集，组装和大队列放到 HPC/云端批处理。</span>
 <span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="真核 reads 检出与 contig 分类如何相互补充"}</span>
 <span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>两种输入回答不同层级的问题；DNA 检出不等于活性或定植，也不能忽略参考库覆盖。</span>
 <span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a></span>
@@ -2354,576 +2395,582 @@ Zymo Research. 2026年. <em><span>ZymoBIOMICS</span> Microbial Community Standar
 <span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a><span class="al">![Species-level marker evidence from the first one million read pairs. Point size is the total marker-read count; RPKSB is normalized by post-QC sequenced bases.](../figures/58-eukdetect-marker-evidence.png)</span>{#fig-58-marker-evidence}</span>
 <span id="cb16-56"><a href="#cb16-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb16-57"><a href="#cb16-57" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真核 reads 检出与 contig 分类如何相互补充？</span></span>
 <span id="cb16-58"><a href="#cb16-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/58/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 4.6 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb16-59"><a href="#cb16-59" aria-hidden="true" tabindex="-1"></a>EukDetect 在 reads 层回答特定真核标记是否得到支持，EukRep 在组装片段层回答序列是否更符合真核来源。二者的输入、可见范围和输出单位不同，因此不能用 contig 数量补算某个真核物种的丰度，也不能把 reads 检出直接当作完整真核基因组恢复。</span>
 <span id="cb16-60"><a href="#cb16-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/58/download.R)</span>。</span>
+<span id="cb16-61"><a href="#cb16-61" aria-hidden="true" tabindex="-1"></a>本例 contig 基准的 sensitivity 为 73.76%、specificity 为 99.48%。高特异度与相当一部分真核片段漏检可以同时存在；仅展示“预测为真核”的集合会隐藏后者。解释新数据时，先判断它与基准在片段长度、组成和来源上是否相近，再讨论检出或未检出的意义。</span>
 <span id="cb16-62"><a href="#cb16-62" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-58</span></span>
-<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb16-69"><a href="#cb16-69" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb16-70"><a href="#cb16-70" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/58/files.tsv"</span>))</span>
-<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
-<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a>真实输入包括 BioProject **PRJNA648136** 的 run **SRR12324253** 和 ZymoBIOMICS reference genomes v2（DOI **10.5281/zenodo.3935737**）<span class="co">[</span><span class="ot">@zymo2020refgenomes</span><span class="co">]</span>。双端 FASTQ 的固定身份是：</span>
-<span id="cb16-83"><a href="#cb16-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-84"><a href="#cb16-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> File <span class="pp">|</span> Bytes <span class="pp">|</span> MD5 <span class="pp">|</span></span>
-<span id="cb16-85"><a href="#cb16-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|</span></span>
-<span id="cb16-86"><a href="#cb16-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`SRR12324253_1.fastq.gz`</span> <span class="pp">|</span> 3,013,365,268 <span class="pp">|</span> <span class="in">`1485049c9792c7e43d267fe7bb84a2bd`</span> <span class="pp">|</span></span>
-<span id="cb16-87"><a href="#cb16-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`SRR12324253_2.fastq.gz`</span> <span class="pp">|</span> 3,010,771,717 <span class="pp">|</span> <span class="in">`fbd8494da79fc796d6725a4e242a9b9c`</span> <span class="pp">|</span></span>
-<span id="cb16-88"><a href="#cb16-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`ZymoBIOMICS.STD.refseq.v2.zip`</span> <span class="pp">|</span> 21,453,226 <span class="pp">|</span> <span class="in">`be18fd9195379082096061b8249489b3`</span> <span class="pp">|</span></span>
+<span id="cb16-63"><a href="#cb16-63" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb16-64"><a href="#cb16-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-65"><a href="#cb16-65" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/58/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 4.6 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb16-66"><a href="#cb16-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-67"><a href="#cb16-67" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/58/download.R)</span>。</span>
+<span id="cb16-68"><a href="#cb16-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-71"><a href="#cb16-71" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb16-72"><a href="#cb16-72" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-58</span></span>
+<span id="cb16-73"><a href="#cb16-73" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb16-74"><a href="#cb16-74" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb16-75"><a href="#cb16-75" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb16-76"><a href="#cb16-76" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/58/files.tsv"</span>))</span>
+<span id="cb16-77"><a href="#cb16-77" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb16-78"><a href="#cb16-78" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb16-79"><a href="#cb16-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-80"><a href="#cb16-80" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb16-81"><a href="#cb16-81" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb16-82"><a href="#cb16-82" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-83"><a href="#cb16-83" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-84"><a href="#cb16-84" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb16-85"><a href="#cb16-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-86"><a href="#cb16-86" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-preparation}</span></span>
+<span id="cb16-87"><a href="#cb16-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-88"><a href="#cb16-88" aria-hidden="true" tabindex="-1"></a>真实输入包括 BioProject **PRJNA648136** 的 run **SRR12324253** 和 ZymoBIOMICS reference genomes v2（DOI **10.5281/zenodo.3935737**）<span class="co">[</span><span class="ot">@zymo2020refgenomes</span><span class="co">]</span>。双端 FASTQ 的固定身份是：</span>
 <span id="cb16-89"><a href="#cb16-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-90"><a href="#cb16-90" aria-hidden="true" tabindex="-1"></a>SRR12324253 原始数据含 51,466,358 reads（约 25.73 million pairs）。为使两条路线的成本清楚可控，EukDetect2 使用确定性的前 1,000,000 pairs；组装使用前 20,000,000 pairs。不是随机下采样，run contract 仍记录 <span class="in">`seed = 20260758`</span>，且 <span class="in">`random_output_requested = false`</span>。</span>
-<span id="cb16-91"><a href="#cb16-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-92"><a href="#cb16-92" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb16-93"><a href="#cb16-93" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、数据库与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb16-94"><a href="#cb16-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-95"><a href="#cb16-95" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-96"><a href="#cb16-96" aria-hidden="true" tabindex="-1"></a><span class="co"># EukDetect2：211-URL Linux exact lock + 单独 hash-locked compatibility wheel</span></span>
-<span id="cb16-97"><a href="#cb16-97" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-microbial-eukaryotes-2026.07 <span class="dt">\</span></span>
-<span id="cb16-98"><a href="#cb16-98" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/microbial-eukaryotes-linux-64.lock</span>
-<span id="cb16-99"><a href="#cb16-99" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-microbial-eukaryotes-2026.07 <span class="dt">\</span></span>
-<span id="cb16-100"><a href="#cb16-100" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-m</span> pip install <span class="at">--require-hashes</span> <span class="dt">\</span></span>
-<span id="cb16-101"><a href="#cb16-101" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> env/microbial-eukaryotes-pip-lock.txt</span>
-<span id="cb16-102"><a href="#cb16-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-103"><a href="#cb16-103" aria-hidden="true" tabindex="-1"></a><span class="co"># EukRep 的已发表模型依赖 Python 3.6 / scikit-learn 0.19.2，单独隔离</span></span>
-<span id="cb16-104"><a href="#cb16-104" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-eukrep-legacy-2026.07 <span class="dt">\</span></span>
-<span id="cb16-105"><a href="#cb16-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/eukrep-legacy-linux-64.lock</span>
-<span id="cb16-106"><a href="#cb16-106" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-107"><a href="#cb16-107" aria-hidden="true" tabindex="-1"></a><span class="co"># fastp、MEGAHIT 与 minimap2 的 exact locks</span></span>
-<span id="cb16-108"><a href="#cb16-108" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-read-qc-2026.07 <span class="dt">\</span></span>
-<span id="cb16-109"><a href="#cb16-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/read-qc-linux-64.lock</span>
-<span id="cb16-110"><a href="#cb16-110" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-assembly-2026.07 <span class="dt">\</span></span>
-<span id="cb16-111"><a href="#cb16-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb16-90"><a href="#cb16-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> File <span class="pp">|</span> Bytes <span class="pp">|</span> MD5 <span class="pp">|</span></span>
+<span id="cb16-91"><a href="#cb16-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|</span></span>
+<span id="cb16-92"><a href="#cb16-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`SRR12324253_1.fastq.gz`</span> <span class="pp">|</span> 3,013,365,268 <span class="pp">|</span> <span class="in">`1485049c9792c7e43d267fe7bb84a2bd`</span> <span class="pp">|</span></span>
+<span id="cb16-93"><a href="#cb16-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`SRR12324253_2.fastq.gz`</span> <span class="pp">|</span> 3,010,771,717 <span class="pp">|</span> <span class="in">`fbd8494da79fc796d6725a4e242a9b9c`</span> <span class="pp">|</span></span>
+<span id="cb16-94"><a href="#cb16-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`ZymoBIOMICS.STD.refseq.v2.zip`</span> <span class="pp">|</span> 21,453,226 <span class="pp">|</span> <span class="in">`be18fd9195379082096061b8249489b3`</span> <span class="pp">|</span></span>
+<span id="cb16-95"><a href="#cb16-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-96"><a href="#cb16-96" aria-hidden="true" tabindex="-1"></a>SRR12324253 原始数据含 51,466,358 reads（约 25.73 million pairs）。为使两条路线的成本清楚可控，EukDetect2 使用确定性的前 1,000,000 pairs；组装使用前 20,000,000 pairs。不是随机下采样，run contract 仍记录 <span class="in">`seed = 20260758`</span>，且 <span class="in">`random_output_requested = false`</span>。</span>
+<span id="cb16-97"><a href="#cb16-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-98"><a href="#cb16-98" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb16-99"><a href="#cb16-99" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、数据库与内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb16-100"><a href="#cb16-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-101"><a href="#cb16-101" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-102"><a href="#cb16-102" aria-hidden="true" tabindex="-1"></a><span class="co"># EukDetect2：211-URL Linux exact lock + 单独 hash-locked compatibility wheel</span></span>
+<span id="cb16-103"><a href="#cb16-103" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-microbial-eukaryotes-2026.07 <span class="dt">\</span></span>
+<span id="cb16-104"><a href="#cb16-104" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/microbial-eukaryotes-linux-64.lock</span>
+<span id="cb16-105"><a href="#cb16-105" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-microbial-eukaryotes-2026.07 <span class="dt">\</span></span>
+<span id="cb16-106"><a href="#cb16-106" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-m</span> pip install <span class="at">--require-hashes</span> <span class="dt">\</span></span>
+<span id="cb16-107"><a href="#cb16-107" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> env/microbial-eukaryotes-pip-lock.txt</span>
+<span id="cb16-108"><a href="#cb16-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-109"><a href="#cb16-109" aria-hidden="true" tabindex="-1"></a><span class="co"># EukRep 的已发表模型依赖 Python 3.6 / scikit-learn 0.19.2，单独隔离</span></span>
+<span id="cb16-110"><a href="#cb16-110" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-eukrep-legacy-2026.07 <span class="dt">\</span></span>
+<span id="cb16-111"><a href="#cb16-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/eukrep-legacy-linux-64.lock</span>
 <span id="cb16-112"><a href="#cb16-112" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-113"><a href="#cb16-113" aria-hidden="true" tabindex="-1"></a><span class="co"># EukDetect2 database release 2026-03-16：14 files / 7,123,869,920 bytes</span></span>
-<span id="cb16-114"><a href="#cb16-114" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-install</span>
-<span id="cb16-115"><a href="#cb16-115" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-verify</span>
-<span id="cb16-116"><a href="#cb16-116" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-117"><a href="#cb16-117" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-118"><a href="#cb16-118" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb16-119"><a href="#cb16-119" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
-<span id="cb16-120"><a href="#cb16-120" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>,</span>
-<span id="cb16-121"><a href="#cb16-121" aria-hidden="true" tabindex="-1"></a>  <span class="st">"scales"</span>, <span class="st">"patchwork"</span></span>
-<span id="cb16-122"><a href="#cb16-122" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb16-113"><a href="#cb16-113" aria-hidden="true" tabindex="-1"></a><span class="co"># fastp、MEGAHIT 与 minimap2 的 exact locks</span></span>
+<span id="cb16-114"><a href="#cb16-114" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-read-qc-2026.07 <span class="dt">\</span></span>
+<span id="cb16-115"><a href="#cb16-115" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/read-qc-linux-64.lock</span>
+<span id="cb16-116"><a href="#cb16-116" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-assembly-2026.07 <span class="dt">\</span></span>
+<span id="cb16-117"><a href="#cb16-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb16-118"><a href="#cb16-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-119"><a href="#cb16-119" aria-hidden="true" tabindex="-1"></a><span class="co"># EukDetect2 database release 2026-03-16：14 files / 7,123,869,920 bytes</span></span>
+<span id="cb16-120"><a href="#cb16-120" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-install</span>
+<span id="cb16-121"><a href="#cb16-121" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-verify</span>
+<span id="cb16-122"><a href="#cb16-122" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-123"><a href="#cb16-123" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-124"><a href="#cb16-124" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb16-125"><a href="#cb16-125" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb16-126"><a href="#cb16-126" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb16-127"><a href="#cb16-127" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb16-128"><a href="#cb16-128" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
-<span id="cb16-129"><a href="#cb16-129" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
-<span id="cb16-130"><a href="#cb16-130" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260758</span>)</span>
-<span id="cb16-131"><a href="#cb16-131" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-132"><a href="#cb16-132" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb16-133"><a href="#cb16-133" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Blue"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Orange"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb16-134"><a href="#cb16-134" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Green"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Sky"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>,</span>
-<span id="cb16-135"><a href="#cb16-135" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Yellow"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>, <span class="st">"Purple"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>,</span>
-<span id="cb16-136"><a href="#cb16-136" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#7A7A7A"</span>, <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#E9EEF2"</span>,</span>
-<span id="cb16-137"><a href="#cb16-137" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#253238"</span>, <span class="st">"White"</span> <span class="ot">=</span> <span class="st">"#FFFFFF"</span></span>
-<span id="cb16-138"><a href="#cb16-138" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-139"><a href="#cb16-139" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb16-140"><a href="#cb16-140" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb16-141"><a href="#cb16-141" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb16-142"><a href="#cb16-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb16-143"><a href="#cb16-143" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb16-144"><a href="#cb16-144" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
-<span id="cb16-145"><a href="#cb16-145" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb16-146"><a href="#cb16-146" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb16-147"><a href="#cb16-147" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb16-148"><a href="#cb16-148" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
-<span id="cb16-149"><a href="#cb16-149" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
-<span id="cb16-150"><a href="#cb16-150" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb16-151"><a href="#cb16-151" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-152"><a href="#cb16-152" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
-<span id="cb16-153"><a href="#cb16-153" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb16-154"><a href="#cb16-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb16-155"><a href="#cb16-155" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb16-156"><a href="#cb16-156" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-157"><a href="#cb16-157" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb16-158"><a href="#cb16-158" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-159"><a href="#cb16-159" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb16-160"><a href="#cb16-160" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb16-161"><a href="#cb16-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb16-162"><a href="#cb16-162" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-163"><a href="#cb16-163" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-164"><a href="#cb16-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-165"><a href="#cb16-165" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb16-166"><a href="#cb16-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-167"><a href="#cb16-167" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
-<span id="cb16-168"><a href="#cb16-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-169"><a href="#cb16-169" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/58-microbial-eukaryotes-frozen/`</span> 保存输入/数据库审计、命令与资源账本、EukDetect2 核心输出、EukRep name partitions、所有汇总表、环境锁和脚本。大型 FASTQ、7.12 GB 数据库、未压缩 2000 万对 reads 与 MEGAHIT assembly 不重复打包；其来源、bytes、checksum、命令和派生结果都保留在证据包中。</span>
+<span id="cb16-124"><a href="#cb16-124" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb16-125"><a href="#cb16-125" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(</span>
+<span id="cb16-126"><a href="#cb16-126" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>,</span>
+<span id="cb16-127"><a href="#cb16-127" aria-hidden="true" tabindex="-1"></a>  <span class="st">"scales"</span>, <span class="st">"patchwork"</span></span>
+<span id="cb16-128"><a href="#cb16-128" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb16-129"><a href="#cb16-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-130"><a href="#cb16-130" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb16-131"><a href="#cb16-131" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb16-132"><a href="#cb16-132" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb16-133"><a href="#cb16-133" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb16-134"><a href="#cb16-134" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb16-135"><a href="#cb16-135" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb16-136"><a href="#cb16-136" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260758</span>)</span>
+<span id="cb16-137"><a href="#cb16-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-138"><a href="#cb16-138" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb16-139"><a href="#cb16-139" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Blue"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Orange"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb16-140"><a href="#cb16-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Green"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Sky"</span> <span class="ot">=</span> <span class="st">"#56B4E9"</span>,</span>
+<span id="cb16-141"><a href="#cb16-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Yellow"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>, <span class="st">"Purple"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>,</span>
+<span id="cb16-142"><a href="#cb16-142" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#7A7A7A"</span>, <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#E9EEF2"</span>,</span>
+<span id="cb16-143"><a href="#cb16-143" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#253238"</span>, <span class="st">"White"</span> <span class="ot">=</span> <span class="st">"#FFFFFF"</span></span>
+<span id="cb16-144"><a href="#cb16-144" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-145"><a href="#cb16-145" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb16-146"><a href="#cb16-146" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb16-147"><a href="#cb16-147" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb16-148"><a href="#cb16-148" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb16-149"><a href="#cb16-149" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb16-150"><a href="#cb16-150" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
+<span id="cb16-151"><a href="#cb16-151" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb16-152"><a href="#cb16-152" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb16-153"><a href="#cb16-153" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb16-154"><a href="#cb16-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
+<span id="cb16-155"><a href="#cb16-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
+<span id="cb16-156"><a href="#cb16-156" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb16-157"><a href="#cb16-157" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-158"><a href="#cb16-158" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
+<span id="cb16-159"><a href="#cb16-159" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb16-160"><a href="#cb16-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb16-161"><a href="#cb16-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb16-162"><a href="#cb16-162" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-163"><a href="#cb16-163" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb16-164"><a href="#cb16-164" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-165"><a href="#cb16-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb16-166"><a href="#cb16-166" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb16-167"><a href="#cb16-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb16-168"><a href="#cb16-168" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb16-169"><a href="#cb16-169" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-170"><a href="#cb16-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-171"><a href="#cb16-171" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-172"><a href="#cb16-172" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/58-microbial-eukaryotes-frozen"</span></span>
-<span id="cb16-173"><a href="#cb16-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-174"><a href="#cb16-174" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
-<span id="cb16-175"><a href="#cb16-175" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/asset-check-audit.tsv"</span></span>
-<span id="cb16-176"><a href="#cb16-176" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/database-audit.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb16-177"><a href="#cb16-177" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/eukdetect-species-evidence.tsv"</span></span>
-<span id="cb16-178"><a href="#cb16-178" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/assembly-summary.tsv"</span></span>
-<span id="cb16-179"><a href="#cb16-179" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
-<span id="cb16-180"><a href="#cb16-180" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-181"><a href="#cb16-181" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-182"><a href="#cb16-182" aria-hidden="true" tabindex="-1"></a>物种证据表的前三行应为：</span>
-<span id="cb16-183"><a href="#cb16-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-184"><a href="#cb16-184" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
-<span id="cb16-185"><a href="#cb16-185" aria-hidden="true" tabindex="-1"></a><span class="in">Name                       ObservedMarkers  TotalMarkerReads  RPKSB     RelEukPercent</span></span>
-<span id="cb16-186"><a href="#cb16-186" aria-hidden="true" tabindex="-1"></a><span class="in">Saccharomyces cerevisiae   60               235               3.888756  71.9328</span></span>
-<span id="cb16-187"><a href="#cb16-187" aria-hidden="true" tabindex="-1"></a><span class="in">Cryptococcus deneoformans  33               77                0.954751  17.6621</span></span>
-<span id="cb16-188"><a href="#cb16-188" aria-hidden="true" tabindex="-1"></a><span class="in">Cryptococcus neoformans    22               53                0.562387  10.4050</span></span>
-<span id="cb16-189"><a href="#cb16-189" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-190"><a href="#cb16-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-191"><a href="#cb16-191" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载并通过 bytes + MD5 gate {#sec-code}</span></span>
-<span id="cb16-192"><a href="#cb16-192" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-193"><a href="#cb16-193" aria-hidden="true" tabindex="-1"></a><span class="fu">### 为什么真核微生物容易在常规宏基因组流程里消失 {#sec-theory}</span></span>
-<span id="cb16-194"><a href="#cb16-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-195"><a href="#cb16-195" aria-hidden="true" tabindex="-1"></a>真菌、原生生物与微型后生动物不是“另一批细菌”。它们常同时具有以下难点：</span>
+<span id="cb16-171"><a href="#cb16-171" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb16-172"><a href="#cb16-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-173"><a href="#cb16-173" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
+<span id="cb16-174"><a href="#cb16-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-175"><a href="#cb16-175" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/58-microbial-eukaryotes-frozen/`</span> 保存输入/数据库审计、命令与资源账本、EukDetect2 核心输出、EukRep name partitions、所有汇总表、环境锁和脚本。大型 FASTQ、7.12 GB 数据库、未压缩 2000 万对 reads 与 MEGAHIT assembly 不重复打包；其来源、bytes、checksum、命令和派生结果都保留在证据包中。</span>
+<span id="cb16-176"><a href="#cb16-176" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-177"><a href="#cb16-177" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-178"><a href="#cb16-178" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/58-microbial-eukaryotes-frozen"</span></span>
+<span id="cb16-179"><a href="#cb16-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-180"><a href="#cb16-180" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
+<span id="cb16-181"><a href="#cb16-181" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/asset-check-audit.tsv"</span></span>
+<span id="cb16-182"><a href="#cb16-182" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/database-audit.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb16-183"><a href="#cb16-183" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/eukdetect-species-evidence.tsv"</span></span>
+<span id="cb16-184"><a href="#cb16-184" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/assembly-summary.tsv"</span></span>
+<span id="cb16-185"><a href="#cb16-185" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
+<span id="cb16-186"><a href="#cb16-186" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-187"><a href="#cb16-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-188"><a href="#cb16-188" aria-hidden="true" tabindex="-1"></a>物种证据表的前三行应为：</span>
+<span id="cb16-189"><a href="#cb16-189" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-190"><a href="#cb16-190" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
+<span id="cb16-191"><a href="#cb16-191" aria-hidden="true" tabindex="-1"></a><span class="in">Name                       ObservedMarkers  TotalMarkerReads  RPKSB     RelEukPercent</span></span>
+<span id="cb16-192"><a href="#cb16-192" aria-hidden="true" tabindex="-1"></a><span class="in">Saccharomyces cerevisiae   60               235               3.888756  71.9328</span></span>
+<span id="cb16-193"><a href="#cb16-193" aria-hidden="true" tabindex="-1"></a><span class="in">Cryptococcus deneoformans  33               77                0.954751  17.6621</span></span>
+<span id="cb16-194"><a href="#cb16-194" aria-hidden="true" tabindex="-1"></a><span class="in">Cryptococcus neoformans    22               53                0.562387  10.4050</span></span>
+<span id="cb16-195"><a href="#cb16-195" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-196"><a href="#cb16-196" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-197"><a href="#cb16-197" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>细胞壁、孢子或囊体造成裂解效率差异，提取偏倚可能大于统计效应；</span>
-<span id="cb16-198"><a href="#cb16-198" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>宿主、食物和环境真核 DNA 与目标微生物同属 Eukaryota，简单的“去人 reads”不能完成生物学归属；</span>
-<span id="cb16-199"><a href="#cb16-199" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真核基因组更大，重复、杂合、倍性变化与内含子增加组装和 gene calling 难度；</span>
-<span id="cb16-200"><a href="#cb16-200" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库覆盖远低于细菌，近缘物种可能共享保守 marker，而未知类群没有可映射参考；</span>
-<span id="cb16-201"><a href="#cb16-201" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DNA 在样本中出现，可能来自活细胞、死细胞、食物、环境暴露或短暂停留。</span>
+<span id="cb16-197"><a href="#cb16-197" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载并通过 bytes + MD5 gate {#sec-code}</span></span>
+<span id="cb16-198"><a href="#cb16-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-199"><a href="#cb16-199" aria-hidden="true" tabindex="-1"></a><span class="fu">### 为什么真核微生物容易在常规宏基因组流程里消失 {#sec-theory}</span></span>
+<span id="cb16-200"><a href="#cb16-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-201"><a href="#cb16-201" aria-hidden="true" tabindex="-1"></a>真菌、原生生物与微型后生动物不是“另一批细菌”。它们常同时具有以下难点：</span>
 <span id="cb16-202"><a href="#cb16-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-203"><a href="#cb16-203" aria-hidden="true" tabindex="-1"></a>粪便 eukaryome 的系统研究已经显示，检出率强烈依赖 reference database、过滤规则和样本处理，低流行率结果尤其需要阴性对照与人工审计 <span class="co">[</span><span class="ot">@crouch2024eukaryome</span><span class="co">]</span>。</span>
-<span id="cb16-204"><a href="#cb16-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-205"><a href="#cb16-205" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-206"><a href="#cb16-206" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb16-207"><a href="#cb16-207" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article58"</span></span>
+<span id="cb16-203"><a href="#cb16-203" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>细胞壁、孢子或囊体造成裂解效率差异，提取偏倚可能大于统计效应；</span>
+<span id="cb16-204"><a href="#cb16-204" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>宿主、食物和环境真核 DNA 与目标微生物同属 Eukaryota，简单的“去人 reads”不能完成生物学归属；</span>
+<span id="cb16-205"><a href="#cb16-205" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真核基因组更大，重复、杂合、倍性变化与内含子增加组装和 gene calling 难度；</span>
+<span id="cb16-206"><a href="#cb16-206" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>数据库覆盖远低于细菌，近缘物种可能共享保守 marker，而未知类群没有可映射参考；</span>
+<span id="cb16-207"><a href="#cb16-207" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DNA 在样本中出现，可能来自活细胞、死细胞、食物、环境暴露或短暂停留。</span>
 <span id="cb16-208"><a href="#cb16-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-209"><a href="#cb16-209" aria-hidden="true" tabindex="-1"></a><span class="co"># 三个源文件约 6.05 GB；脚本支持断点续传，最终必须通过 byte/MD5 gate</span></span>
-<span id="cb16-210"><a href="#cb16-210" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE58_EUKARYOTES</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
-<span id="cb16-211"><a href="#cb16-211" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-212"><a href="#cb16-212" aria-hidden="true" tabindex="-1"></a><span class="co"># 14 个数据库文件逐一校验；中途网络中断不会把 .part 文件当成完成品</span></span>
-<span id="cb16-213"><a href="#cb16-213" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-install</span>
-<span id="cb16-214"><a href="#cb16-214" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-verify</span>
-<span id="cb16-215"><a href="#cb16-215" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-216"><a href="#cb16-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-217"><a href="#cb16-217" aria-hidden="true" tabindex="-1"></a>下载脚本同时检查文件大小和 MD5。一次 TLS/代理中断最多留下可续传的 <span class="in">`.part`</span>；只有完整 checksum 通过后才原子重命名为正式文件。因此，“命令退出过一次”与“数据已损坏”不能画等号，最终 checksum gate 才是判据。</span>
-<span id="cb16-218"><a href="#cb16-218" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-219"><a href="#cb16-219" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备两个 read branches 与确定性 reference benchmark</span></span>
-<span id="cb16-220"><a href="#cb16-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-221"><a href="#cb16-221" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-222"><a href="#cb16-222" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article58_eukaryotes.py <span class="dt">\</span></span>
-<span id="cb16-223"><a href="#cb16-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-224"><a href="#cb16-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-225"><a href="#cb16-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--raw-dir</span> data/raw/article58 <span class="dt">\</span></span>
-<span id="cb16-226"><a href="#cb16-226" aria-hidden="true" tabindex="-1"></a>  <span class="at">--source-manifest</span> data/small/58-eukaryote-source-manifest.tsv <span class="dt">\</span></span>
-<span id="cb16-227"><a href="#cb16-227" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-pairs</span> 1000000 <span class="dt">\</span></span>
-<span id="cb16-228"><a href="#cb16-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-pairs</span> 20000000</span>
-<span id="cb16-229"><a href="#cb16-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-230"><a href="#cb16-230" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/prepared-fastq-audit.tsv"</span></span>
-<span id="cb16-231"><a href="#cb16-231" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-sequence-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb16-232"><a href="#cb16-232" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/eukrep-fragment-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb16-233"><a href="#cb16-233" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-234"><a href="#cb16-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-235"><a href="#cb16-235" aria-hidden="true" tabindex="-1"></a>官方 v2 reference archive 含 10 个物种、7,218 条 reference sequences；两个真核 draft references 贡献 7,205 条序列，八个原核 references 共 13 条。EukRep 校准集在每个物种内确定性选择 80 个互不重叠、均匀分布的 3/5/10/20 kb fragments，共 3,200 条。每个长度层有 160 条 Eukaryote truth 与 640 条 Prokaryote truth。</span>
-<span id="cb16-236"><a href="#cb16-236" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-237"><a href="#cb16-237" aria-hidden="true" tabindex="-1"></a>这个 benchmark 刻意不靠随机抽样；它回答“同一 mock 的不同长度区域在三种 mode 下怎样被分类”。它不等于独立外部测试集，也不代表数据库未知的环境真核。</span>
-<span id="cb16-238"><a href="#cb16-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-239"><a href="#cb16-239" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 6：把 mock 的 reference audit 当自然群落 ground truth"}</span>
-<span id="cb16-240"><a href="#cb16-240" aria-hidden="true" tabindex="-1"></a>官方 references 让 identity ≥95%、query coverage ≥80% 的 contigs 可以定真值；自然样本没有同等完备的 truth。Unknown/Unresolved 必须保留，不能全部记成 false positive。</span>
-<span id="cb16-241"><a href="#cb16-241" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-209"><a href="#cb16-209" aria-hidden="true" tabindex="-1"></a>粪便 eukaryome 的系统研究已经显示，检出率强烈依赖 reference database、过滤规则和样本处理，低流行率结果尤其需要阴性对照与人工审计 <span class="co">[</span><span class="ot">@crouch2024eukaryome</span><span class="co">]</span>。</span>
+<span id="cb16-210"><a href="#cb16-210" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-211"><a href="#cb16-211" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-212"><a href="#cb16-212" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb16-213"><a href="#cb16-213" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article58"</span></span>
+<span id="cb16-214"><a href="#cb16-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-215"><a href="#cb16-215" aria-hidden="true" tabindex="-1"></a><span class="co"># 三个源文件约 6.05 GB；脚本支持断点续传，最终必须通过 byte/MD5 gate</span></span>
+<span id="cb16-216"><a href="#cb16-216" aria-hidden="true" tabindex="-1"></a><span class="va">DOWNLOAD_ARTICLE58_EUKARYOTES</span><span class="op">=</span>1 <span class="fu">bash</span> data/download.sh</span>
+<span id="cb16-217"><a href="#cb16-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-218"><a href="#cb16-218" aria-hidden="true" tabindex="-1"></a><span class="co"># 14 个数据库文件逐一校验；中途网络中断不会把 .part 文件当成完成品</span></span>
+<span id="cb16-219"><a href="#cb16-219" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-install</span>
+<span id="cb16-220"><a href="#cb16-220" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> eukdetect2-verify</span>
+<span id="cb16-221"><a href="#cb16-221" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-222"><a href="#cb16-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-223"><a href="#cb16-223" aria-hidden="true" tabindex="-1"></a>下载脚本同时检查文件大小和 MD5。一次 TLS/代理中断最多留下可续传的 <span class="in">`.part`</span>；只有完整 checksum 通过后才原子重命名为正式文件。因此，“命令退出过一次”与“数据已损坏”不能画等号，最终 checksum gate 才是判据。</span>
+<span id="cb16-224"><a href="#cb16-224" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-225"><a href="#cb16-225" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备两个 read branches 与确定性 reference benchmark</span></span>
+<span id="cb16-226"><a href="#cb16-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-227"><a href="#cb16-227" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-228"><a href="#cb16-228" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article58_eukaryotes.py <span class="dt">\</span></span>
+<span id="cb16-229"><a href="#cb16-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-230"><a href="#cb16-230" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-231"><a href="#cb16-231" aria-hidden="true" tabindex="-1"></a>  <span class="at">--raw-dir</span> data/raw/article58 <span class="dt">\</span></span>
+<span id="cb16-232"><a href="#cb16-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--source-manifest</span> data/small/58-eukaryote-source-manifest.tsv <span class="dt">\</span></span>
+<span id="cb16-233"><a href="#cb16-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-pairs</span> 1000000 <span class="dt">\</span></span>
+<span id="cb16-234"><a href="#cb16-234" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-pairs</span> 20000000</span>
+<span id="cb16-235"><a href="#cb16-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-236"><a href="#cb16-236" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/prepared-fastq-audit.tsv"</span></span>
+<span id="cb16-237"><a href="#cb16-237" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/reference-sequence-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb16-238"><a href="#cb16-238" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/eukrep-fragment-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb16-239"><a href="#cb16-239" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-240"><a href="#cb16-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-241"><a href="#cb16-241" aria-hidden="true" tabindex="-1"></a>官方 v2 reference archive 含 10 个物种、7,218 条 reference sequences；两个真核 draft references 贡献 7,205 条序列，八个原核 references 共 13 条。EukRep 校准集在每个物种内确定性选择 80 个互不重叠、均匀分布的 3/5/10/20 kb fragments，共 3,200 条。每个长度层有 160 条 Eukaryote truth 与 640 条 Prokaryote truth。</span>
 <span id="cb16-242"><a href="#cb16-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 EukDetect2、MEGAHIT、EukRep 与参考检查</span></span>
+<span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a>这个 benchmark 刻意不靠随机抽样；它回答“同一 mock 的不同长度区域在三种 mode 下怎样被分类”。它不等于独立外部测试集，也不代表数据库未知的环境真核。</span>
 <span id="cb16-244"><a href="#cb16-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-245"><a href="#cb16-245" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukDetect2：用多个 marker 支持“检出哪个 taxon”</span></span>
-<span id="cb16-246"><a href="#cb16-246" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a>EukDetect2 把 reads 比对到真核 marker reference，去除低质量、低复杂度和重复证据，再处理祖先/后代 taxon 的共享 reads。最终 species-level call 至少需要 **2 个 marker genes** 和 **4 条 reads**；因此“20 条 reads 全落在同一个保守 marker”仍不能通过主过滤。结果表应同时保留：</span>
+<span id="cb16-245"><a href="#cb16-245" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 6：把 mock 的 reference audit 当自然群落 ground truth"}</span>
+<span id="cb16-246"><a href="#cb16-246" aria-hidden="true" tabindex="-1"></a>官方 references 让 identity ≥95%、query coverage ≥80% 的 contigs 可以定真值；自然样本没有同等完备的 truth。Unknown/Unresolved 必须保留，不能全部记成 false positive。</span>
+<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-248"><a href="#cb16-248" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Observed_markers`</span>：独立 marker 的数量；</span>
-<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Reads_aligned`</span>：直接分配的 reads；</span>
-<span id="cb16-251"><a href="#cb16-251" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Reads_reassigned`</span>：从共享/祖先节点重分配的 reads；</span>
-<span id="cb16-252"><a href="#cb16-252" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Total_reads`</span>：直接与重分配证据之和；</span>
-<span id="cb16-253"><a href="#cb16-253" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>percent identity 与 marker coverage；</span>
-<span id="cb16-254"><a href="#cb16-254" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RPKS、RPKSB 和 RelEuk。</span>
-<span id="cb16-255"><a href="#cb16-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-256"><a href="#cb16-256" aria-hidden="true" tabindex="-1"></a>三个丰度字段的分母不同。令 taxon 的 assigned marker reads 为 (r_t)，可用 marker 总长度为 (L_t) kb，样本质控后总测序碱基为 (B)：</span>
-<span id="cb16-257"><a href="#cb16-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-258"><a href="#cb16-258" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb16-259"><a href="#cb16-259" aria-hidden="true" tabindex="-1"></a>\mathrm{RPKS}_t = \frac{r_t}{L_t}, \qquad</span>
-<span id="cb16-260"><a href="#cb16-260" aria-hidden="true" tabindex="-1"></a>\mathrm{RPKSB}_t = \frac{\mathrm{RPKS}_t}{B/10^9}, \qquad</span>
-<span id="cb16-261"><a href="#cb16-261" aria-hidden="true" tabindex="-1"></a>\mathrm{RelEuk}_t = 100\frac{\mathrm{RPKSB}_t}{\sum_j \mathrm{RPKSB}_j}.</span>
-<span id="cb16-262"><a href="#cb16-262" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 EukDetect2、MEGAHIT、EukRep 与参考检查</span></span>
+<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-251"><a href="#cb16-251" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukDetect2：用多个 marker 支持“检出哪个 taxon”</span></span>
+<span id="cb16-252"><a href="#cb16-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-253"><a href="#cb16-253" aria-hidden="true" tabindex="-1"></a>EukDetect2 把 reads 比对到真核 marker reference，去除低质量、低复杂度和重复证据，再处理祖先/后代 taxon 的共享 reads。最终 species-level call 至少需要 **2 个 marker genes** 和 **4 条 reads**；因此“20 条 reads 全落在同一个保守 marker”仍不能通过主过滤。结果表应同时保留：</span>
+<span id="cb16-254"><a href="#cb16-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-255"><a href="#cb16-255" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Observed_markers`</span>：独立 marker 的数量；</span>
+<span id="cb16-256"><a href="#cb16-256" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Reads_aligned`</span>：直接分配的 reads；</span>
+<span id="cb16-257"><a href="#cb16-257" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Reads_reassigned`</span>：从共享/祖先节点重分配的 reads；</span>
+<span id="cb16-258"><a href="#cb16-258" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`Total_reads`</span>：直接与重分配证据之和；</span>
+<span id="cb16-259"><a href="#cb16-259" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>percent identity 与 marker coverage；</span>
+<span id="cb16-260"><a href="#cb16-260" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>RPKS、RPKSB 和 RelEuk。</span>
+<span id="cb16-261"><a href="#cb16-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-262"><a href="#cb16-262" aria-hidden="true" tabindex="-1"></a>三个丰度字段的分母不同。令 taxon 的 assigned marker reads 为 (r_t)，可用 marker 总长度为 (L_t) kb，样本质控后总测序碱基为 (B)：</span>
 <span id="cb16-263"><a href="#cb16-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-264"><a href="#cb16-264" aria-hidden="true" tabindex="-1"></a>RPKSB 适合在 library size 不同的样本间比较 marker signal；RelEuk 的分母只有通过过滤的真核 taxa。它们都不是细胞丰度：不同物种的 genome copy number、ploidy、marker recovery、裂解效率与 DNA 输入量不相同。</span>
-<span id="cb16-265"><a href="#cb16-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-266"><a href="#cb16-266" aria-hidden="true" tabindex="-1"></a>Zymo D6300 的理论 genomic DNA 组成为八种细菌各 12%、*S. cerevisiae* 2%、*C. neoformans* 2% <span class="co">[</span><span class="ot">@zymo2026d6300</span><span class="co">]</span>。因此，“总 DNA 分母”下两个真核各占 2%；改成“预期真核内部”才是 50%/50%。本次 EukDetect RelEuk 为 71.93%/28.07%，只能解释为 marker-space 内部比例发生偏移，不能说酵母细胞数是隐球菌的 2.56 倍。</span>
-<span id="cb16-267"><a href="#cb16-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-268"><a href="#cb16-268" aria-hidden="true" tabindex="-1"></a><span class="al">![The same mock has 2% + 2% eukaryotic DNA, 50% + 50% within the expected eukaryotic fraction, and 71.93% + 28.07% in EukDetect RelEuk.](../figures/58-eukdetect-abundance-denominator.png)</span>{#fig-58-denominator}</span>
+<span id="cb16-264"><a href="#cb16-264" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb16-265"><a href="#cb16-265" aria-hidden="true" tabindex="-1"></a>\mathrm{RPKS}_t = \frac{r_t}{L_t}, \qquad</span>
+<span id="cb16-266"><a href="#cb16-266" aria-hidden="true" tabindex="-1"></a>\mathrm{RPKSB}_t = \frac{\mathrm{RPKS}_t}{B/10^9}, \qquad</span>
+<span id="cb16-267"><a href="#cb16-267" aria-hidden="true" tabindex="-1"></a>\mathrm{RelEuk}_t = 100\frac{\mathrm{RPKSB}_t}{\sum_j \mathrm{RPKSB}_j}.</span>
+<span id="cb16-268"><a href="#cb16-268" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb16-269"><a href="#cb16-269" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-270"><a href="#cb16-270" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukRep：用 sequence composition 回答“哪条 contig 像真核”</span></span>
+<span id="cb16-270"><a href="#cb16-270" aria-hidden="true" tabindex="-1"></a>RPKSB 适合在 library size 不同的样本间比较 marker signal；RelEuk 的分母只有通过过滤的真核 taxa。它们都不是细胞丰度：不同物种的 genome copy number、ploidy、marker recovery、裂解效率与 DNA 输入量不相同。</span>
 <span id="cb16-271"><a href="#cb16-271" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-272"><a href="#cb16-272" aria-hidden="true" tabindex="-1"></a>EukRep 将 scaffold 切成最长 **5 kb chunk**，计算 k-mer frequency，由训练好的 linear SVM 对每个 chunk 分类，再用多数票给整条 scaffold 定类 <span class="co">[</span><span class="ot">@west2018eukrep</span><span class="co">]</span>。三种 mode 的方向是：</span>
+<span id="cb16-272"><a href="#cb16-272" aria-hidden="true" tabindex="-1"></a>Zymo D6300 的理论 genomic DNA 组成为八种细菌各 12%、*S. cerevisiae* 2%、*C. neoformans* 2% <span class="co">[</span><span class="ot">@zymo2026d6300</span><span class="co">]</span>。因此，“总 DNA 分母”下两个真核各占 2%；改成“预期真核内部”才是 50%/50%。本次 EukDetect RelEuk 为 71.93%/28.07%，只能解释为 marker-space 内部比例发生偏移，不能说酵母细胞数是隐球菌的 2.56 倍。</span>
 <span id="cb16-273"><a href="#cb16-273" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-274"><a href="#cb16-274" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Mode <span class="pp">|</span> 目标 <span class="pp">|</span> 常见代价 <span class="pp">|</span> 适合场景 <span class="pp">|</span></span>
-<span id="cb16-275"><a href="#cb16-275" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
-<span id="cb16-276"><a href="#cb16-276" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Strict <span class="pp">|</span> 降低原核误报 <span class="pp">|</span> 漏掉更多真核序列 <span class="pp">|</span> 构建高置信真核候选集 <span class="pp">|</span></span>
-<span id="cb16-277"><a href="#cb16-277" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Balanced <span class="pp">|</span> 折中 sensitivity/specificity <span class="pp">|</span> 两类错误都存在 <span class="pp">|</span> 默认探索与审计 <span class="pp">|</span></span>
-<span id="cb16-278"><a href="#cb16-278" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Lenient <span class="pp">|</span> 提高真核召回 <span class="pp">|</span> 原核误报增加 <span class="pp">|</span> 后续还有强力验证时 <span class="pp">|</span></span>
+<span id="cb16-274"><a href="#cb16-274" aria-hidden="true" tabindex="-1"></a><span class="al">![The same mock has 2% + 2% eukaryotic DNA, 50% + 50% within the expected eukaryotic fraction, and 71.93% + 28.07% in EukDetect RelEuk.](../figures/58-eukdetect-abundance-denominator.png)</span>{#fig-58-denominator}</span>
+<span id="cb16-275"><a href="#cb16-275" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-276"><a href="#cb16-276" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukRep：用 sequence composition 回答“哪条 contig 像真核”</span></span>
+<span id="cb16-277"><a href="#cb16-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-278"><a href="#cb16-278" aria-hidden="true" tabindex="-1"></a>EukRep 将 scaffold 切成最长 **5 kb chunk**，计算 k-mer frequency，由训练好的 linear SVM 对每个 chunk 分类，再用多数票给整条 scaffold 定类 <span class="co">[</span><span class="ot">@west2018eukrep</span><span class="co">]</span>。三种 mode 的方向是：</span>
 <span id="cb16-279"><a href="#cb16-279" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-280"><a href="#cb16-280" aria-hidden="true" tabindex="-1"></a><span class="in">`--min`</span> 的含义容易误读：EukRep 0.6.7 把它应用于**内部 5 kb chunk**，不是只在输入 scaffold 层做长度过滤。若设置 `--min 10000`，每个 5 kb chunk 都小于门槛，程序会产生两个空文件并返回 **exit code 0**。所以 3/5/10/20 kb benchmark 全部固定 <span class="in">`--min 3000`</span>，只改变输入 fragment length。</span>
-<span id="cb16-281"><a href="#cb16-281" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-282"><a href="#cb16-282" aria-hidden="true" tabindex="-1"></a>另一个确定性风险是 tie。两块 5 kb 序列一真一原时，默认把平票判为 eukaryotic；这里显式使用 <span class="in">`--tie prok`</span>，避免把平票悄悄推向目标类别。不要使用随机 tie；若确有需要，先确认工具能固定 seed，并把规则写入 Methods。</span>
-<span id="cb16-283"><a href="#cb16-283" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-284"><a href="#cb16-284" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-285"><a href="#cb16-285" aria-hidden="true" tabindex="-1"></a><span class="va">EUK_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/microbial-eukaryotes-cache/eukdetect2-v2026-03-16"</span></span>
-<span id="cb16-286"><a href="#cb16-286" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-287"><a href="#cb16-287" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article58_eukaryotes.py <span class="dt">\</span></span>
-<span id="cb16-288"><a href="#cb16-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-289"><a href="#cb16-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-290"><a href="#cb16-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-db</span> <span class="st">"</span><span class="va">$EUK_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-291"><a href="#cb16-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-manifest</span> data/small/58-eukdetect2-database-manifest.tsv <span class="dt">\</span></span>
-<span id="cb16-292"><a href="#cb16-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-microbial-eukaryotes-2026.07"</span> <span class="dt">\</span></span>
-<span id="cb16-293"><a href="#cb16-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukrep-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-eukrep-legacy-2026.07"</span> <span class="dt">\</span></span>
-<span id="cb16-294"><a href="#cb16-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span> <span class="dt">\</span></span>
-<span id="cb16-295"><a href="#cb16-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--read-qc-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-read-qc-2026.07"</span> <span class="dt">\</span></span>
-<span id="cb16-296"><a href="#cb16-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
-<span id="cb16-297"><a href="#cb16-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-threads</span> 32</span>
-<span id="cb16-298"><a href="#cb16-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-299"><a href="#cb16-299" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/tool-versions.tsv"</span></span>
-<span id="cb16-300"><a href="#cb16-300" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
-<span id="cb16-301"><a href="#cb16-301" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-302"><a href="#cb16-302" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-303"><a href="#cb16-303" aria-hidden="true" tabindex="-1"></a>核心 read-based 命令是：</span>
+<span id="cb16-280"><a href="#cb16-280" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Mode <span class="pp">|</span> 目标 <span class="pp">|</span> 常见代价 <span class="pp">|</span> 适合场景 <span class="pp">|</span></span>
+<span id="cb16-281"><a href="#cb16-281" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
+<span id="cb16-282"><a href="#cb16-282" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Strict <span class="pp">|</span> 降低原核误报 <span class="pp">|</span> 漏掉更多真核序列 <span class="pp">|</span> 构建高置信真核候选集 <span class="pp">|</span></span>
+<span id="cb16-283"><a href="#cb16-283" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Balanced <span class="pp">|</span> 折中 sensitivity/specificity <span class="pp">|</span> 两类错误都存在 <span class="pp">|</span> 默认探索与审计 <span class="pp">|</span></span>
+<span id="cb16-284"><a href="#cb16-284" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Lenient <span class="pp">|</span> 提高真核召回 <span class="pp">|</span> 原核误报增加 <span class="pp">|</span> 后续还有强力验证时 <span class="pp">|</span></span>
+<span id="cb16-285"><a href="#cb16-285" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-286"><a href="#cb16-286" aria-hidden="true" tabindex="-1"></a><span class="in">`--min`</span> 的含义容易误读：EukRep 0.6.7 把它应用于**内部 5 kb chunk**，不是只在输入 scaffold 层做长度过滤。若设置 `--min 10000`，每个 5 kb chunk 都小于门槛，程序会产生两个空文件并返回 **exit code 0**。所以 3/5/10/20 kb benchmark 全部固定 <span class="in">`--min 3000`</span>，只改变输入 fragment length。</span>
+<span id="cb16-287"><a href="#cb16-287" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-288"><a href="#cb16-288" aria-hidden="true" tabindex="-1"></a>另一个确定性风险是 tie。两块 5 kb 序列一真一原时，默认把平票判为 eukaryotic；这里显式使用 <span class="in">`--tie prok`</span>，避免把平票悄悄推向目标类别。不要使用随机 tie；若确有需要，先确认工具能固定 seed，并把规则写入 Methods。</span>
+<span id="cb16-289"><a href="#cb16-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-290"><a href="#cb16-290" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-291"><a href="#cb16-291" aria-hidden="true" tabindex="-1"></a><span class="va">EUK_DB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/microbial-eukaryotes-cache/eukdetect2-v2026-03-16"</span></span>
+<span id="cb16-292"><a href="#cb16-292" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-293"><a href="#cb16-293" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article58_eukaryotes.py <span class="dt">\</span></span>
+<span id="cb16-294"><a href="#cb16-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-295"><a href="#cb16-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-296"><a href="#cb16-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-db</span> <span class="st">"</span><span class="va">$EUK_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-297"><a href="#cb16-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-manifest</span> data/small/58-eukdetect2-database-manifest.tsv <span class="dt">\</span></span>
+<span id="cb16-298"><a href="#cb16-298" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukdetect-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-microbial-eukaryotes-2026.07"</span> <span class="dt">\</span></span>
+<span id="cb16-299"><a href="#cb16-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukrep-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-eukrep-legacy-2026.07"</span> <span class="dt">\</span></span>
+<span id="cb16-300"><a href="#cb16-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span> <span class="dt">\</span></span>
+<span id="cb16-301"><a href="#cb16-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--read-qc-env</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-read-qc-2026.07"</span> <span class="dt">\</span></span>
+<span id="cb16-302"><a href="#cb16-302" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 16 <span class="dt">\</span></span>
+<span id="cb16-303"><a href="#cb16-303" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-threads</span> 32</span>
 <span id="cb16-304"><a href="#cb16-304" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-305"><a href="#cb16-305" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-306"><a href="#cb16-306" aria-hidden="true" tabindex="-1"></a><span class="ex">eukdetect</span> single <span class="dt">\</span></span>
-<span id="cb16-307"><a href="#cb16-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> eukdetect.R1.fastq.gz <span class="dt">\</span></span>
-<span id="cb16-308"><a href="#cb16-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">-2</span> eukdetect.R2.fastq.gz <span class="dt">\</span></span>
-<span id="cb16-309"><a href="#cb16-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> Zymo_D6300 <span class="dt">\</span></span>
-<span id="cb16-310"><a href="#cb16-310" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> results/eukdetect <span class="dt">\</span></span>
-<span id="cb16-311"><a href="#cb16-311" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database</span> <span class="st">"</span><span class="va">$EUK_DB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-312"><a href="#cb16-312" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cores</span> 16 <span class="dt">\</span></span>
-<span id="cb16-313"><a href="#cb16-313" aria-hidden="true" tabindex="-1"></a>  <span class="at">--force</span></span>
-<span id="cb16-314"><a href="#cb16-314" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-315"><a href="#cb16-315" aria-hidden="true" tabindex="-1"></a><span class="ex">eukdetect-normalize</span> <span class="dt">\</span></span>
-<span id="cb16-316"><a href="#cb16-316" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukfrac</span> results/eukdetect/Zymo_D6300_filtered_hits_eukfrac.txt <span class="dt">\</span></span>
-<span id="cb16-317"><a href="#cb16-317" aria-hidden="true" tabindex="-1"></a>  <span class="at">--library-sizes</span> results/library-sizes-post-qc.tsv <span class="dt">\</span></span>
-<span id="cb16-318"><a href="#cb16-318" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> results/eukdetect/Zymo_D6300.normalized.tsv</span>
-<span id="cb16-319"><a href="#cb16-319" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-305"><a href="#cb16-305" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/tool-versions.tsv"</span></span>
+<span id="cb16-306"><a href="#cb16-306" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
+<span id="cb16-307"><a href="#cb16-307" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-308"><a href="#cb16-308" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-309"><a href="#cb16-309" aria-hidden="true" tabindex="-1"></a>核心 read-based 命令是：</span>
+<span id="cb16-310"><a href="#cb16-310" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-311"><a href="#cb16-311" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-312"><a href="#cb16-312" aria-hidden="true" tabindex="-1"></a><span class="ex">eukdetect</span> single <span class="dt">\</span></span>
+<span id="cb16-313"><a href="#cb16-313" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> eukdetect.R1.fastq.gz <span class="dt">\</span></span>
+<span id="cb16-314"><a href="#cb16-314" aria-hidden="true" tabindex="-1"></a>  <span class="at">-2</span> eukdetect.R2.fastq.gz <span class="dt">\</span></span>
+<span id="cb16-315"><a href="#cb16-315" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> Zymo_D6300 <span class="dt">\</span></span>
+<span id="cb16-316"><a href="#cb16-316" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outdir</span> results/eukdetect <span class="dt">\</span></span>
+<span id="cb16-317"><a href="#cb16-317" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database</span> <span class="st">"</span><span class="va">$EUK_DB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-318"><a href="#cb16-318" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cores</span> 16 <span class="dt">\</span></span>
+<span id="cb16-319"><a href="#cb16-319" aria-hidden="true" tabindex="-1"></a>  <span class="at">--force</span></span>
 <span id="cb16-320"><a href="#cb16-320" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-321"><a href="#cb16-321" aria-hidden="true" tabindex="-1"></a><span class="in">`library-sizes-post-qc.tsv`</span> 必须有 header，且本次分母是两端合计的 **298,193,028 post-QC bases**，不是 reads 数。EukDetect conda record 报 2.0.2，Python distribution metadata 报 2.0.0，CLI banner 报 <span class="in">`v2.0.1`</span>；三者不一致，所以 <span class="in">`tool-versions.tsv`</span> 原样保留全部值。Python 3.13 还需要 hash-locked <span class="in">`legacy-cgi 2.6.4`</span> 才能让依赖 ETE3 的 taxonomy step 正常运行。</span>
-<span id="cb16-322"><a href="#cb16-322" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-323"><a href="#cb16-323" aria-hidden="true" tabindex="-1"></a>核心 contig-based 命令是：</span>
-<span id="cb16-324"><a href="#cb16-324" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-325"><a href="#cb16-325" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-326"><a href="#cb16-326" aria-hidden="true" tabindex="-1"></a><span class="ex">megahit</span> <span class="dt">\</span></span>
-<span id="cb16-327"><a href="#cb16-327" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> assembly.R1.fastq <span class="dt">\</span></span>
-<span id="cb16-328"><a href="#cb16-328" aria-hidden="true" tabindex="-1"></a>  <span class="at">-2</span> assembly.R2.fastq <span class="dt">\</span></span>
-<span id="cb16-329"><a href="#cb16-329" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/megahit-memory60g <span class="dt">\</span></span>
-<span id="cb16-330"><a href="#cb16-330" aria-hidden="true" tabindex="-1"></a>  <span class="at">--presets</span> meta-sensitive <span class="dt">\</span></span>
-<span id="cb16-331"><a href="#cb16-331" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-contig-len</span> 1000 <span class="dt">\</span></span>
-<span id="cb16-332"><a href="#cb16-332" aria-hidden="true" tabindex="-1"></a>  <span class="at">--memory</span> 60000000000 <span class="dt">\</span></span>
-<span id="cb16-333"><a href="#cb16-333" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 32</span>
-<span id="cb16-334"><a href="#cb16-334" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-335"><a href="#cb16-335" aria-hidden="true" tabindex="-1"></a><span class="ex">EukRep</span> <span class="dt">\</span></span>
-<span id="cb16-336"><a href="#cb16-336" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> results/megahit-contigs.oneline.fna <span class="dt">\</span></span>
-<span id="cb16-337"><a href="#cb16-337" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/eukrep-assembly/megahit.balanced.euk.names <span class="dt">\</span></span>
-<span id="cb16-338"><a href="#cb16-338" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prokarya</span> results/eukrep-assembly/megahit.balanced.prok.names <span class="dt">\</span></span>
-<span id="cb16-339"><a href="#cb16-339" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seq_names</span> <span class="dt">\</span></span>
-<span id="cb16-340"><a href="#cb16-340" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min</span> 3000 <span class="dt">\</span></span>
-<span id="cb16-341"><a href="#cb16-341" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> balanced <span class="dt">\</span></span>
-<span id="cb16-342"><a href="#cb16-342" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tie</span> prok <span class="dt">\</span></span>
-<span id="cb16-343"><a href="#cb16-343" aria-hidden="true" tabindex="-1"></a>  <span class="at">-ff</span></span>
-<span id="cb16-344"><a href="#cb16-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-345"><a href="#cb16-345" aria-hidden="true" tabindex="-1"></a><span class="ex">minimap2</span> <span class="at">-x</span> asm5 <span class="at">--secondary</span><span class="op">=</span>no <span class="at">-t</span> 32 <span class="dt">\</span></span>
-<span id="cb16-346"><a href="#cb16-346" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/megahit-to-zymo-v2.paf <span class="dt">\</span></span>
-<span id="cb16-347"><a href="#cb16-347" aria-hidden="true" tabindex="-1"></a>  references/zymo-v2-all-references.fna <span class="dt">\</span></span>
-<span id="cb16-348"><a href="#cb16-348" aria-hidden="true" tabindex="-1"></a>  results/megahit-contigs.oneline.fna</span>
-<span id="cb16-349"><a href="#cb16-349" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-321"><a href="#cb16-321" aria-hidden="true" tabindex="-1"></a><span class="ex">eukdetect-normalize</span> <span class="dt">\</span></span>
+<span id="cb16-322"><a href="#cb16-322" aria-hidden="true" tabindex="-1"></a>  <span class="at">--eukfrac</span> results/eukdetect/Zymo_D6300_filtered_hits_eukfrac.txt <span class="dt">\</span></span>
+<span id="cb16-323"><a href="#cb16-323" aria-hidden="true" tabindex="-1"></a>  <span class="at">--library-sizes</span> results/library-sizes-post-qc.tsv <span class="dt">\</span></span>
+<span id="cb16-324"><a href="#cb16-324" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output</span> results/eukdetect/Zymo_D6300.normalized.tsv</span>
+<span id="cb16-325"><a href="#cb16-325" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-326"><a href="#cb16-326" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-327"><a href="#cb16-327" aria-hidden="true" tabindex="-1"></a><span class="in">`library-sizes-post-qc.tsv`</span> 必须有 header，且本次分母是两端合计的 **298,193,028 post-QC bases**，不是 reads 数。EukDetect conda record 报 2.0.2，Python distribution metadata 报 2.0.0，CLI banner 报 <span class="in">`v2.0.1`</span>；三者不一致，所以 <span class="in">`tool-versions.tsv`</span> 原样保留全部值。Python 3.13 还需要 hash-locked <span class="in">`legacy-cgi 2.6.4`</span> 才能让依赖 ETE3 的 taxonomy step 正常运行。</span>
+<span id="cb16-328"><a href="#cb16-328" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-329"><a href="#cb16-329" aria-hidden="true" tabindex="-1"></a>核心 contig-based 命令是：</span>
+<span id="cb16-330"><a href="#cb16-330" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-331"><a href="#cb16-331" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-332"><a href="#cb16-332" aria-hidden="true" tabindex="-1"></a><span class="ex">megahit</span> <span class="dt">\</span></span>
+<span id="cb16-333"><a href="#cb16-333" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> assembly.R1.fastq <span class="dt">\</span></span>
+<span id="cb16-334"><a href="#cb16-334" aria-hidden="true" tabindex="-1"></a>  <span class="at">-2</span> assembly.R2.fastq <span class="dt">\</span></span>
+<span id="cb16-335"><a href="#cb16-335" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/megahit-memory60g <span class="dt">\</span></span>
+<span id="cb16-336"><a href="#cb16-336" aria-hidden="true" tabindex="-1"></a>  <span class="at">--presets</span> meta-sensitive <span class="dt">\</span></span>
+<span id="cb16-337"><a href="#cb16-337" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-contig-len</span> 1000 <span class="dt">\</span></span>
+<span id="cb16-338"><a href="#cb16-338" aria-hidden="true" tabindex="-1"></a>  <span class="at">--memory</span> 60000000000 <span class="dt">\</span></span>
+<span id="cb16-339"><a href="#cb16-339" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 32</span>
+<span id="cb16-340"><a href="#cb16-340" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-341"><a href="#cb16-341" aria-hidden="true" tabindex="-1"></a><span class="ex">EukRep</span> <span class="dt">\</span></span>
+<span id="cb16-342"><a href="#cb16-342" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> results/megahit-contigs.oneline.fna <span class="dt">\</span></span>
+<span id="cb16-343"><a href="#cb16-343" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/eukrep-assembly/megahit.balanced.euk.names <span class="dt">\</span></span>
+<span id="cb16-344"><a href="#cb16-344" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prokarya</span> results/eukrep-assembly/megahit.balanced.prok.names <span class="dt">\</span></span>
+<span id="cb16-345"><a href="#cb16-345" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seq_names</span> <span class="dt">\</span></span>
+<span id="cb16-346"><a href="#cb16-346" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min</span> 3000 <span class="dt">\</span></span>
+<span id="cb16-347"><a href="#cb16-347" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> balanced <span class="dt">\</span></span>
+<span id="cb16-348"><a href="#cb16-348" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tie</span> prok <span class="dt">\</span></span>
+<span id="cb16-349"><a href="#cb16-349" aria-hidden="true" tabindex="-1"></a>  <span class="at">-ff</span></span>
 <span id="cb16-350"><a href="#cb16-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-351"><a href="#cb16-351" aria-hidden="true" tabindex="-1"></a>MEGAHIT 若不显式限制 memory，会把机器总内存的默认比例当作预算；在大内存节点上这会申请远高于任务实际需要的空间。本次固定 60,000,000,000 bytes ceiling，并把曾中止的默认配置日志单独保留。真实 reference truth gate 预先固定为 identity ≥95% 且 query coverage ≥80%。PAF identity 用 matches/alignment block，query coverage 用 <span class="in">`(qend-qstart)/query length`</span>；不能用 alignment block/query length，因为 indel 会制造 &gt;100% 的假覆盖率。</span>
-<span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先忠实复现，再区分 EukDetect 与 EukDetect2 {#sec-audit}</span></span>
-<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a>EukDetect 的核心贡献是用多个 conserved marker genes 防止单个位点噪声和细菌错配 <span class="co">[</span><span class="ot">@lind2021eukdetect</span><span class="co">]</span>。EukDetect2 沿用 marker 证据框架，但扩充数据库、调整工作流并加入 RPKSB/RelEuk <span class="co">[</span><span class="ot">@shih2026eukdetect2</span><span class="co">]</span>。报告时不能只写“EukDetect”而省略代际；数据库 release 与软件构建共同决定 taxon names、marker space 和数值分母。</span>
+<span id="cb16-351"><a href="#cb16-351" aria-hidden="true" tabindex="-1"></a><span class="ex">minimap2</span> <span class="at">-x</span> asm5 <span class="at">--secondary</span><span class="op">=</span>no <span class="at">-t</span> 32 <span class="dt">\</span></span>
+<span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> results/megahit-to-zymo-v2.paf <span class="dt">\</span></span>
+<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a>  references/zymo-v2-all-references.fna <span class="dt">\</span></span>
+<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a>  results/megahit-contigs.oneline.fna</span>
+<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a>当前环境还有一个不能掩盖的 packaging discrepancy：conda record 2.0.2、Python metadata 2.0.0、CLI <span class="in">`v2.0.1`</span>。这不自动说明分析错误，但说明单写一个“version 2”不足以复现。最稳做法是同时保存 exact lock、conda record、CLI banner、database DOI 与命令日志。</span>
+<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a>MEGAHIT 若不显式限制 memory，会把机器总内存的默认比例当作预算；在大内存节点上这会申请远高于任务实际需要的空间。本次固定 60,000,000,000 bytes ceiling，并把曾中止的默认配置日志单独保留。真实 reference truth gate 预先固定为 identity ≥95% 且 query coverage ≥80%。PAF identity 用 matches/alignment block，query coverage 用 <span class="in">`(qend-qstart)/query length`</span>；不能用 alignment block/query length，因为 indel 会制造 &gt;100% 的假覆盖率。</span>
 <span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a><span class="fu">### Taxonomy upgrade 不能破坏原始证据</span></span>
+<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先忠实复现，再区分 EukDetect 与 EukDetect2 {#sec-audit}</span></span>
 <span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>标准品写 *C. neoformans*，当前数据库把 reads 分到 *C. deneoformans* 与 *C. neoformans*。合并到 species complex 有利于与 mock truth 对齐，但必须满足两点：</span>
+<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>EukDetect 的核心贡献是用多个 conserved marker genes 防止单个位点噪声和细菌错配 <span class="co">[</span><span class="ot">@lind2021eukdetect</span><span class="co">]</span>。EukDetect2 沿用 marker 证据框架，但扩充数据库、调整工作流并加入 RPKSB/RelEuk <span class="co">[</span><span class="ot">@shih2026eukdetect2</span><span class="co">]</span>。报告时不能只写“EukDetect”而省略代际；数据库 release 与软件构建共同决定 taxon names、marker space 和数值分母。</span>
 <span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>原始 name、TaxID、marker/read counts 与 database release 不被覆盖；</span>
-<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>aggregation rule 在看组间差异前固定，并在所有样本一致执行。</span>
-<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>真实队列还应处理 synonym、species complex 与 database update；否则同一生物信号可能因版本变更被拆成两行，制造假时间趋势或假队列差异。</span>
-<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a><span class="fu">### 定量升级：报告三个分母，加入 spike-in/绝对量</span></span>
-<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>RPKS 是 marker-length normalized signal；RPKSB 再除以总测序碱基；RelEuk 再归一到已检出真核内部。论文主表至少保留 <span class="in">`marker count + total reads + RPKSB + RelEuk + prevalence`</span>，而不是只留百分比。</span>
+<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a>当前环境还有一个不能掩盖的 packaging discrepancy：conda record 2.0.2、Python metadata 2.0.0、CLI <span class="in">`v2.0.1`</span>。这不自动说明分析错误，但说明单写一个“version 2”不足以复现。最稳做法是同时保存 exact lock、conda record、CLI banner、database DOI 与命令日志。</span>
+<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a><span class="fu">### Taxonomy upgrade 不能破坏原始证据</span></span>
+<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a>标准品写 *C. neoformans*，当前数据库把 reads 分到 *C. deneoformans* 与 *C. neoformans*。合并到 species complex 有利于与 mock truth 对齐，但必须满足两点：</span>
+<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>原始 name、TaxID、marker/read counts 与 database release 不被覆盖；</span>
+<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>aggregation rule 在看组间差异前固定，并在所有样本一致执行。</span>
 <span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>若研究问题是 absolute load，应加入已知量的外源 spike-in、样本质量/体积、提取回收率或 qPCR/ddPCR。即使如此，也要验证不同真核细胞壁和 ploidy 的回收偏倚。标准品理论 genomic DNA 比例也不是细胞比例。</span>
+<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>真实队列还应处理 synonym、species complex 与 database update；否则同一生物信号可能因版本变更被拆成两行，制造假时间趋势或假队列差异。</span>
 <span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukRep 升级：候选生成后必须有第二证据</span></span>
+<span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a><span class="fu">### 定量升级：报告三个分母，加入 spike-in/绝对量</span></span>
 <span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>EukRep 0.6.7 是 2018 年模型，依赖旧版 Python/scikit-learn；它适合作为快速 sequence partition，但不应成为最终 taxonomic or genome-quality judge。升级路径取决于目标：</span>
+<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>RPKS 是 marker-length normalized signal；RPKSB 再除以总测序碱基；RelEuk 再归一到已检出真核内部。论文主表至少保留 <span class="in">`marker count + total reads + RPKSB + RelEuk + prevalence`</span>，而不是只留百分比。</span>
 <span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-378"><a href="#cb16-378" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>只要真核 coding sequences：EukRep partition 后运行 MetaEuk，并用蛋白域/同源证据复核；</span>
-<span id="cb16-379"><a href="#cb16-379" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要真核 MAG：结合 coverage、composition、paired/long-read links 分箱，再用 BUSCO/EukCC 评估谱系完整度与污染；</span>
-<span id="cb16-380"><a href="#cb16-380" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要 species assignment：用 protein-level phylogeny、marker phylogeny 或与高质量 reference 的全基因组证据，不能把 <span class="in">`Eukaryote`</span> 标签改名成某个物种；</span>
-<span id="cb16-381"><a href="#cb16-381" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要 cohort abundance：reads 回比到经去冗余、去污染的真核 references，预注册 identity、breadth 和 multimapping policy。</span>
-<span id="cb16-382"><a href="#cb16-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-383"><a href="#cb16-383" aria-hidden="true" tabindex="-1"></a>本次 exact-reference benchmark 的 references 可能与模型训练空间相近，且只有 10 个标准品物种；因此可用于发现参数陷阱和比较 modes，不能宣称自然环境 sensitivity 是 73.76%。</span>
-<span id="cb16-384"><a href="#cb16-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-385"><a href="#cb16-385" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 3：把 EukRep 输出当物种分类或 abundance table"}</span>
-<span id="cb16-386"><a href="#cb16-386" aria-hidden="true" tabindex="-1"></a>EukRep 不提供物种分类，也不提供丰度。它输出的是 sequence names 的 Eukaryote/Prokaryote partition；物种归属和定量都需要独立流程。</span>
-<span id="cb16-387"><a href="#cb16-387" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-378"><a href="#cb16-378" aria-hidden="true" tabindex="-1"></a>若研究问题是 absolute load，应加入已知量的外源 spike-in、样本质量/体积、提取回收率或 qPCR/ddPCR。即使如此，也要验证不同真核细胞壁和 ploidy 的回收偏倚。标准品理论 genomic DNA 比例也不是细胞比例。</span>
+<span id="cb16-379"><a href="#cb16-379" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-380"><a href="#cb16-380" aria-hidden="true" tabindex="-1"></a><span class="fu">### EukRep 升级：候选生成后必须有第二证据</span></span>
+<span id="cb16-381"><a href="#cb16-381" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-382"><a href="#cb16-382" aria-hidden="true" tabindex="-1"></a>EukRep 0.6.7 是 2018 年模型，依赖旧版 Python/scikit-learn；它适合作为快速 sequence partition，但不应成为最终 taxonomic or genome-quality judge。升级路径取决于目标：</span>
+<span id="cb16-383"><a href="#cb16-383" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-384"><a href="#cb16-384" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>只要真核 coding sequences：EukRep partition 后运行 MetaEuk，并用蛋白域/同源证据复核；</span>
+<span id="cb16-385"><a href="#cb16-385" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要真核 MAG：结合 coverage、composition、paired/long-read links 分箱，再用 BUSCO/EukCC 评估谱系完整度与污染；</span>
+<span id="cb16-386"><a href="#cb16-386" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要 species assignment：用 protein-level phylogeny、marker phylogeny 或与高质量 reference 的全基因组证据，不能把 <span class="in">`Eukaryote`</span> 标签改名成某个物种；</span>
+<span id="cb16-387"><a href="#cb16-387" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>要 cohort abundance：reads 回比到经去冗余、去污染的真核 references，预注册 identity、breadth 和 multimapping policy。</span>
 <span id="cb16-388"><a href="#cb16-388" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-389"><a href="#cb16-389" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 4：把 scaffold length 直接传给 --min"}</span>
-<span id="cb16-390"><a href="#cb16-390" aria-hidden="true" tabindex="-1"></a>EukRep 0.6.7 在内部 5 kb chunk 上应用 <span class="in">`--min`</span>。<span class="in">`--min 10000`</span> 会得到空 euk/prok files 并返回 exit code 0。应固定 <span class="in">`--min 3000`</span>，并验证两个输出互斥且 union 等于全部预期 IDs。</span>
-<span id="cb16-391"><a href="#cb16-391" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-392"><a href="#cb16-392" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-393"><a href="#cb16-393" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 5：忽略 tie 与随机性"}</span>
-<span id="cb16-394"><a href="#cb16-394" aria-hidden="true" tabindex="-1"></a>默认 tie 会偏向 eukaryotic。这里用 <span class="in">`--tie prok`</span> 明确处理偶数 chunks 的平票，并使用 <span class="in">`seed = 20260758`</span> 的 run contract。分类 benchmark 不能在看完结果后更换 mode。</span>
-<span id="cb16-395"><a href="#cb16-395" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-396"><a href="#cb16-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-397"><a href="#cb16-397" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总并核对真实结果</span></span>
+<span id="cb16-389"><a href="#cb16-389" aria-hidden="true" tabindex="-1"></a>本次 exact-reference benchmark 的 references 可能与模型训练空间相近，且只有 10 个标准品物种；因此可用于发现参数陷阱和比较 modes，不能宣称自然环境 sensitivity 是 73.76%。</span>
+<span id="cb16-390"><a href="#cb16-390" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-391"><a href="#cb16-391" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 3：把 EukRep 输出当物种分类或 abundance table"}</span>
+<span id="cb16-392"><a href="#cb16-392" aria-hidden="true" tabindex="-1"></a>EukRep 不提供物种分类，也不提供丰度。它输出的是 sequence names 的 Eukaryote/Prokaryote partition；物种归属和定量都需要独立流程。</span>
+<span id="cb16-393"><a href="#cb16-393" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-394"><a href="#cb16-394" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-395"><a href="#cb16-395" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 4：把 scaffold length 直接传给 --min"}</span>
+<span id="cb16-396"><a href="#cb16-396" aria-hidden="true" tabindex="-1"></a>EukRep 0.6.7 在内部 5 kb chunk 上应用 <span class="in">`--min`</span>。<span class="in">`--min 10000`</span> 会得到空 euk/prok files 并返回 exit code 0。应固定 <span class="in">`--min 3000`</span>，并验证两个输出互斥且 union 等于全部预期 IDs。</span>
+<span id="cb16-397"><a href="#cb16-397" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-398"><a href="#cb16-398" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-399"><a href="#cb16-399" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-400"><a href="#cb16-400" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article58_eukaryotes.py <span class="dt">\</span></span>
-<span id="cb16-401"><a href="#cb16-401" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-402"><a href="#cb16-402" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb16-403"><a href="#cb16-403" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-404"><a href="#cb16-404" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukdetect-detection-audit.tsv"</span></span>
-<span id="cb16-405"><a href="#cb16-405" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukrep-reference-metrics.tsv"</span></span>
-<span id="cb16-406"><a href="#cb16-406" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukrep-assembly-metrics.tsv"</span></span>
-<span id="cb16-407"><a href="#cb16-407" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/resource-usage.tsv"</span></span>
-<span id="cb16-408"><a href="#cb16-408" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-399"><a href="#cb16-399" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 5：忽略 tie 与随机性"}</span>
+<span id="cb16-400"><a href="#cb16-400" aria-hidden="true" tabindex="-1"></a>默认 tie 会偏向 eukaryotic。这里用 <span class="in">`--tie prok`</span> 明确处理偶数 chunks 的平票，并使用 <span class="in">`seed = 20260758`</span> 的 run contract。分类 benchmark 不能在看完结果后更换 mode。</span>
+<span id="cb16-401"><a href="#cb16-401" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-402"><a href="#cb16-402" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-403"><a href="#cb16-403" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总并核对真实结果</span></span>
+<span id="cb16-404"><a href="#cb16-404" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-405"><a href="#cb16-405" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-406"><a href="#cb16-406" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article58_eukaryotes.py <span class="dt">\</span></span>
+<span id="cb16-407"><a href="#cb16-407" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-408"><a href="#cb16-408" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
 <span id="cb16-409"><a href="#cb16-409" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-410"><a href="#cb16-410" aria-hidden="true" tabindex="-1"></a>EukDetect2 最终表有三个 species names：</span>
-<span id="cb16-411"><a href="#cb16-411" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-412"><a href="#cb16-412" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*S. cerevisiae*：60 markers、235 total marker reads、99.38% mean identity、RPKSB 3.888756、RelEuk 71.9328%；</span>
-<span id="cb16-413"><a href="#cb16-413" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*C. deneoformans*：33 markers、77 reads、99.14% identity、RPKSB 0.954751、RelEuk 17.6621%；</span>
-<span id="cb16-414"><a href="#cb16-414" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*C. neoformans*：22 markers、53 reads、99.48% identity、RPKSB 0.562387、RelEuk 10.4050%。</span>
+<span id="cb16-410"><a href="#cb16-410" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukdetect-detection-audit.tsv"</span></span>
+<span id="cb16-411"><a href="#cb16-411" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukrep-reference-metrics.tsv"</span></span>
+<span id="cb16-412"><a href="#cb16-412" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/eukrep-assembly-metrics.tsv"</span></span>
+<span id="cb16-413"><a href="#cb16-413" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/resource-usage.tsv"</span></span>
+<span id="cb16-414"><a href="#cb16-414" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-415"><a href="#cb16-415" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-416"><a href="#cb16-416" aria-hidden="true" tabindex="-1"></a>标准品标签中的 *C. neoformans* 在当前数据库中跨越两个近缘 species labels。主图把后两者合并为 **Cryptococcus neoformans complex = 28.0671% RelEuk**，但原始名称、TaxID 与各自证据列仍保留。`all_hits` 中 *C. tetragattii*、*S. arboricola* 和 *S. mikatae* 只有 1 个 marker；它们没有被提升为最终物种检出，说明多 marker gate 正在阻止近缘/共享信号过度解释。</span>
+<span id="cb16-416"><a href="#cb16-416" aria-hidden="true" tabindex="-1"></a>EukDetect2 最终表有三个 species names：</span>
 <span id="cb16-417"><a href="#cb16-417" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-418"><a href="#cb16-418" aria-hidden="true" tabindex="-1"></a>参考片段 benchmark 的 Balanced sensitivity/specificity 分别为：3 kb 76.25%/97.81%，5 kb 84.38%/99.06%，10 kb 66.88%/99.84%，20 kb 81.25%/100%。10 kb 并未比 5 kb 更好，因为它正好由两个 5 kb chunks 投票，冲突时 <span class="in">`--tie prok`</span> 会降低 eukaryote sensitivity。长度效应不是必然单调关系。</span>
-<span id="cb16-419"><a href="#cb16-419" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-420"><a href="#cb16-420" aria-hidden="true" tabindex="-1"></a><span class="al">![EukRep sensitivity and specificity across four exact fragment lengths and three stringency modes. Each point uses 160 eukaryotic and 640 prokaryotic fragments.](../figures/58-eukrep-reference-benchmark.png)</span>{#fig-58-reference-benchmark}</span>
+<span id="cb16-418"><a href="#cb16-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*S. cerevisiae*：60 markers、235 total marker reads、99.38% mean identity、RPKSB 3.888756、RelEuk 71.9328%；</span>
+<span id="cb16-419"><a href="#cb16-419" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*C. deneoformans*：33 markers、77 reads、99.14% identity、RPKSB 0.954751、RelEuk 17.6621%；</span>
+<span id="cb16-420"><a href="#cb16-420" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>*C. neoformans*：22 markers、53 reads、99.48% identity、RPKSB 0.562387、RelEuk 10.4050%。</span>
 <span id="cb16-421"><a href="#cb16-421" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-422"><a href="#cb16-422" aria-hidden="true" tabindex="-1"></a>真实组装含 4,222 条 ≥1 kb contigs、总长 37,166,382 bp、N50 122,804 bp；691 条达到 3 kb。参考审计把其中 221/388 条分别定为 Eukaryote/Prokaryote，82 条保留 Unresolved。三种 mode 在已解析 truth 上的表现为：</span>
+<span id="cb16-422"><a href="#cb16-422" aria-hidden="true" tabindex="-1"></a>标准品标签中的 *C. neoformans* 在当前数据库中跨越两个近缘 species labels。主图把后两者合并为 **Cryptococcus neoformans complex = 28.0671% RelEuk**，但原始名称、TaxID 与各自证据列仍保留。`all_hits` 中 *C. tetragattii*、*S. arboricola* 和 *S. mikatae* 只有 1 个 marker；它们没有被提升为最终物种检出，说明多 marker gate 正在阻止近缘/共享信号过度解释。</span>
 <span id="cb16-423"><a href="#cb16-423" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-424"><a href="#cb16-424" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Mode <span class="pp">|</span> Sensitivity <span class="pp">|</span> Specificity <span class="pp">|</span> Precision <span class="pp">|</span></span>
-<span id="cb16-425"><a href="#cb16-425" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|</span></span>
-<span id="cb16-426"><a href="#cb16-426" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Strict <span class="pp">|</span> 66.52% <span class="pp">|</span> 99.48% <span class="pp">|</span> 98.66% <span class="pp">|</span></span>
-<span id="cb16-427"><a href="#cb16-427" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Balanced <span class="pp">|</span> 73.76% <span class="pp">|</span> 99.48% <span class="pp">|</span> 98.79% <span class="pp">|</span></span>
-<span id="cb16-428"><a href="#cb16-428" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Lenient <span class="pp">|</span> 94.57% <span class="pp">|</span> 98.97% <span class="pp">|</span> 98.12% <span class="pp">|</span></span>
+<span id="cb16-424"><a href="#cb16-424" aria-hidden="true" tabindex="-1"></a>参考片段 benchmark 的 Balanced sensitivity/specificity 分别为：3 kb 76.25%/97.81%，5 kb 84.38%/99.06%，10 kb 66.88%/99.84%，20 kb 81.25%/100%。10 kb 并未比 5 kb 更好，因为它正好由两个 5 kb chunks 投票，冲突时 <span class="in">`--tie prok`</span> 会降低 eukaryote sensitivity。长度效应不是必然单调关系。</span>
+<span id="cb16-425"><a href="#cb16-425" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-426"><a href="#cb16-426" aria-hidden="true" tabindex="-1"></a><span class="al">![EukRep sensitivity and specificity across four exact fragment lengths and three stringency modes. Each point uses 160 eukaryotic and 640 prokaryotic fragments.](../figures/58-eukrep-reference-benchmark.png)</span>{#fig-58-reference-benchmark}</span>
+<span id="cb16-427"><a href="#cb16-427" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-428"><a href="#cb16-428" aria-hidden="true" tabindex="-1"></a>真实组装含 4,222 条 ≥1 kb contigs、总长 37,166,382 bp、N50 122,804 bp；691 条达到 3 kb。参考审计把其中 221/388 条分别定为 Eukaryote/Prokaryote，82 条保留 Unresolved。三种 mode 在已解析 truth 上的表现为：</span>
 <span id="cb16-429"><a href="#cb16-429" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-430"><a href="#cb16-430" aria-hidden="true" tabindex="-1"></a>这些指标只对能被官方 mock references 高覆盖解释的 609 条 contigs 计算。82 条 Unresolved 仍显示 EukRep calls，但不强行计入真阳/假阳；它们可能是低覆盖、组装误差、参考差异或低复杂度片段。</span>
-<span id="cb16-431"><a href="#cb16-431" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-432"><a href="#cb16-432" aria-hidden="true" tabindex="-1"></a><span class="al">![EukRep calls for 691 assembled contigs at least 3 kb. Reference truth is assigned only above the prespecified identity and query-coverage gate.](../figures/58-eukrep-assembly-audit.png)</span>{#fig-58-assembly-audit}</span>
-<span id="cb16-433"><a href="#cb16-433" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-434"><a href="#cb16-434" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 1：把 RelEuk 写成群落细胞比例"}</span>
-<span id="cb16-435"><a href="#cb16-435" aria-hidden="true" tabindex="-1"></a>RelEuk 的分母是通过过滤的真核 taxa，不含 96% 理论细菌 DNA；RPKSB 也只是 marker signal 的 library-size normalization。正文、轴标签与 Methods 都要写出分母。</span>
-<span id="cb16-436"><a href="#cb16-436" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-430"><a href="#cb16-430" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Mode <span class="pp">|</span> Sensitivity <span class="pp">|</span> Specificity <span class="pp">|</span> Precision <span class="pp">|</span></span>
+<span id="cb16-431"><a href="#cb16-431" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|</span></span>
+<span id="cb16-432"><a href="#cb16-432" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Strict <span class="pp">|</span> 66.52% <span class="pp">|</span> 99.48% <span class="pp">|</span> 98.66% <span class="pp">|</span></span>
+<span id="cb16-433"><a href="#cb16-433" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Balanced <span class="pp">|</span> 73.76% <span class="pp">|</span> 99.48% <span class="pp">|</span> 98.79% <span class="pp">|</span></span>
+<span id="cb16-434"><a href="#cb16-434" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Lenient <span class="pp">|</span> 94.57% <span class="pp">|</span> 98.97% <span class="pp">|</span> 98.12% <span class="pp">|</span></span>
+<span id="cb16-435"><a href="#cb16-435" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-436"><a href="#cb16-436" aria-hidden="true" tabindex="-1"></a>这些指标只对能被官方 mock references 高覆盖解释的 609 条 contigs 计算。82 条 Unresolved 仍显示 EukRep calls，但不强行计入真阳/假阳；它们可能是低覆盖、组装误差、参考差异或低复杂度片段。</span>
 <span id="cb16-437"><a href="#cb16-437" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-438"><a href="#cb16-438" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 2：看到一个近缘 species name 就宣布污染或新定植"}</span>
-<span id="cb16-439"><a href="#cb16-439" aria-hidden="true" tabindex="-1"></a>共享 marker、taxonomy split 和 reassigned reads 会把一个标准品目标分散到多个近缘 labels。先看 <span class="in">`Observed_markers`</span>、TaxID、direct/reassigned reads、identity 与 all-hits tree，再按预注册规则汇总 species complex。</span>
-<span id="cb16-440"><a href="#cb16-440" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb16-441"><a href="#cb16-441" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-442"><a href="#cb16-442" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、作图与 fail-closed 结果核对</span></span>
+<span id="cb16-438"><a href="#cb16-438" aria-hidden="true" tabindex="-1"></a><span class="al">![EukRep calls for 691 assembled contigs at least 3 kb. Reference truth is assigned only above the prespecified identity and query-coverage gate.](../figures/58-eukrep-assembly-audit.png)</span>{#fig-58-assembly-audit}</span>
+<span id="cb16-439"><a href="#cb16-439" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-440"><a href="#cb16-440" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 1：把 RelEuk 写成群落细胞比例"}</span>
+<span id="cb16-441"><a href="#cb16-441" aria-hidden="true" tabindex="-1"></a>RelEuk 的分母是通过过滤的真核 taxa，不含 96% 理论细菌 DNA；RPKSB 也只是 marker signal 的 library-size normalization。正文、轴标签与 Methods 都要写出分母。</span>
+<span id="cb16-442"><a href="#cb16-442" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-443"><a href="#cb16-443" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-444"><a href="#cb16-444" aria-hidden="true" tabindex="-1"></a><span class="fu">### 两条路线怎样衔接</span></span>
-<span id="cb16-445"><a href="#cb16-445" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-446"><a href="#cb16-446" aria-hidden="true" tabindex="-1"></a><span class="in">```{=html}</span></span>
-<span id="cb16-447"><a href="#cb16-447" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;table class="table table-striped"&gt;</span></span>
-<span id="cb16-448"><a href="#cb16-448" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;thead&gt;&lt;tr&gt;&lt;th&gt;证据对象&lt;/th&gt;&lt;th&gt;工具&lt;/th&gt;&lt;th&gt;直接输出&lt;/th&gt;&lt;th&gt;能支持的结论&lt;/th&gt;&lt;th&gt;不能支持的结论&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;</span></span>
-<span id="cb16-449"><a href="#cb16-449" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tbody&gt;</span></span>
-<span id="cb16-450"><a href="#cb16-450" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Marker reads&lt;/td&gt;&lt;td&gt;EukDetect2&lt;/td&gt;&lt;td&gt;Taxon、marker/read counts、RPKSB、RelEuk&lt;/td&gt;&lt;td&gt;Taxon detected&lt;/td&gt;&lt;td&gt;完整 genome、活性、定植&lt;/td&gt;&lt;/tr&gt;</span></span>
-<span id="cb16-451"><a href="#cb16-451" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Assembled contigs&lt;/td&gt;&lt;td&gt;EukRep&lt;/td&gt;&lt;td&gt;Eukaryote/Prokaryote partition&lt;/td&gt;&lt;td&gt;Domain-classified sequence&lt;/td&gt;&lt;td&gt;物种分类、丰度、MAG 质量&lt;/td&gt;&lt;/tr&gt;</span></span>
-<span id="cb16-452"><a href="#cb16-452" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Eukaryotic bin&lt;/td&gt;&lt;td&gt;binning + BUSCO/EukCC&lt;/td&gt;&lt;td&gt;Genome completeness/contamination&lt;/td&gt;&lt;td&gt;Coherent genome reconstruction&lt;/td&gt;&lt;td&gt;活性、致病性&lt;/td&gt;&lt;/tr&gt;</span></span>
-<span id="cb16-453"><a href="#cb16-453" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;RNA/protein/growth&lt;/td&gt;&lt;td&gt;正交实验&lt;/td&gt;&lt;td&gt;表达或生长证据&lt;/td&gt;&lt;td&gt;Activity/viability supported&lt;/td&gt;&lt;td&gt;长期定植，除非有纵向证据&lt;/td&gt;&lt;/tr&gt;</span></span>
-<span id="cb16-454"><a href="#cb16-454" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;/tbody&gt;</span></span>
-<span id="cb16-455"><a href="#cb16-455" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;/table&gt;</span></span>
-<span id="cb16-456"><a href="#cb16-456" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb16-457"><a href="#cb16-457" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-458"><a href="#cb16-458" aria-hidden="true" tabindex="-1"></a>EukRep 筛出的序列若要继续 gene discovery，可用 MetaEuk 处理真核 gene structure <span class="co">[</span><span class="ot">@levykarin2020metaeuk</span><span class="co">]</span>；若进一步重建 genome，应使用 BUSCO 的谱系标志基因 <span class="co">[</span><span class="ot">@manni2021busco</span><span class="co">]</span> 或 EukCC 的真核 MAG 完整度/污染评估 <span class="co">[</span><span class="ot">@saary2020eukcc</span><span class="co">]</span>。细菌 MAG 的单套 marker 规则不能直接搬来给真核 genome 定级。</span>
-<span id="cb16-459"><a href="#cb16-459" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-460"><a href="#cb16-460" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
-<span id="cb16-461"><a href="#cb16-461" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article58_eukaryotes.R <span class="dt">\</span></span>
-<span id="cb16-462"><a href="#cb16-462" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb16-444"><a href="#cb16-444" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 2：看到一个近缘 species name 就宣布污染或新定植"}</span>
+<span id="cb16-445"><a href="#cb16-445" aria-hidden="true" tabindex="-1"></a>共享 marker、taxonomy split 和 reassigned reads 会把一个标准品目标分散到多个近缘 labels。先看 <span class="in">`Observed_markers`</span>、TaxID、direct/reassigned reads、identity 与 all-hits tree，再按预注册规则汇总 species complex。</span>
+<span id="cb16-446"><a href="#cb16-446" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-447"><a href="#cb16-447" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-448"><a href="#cb16-448" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存、作图与 fail-closed 结果核对</span></span>
+<span id="cb16-449"><a href="#cb16-449" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-450"><a href="#cb16-450" aria-hidden="true" tabindex="-1"></a><span class="fu">### 两条路线怎样衔接</span></span>
+<span id="cb16-451"><a href="#cb16-451" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-452"><a href="#cb16-452" aria-hidden="true" tabindex="-1"></a><span class="in">```{=html}</span></span>
+<span id="cb16-453"><a href="#cb16-453" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;table class="table table-striped"&gt;</span></span>
+<span id="cb16-454"><a href="#cb16-454" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;thead&gt;&lt;tr&gt;&lt;th&gt;证据对象&lt;/th&gt;&lt;th&gt;工具&lt;/th&gt;&lt;th&gt;直接输出&lt;/th&gt;&lt;th&gt;能支持的结论&lt;/th&gt;&lt;th&gt;不能支持的结论&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;</span></span>
+<span id="cb16-455"><a href="#cb16-455" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tbody&gt;</span></span>
+<span id="cb16-456"><a href="#cb16-456" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Marker reads&lt;/td&gt;&lt;td&gt;EukDetect2&lt;/td&gt;&lt;td&gt;Taxon、marker/read counts、RPKSB、RelEuk&lt;/td&gt;&lt;td&gt;Taxon detected&lt;/td&gt;&lt;td&gt;完整 genome、活性、定植&lt;/td&gt;&lt;/tr&gt;</span></span>
+<span id="cb16-457"><a href="#cb16-457" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Assembled contigs&lt;/td&gt;&lt;td&gt;EukRep&lt;/td&gt;&lt;td&gt;Eukaryote/Prokaryote partition&lt;/td&gt;&lt;td&gt;Domain-classified sequence&lt;/td&gt;&lt;td&gt;物种分类、丰度、MAG 质量&lt;/td&gt;&lt;/tr&gt;</span></span>
+<span id="cb16-458"><a href="#cb16-458" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;Eukaryotic bin&lt;/td&gt;&lt;td&gt;binning + BUSCO/EukCC&lt;/td&gt;&lt;td&gt;Genome completeness/contamination&lt;/td&gt;&lt;td&gt;Coherent genome reconstruction&lt;/td&gt;&lt;td&gt;活性、致病性&lt;/td&gt;&lt;/tr&gt;</span></span>
+<span id="cb16-459"><a href="#cb16-459" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;tr&gt;&lt;td&gt;RNA/protein/growth&lt;/td&gt;&lt;td&gt;正交实验&lt;/td&gt;&lt;td&gt;表达或生长证据&lt;/td&gt;&lt;td&gt;Activity/viability supported&lt;/td&gt;&lt;td&gt;长期定植，除非有纵向证据&lt;/td&gt;&lt;/tr&gt;</span></span>
+<span id="cb16-460"><a href="#cb16-460" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;/tbody&gt;</span></span>
+<span id="cb16-461"><a href="#cb16-461" aria-hidden="true" tabindex="-1"></a><span class="in">&lt;/table&gt;</span></span>
+<span id="cb16-462"><a href="#cb16-462" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb16-463"><a href="#cb16-463" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-464"><a href="#cb16-464" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article58_eukaryotes.py <span class="dt">\</span></span>
-<span id="cb16-465"><a href="#cb16-465" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-466"><a href="#cb16-466" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-467"><a href="#cb16-467" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/58-microbial-eukaryotes-frozen</span>
-<span id="cb16-468"><a href="#cb16-468" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-469"><a href="#cb16-469" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article58_eukaryotes.py <span class="dt">\</span></span>
-<span id="cb16-470"><a href="#cb16-470" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb16-471"><a href="#cb16-471" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/58-microbial-eukaryotes-frozen <span class="dt">\</span></span>
-<span id="cb16-472"><a href="#cb16-472" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article58-validation <span class="dt">\</span></span>
-<span id="cb16-473"><a href="#cb16-473" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb16-474"><a href="#cb16-474" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/58-microbial-eukaryotes.qmd</span>
-<span id="cb16-475"><a href="#cb16-475" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-476"><a href="#cb16-476" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-477"><a href="#cb16-477" aria-hidden="true" tabindex="-1"></a>验收器会重新计算 frozen checksums，并硬检查 14 个数据库文件、3 个源资产、3,200 个 fragments、9,600 条 reference calls、2,073 条 assembly-mode calls、21 条资源记录、版本三联表、figure DPI/尺寸，以及每个 EukRep euk/prok 输出是否互斥且完整覆盖预期序列。空输出即使 exit code 0 也不能通过。</span>
-<span id="cb16-478"><a href="#cb16-478" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-479"><a href="#cb16-479" aria-hidden="true" tabindex="-1"></a><span class="fu">### 生物学升级：把存在、活性与定植分开</span></span>
-<span id="cb16-480"><a href="#cb16-480" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-481"><a href="#cb16-481" aria-hidden="true" tabindex="-1"></a>DNA marker reads 的结论上限是 “taxon detected”；eukaryotic contigs 的上限是 “domain-classified sequence”；高质量 genome bin 才能谈 genome reconstruction。RNA、protein、代谢或培养证据可支持 activity/viability，纵向重复、干预或空间证据才开始支持 persistence/colonization。</span>
+<span id="cb16-464"><a href="#cb16-464" aria-hidden="true" tabindex="-1"></a>EukRep 筛出的序列若要继续 gene discovery，可用 MetaEuk 处理真核 gene structure <span class="co">[</span><span class="ot">@levykarin2020metaeuk</span><span class="co">]</span>；若进一步重建 genome，应使用 BUSCO 的谱系标志基因 <span class="co">[</span><span class="ot">@manni2021busco</span><span class="co">]</span> 或 EukCC 的真核 MAG 完整度/污染评估 <span class="co">[</span><span class="ot">@saary2020eukcc</span><span class="co">]</span>。细菌 MAG 的单套 marker 规则不能直接搬来给真核 genome 定级。</span>
+<span id="cb16-465"><a href="#cb16-465" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-466"><a href="#cb16-466" aria-hidden="true" tabindex="-1"></a><span class="in">~~~bash</span></span>
+<span id="cb16-467"><a href="#cb16-467" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article58_eukaryotes.R <span class="dt">\</span></span>
+<span id="cb16-468"><a href="#cb16-468" aria-hidden="true" tabindex="-1"></a>  <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> figures</span>
+<span id="cb16-469"><a href="#cb16-469" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-470"><a href="#cb16-470" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article58_eukaryotes.py <span class="dt">\</span></span>
+<span id="cb16-471"><a href="#cb16-471" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-472"><a href="#cb16-472" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-473"><a href="#cb16-473" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/58-microbial-eukaryotes-frozen</span>
+<span id="cb16-474"><a href="#cb16-474" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-475"><a href="#cb16-475" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article58_eukaryotes.py <span class="dt">\</span></span>
+<span id="cb16-476"><a href="#cb16-476" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb16-477"><a href="#cb16-477" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/58-microbial-eukaryotes-frozen <span class="dt">\</span></span>
+<span id="cb16-478"><a href="#cb16-478" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /tmp/article58-validation <span class="dt">\</span></span>
+<span id="cb16-479"><a href="#cb16-479" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb16-480"><a href="#cb16-480" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/58-microbial-eukaryotes.qmd</span>
+<span id="cb16-481"><a href="#cb16-481" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-482"><a href="#cb16-482" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-483"><a href="#cb16-483" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence ladder for microbial-eukaryote claims. Each additional biological claim requires an additional independent evidence layer.](../figures/58-eukaryote-evidence-ladder.png)</span>{#fig-58-evidence-ladder}</span>
+<span id="cb16-483"><a href="#cb16-483" aria-hidden="true" tabindex="-1"></a>验收器会重新计算 frozen checksums，并硬检查 14 个数据库文件、3 个源资产、3,200 个 fragments、9,600 条 reference calls、2,073 条 assembly-mode calls、21 条资源记录、版本三联表、figure DPI/尺寸，以及每个 EukRep euk/prok 输出是否互斥且完整覆盖预期序列。空输出即使 exit code 0 也不能通过。</span>
 <span id="cb16-484"><a href="#cb16-484" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-485"><a href="#cb16-485" aria-hidden="true" tabindex="-1"></a>阴性 extraction controls、library blanks 和 batch controls 必须与样本一起走完整流程；真菌孢子、环境酵母和实验室试剂污染不能仅靠“不是人 DNA”排除。人体样本还要记录饮食、抗真菌药、免疫状态和采样时间，避免把瞬时摄入误写为稳定共生。</span>
+<span id="cb16-485"><a href="#cb16-485" aria-hidden="true" tabindex="-1"></a><span class="fu">### 生物学升级：把存在、活性与定植分开</span></span>
 <span id="cb16-486"><a href="#cb16-486" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-487"><a href="#cb16-487" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 7：DNA 检出升级成活性、致病或定植"}</span>
-<span id="cb16-488"><a href="#cb16-488" aria-hidden="true" tabindex="-1"></a>一次 DNA 检出可以来自死细胞、食物、环境暴露或试剂污染。活性要 RNA/protein/growth，定植要纵向持续或实验支持，致病还要宿主与机制证据。</span>
-<span id="cb16-489"><a href="#cb16-489" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-487"><a href="#cb16-487" aria-hidden="true" tabindex="-1"></a>DNA marker reads 的结论上限是 “taxon detected”；eukaryotic contigs 的上限是 “domain-classified sequence”；高质量 genome bin 才能谈 genome reconstruction。RNA、protein、代谢或培养证据可支持 activity/viability，纵向重复、干预或空间证据才开始支持 persistence/colonization。</span>
+<span id="cb16-488"><a href="#cb16-488" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-489"><a href="#cb16-489" aria-hidden="true" tabindex="-1"></a><span class="al">![Evidence ladder for microbial-eukaryote claims. Each additional biological claim requires an additional independent evidence layer.](../figures/58-eukaryote-evidence-ladder.png)</span>{#fig-58-evidence-ladder}</span>
 <span id="cb16-490"><a href="#cb16-490" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-491"><a href="#cb16-491" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录真核检测的输入与证据层级 {#sec-methods}</span></span>
+<span id="cb16-491"><a href="#cb16-491" aria-hidden="true" tabindex="-1"></a>阴性 extraction controls、library blanks 和 batch controls 必须与样本一起走完整流程；真菌孢子、环境酵母和实验室试剂污染不能仅靠“不是人 DNA”排除。人体样本还要记录饮食、抗真菌药、免疫状态和采样时间，避免把瞬时摄入误写为稳定共生。</span>
 <span id="cb16-492"><a href="#cb16-492" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-493"><a href="#cb16-493" aria-hidden="true" tabindex="-1"></a>下面模板中的数字来自 checksum-locked SRR12324253 实跑；换数据时同步替换 accession、subsampling rule、read counts、database release、命令参数和硬件。</span>
-<span id="cb16-494"><a href="#cb16-494" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-495"><a href="#cb16-495" aria-hidden="true" tabindex="-1"></a>**Methods template**</span>
+<span id="cb16-493"><a href="#cb16-493" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="坑 7：DNA 检出升级成活性、致病或定植"}</span>
+<span id="cb16-494"><a href="#cb16-494" aria-hidden="true" tabindex="-1"></a>一次 DNA 检出可以来自死细胞、食物、环境暴露或试剂污染。活性要 RNA/protein/growth，定植要纵向持续或实验支持，致病还要宿主与机制证据。</span>
+<span id="cb16-495"><a href="#cb16-495" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb16-496"><a href="#cb16-496" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-497"><a href="#cb16-497" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
-<span id="cb16-498"><a href="#cb16-498" aria-hidden="true" tabindex="-1"></a><span class="in">Microbial eukaryotes were evaluated using complementary read- and</span></span>
-<span id="cb16-499"><a href="#cb16-499" aria-hidden="true" tabindex="-1"></a><span class="in">contig-based workflows. Paired-end reads from ZymoBIOMICS D6300 run</span></span>
-<span id="cb16-500"><a href="#cb16-500" aria-hidden="true" tabindex="-1"></a><span class="in">SRR12324253 (BioProject PRJNA648136) and the ZymoBIOMICS reference genomes v2</span></span>
-<span id="cb16-501"><a href="#cb16-501" aria-hidden="true" tabindex="-1"></a><span class="in">(Zenodo doi:10.5281/zenodo.3935737) were verified against fixed byte counts</span></span>
-<span id="cb16-502"><a href="#cb16-502" aria-hidden="true" tabindex="-1"></a><span class="in">and MD5 checksums. The first 1,000,000 read pairs were quality filtered with</span></span>
-<span id="cb16-503"><a href="#cb16-503" aria-hidden="true" tabindex="-1"></a><span class="in">fastp 1.3.6 and analysed with EukDetect2. The installed EukDetect package was</span></span>
-<span id="cb16-504"><a href="#cb16-504" aria-hidden="true" tabindex="-1"></a><span class="in">recorded as conda 2.0.2, Python distribution metadata 2.0.0, and CLI banner</span></span>
-<span id="cb16-505"><a href="#cb16-505" aria-hidden="true" tabindex="-1"></a><span class="in">v2.0.1. Bowtie2 2.5.4 and the EukDetect2 database release 2026-03-16</span></span>
-<span id="cb16-506"><a href="#cb16-506" aria-hidden="true" tabindex="-1"></a><span class="in">(Zenodo doi:10.5281/zenodo.19056625; 14 checksum-verified files) were used.</span></span>
-<span id="cb16-507"><a href="#cb16-507" aria-hidden="true" tabindex="-1"></a><span class="in">Species-level calls were retained after the built-in EukDetect2 filtering,</span></span>
-<span id="cb16-508"><a href="#cb16-508" aria-hidden="true" tabindex="-1"></a><span class="in">including support from at least two marker genes and four reads. RPKSB was</span></span>
-<span id="cb16-509"><a href="#cb16-509" aria-hidden="true" tabindex="-1"></a><span class="in">normalized by 298,193,028 post-QC sequenced bases, whereas RelEuk was</span></span>
-<span id="cb16-510"><a href="#cb16-510" aria-hidden="true" tabindex="-1"></a><span class="in">normalized among detected eukaryotic taxa.</span></span>
-<span id="cb16-511"><a href="#cb16-511" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-512"><a href="#cb16-512" aria-hidden="true" tabindex="-1"></a><span class="in">For contig-level classification, the first 20,000,000 read pairs were quality</span></span>
-<span id="cb16-513"><a href="#cb16-513" aria-hidden="true" tabindex="-1"></a><span class="in">filtered and assembled with MEGAHIT 1.2.9 using the meta-sensitive preset, a</span></span>
-<span id="cb16-514"><a href="#cb16-514" aria-hidden="true" tabindex="-1"></a><span class="in">1-kb minimum contig length, 32 threads, and a 60,000,000,000-byte memory</span></span>
-<span id="cb16-515"><a href="#cb16-515" aria-hidden="true" tabindex="-1"></a><span class="in">ceiling. Contigs at least 3 kb were classified with EukRep 0.6.7 in strict,</span></span>
-<span id="cb16-516"><a href="#cb16-516" aria-hidden="true" tabindex="-1"></a><span class="in">balanced, and lenient modes using --min 3000 and --tie prok. EukRep was run in</span></span>
-<span id="cb16-517"><a href="#cb16-517" aria-hidden="true" tabindex="-1"></a><span class="in">an isolated Python 3.6.15/scikit-learn 0.19.2 environment. For a deterministic</span></span>
-<span id="cb16-518"><a href="#cb16-518" aria-hidden="true" tabindex="-1"></a><span class="in">reference benchmark, 80 evenly spaced, non-overlapping fragments per species</span></span>
-<span id="cb16-519"><a href="#cb16-519" aria-hidden="true" tabindex="-1"></a><span class="in">were selected at each of 3, 5, 10, and 20 kb from ten official reference</span></span>
-<span id="cb16-520"><a href="#cb16-520" aria-hidden="true" tabindex="-1"></a><span class="in">genomes (seed contract 20260758; no random selection). Assembly truth was</span></span>
-<span id="cb16-521"><a href="#cb16-521" aria-hidden="true" tabindex="-1"></a><span class="in">assigned by minimap2 2.31-r1302 only when the best alignment had &gt;=95%</span></span>
-<span id="cb16-522"><a href="#cb16-522" aria-hidden="true" tabindex="-1"></a><span class="in">identity and &gt;=80% query coverage; all other contigs remained unresolved.</span></span>
-<span id="cb16-523"><a href="#cb16-523" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-524"><a href="#cb16-524" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-525"><a href="#cb16-525" aria-hidden="true" tabindex="-1"></a>**Results template**</span>
-<span id="cb16-526"><a href="#cb16-526" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-527"><a href="#cb16-527" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
-<span id="cb16-528"><a href="#cb16-528" aria-hidden="true" tabindex="-1"></a><span class="in">EukDetect2 recovered both expected eukaryotic targets. Saccharomyces</span></span>
-<span id="cb16-529"><a href="#cb16-529" aria-hidden="true" tabindex="-1"></a><span class="in">cerevisiae was supported by 60 markers and 235 marker reads (RPKSB 3.888756;</span></span>
-<span id="cb16-530"><a href="#cb16-530" aria-hidden="true" tabindex="-1"></a><span class="in">RelEuk 71.93%). Cryptococcus evidence was split between C. deneoformans</span></span>
-<span id="cb16-531"><a href="#cb16-531" aria-hidden="true" tabindex="-1"></a><span class="in">(33 markers, 77 reads) and C. neoformans (22 markers, 53 reads); the two raw</span></span>
-<span id="cb16-532"><a href="#cb16-532" aria-hidden="true" tabindex="-1"></a><span class="in">labels were retained and grouped as the C. neoformans complex for comparison</span></span>
-<span id="cb16-533"><a href="#cb16-533" aria-hidden="true" tabindex="-1"></a><span class="in">with the mock specification (combined RelEuk 28.07%). No unexpected species</span></span>
-<span id="cb16-534"><a href="#cb16-534" aria-hidden="true" tabindex="-1"></a><span class="in">passed the final species-level filter.</span></span>
-<span id="cb16-535"><a href="#cb16-535" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-536"><a href="#cb16-536" aria-hidden="true" tabindex="-1"></a><span class="in">Assembly of 20 million read pairs yielded 4,222 contigs &gt;=1 kb (37.17 Mb;</span></span>
-<span id="cb16-537"><a href="#cb16-537" aria-hidden="true" tabindex="-1"></a><span class="in">N50 122,804 bp), of which 691 were &gt;=3 kb. The prespecified reference gate</span></span>
-<span id="cb16-538"><a href="#cb16-538" aria-hidden="true" tabindex="-1"></a><span class="in">resolved 221 eukaryotic, 388 prokaryotic, and 82 unresolved contigs. In</span></span>
-<span id="cb16-539"><a href="#cb16-539" aria-hidden="true" tabindex="-1"></a><span class="in">balanced mode, EukRep sensitivity, specificity, and precision on the resolved</span></span>
-<span id="cb16-540"><a href="#cb16-540" aria-hidden="true" tabindex="-1"></a><span class="in">contigs were 73.76%, 99.48%, and 98.79%, respectively. These estimates are</span></span>
-<span id="cb16-541"><a href="#cb16-541" aria-hidden="true" tabindex="-1"></a><span class="in">mock- and threshold-specific and were not interpreted as performance in</span></span>
-<span id="cb16-542"><a href="#cb16-542" aria-hidden="true" tabindex="-1"></a><span class="in">reference-incomplete natural communities.</span></span>
-<span id="cb16-543"><a href="#cb16-543" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-544"><a href="#cb16-544" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-545"><a href="#cb16-545" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
-<span id="cb16-546"><a href="#cb16-546" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-547"><a href="#cb16-547" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先按研究问题选路线</span></span>
-<span id="cb16-548"><a href="#cb16-548" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-549"><a href="#cb16-549" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“哪些已知真菌/原生生物被检出”：从 clean paired FASTQ 运行 EukDetect2；主表保留 marker breadth、read support、RPKSB、RelEuk 与 prevalence。</span>
-<span id="cb16-550"><a href="#cb16-550" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“哪些 contigs 可能来自真核”：先组装，再用 EukRep strict/balanced/lenient 产生候选；至少用 protein homology、coverage 或 reference alignment 做第二审计。</span>
-<span id="cb16-551"><a href="#cb16-551" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“能否恢复真核 genome”：需要更深测序，最好有 long reads；在 sequence partition 后做真核分箱、MetaEuk gene calling、BUSCO/EukCC 质量评估。</span>
-<span id="cb16-552"><a href="#cb16-552" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“是否活跃/定植/致病”：增加 RNA、protein、培养、显微、纵向或干预证据；DNA 分支不能代替这些数据。</span>
-<span id="cb16-553"><a href="#cb16-553" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-554"><a href="#cb16-554" aria-hidden="true" tabindex="-1"></a><span class="fu">### 你至少还需要这些 metadata 与 controls</span></span>
-<span id="cb16-555"><a href="#cb16-555" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-556"><a href="#cb16-556" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 类型 <span class="pp">|</span> 最低要求 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
-<span id="cb16-557"><a href="#cb16-557" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb16-558"><a href="#cb16-558" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 样本信息 <span class="pp">|</span> sample ID、batch、site、时间、宿主/环境 covariates <span class="pp">|</span> 控制混杂与重复测量 <span class="pp">|</span></span>
-<span id="cb16-559"><a href="#cb16-559" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 提取信息 <span class="pp">|</span> kit、bead beating、输入质量/体积 <span class="pp">|</span> 解释真菌/囊体裂解差异 <span class="pp">|</span></span>
-<span id="cb16-560"><a href="#cb16-560" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 阴性对照 <span class="pp">|</span> extraction blank、library blank <span class="pp">|</span> 识别低丰度环境/试剂真核 <span class="pp">|</span></span>
-<span id="cb16-561"><a href="#cb16-561" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 阳性对照 <span class="pp">|</span> mock 或已知 spike-in <span class="pp">|</span> 检查 marker 与 sequence branches 是否失效 <span class="pp">|</span></span>
-<span id="cb16-562"><a href="#cb16-562" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 测序信息 <span class="pp">|</span> paired/single、read length、总 bases、lane <span class="pp">|</span> 计算 RPKSB 与 batch audit <span class="pp">|</span></span>
-<span id="cb16-563"><a href="#cb16-563" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 生物学证据 <span class="pp">|</span> 饮食、药物、免疫状态、时间序列 <span class="pp">|</span> 区分暴露、活性与定植 <span class="pp">|</span></span>
-<span id="cb16-564"><a href="#cb16-564" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-565"><a href="#cb16-565" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把 run contract 改成你的项目</span></span>
-<span id="cb16-566"><a href="#cb16-566" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-567"><a href="#cb16-567" aria-hidden="true" tabindex="-1"></a>复制两个 manifest，并只修改可验证字段：URL/accession、bytes、checksum、database release、预期样本数和下采样规则。不要把“取前 N 对 reads”悄悄换成随机抽样；若需要随机抽样，固定 seed 并记录软件版本。自然样本没有官方 truth 时，可保留以下三级标签：</span>
-<span id="cb16-568"><a href="#cb16-568" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-569"><a href="#cb16-569" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`Reference-supported`</span>：达到预注册 identity/breadth gate；</span>
-<span id="cb16-570"><a href="#cb16-570" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`Orthogonally supported`</span>：protein/marker/coverage 等另一方法支持；</span>
-<span id="cb16-571"><a href="#cb16-571" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`Unresolved candidate`</span>：只有 EukRep 或单一 mapping 证据。</span>
+<span id="cb16-497"><a href="#cb16-497" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录真核检测的输入与证据层级 {#sec-methods}</span></span>
+<span id="cb16-498"><a href="#cb16-498" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-499"><a href="#cb16-499" aria-hidden="true" tabindex="-1"></a>下面模板中的数字来自 checksum-locked SRR12324253 实跑；换数据时同步替换 accession、subsampling rule、read counts、database release、命令参数和硬件。</span>
+<span id="cb16-500"><a href="#cb16-500" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-501"><a href="#cb16-501" aria-hidden="true" tabindex="-1"></a>**Methods template**</span>
+<span id="cb16-502"><a href="#cb16-502" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-503"><a href="#cb16-503" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
+<span id="cb16-504"><a href="#cb16-504" aria-hidden="true" tabindex="-1"></a><span class="in">Microbial eukaryotes were evaluated using complementary read- and</span></span>
+<span id="cb16-505"><a href="#cb16-505" aria-hidden="true" tabindex="-1"></a><span class="in">contig-based workflows. Paired-end reads from ZymoBIOMICS D6300 run</span></span>
+<span id="cb16-506"><a href="#cb16-506" aria-hidden="true" tabindex="-1"></a><span class="in">SRR12324253 (BioProject PRJNA648136) and the ZymoBIOMICS reference genomes v2</span></span>
+<span id="cb16-507"><a href="#cb16-507" aria-hidden="true" tabindex="-1"></a><span class="in">(Zenodo doi:10.5281/zenodo.3935737) were verified against fixed byte counts</span></span>
+<span id="cb16-508"><a href="#cb16-508" aria-hidden="true" tabindex="-1"></a><span class="in">and MD5 checksums. The first 1,000,000 read pairs were quality filtered with</span></span>
+<span id="cb16-509"><a href="#cb16-509" aria-hidden="true" tabindex="-1"></a><span class="in">fastp 1.3.6 and analysed with EukDetect2. The installed EukDetect package was</span></span>
+<span id="cb16-510"><a href="#cb16-510" aria-hidden="true" tabindex="-1"></a><span class="in">recorded as conda 2.0.2, Python distribution metadata 2.0.0, and CLI banner</span></span>
+<span id="cb16-511"><a href="#cb16-511" aria-hidden="true" tabindex="-1"></a><span class="in">v2.0.1. Bowtie2 2.5.4 and the EukDetect2 database release 2026-03-16</span></span>
+<span id="cb16-512"><a href="#cb16-512" aria-hidden="true" tabindex="-1"></a><span class="in">(Zenodo doi:10.5281/zenodo.19056625; 14 checksum-verified files) were used.</span></span>
+<span id="cb16-513"><a href="#cb16-513" aria-hidden="true" tabindex="-1"></a><span class="in">Species-level calls were retained after the built-in EukDetect2 filtering,</span></span>
+<span id="cb16-514"><a href="#cb16-514" aria-hidden="true" tabindex="-1"></a><span class="in">including support from at least two marker genes and four reads. RPKSB was</span></span>
+<span id="cb16-515"><a href="#cb16-515" aria-hidden="true" tabindex="-1"></a><span class="in">normalized by 298,193,028 post-QC sequenced bases, whereas RelEuk was</span></span>
+<span id="cb16-516"><a href="#cb16-516" aria-hidden="true" tabindex="-1"></a><span class="in">normalized among detected eukaryotic taxa.</span></span>
+<span id="cb16-517"><a href="#cb16-517" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-518"><a href="#cb16-518" aria-hidden="true" tabindex="-1"></a><span class="in">For contig-level classification, the first 20,000,000 read pairs were quality</span></span>
+<span id="cb16-519"><a href="#cb16-519" aria-hidden="true" tabindex="-1"></a><span class="in">filtered and assembled with MEGAHIT 1.2.9 using the meta-sensitive preset, a</span></span>
+<span id="cb16-520"><a href="#cb16-520" aria-hidden="true" tabindex="-1"></a><span class="in">1-kb minimum contig length, 32 threads, and a 60,000,000,000-byte memory</span></span>
+<span id="cb16-521"><a href="#cb16-521" aria-hidden="true" tabindex="-1"></a><span class="in">ceiling. Contigs at least 3 kb were classified with EukRep 0.6.7 in strict,</span></span>
+<span id="cb16-522"><a href="#cb16-522" aria-hidden="true" tabindex="-1"></a><span class="in">balanced, and lenient modes using --min 3000 and --tie prok. EukRep was run in</span></span>
+<span id="cb16-523"><a href="#cb16-523" aria-hidden="true" tabindex="-1"></a><span class="in">an isolated Python 3.6.15/scikit-learn 0.19.2 environment. For a deterministic</span></span>
+<span id="cb16-524"><a href="#cb16-524" aria-hidden="true" tabindex="-1"></a><span class="in">reference benchmark, 80 evenly spaced, non-overlapping fragments per species</span></span>
+<span id="cb16-525"><a href="#cb16-525" aria-hidden="true" tabindex="-1"></a><span class="in">were selected at each of 3, 5, 10, and 20 kb from ten official reference</span></span>
+<span id="cb16-526"><a href="#cb16-526" aria-hidden="true" tabindex="-1"></a><span class="in">genomes (seed contract 20260758; no random selection). Assembly truth was</span></span>
+<span id="cb16-527"><a href="#cb16-527" aria-hidden="true" tabindex="-1"></a><span class="in">assigned by minimap2 2.31-r1302 only when the best alignment had &gt;=95%</span></span>
+<span id="cb16-528"><a href="#cb16-528" aria-hidden="true" tabindex="-1"></a><span class="in">identity and &gt;=80% query coverage; all other contigs remained unresolved.</span></span>
+<span id="cb16-529"><a href="#cb16-529" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-530"><a href="#cb16-530" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-531"><a href="#cb16-531" aria-hidden="true" tabindex="-1"></a>**Results template**</span>
+<span id="cb16-532"><a href="#cb16-532" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-533"><a href="#cb16-533" aria-hidden="true" tabindex="-1"></a><span class="in">~~~text</span></span>
+<span id="cb16-534"><a href="#cb16-534" aria-hidden="true" tabindex="-1"></a><span class="in">EukDetect2 recovered both expected eukaryotic targets. Saccharomyces</span></span>
+<span id="cb16-535"><a href="#cb16-535" aria-hidden="true" tabindex="-1"></a><span class="in">cerevisiae was supported by 60 markers and 235 marker reads (RPKSB 3.888756;</span></span>
+<span id="cb16-536"><a href="#cb16-536" aria-hidden="true" tabindex="-1"></a><span class="in">RelEuk 71.93%). Cryptococcus evidence was split between C. deneoformans</span></span>
+<span id="cb16-537"><a href="#cb16-537" aria-hidden="true" tabindex="-1"></a><span class="in">(33 markers, 77 reads) and C. neoformans (22 markers, 53 reads); the two raw</span></span>
+<span id="cb16-538"><a href="#cb16-538" aria-hidden="true" tabindex="-1"></a><span class="in">labels were retained and grouped as the C. neoformans complex for comparison</span></span>
+<span id="cb16-539"><a href="#cb16-539" aria-hidden="true" tabindex="-1"></a><span class="in">with the mock specification (combined RelEuk 28.07%). No unexpected species</span></span>
+<span id="cb16-540"><a href="#cb16-540" aria-hidden="true" tabindex="-1"></a><span class="in">passed the final species-level filter.</span></span>
+<span id="cb16-541"><a href="#cb16-541" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-542"><a href="#cb16-542" aria-hidden="true" tabindex="-1"></a><span class="in">Assembly of 20 million read pairs yielded 4,222 contigs &gt;=1 kb (37.17 Mb;</span></span>
+<span id="cb16-543"><a href="#cb16-543" aria-hidden="true" tabindex="-1"></a><span class="in">N50 122,804 bp), of which 691 were &gt;=3 kb. The prespecified reference gate</span></span>
+<span id="cb16-544"><a href="#cb16-544" aria-hidden="true" tabindex="-1"></a><span class="in">resolved 221 eukaryotic, 388 prokaryotic, and 82 unresolved contigs. In</span></span>
+<span id="cb16-545"><a href="#cb16-545" aria-hidden="true" tabindex="-1"></a><span class="in">balanced mode, EukRep sensitivity, specificity, and precision on the resolved</span></span>
+<span id="cb16-546"><a href="#cb16-546" aria-hidden="true" tabindex="-1"></a><span class="in">contigs were 73.76%, 99.48%, and 98.79%, respectively. These estimates are</span></span>
+<span id="cb16-547"><a href="#cb16-547" aria-hidden="true" tabindex="-1"></a><span class="in">mock- and threshold-specific and were not interpreted as performance in</span></span>
+<span id="cb16-548"><a href="#cb16-548" aria-hidden="true" tabindex="-1"></a><span class="in">reference-incomplete natural communities.</span></span>
+<span id="cb16-549"><a href="#cb16-549" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
+<span id="cb16-550"><a href="#cb16-550" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-551"><a href="#cb16-551" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb16-552"><a href="#cb16-552" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-553"><a href="#cb16-553" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先按研究问题选路线</span></span>
+<span id="cb16-554"><a href="#cb16-554" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-555"><a href="#cb16-555" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“哪些已知真菌/原生生物被检出”：从 clean paired FASTQ 运行 EukDetect2；主表保留 marker breadth、read support、RPKSB、RelEuk 与 prevalence。</span>
+<span id="cb16-556"><a href="#cb16-556" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“哪些 contigs 可能来自真核”：先组装，再用 EukRep strict/balanced/lenient 产生候选；至少用 protein homology、coverage 或 reference alignment 做第二审计。</span>
+<span id="cb16-557"><a href="#cb16-557" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“能否恢复真核 genome”：需要更深测序，最好有 long reads；在 sequence partition 后做真核分箱、MetaEuk gene calling、BUSCO/EukCC 质量评估。</span>
+<span id="cb16-558"><a href="#cb16-558" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>问“是否活跃/定植/致病”：增加 RNA、protein、培养、显微、纵向或干预证据；DNA 分支不能代替这些数据。</span>
+<span id="cb16-559"><a href="#cb16-559" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-560"><a href="#cb16-560" aria-hidden="true" tabindex="-1"></a><span class="fu">### 你至少还需要这些 metadata 与 controls</span></span>
+<span id="cb16-561"><a href="#cb16-561" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-562"><a href="#cb16-562" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 类型 <span class="pp">|</span> 最低要求 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
+<span id="cb16-563"><a href="#cb16-563" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb16-564"><a href="#cb16-564" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 样本信息 <span class="pp">|</span> sample ID、batch、site、时间、宿主/环境 covariates <span class="pp">|</span> 控制混杂与重复测量 <span class="pp">|</span></span>
+<span id="cb16-565"><a href="#cb16-565" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 提取信息 <span class="pp">|</span> kit、bead beating、输入质量/体积 <span class="pp">|</span> 解释真菌/囊体裂解差异 <span class="pp">|</span></span>
+<span id="cb16-566"><a href="#cb16-566" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 阴性对照 <span class="pp">|</span> extraction blank、library blank <span class="pp">|</span> 识别低丰度环境/试剂真核 <span class="pp">|</span></span>
+<span id="cb16-567"><a href="#cb16-567" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 阳性对照 <span class="pp">|</span> mock 或已知 spike-in <span class="pp">|</span> 检查 marker 与 sequence branches 是否失效 <span class="pp">|</span></span>
+<span id="cb16-568"><a href="#cb16-568" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 测序信息 <span class="pp">|</span> paired/single、read length、总 bases、lane <span class="pp">|</span> 计算 RPKSB 与 batch audit <span class="pp">|</span></span>
+<span id="cb16-569"><a href="#cb16-569" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 生物学证据 <span class="pp">|</span> 饮食、药物、免疫状态、时间序列 <span class="pp">|</span> 区分暴露、活性与定植 <span class="pp">|</span></span>
+<span id="cb16-570"><a href="#cb16-570" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-571"><a href="#cb16-571" aria-hidden="true" tabindex="-1"></a><span class="fu">### 把 run contract 改成你的项目</span></span>
 <span id="cb16-572"><a href="#cb16-572" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-573"><a href="#cb16-573" aria-hidden="true" tabindex="-1"></a>队列分析时，先做 sample × taxon detection/marker matrix，再做 prevalence gate；RPKSB 与 RelEuk 分开建模。病例/对照差异必须纳入 batch、read depth、药物、饮食和其他关键协变量。极低 prevalence taxon 不适合直接套普通 t-test；报告零值结构、有效样本数和多重检验校正。</span>
+<span id="cb16-573"><a href="#cb16-573" aria-hidden="true" tabindex="-1"></a>复制两个 manifest，并只修改可验证字段：URL/accession、bytes、checksum、database release、预期样本数和下采样规则。不要把“取前 N 对 reads”悄悄换成随机抽样；若需要随机抽样，固定 seed 并记录软件版本。自然样本没有官方 truth 时，可保留以下三级标签：</span>
 <span id="cb16-574"><a href="#cb16-574" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-575"><a href="#cb16-575" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输出最少要交付什么</span></span>
-<span id="cb16-576"><a href="#cb16-576" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-577"><a href="#cb16-577" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>software/database/lockfile ledger；</span>
-<span id="cb16-578"><a href="#cb16-578" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>source asset 与 database checksum manifests；</span>
-<span id="cb16-579"><a href="#cb16-579" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>species-level marker/read/RPKSB/RelEuk table；</span>
-<span id="cb16-580"><a href="#cb16-580" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>原始 taxonomy labels 与预注册 aggregation map；</span>
-<span id="cb16-581"><a href="#cb16-581" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>EukRep euk/prok partitions 及完整性检查；</span>
-<span id="cb16-582"><a href="#cb16-582" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>assembly/reference audit 和 Unresolved 列表；</span>
-<span id="cb16-583"><a href="#cb16-583" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>negative/positive control summary；</span>
-<span id="cb16-584"><a href="#cb16-584" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PDF、350 dpi PNG 和 LZW TIFF figures；</span>
-<span id="cb16-585"><a href="#cb16-585" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Methods/Results 中明确的 evidence ceiling。</span>
-<span id="cb16-586"><a href="#cb16-586" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-587"><a href="#cb16-587" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb16-588"><a href="#cb16-588" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-589"><a href="#cb16-589" aria-hidden="true" tabindex="-1"></a>五组图使用色盲友好的 blue/orange/green 体系，图内文字全部为英文。每张图只承担一个判断：</span>
-<span id="cb16-590"><a href="#cb16-590" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-591"><a href="#cb16-591" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>marker evidence 图同时展示 marker breadth、read support、identity 与 RPKSB；</span>
-<span id="cb16-592"><a href="#cb16-592" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>denominator 图把 total DNA、eukaryote-only 与 RelEuk 并排，防止百分比偷换分母；</span>
-<span id="cb16-593"><a href="#cb16-593" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>reference benchmark 用 color 表示 mode、shape 表示 metric，避免 6 条线仅靠颜色区分；</span>
-<span id="cb16-594"><a href="#cb16-594" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>assembly audit 把 resolved truth 与 unresolved 分开，不把未知强行当负类；</span>
-<span id="cb16-595"><a href="#cb16-595" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>evidence ladder 直接标出 claim ceiling，适合作为 Discussion 或 graphical checklist。</span>
+<span id="cb16-575"><a href="#cb16-575" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span><span class="in">`Reference-supported`</span>：达到预注册 identity/breadth gate；</span>
+<span id="cb16-576"><a href="#cb16-576" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span><span class="in">`Orthogonally supported`</span>：protein/marker/coverage 等另一方法支持；</span>
+<span id="cb16-577"><a href="#cb16-577" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span><span class="in">`Unresolved candidate`</span>：只有 EukRep 或单一 mapping 证据。</span>
+<span id="cb16-578"><a href="#cb16-578" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-579"><a href="#cb16-579" aria-hidden="true" tabindex="-1"></a>队列分析时，先做 sample × taxon detection/marker matrix，再做 prevalence gate；RPKSB 与 RelEuk 分开建模。病例/对照差异必须纳入 batch、read depth、药物、饮食和其他关键协变量。极低 prevalence taxon 不适合直接套普通 t-test；报告零值结构、有效样本数和多重检验校正。</span>
+<span id="cb16-580"><a href="#cb16-580" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-581"><a href="#cb16-581" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输出最少要交付什么</span></span>
+<span id="cb16-582"><a href="#cb16-582" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-583"><a href="#cb16-583" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>software/database/lockfile ledger；</span>
+<span id="cb16-584"><a href="#cb16-584" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>source asset 与 database checksum manifests；</span>
+<span id="cb16-585"><a href="#cb16-585" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>species-level marker/read/RPKSB/RelEuk table；</span>
+<span id="cb16-586"><a href="#cb16-586" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>原始 taxonomy labels 与预注册 aggregation map；</span>
+<span id="cb16-587"><a href="#cb16-587" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>EukRep euk/prok partitions 及完整性检查；</span>
+<span id="cb16-588"><a href="#cb16-588" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>assembly/reference audit 和 Unresolved 列表；</span>
+<span id="cb16-589"><a href="#cb16-589" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>negative/positive control summary；</span>
+<span id="cb16-590"><a href="#cb16-590" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PDF、350 dpi PNG 和 LZW TIFF figures；</span>
+<span id="cb16-591"><a href="#cb16-591" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Methods/Results 中明确的 evidence ceiling。</span>
+<span id="cb16-592"><a href="#cb16-592" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-593"><a href="#cb16-593" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb16-594"><a href="#cb16-594" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-595"><a href="#cb16-595" aria-hidden="true" tabindex="-1"></a>五组图使用色盲友好的 blue/orange/green 体系，图内文字全部为英文。每张图只承担一个判断：</span>
 <span id="cb16-596"><a href="#cb16-596" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-597"><a href="#cb16-597" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
-<span id="cb16-598"><a href="#cb16-598" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/58-microbial-eukaryotes-frozen"</span></span>
-<span id="cb16-599"><a href="#cb16-599" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-600"><a href="#cb16-600" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
-<span id="cb16-601"><a href="#cb16-601" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(frozen, <span class="st">"eukdetect-species-evidence.tsv"</span>),</span>
-<span id="cb16-602"><a href="#cb16-602" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb16-603"><a href="#cb16-603" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-604"><a href="#cb16-604" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
-<span id="cb16-605"><a href="#cb16-605" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(frozen, <span class="st">"eukrep-reference-metrics.tsv"</span>),</span>
-<span id="cb16-606"><a href="#cb16-606" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb16-607"><a href="#cb16-607" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-608"><a href="#cb16-608" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-609"><a href="#cb16-609" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整绘图代码读取同一 frozen tables，并导出 PDF + 350-dpi PNG/TIFF</span></span>
-<span id="cb16-610"><a href="#cb16-610" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(<span class="st">"Rscript"</span>, <span class="fu">c</span>(</span>
-<span id="cb16-611"><a href="#cb16-611" aria-hidden="true" tabindex="-1"></a>  <span class="st">"scripts/plot_article58_eukaryotes.R"</span>,</span>
-<span id="cb16-612"><a href="#cb16-612" aria-hidden="true" tabindex="-1"></a>  frozen,</span>
-<span id="cb16-613"><a href="#cb16-613" aria-hidden="true" tabindex="-1"></a>  <span class="st">"figures"</span></span>
-<span id="cb16-614"><a href="#cb16-614" aria-hidden="true" tabindex="-1"></a>))</span>
-<span id="cb16-615"><a href="#cb16-615" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
-<span id="cb16-616"><a href="#cb16-616" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-617"><a href="#cb16-617" aria-hidden="true" tabindex="-1"></a>投稿时优先使用 <span class="in">`.pdf`</span> 矢量图；需要 raster 的期刊使用 350 dpi <span class="in">`.tiff`</span> 且 <span class="in">`compression = "lzw"`</span>。不要把 species name 缩成只剩首字母；*Cryptococcus* 的两个原始 labels 对解释数据库分类拆分至关重要。图注应写清 mock、read subset、database release、过滤阈值和分母，不能只写 “relative abundance”。</span>
-<span id="cb16-618"><a href="#cb16-618" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-619"><a href="#cb16-619" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb16-620"><a href="#cb16-620" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-621"><a href="#cb16-621" aria-hidden="true" tabindex="-1"></a>EukDetect2 从 reads 找真核 marker，EukRep 从 contigs 判域；两者都不能把 DNA 检出直接写成活性或定植。</span>
+<span id="cb16-597"><a href="#cb16-597" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>marker evidence 图同时展示 marker breadth、read support、identity 与 RPKSB；</span>
+<span id="cb16-598"><a href="#cb16-598" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>denominator 图把 total DNA、eukaryote-only 与 RelEuk 并排，防止百分比偷换分母；</span>
+<span id="cb16-599"><a href="#cb16-599" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>reference benchmark 用 color 表示 mode、shape 表示 metric，避免 6 条线仅靠颜色区分；</span>
+<span id="cb16-600"><a href="#cb16-600" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>assembly audit 把 resolved truth 与 unresolved 分开，不把未知强行当负类；</span>
+<span id="cb16-601"><a href="#cb16-601" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>evidence ladder 直接标出 claim ceiling，适合作为 Discussion 或 graphical checklist。</span>
+<span id="cb16-602"><a href="#cb16-602" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-603"><a href="#cb16-603" aria-hidden="true" tabindex="-1"></a><span class="in">~~~r</span></span>
+<span id="cb16-604"><a href="#cb16-604" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/58-microbial-eukaryotes-frozen"</span></span>
+<span id="cb16-605"><a href="#cb16-605" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-606"><a href="#cb16-606" aria-hidden="true" tabindex="-1"></a>evidence <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb16-607"><a href="#cb16-607" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(frozen, <span class="st">"eukdetect-species-evidence.tsv"</span>),</span>
+<span id="cb16-608"><a href="#cb16-608" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb16-609"><a href="#cb16-609" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-610"><a href="#cb16-610" aria-hidden="true" tabindex="-1"></a>metrics <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(</span>
+<span id="cb16-611"><a href="#cb16-611" aria-hidden="true" tabindex="-1"></a>  <span class="fu">file.path</span>(frozen, <span class="st">"eukrep-reference-metrics.tsv"</span>),</span>
+<span id="cb16-612"><a href="#cb16-612" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb16-613"><a href="#cb16-613" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-614"><a href="#cb16-614" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-615"><a href="#cb16-615" aria-hidden="true" tabindex="-1"></a><span class="co"># 完整绘图代码读取同一 frozen tables，并导出 PDF + 350-dpi PNG/TIFF</span></span>
+<span id="cb16-616"><a href="#cb16-616" aria-hidden="true" tabindex="-1"></a><span class="fu">system2</span>(<span class="st">"Rscript"</span>, <span class="fu">c</span>(</span>
+<span id="cb16-617"><a href="#cb16-617" aria-hidden="true" tabindex="-1"></a>  <span class="st">"scripts/plot_article58_eukaryotes.R"</span>,</span>
+<span id="cb16-618"><a href="#cb16-618" aria-hidden="true" tabindex="-1"></a>  frozen,</span>
+<span id="cb16-619"><a href="#cb16-619" aria-hidden="true" tabindex="-1"></a>  <span class="st">"figures"</span></span>
+<span id="cb16-620"><a href="#cb16-620" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb16-621"><a href="#cb16-621" aria-hidden="true" tabindex="-1"></a><span class="in">~~~</span></span>
 <span id="cb16-622"><a href="#cb16-622" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-623"><a href="#cb16-623" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb16-623"><a href="#cb16-623" aria-hidden="true" tabindex="-1"></a>投稿时优先使用 <span class="in">`.pdf`</span> 矢量图；需要 raster 的期刊使用 350 dpi <span class="in">`.tiff`</span> 且 <span class="in">`compression = "lzw"`</span>。不要把 species name 缩成只剩首字母；*Cryptococcus* 的两个原始 labels 对解释数据库分类拆分至关重要。图注应写清 mock、read subset、database release、过滤阈值和分母，不能只写 “relative abundance”。</span>
 <span id="cb16-624"><a href="#cb16-624" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-625"><a href="#cb16-625" aria-hidden="true" tabindex="-1"></a>除上述方法论文外，ZymoBIOMICS 标准品的设计与参考资源背景可参见 @nicholls2019zymo、@zymo2020refgenomes 与 @zymo2026d6300。数据库和软件 release 应随每次分析一起冻结，而不是只引用工具主页。</span>
+<span id="cb16-625"><a href="#cb16-625" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
 <span id="cb16-626"><a href="#cb16-626" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-627"><a href="#cb16-627" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
-<span id="cb16-628"><a href="#cb16-628" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb16-627"><a href="#cb16-627" aria-hidden="true" tabindex="-1"></a>EukDetect2 从 reads 找真核 marker，EukRep 从 contigs 判域；两者都不能把 DNA 检出直接写成活性或定植。</span>
+<span id="cb16-628"><a href="#cb16-628" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-629"><a href="#cb16-629" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb16-630"><a href="#cb16-630" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-631"><a href="#cb16-631" aria-hidden="true" tabindex="-1"></a>除上述方法论文外，ZymoBIOMICS 标准品的设计与参考资源背景可参见 @nicholls2019zymo、@zymo2020refgenomes 与 @zymo2026d6300。数据库和软件 release 应随每次分析一起冻结，而不是只引用工具主页。</span>
+<span id="cb16-632"><a href="#cb16-632" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-633"><a href="#cb16-633" aria-hidden="true" tabindex="-1"></a>::: {#refs}</span>
+<span id="cb16-634"><a href="#cb16-634" aria-hidden="true" tabindex="-1"></a>:::</span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

@@ -948,7 +948,10 @@ window.Quarto = {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">代谢模型预测生长，依赖哪些假设？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">代谢模型预测生长，依赖哪些假设？</a>
+  <ul class="collapse">
+  <li><a href="#一个可行的代谢解能说明多少生物学" id="toc-一个可行的代谢解能说明多少生物学" class="nav-link" data-scroll-target="#一个可行的代谢解能说明多少生物学">一个可行的代谢解，能说明多少生物学？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先确认数据来源与运行边界</a>
   <ul class="collapse">
@@ -1044,13 +1047,13 @@ window.Quarto = {
 <p>这组小 MAG 的成功步骤中，单任务峰值常驻内存最高为 <strong>1,444,584 KB</strong>，最长 wall time 为 <strong>1,161.3 s</strong>；并行峰值取决于同时运行的 jobs。真实人群 MAG 更大、数据库缓存与 solver 行为也不同，部署时仍按上述保守门槛预留资源。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="一个可行的代谢解，能说明多少生物学">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>一个可行的代谢解，能说明多少生物学
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1071,6 +1074,11 @@ window.Quarto = {
 </figcaption>
 </figure>
 </div>
+<section id="一个可行的代谢解能说明多少生物学" class="level3">
+<h3 class="anchored" data-anchor-id="一个可行的代谢解能说明多少生物学">一个可行的代谢解，能说明多少生物学？</h3>
+<p>FBA 给出的是满足当前反应、边界和目标函数的一组可行解，不是对真实细胞每条反应通量的直接测量。多个不同解可能达到相同目标值；求解成功与预测在实验中成立也不是同一件事。因此，本例的 168 次计算检查主要用于定位模型假设的影响，不是 168 次独立生物学验证。</p>
+<p>gap filling 可以恢复数学可行性，却也可能加入缺乏当前基因组支持的反应。比较完整与截短 MAG 时，应同时看保留的证据和补入的假设，不能只比较是否得到正的生长目标值。模型越依赖补全，结论越需要写成条件性预测。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1416,10 +1424,14 @@ window.Quarto = {
 <section id="gap-filling-是最小修复不是新基因发现" class="level3">
 <h3 class="anchored" data-anchor-id="gap-filling-是最小修复不是新基因发现">Gap filling 是“最小修复”，不是新基因发现</h3>
 <p>若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 <span class="math inline">\(A\)</span>，使修复后的网络可行，并最小化代价：</p>
-<p>[ <em>A </em>{jA} w_j y_j, ]</p>
+<p><span class="math display">\[
+\min_A \sum_{j\in A} w_j y_j,
+\]</span></p>
 <p>其中 <span class="math inline">\(y_j\)</span> 表示是否加入 reaction <span class="math inline">\(j\)</span>，<span class="math inline">\(w_j\)</span> 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。</p>
 <p>本次定义：</p>
-<p>[ B_g = 100, ]</p>
+<p><span class="math display">\[
+B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},
+\]</span></p>
 <p>并用 <span class="math inline">\(B_g&gt;10\%\)</span> 作为需要人工复核的 <strong>audit flag</strong>，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article60_gem.py <span class="dt">\</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
@@ -1483,11 +1495,17 @@ window.Quarto = {
 <section id="fba-是带假设的可行域优化" class="level3">
 <h3 class="anchored" data-anchor-id="fba-是带假设的可行域优化">FBA 是带假设的可行域优化</h3>
 <p>设 <span class="math inline">\(S \in \mathbb{R}^{m\times r}\)</span> 为 metabolite × reaction 的 stoichiometric matrix，<span class="math inline">\(v\)</span> 为 reaction flux，稳态近似为：</p>
-<p>[ Sv=0. ]</p>
+<p><span class="math display">\[
+Sv=0.
+\]</span></p>
 <p>培养基、反应方向和容量写进上下界：</p>
-<p>[ _j v_j u_j, ]</p>
+<p><span class="math display">\[
+\ell_j \le v_j \le u_j,
+\]</span></p>
 <p>常见 FBA 以 biomass reaction 为目标 <span class="citation" data-cites="orth2010fba">(<a href="02-three-analysis-layers.html#ref-orth2010fba" role="doc-biblioref">Orth 等 2010年</a>)</span>：</p>
-<p>[ _v c^Tv Sv=0,; vu. ]</p>
+<p><span class="math display">\[
+\max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.
+\]</span></p>
 <p>因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。</p>
 </section>
 <section id="培养基是模型条件不是装饰参数" class="level3">
@@ -2353,7 +2371,7 @@ Zimmermann, Johannes, 和 Silvio Waschina. 2026年. <span>《<span>gapseq</span>
 <span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>这组小 MAG 的成功步骤中，单任务峰值常驻内存最高为 **1,444,584 KB**，最长 wall time 为 **1,161.3 s**；并行峰值取决于同时运行的 jobs。真实人群 MAG 更大、数据库缓存与 solver 行为也不同，部署时仍按上述保守门槛预留资源。</span>
 <span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="一个可行的代谢解，能说明多少生物学"}</span>
 <span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>培养基边界和补缺反应都会影响预测；模型可行不等于真实生长或通量已被测量。</span>
 <span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a></span>
@@ -2367,504 +2385,510 @@ Zimmermann, Johannes, 和 Silvio Waschina. 2026年. <span>《<span>gapseq</span>
 <span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="al">![8 个真实 MAG 的固定 draft 与 gap-filled model 反应数。连线右侧的数字是增加的反应数；新增反应是模型修复假设。](../figures/60-model-size-gapfill.png)</span>{#fig-60-model-size}</span>
 <span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a><span class="fu">### 一个可行的代谢解，能说明多少生物学？</span></span>
 <span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/60/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 16.9 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>FBA 给出的是满足当前反应、边界和目标函数的一组可行解，不是对真实细胞每条反应通量的直接测量。多个不同解可能达到相同目标值；求解成功与预测在实验中成立也不是同一件事。因此，本例的 168 次计算检查主要用于定位模型假设的影响，不是 168 次独立生物学验证。</span>
 <span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/60/download.R)</span>。</span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>gap filling 可以恢复数学可行性，却也可能加入缺乏当前基因组支持的反应。比较完整与截短 MAG 时，应同时看保留的证据和补入的假设，不能只比较是否得到正的生长目标值。模型越依赖补全，结论越需要写成条件性预测。</span>
 <span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-60</span></span>
-<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/60/files.tsv"</span>))</span>
-<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认数据来源与运行边界 {#sec-preparation}</span></span>
-<span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实输入与固定身份</span></span>
-<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a>主输入来自 PRJEB52977 uneven mock study <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。第 45 步得到的 dRep representatives 与第 46 步的 GTDB-Tk R232 taxonomy ledger 都有 payload SHA-256；准备脚本先核对二者，再解压 8 个 MAG。两套 reconstruction tools 不各自调用 gene caller，而是共享 Prodigal 2.6.3 <span class="in">`-p meta`</span> 的 proteins，避免 gene-calling difference 混入工具比较。</span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/60/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 16.9 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/60/download.R)</span>。</span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-60</span></span>
+<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/60/files.tsv"</span>))</span>
+<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Genome <span class="pp">|</span> GTDB R232 species <span class="pp">|</span> Domain <span class="pp">|</span> CheckM2 completeness <span class="pp">|</span> Contamination <span class="pp">|</span> 设计作用 <span class="pp">|</span></span>
-<span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---:|---:|---:|---|</span></span>
-<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_002 <span class="pp">|</span> *Nitrosomonas europaea* <span class="pp">|</span> Bacteria <span class="pp">|</span> 100.00% <span class="pp">|</span> 0.04% <span class="pp">|</span> truncation parent / exact control <span class="pp">|</span></span>
-<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_006 <span class="pp">|</span> *Shewanella baltica* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.55% <span class="pp">|</span> 6.95% <span class="pp">|</span> contamination stress <span class="pp">|</span></span>
-<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_008 <span class="pp">|</span> *Ignicoccus islandicus* <span class="pp">|</span> Archaea <span class="pp">|</span> 59.51% <span class="pp">|</span> 0.00% <span class="pp">|</span> incompleteness stress <span class="pp">|</span></span>
-<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_010 <span class="pp">|</span> *Methanocaldococcus jannaschii* <span class="pp">|</span> Archaea <span class="pp">|</span> 99.92% <span class="pp">|</span> 0.12% <span class="pp">|</span> methanogenic archaeon <span class="pp">|</span></span>
-<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_016 <span class="pp">|</span> *Caldicellulosiruptor saccharolyticus* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.99% <span class="pp">|</span> 0.02% <span class="pp">|</span> anaerobic heterotroph <span class="pp">|</span></span>
-<span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_018 <span class="pp">|</span> *Nanoarchaeum equitans* <span class="pp">|</span> Archaea <span class="pp">|</span> 87.33% <span class="pp">|</span> 0.21% <span class="pp">|</span> reduced symbiont <span class="pp">|</span></span>
-<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_021 <span class="pp">|</span> *Rhodopirellula baltica* <span class="pp">|</span> Bacteria <span class="pp">|</span> 97.85% <span class="pp">|</span> 3.87% <span class="pp">|</span> large genome <span class="pp">|</span></span>
-<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_024 <span class="pp">|</span> *Thermotoga neapolitana* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.50% <span class="pp">|</span> 0.45% <span class="pp">|</span> thermophilic heterotroph <span class="pp">|</span></span>
-<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a>Seed **59002** 固定 contig shuffle；50%、70%、90%、100% targets 的实际 retained bases 为 52.036793%、70.175068%、91.069344% 和 100%。另设绘图 seed **20260760**。<span class="in">`TRUNC_100`</span> 与 <span class="in">`SGB_002`</span> 的 sequence-set hash 和 protein-sequence multiset hash 必须相同，但 identifiers 保留各自 genome prefix，防止并行结果串样。</span>
-<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库与 solver 锁</span></span>
-<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 资源 <span class="pp">|</span> 锁定版本 <span class="pp">|</span> 身份与规模 <span class="pp">|</span></span>
-<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq <span class="pp">|</span> 2.1.0, source commit <span class="in">`53f3b612...f328a7d2`</span> <span class="pp">|</span> <span class="in">`env/gapseq-linux-64.lock`</span> <span class="pp">|</span></span>
-<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq sequence DB <span class="pp">|</span> v1.5, UniProt 2026_01 <span class="co">[</span><span class="ot">@zimmermann2026gapseqdb</span><span class="co">]</span> <span class="pp">|</span> Zenodo 20446806；Bacteria SHA-256 <span class="in">`ec669d56...e1afeb`</span>；Archaea <span class="in">`62e3cf8e...df51c7`</span> <span class="pp">|</span></span>
-<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe <span class="pp">|</span> 1.6.6 <span class="pp">|</span> Bioconda package SHA-256 <span class="in">`fb1ebf83...e00a99`</span> <span class="pp">|</span></span>
-<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe universe <span class="pp">|</span> 1.6.6 bacteria + archaea <span class="pp">|</span> exact compressed universe SHA-256 in manifest <span class="pp">|</span></span>
-<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Sequence aligner <span class="pp">|</span> DIAMOND 2.2.4 / 2.1.13 <span class="pp">|</span> tool-specific locked environments <span class="pp">|</span></span>
-<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> LP/MILP solver <span class="pp">|</span> GLPK 5.0 / SCIP 10.0.3 <span class="pp">|</span> CarveMe SCIP limit 600 s, relative gap 0.001 <span class="pp">|</span></span>
-<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Exchange definitions <span class="pp">|</span> gapseq media CSV / CarveMe <span class="in">`media_db.tsv`</span> <span class="pp">|</span> exact files included in frozen evidence <span class="pp">|</span></span>
-<span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、下载数据库并内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-gapseq-2026.08 <span class="dt">\</span></span>
-<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/gapseq-linux-64.lock</span>
-<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
-<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/carveme-linux-64.lock</span>
-<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
-<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/drep-linux-64.lock</span>
-<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gapseq-2026.08 gapseq test</span>
-<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
-<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">'import carveme; print(carveme.__version__)'</span></span>
-<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
-<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">'from reframed.solvers import get_default_solver; print(get_default_solver())'</span></span>
+<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认数据来源与运行边界 {#sec-preparation}</span></span>
+<span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实输入与固定身份</span></span>
+<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a>主输入来自 PRJEB52977 uneven mock study <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。第 45 步得到的 dRep representatives 与第 46 步的 GTDB-Tk R232 taxonomy ledger 都有 payload SHA-256；准备脚本先核对二者，再解压 8 个 MAG。两套 reconstruction tools 不各自调用 gene caller，而是共享 Prodigal 2.6.3 <span class="in">`-p meta`</span> 的 proteins，避免 gene-calling difference 混入工具比较。</span>
+<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Genome <span class="pp">|</span> GTDB R232 species <span class="pp">|</span> Domain <span class="pp">|</span> CheckM2 completeness <span class="pp">|</span> Contamination <span class="pp">|</span> 设计作用 <span class="pp">|</span></span>
+<span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---:|---:|---:|---|</span></span>
+<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_002 <span class="pp">|</span> *Nitrosomonas europaea* <span class="pp">|</span> Bacteria <span class="pp">|</span> 100.00% <span class="pp">|</span> 0.04% <span class="pp">|</span> truncation parent / exact control <span class="pp">|</span></span>
+<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_006 <span class="pp">|</span> *Shewanella baltica* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.55% <span class="pp">|</span> 6.95% <span class="pp">|</span> contamination stress <span class="pp">|</span></span>
+<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_008 <span class="pp">|</span> *Ignicoccus islandicus* <span class="pp">|</span> Archaea <span class="pp">|</span> 59.51% <span class="pp">|</span> 0.00% <span class="pp">|</span> incompleteness stress <span class="pp">|</span></span>
+<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_010 <span class="pp">|</span> *Methanocaldococcus jannaschii* <span class="pp">|</span> Archaea <span class="pp">|</span> 99.92% <span class="pp">|</span> 0.12% <span class="pp">|</span> methanogenic archaeon <span class="pp">|</span></span>
+<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_016 <span class="pp">|</span> *Caldicellulosiruptor saccharolyticus* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.99% <span class="pp">|</span> 0.02% <span class="pp">|</span> anaerobic heterotroph <span class="pp">|</span></span>
+<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_018 <span class="pp">|</span> *Nanoarchaeum equitans* <span class="pp">|</span> Archaea <span class="pp">|</span> 87.33% <span class="pp">|</span> 0.21% <span class="pp">|</span> reduced symbiont <span class="pp">|</span></span>
+<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_021 <span class="pp">|</span> *Rhodopirellula baltica* <span class="pp">|</span> Bacteria <span class="pp">|</span> 97.85% <span class="pp">|</span> 3.87% <span class="pp">|</span> large genome <span class="pp">|</span></span>
+<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> SGB_024 <span class="pp">|</span> *Thermotoga neapolitana* <span class="pp">|</span> Bacteria <span class="pp">|</span> 99.50% <span class="pp">|</span> 0.45% <span class="pp">|</span> thermophilic heterotroph <span class="pp">|</span></span>
+<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a>Seed **59002** 固定 contig shuffle；50%、70%、90%、100% targets 的实际 retained bases 为 52.036793%、70.175068%、91.069344% 和 100%。另设绘图 seed **20260760**。<span class="in">`TRUNC_100`</span> 与 <span class="in">`SGB_002`</span> 的 sequence-set hash 和 protein-sequence multiset hash 必须相同，但 identifiers 保留各自 genome prefix，防止并行结果串样。</span>
+<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库与 solver 锁</span></span>
+<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 资源 <span class="pp">|</span> 锁定版本 <span class="pp">|</span> 身份与规模 <span class="pp">|</span></span>
+<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq <span class="pp">|</span> 2.1.0, source commit <span class="in">`53f3b612...f328a7d2`</span> <span class="pp">|</span> <span class="in">`env/gapseq-linux-64.lock`</span> <span class="pp">|</span></span>
+<span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq sequence DB <span class="pp">|</span> v1.5, UniProt 2026_01 <span class="co">[</span><span class="ot">@zimmermann2026gapseqdb</span><span class="co">]</span> <span class="pp">|</span> Zenodo 20446806；Bacteria SHA-256 <span class="in">`ec669d56...e1afeb`</span>；Archaea <span class="in">`62e3cf8e...df51c7`</span> <span class="pp">|</span></span>
+<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe <span class="pp">|</span> 1.6.6 <span class="pp">|</span> Bioconda package SHA-256 <span class="in">`fb1ebf83...e00a99`</span> <span class="pp">|</span></span>
+<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe universe <span class="pp">|</span> 1.6.6 bacteria + archaea <span class="pp">|</span> exact compressed universe SHA-256 in manifest <span class="pp">|</span></span>
+<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Sequence aligner <span class="pp">|</span> DIAMOND 2.2.4 / 2.1.13 <span class="pp">|</span> tool-specific locked environments <span class="pp">|</span></span>
+<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> LP/MILP solver <span class="pp">|</span> GLPK 5.0 / SCIP 10.0.3 <span class="pp">|</span> CarveMe SCIP limit 600 s, relative gap 0.001 <span class="pp">|</span></span>
+<span id="cb12-113"><a href="#cb12-113" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Exchange definitions <span class="pp">|</span> gapseq media CSV / CarveMe <span class="in">`media_db.tsv`</span> <span class="pp">|</span> exact files included in frozen evidence <span class="pp">|</span></span>
+<span id="cb12-114"><a href="#cb12-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-115"><a href="#cb12-115" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb12-116"><a href="#cb12-116" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、下载数据库并内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb12-117"><a href="#cb12-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-118"><a href="#cb12-118" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-119"><a href="#cb12-119" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-gapseq-2026.08 <span class="dt">\</span></span>
+<span id="cb12-120"><a href="#cb12-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/gapseq-linux-64.lock</span>
+<span id="cb12-121"><a href="#cb12-121" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
+<span id="cb12-122"><a href="#cb12-122" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/carveme-linux-64.lock</span>
+<span id="cb12-123"><a href="#cb12-123" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
+<span id="cb12-124"><a href="#cb12-124" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/drep-linux-64.lock</span>
 <span id="cb12-125"><a href="#cb12-125" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-126"><a href="#cb12-126" aria-hidden="true" tabindex="-1"></a><span class="co"># 大数据库不进入 Git；download 后自动核验 bytes、MD5 与 SHA-256</span></span>
-<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> gem-install</span>
-<span id="cb12-128"><a href="#cb12-128" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> gem-verify</span>
-<span id="cb12-129"><a href="#cb12-129" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> data/small/60-gem-database-manifest.tsv</span>
-<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-126"><a href="#cb12-126" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-gapseq-2026.08 gapseq test</span>
+<span id="cb12-127"><a href="#cb12-127" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
+<span id="cb12-128"><a href="#cb12-128" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">'import carveme; print(carveme.__version__)'</span></span>
+<span id="cb12-129"><a href="#cb12-129" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-carveme-2026.08 <span class="dt">\</span></span>
+<span id="cb12-130"><a href="#cb12-130" aria-hidden="true" tabindex="-1"></a>  python <span class="at">-c</span> <span class="st">'from reframed.solvers import get_default_solver; print(get_default_solver())'</span></span>
 <span id="cb12-131"><a href="#cb12-131" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
-<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
-<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260760</span>)</span>
-<span id="cb12-138"><a href="#cb12-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-139"><a href="#cb12-139" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">"gapseq"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"CarveMe"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Feasible"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Audit"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
-<span id="cb12-142"><a href="#cb12-142" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Leak"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#6B7478"</span>,</span>
-<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#EDF2F4"</span>, <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#263238"</span></span>
-<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb12-145"><a href="#cb12-145" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
-<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EDF2F4"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb12-154"><a href="#cb12-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
-<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
-<span id="cb12-156"><a href="#cb12-156" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
-<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb12-160"><a href="#cb12-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb12-172"><a href="#cb12-172" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-173"><a href="#cb12-173" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
-<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-175"><a href="#cb12-175" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/60-genome-scale-models-frozen/`</span> 保存 12 份共享 protein FASTA、48 个压缩 SBML、原始命令与 resource logs、6 份 gapseq media、CarveMe media library、environment locks、database manifest/audit、所有汇总表和重画脚本。1.5 GB sequence DB 与 CarveMe universe/DIAMOND database 不重复打包，但其 bytes、checksums、release 和 extracted-file counts 都被锁定。</span>
+<span id="cb12-132"><a href="#cb12-132" aria-hidden="true" tabindex="-1"></a><span class="co"># 大数据库不进入 Git；download 后自动核验 bytes、MD5 与 SHA-256</span></span>
+<span id="cb12-133"><a href="#cb12-133" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> gem-install</span>
+<span id="cb12-134"><a href="#cb12-134" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> gem-verify</span>
+<span id="cb12-135"><a href="#cb12-135" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> data/small/60-gem-database-manifest.tsv</span>
+<span id="cb12-136"><a href="#cb12-136" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-137"><a href="#cb12-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-140"><a href="#cb12-140" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb12-141"><a href="#cb12-141" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb12-142"><a href="#cb12-142" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb12-143"><a href="#cb12-143" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260760</span>)</span>
+<span id="cb12-144"><a href="#cb12-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-145"><a href="#cb12-145" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb12-146"><a href="#cb12-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">"gapseq"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"CarveMe"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb12-147"><a href="#cb12-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Feasible"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Audit"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb12-148"><a href="#cb12-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Leak"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#6B7478"</span>,</span>
+<span id="cb12-149"><a href="#cb12-149" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#EDF2F4"</span>, <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#263238"</span></span>
+<span id="cb12-150"><a href="#cb12-150" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-151"><a href="#cb12-151" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb12-152"><a href="#cb12-152" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb12-153"><a href="#cb12-153" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb12-154"><a href="#cb12-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb12-155"><a href="#cb12-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb12-156"><a href="#cb12-156" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
+<span id="cb12-157"><a href="#cb12-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb12-158"><a href="#cb12-158" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb12-159"><a href="#cb12-159" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EDF2F4"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb12-160"><a href="#cb12-160" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
+<span id="cb12-161"><a href="#cb12-161" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
+<span id="cb12-162"><a href="#cb12-162" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-163"><a href="#cb12-163" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-164"><a href="#cb12-164" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
+<span id="cb12-165"><a href="#cb12-165" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb12-166"><a href="#cb12-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb12-167"><a href="#cb12-167" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-168"><a href="#cb12-168" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb12-169"><a href="#cb12-169" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-170"><a href="#cb12-170" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb12-171"><a href="#cb12-171" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb12-172"><a href="#cb12-172" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb12-173"><a href="#cb12-173" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb12-174"><a href="#cb12-174" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-175"><a href="#cb12-175" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-176"><a href="#cb12-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-178"><a href="#cb12-178" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/60-genome-scale-models-frozen"</span></span>
-<span id="cb12-179"><a href="#cb12-179" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
-<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb12-181"><a href="#cb12-181" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/gapfill-burden.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/determinism-control.tsv"</span></span>
-<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
-<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 8 个 MAG、4 个 sensitivity inputs 和共享 proteins {#sec-code}</span></span>
-<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 MAG 到 GEM 至少经过五层对象 {#sec-theory}</span></span>
-<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 层级 <span class="pp">|</span> 典型对象 <span class="pp">|</span> 可以支持的结论 <span class="pp">|</span> 仍然不能证明 <span class="pp">|</span></span>
-<span id="cb12-191"><a href="#cb12-191" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
-<span id="cb12-192"><a href="#cb12-192" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG <span class="pp">|</span> contigs、quality、taxonomy <span class="pp">|</span> 该 bin 的序列身份与质量 <span class="pp">|</span> 每个基因都属于同一细胞 <span class="pp">|</span></span>
-<span id="cb12-193"><a href="#cb12-193" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Gene evidence <span class="pp">|</span> proteins、homology hits <span class="pp">|</span> 某 enzyme family 可能存在 <span class="pp">|</span> 该酶在目标条件下表达或有活性 <span class="pp">|</span></span>
-<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GPR <span class="pp">|</span> gene--protein--reaction rule <span class="pp">|</span> 反应与基因证据的逻辑连接 <span class="pp">|</span> 反应方向与通量已被测量 <span class="pp">|</span></span>
-<span id="cb12-195"><a href="#cb12-195" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Network <span class="pp">|</span> metabolites、reactions、bounds <span class="pp">|</span> 一组化学计量约束 <span class="pp">|</span> 网络在真实细胞中唯一正确 <span class="pp">|</span></span>
-<span id="cb12-196"><a href="#cb12-196" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Simulation <span class="pp">|</span> medium、objective、solver <span class="pp">|</span> 在这些假设下存在可行/最优解 <span class="pp">|</span> 预测值等于体外或原位速率 <span class="pp">|</span></span>
-<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a>最关键的分界是“模型里有反应”不等于“基因组里有支持该反应的基因”。Draft 中也会有 biomass、exchange、demand、spontaneous 或 template reactions；gap filling 新增的反应往往没有 GPR。反应表必须同时保存 <span class="in">`GPRBackedReactions`</span> 和 <span class="in">`NoGPRReactions`</span>。</span>
-<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a><span class="fu">### MAG 质量会同时制造 false absence 与 false completion</span></span>
-<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a>不完整 MAG 会丢失 genes、GPR 和 reactions，促使 gap filling 加入更多无基因证据的连接；污染则可能把两个 organism 的 enzymes 放进同一个 network，造成虚假的 pathway completion。面板故意包含：</span>
+<span id="cb12-177"><a href="#cb12-177" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb12-178"><a href="#cb12-178" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-179"><a href="#cb12-179" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
+<span id="cb12-180"><a href="#cb12-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-181"><a href="#cb12-181" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/60-genome-scale-models-frozen/`</span> 保存 12 份共享 protein FASTA、48 个压缩 SBML、原始命令与 resource logs、6 份 gapseq media、CarveMe media library、environment locks、database manifest/audit、所有汇总表和重画脚本。1.5 GB sequence DB 与 CarveMe universe/DIAMOND database 不重复打包，但其 bytes、checksums、release 和 extracted-file counts 都被锁定。</span>
+<span id="cb12-182"><a href="#cb12-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-183"><a href="#cb12-183" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-184"><a href="#cb12-184" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/60-genome-scale-models-frozen"</span></span>
+<span id="cb12-185"><a href="#cb12-185" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
+<span id="cb12-186"><a href="#cb12-186" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb12-187"><a href="#cb12-187" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/gapfill-burden.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb12-188"><a href="#cb12-188" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/determinism-control.tsv"</span></span>
+<span id="cb12-189"><a href="#cb12-189" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
+<span id="cb12-190"><a href="#cb12-190" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-191"><a href="#cb12-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-192"><a href="#cb12-192" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 8 个 MAG、4 个 sensitivity inputs 和共享 proteins {#sec-code}</span></span>
+<span id="cb12-193"><a href="#cb12-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-194"><a href="#cb12-194" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 MAG 到 GEM 至少经过五层对象 {#sec-theory}</span></span>
+<span id="cb12-195"><a href="#cb12-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-196"><a href="#cb12-196" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 层级 <span class="pp">|</span> 典型对象 <span class="pp">|</span> 可以支持的结论 <span class="pp">|</span> 仍然不能证明 <span class="pp">|</span></span>
+<span id="cb12-197"><a href="#cb12-197" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
+<span id="cb12-198"><a href="#cb12-198" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG <span class="pp">|</span> contigs、quality、taxonomy <span class="pp">|</span> 该 bin 的序列身份与质量 <span class="pp">|</span> 每个基因都属于同一细胞 <span class="pp">|</span></span>
+<span id="cb12-199"><a href="#cb12-199" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Gene evidence <span class="pp">|</span> proteins、homology hits <span class="pp">|</span> 某 enzyme family 可能存在 <span class="pp">|</span> 该酶在目标条件下表达或有活性 <span class="pp">|</span></span>
+<span id="cb12-200"><a href="#cb12-200" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GPR <span class="pp">|</span> gene--protein--reaction rule <span class="pp">|</span> 反应与基因证据的逻辑连接 <span class="pp">|</span> 反应方向与通量已被测量 <span class="pp">|</span></span>
+<span id="cb12-201"><a href="#cb12-201" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Network <span class="pp">|</span> metabolites、reactions、bounds <span class="pp">|</span> 一组化学计量约束 <span class="pp">|</span> 网络在真实细胞中唯一正确 <span class="pp">|</span></span>
+<span id="cb12-202"><a href="#cb12-202" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Simulation <span class="pp">|</span> medium、objective、solver <span class="pp">|</span> 在这些假设下存在可行/最优解 <span class="pp">|</span> 预测值等于体外或原位速率 <span class="pp">|</span></span>
 <span id="cb12-203"><a href="#cb12-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_008`</span>：*Ignicoccus islandicus*，CheckM2 completeness 59.51%，用于 incomplete archaeal MAG stress；</span>
-<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_006`</span>：*Shewanella baltica*，contamination 6.95%，用于 composite-network risk；</span>
-<span id="cb12-206"><a href="#cb12-206" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_018`</span>：*Nanoarchaeum equitans*，reduced obligate symbiont，提醒“无法独立 biomass”可能是真实生态依赖；</span>
-<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`TRUNC_050/070/090/100`</span>：同一 parent 的确定性 contig retention，隔离 genome completeness 对模型的影响。</span>
-<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a><span class="al">![修复负担与真实 MAG completeness，以及同一 parent 的确定性截短敏感性。横向 10% 线只是人工复核入口。](../figures/60-gapfill-burden.png)</span>{#fig-60-gapfill-burden}</span>
-<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a>实际重建中，gapseq 的中位 repair burden 为 **13.00%**，12 个输入中 8 个超过 10% 审计线；CarveMe 的中位数为 **0.69%**，只有宿主依赖型 <span class="in">`SGB_018`</span> 超过该线（22.37%）。这不是工具准确率排名：两者的 reaction universe、评分、biomass 和培养基都不同；它说明“补洞规模”必须和工具、条件及基因证据一起报告。</span>
-<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb12-215"><a href="#cb12-215" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article60"</span></span>
-<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a><span class="va">GAPSEQ_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gapseq-2026.08"</span></span>
-<span id="cb12-217"><a href="#cb12-217" aria-hidden="true" tabindex="-1"></a><span class="va">CARVEME_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-carveme-2026.08"</span></span>
-<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a><span class="va">PRODIGAL_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-drep-2026.07"</span></span>
-<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a><span class="va">SEQDB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/gem-cache/gapseq-seqdb-v1.5/seqdb"</span></span>
-<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prodigal-env</span> <span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span></span>
-<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input-mag-ledger.tsv"</span></span>
-<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/protein-id-audit.tsv"</span></span>
-<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a>每个 protein identifier 都被改成 <span class="in">`genome_id__original_id`</span>，并检查全局唯一性。准备过程拒绝以下情况：Article 45 representative payload SHA-256 不匹配、GTDB release 不是 R232、输入数不是 8+4、protein IDs 重复、<span class="in">`TRUNC_100`</span> 无法精确重现 parent protein sequences。</span>
+<span id="cb12-204"><a href="#cb12-204" aria-hidden="true" tabindex="-1"></a>最关键的分界是“模型里有反应”不等于“基因组里有支持该反应的基因”。Draft 中也会有 biomass、exchange、demand、spontaneous 或 template reactions；gap filling 新增的反应往往没有 GPR。反应表必须同时保存 <span class="in">`GPRBackedReactions`</span> 和 <span class="in">`NoGPRReactions`</span>。</span>
+<span id="cb12-205"><a href="#cb12-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-206"><a href="#cb12-206" aria-hidden="true" tabindex="-1"></a><span class="fu">### MAG 质量会同时制造 false absence 与 false completion</span></span>
+<span id="cb12-207"><a href="#cb12-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-208"><a href="#cb12-208" aria-hidden="true" tabindex="-1"></a>不完整 MAG 会丢失 genes、GPR 和 reactions，促使 gap filling 加入更多无基因证据的连接；污染则可能把两个 organism 的 enzymes 放进同一个 network，造成虚假的 pathway completion。面板故意包含：</span>
+<span id="cb12-209"><a href="#cb12-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-210"><a href="#cb12-210" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_008`</span>：*Ignicoccus islandicus*，CheckM2 completeness 59.51%，用于 incomplete archaeal MAG stress；</span>
+<span id="cb12-211"><a href="#cb12-211" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_006`</span>：*Shewanella baltica*，contamination 6.95%，用于 composite-network risk；</span>
+<span id="cb12-212"><a href="#cb12-212" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`SGB_018`</span>：*Nanoarchaeum equitans*，reduced obligate symbiont，提醒“无法独立 biomass”可能是真实生态依赖；</span>
+<span id="cb12-213"><a href="#cb12-213" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`TRUNC_050/070/090/100`</span>：同一 parent 的确定性 contig retention，隔离 genome completeness 对模型的影响。</span>
+<span id="cb12-214"><a href="#cb12-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-215"><a href="#cb12-215" aria-hidden="true" tabindex="-1"></a><span class="al">![修复负担与真实 MAG completeness，以及同一 parent 的确定性截短敏感性。横向 10% 线只是人工复核入口。](../figures/60-gapfill-burden.png)</span>{#fig-60-gapfill-burden}</span>
+<span id="cb12-216"><a href="#cb12-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-217"><a href="#cb12-217" aria-hidden="true" tabindex="-1"></a>实际重建中，gapseq 的中位 repair burden 为 **13.00%**，12 个输入中 8 个超过 10% 审计线；CarveMe 的中位数为 **0.69%**，只有宿主依赖型 <span class="in">`SGB_018`</span> 超过该线（22.37%）。这不是工具准确率排名：两者的 reaction universe、评分、biomass 和培养基都不同；它说明“补洞规模”必须和工具、条件及基因证据一起报告。</span>
+<span id="cb12-218"><a href="#cb12-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-219"><a href="#cb12-219" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-220"><a href="#cb12-220" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb12-221"><a href="#cb12-221" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article60"</span></span>
+<span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a><span class="va">GAPSEQ_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gapseq-2026.08"</span></span>
+<span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a><span class="va">CARVEME_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-carveme-2026.08"</span></span>
+<span id="cb12-224"><a href="#cb12-224" aria-hidden="true" tabindex="-1"></a><span class="va">PRODIGAL_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-drep-2026.07"</span></span>
+<span id="cb12-225"><a href="#cb12-225" aria-hidden="true" tabindex="-1"></a><span class="va">SEQDB</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/gem-cache/gapseq-seqdb-v1.5/seqdb"</span></span>
+<span id="cb12-226"><a href="#cb12-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-227"><a href="#cb12-227" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-228"><a href="#cb12-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-229"><a href="#cb12-229" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-230"><a href="#cb12-230" aria-hidden="true" tabindex="-1"></a>  <span class="at">--prodigal-env</span> <span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-231"><a href="#cb12-231" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-232"><a href="#cb12-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span></span>
 <span id="cb12-233"><a href="#cb12-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-234"><a href="#cb12-234" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实复现后，先检查“补了什么” {#sec-audit}</span></span>
-<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-236"><a href="#cb12-236" aria-hidden="true" tabindex="-1"></a>自动工具论文通常用 phenotype benchmark 展示总体性能，但自己的 MAG 仍需逐模型检查：</span>
+<span id="cb12-234"><a href="#cb12-234" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input-mag-ledger.tsv"</span></span>
+<span id="cb12-235"><a href="#cb12-235" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/protein-id-audit.tsv"</span></span>
+<span id="cb12-236"><a href="#cb12-236" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-237"><a href="#cb12-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-238"><a href="#cb12-238" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>draft 与 filled 的 reaction set difference；</span>
-<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>每个 added reaction 的 equation、reversibility、compartment 和 database annotation；</span>
-<span id="cb12-240"><a href="#cb12-240" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>added reaction 是否有 GPR，是否只靠 transporter/exchange 解锁；</span>
-<span id="cb12-241"><a href="#cb12-241" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>biomass precursors 缺失是否来自 MAG incompleteness、gene calling 或 database namespace；</span>
-<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>多个等价 repair sets 是否给出相同 phenotype。</span>
+<span id="cb12-238"><a href="#cb12-238" aria-hidden="true" tabindex="-1"></a>每个 protein identifier 都被改成 <span class="in">`genome_id__original_id`</span>，并检查全局唯一性。准备过程拒绝以下情况：Article 45 representative payload SHA-256 不匹配、GTDB release 不是 R232、输入数不是 8+4、protein IDs 重复、<span class="in">`TRUNC_100`</span> 无法精确重现 parent protein sequences。</span>
+<span id="cb12-239"><a href="#cb12-239" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-240"><a href="#cb12-240" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实复现后，先检查“补了什么” {#sec-audit}</span></span>
+<span id="cb12-241"><a href="#cb12-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-242"><a href="#cb12-242" aria-hidden="true" tabindex="-1"></a>自动工具论文通常用 phenotype benchmark 展示总体性能，但自己的 MAG 仍需逐模型检查：</span>
 <span id="cb12-243"><a href="#cb12-243" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a>本次 CarveMe 特意避免再次运行 <span class="in">`carve -g LB`</span> 生成第二个独立 optimum；固定 draft 后再 <span class="in">`gapfill`</span>，要求 <span class="in">`RemovedReactions == 0`</span>。gapseq 也以 draft RDS 为唯一输入执行 <span class="in">`fill`</span>。这样 <span class="in">`AddedReactions`</span> 才能解释成相对于固定 draft 的 repair set。</span>
-<span id="cb12-245"><a href="#cb12-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a>24 组 draft--filled 差分均保留全部 draft reactions，新增反应全部没有 GPR；因此它们只能进入 repair-hypothesis 清单。9 个高负担模型既包括 gapseq 的不完整/截短输入，也包括多个高完整度输入及 CarveMe 的 <span class="in">`SGB_018`</span>，说明不能用一个全局阈值替代逐反应审计。</span>
-<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a><span class="fu">## 固定 draft，再独立 gap filling</span></span>
+<span id="cb12-244"><a href="#cb12-244" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>draft 与 filled 的 reaction set difference；</span>
+<span id="cb12-245"><a href="#cb12-245" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>每个 added reaction 的 equation、reversibility、compartment 和 database annotation；</span>
+<span id="cb12-246"><a href="#cb12-246" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>added reaction 是否有 GPR，是否只靠 transporter/exchange 解锁；</span>
+<span id="cb12-247"><a href="#cb12-247" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>biomass precursors 缺失是否来自 MAG incompleteness、gene calling 或 database namespace；</span>
+<span id="cb12-248"><a href="#cb12-248" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>多个等价 repair sets 是否给出相同 phenotype。</span>
 <span id="cb12-249"><a href="#cb12-249" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-250"><a href="#cb12-250" aria-hidden="true" tabindex="-1"></a><span class="fu">### Gap filling 是“最小修复”，不是新基因发现</span></span>
+<span id="cb12-250"><a href="#cb12-250" aria-hidden="true" tabindex="-1"></a>本次 CarveMe 特意避免再次运行 <span class="in">`carve -g LB`</span> 生成第二个独立 optimum；固定 draft 后再 <span class="in">`gapfill`</span>，要求 <span class="in">`RemovedReactions == 0`</span>。gapseq 也以 draft RDS 为唯一输入执行 <span class="in">`fill`</span>。这样 <span class="in">`AddedReactions`</span> 才能解释成相对于固定 draft 的 repair set。</span>
 <span id="cb12-251"><a href="#cb12-251" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a>若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 $A$，使修复后的网络可行，并最小化代价：</span>
+<span id="cb12-252"><a href="#cb12-252" aria-hidden="true" tabindex="-1"></a>24 组 draft--filled 差分均保留全部 draft reactions，新增反应全部没有 GPR；因此它们只能进入 repair-hypothesis 清单。9 个高负担模型既包括 gapseq 的不完整/截短输入，也包括多个高完整度输入及 CarveMe 的 <span class="in">`SGB_018`</span>，说明不能用一个全局阈值替代逐反应审计。</span>
 <span id="cb12-253"><a href="#cb12-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-254"><a href="#cb12-254" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-255"><a href="#cb12-255" aria-hidden="true" tabindex="-1"></a>\min_A \sum_{j\in A} w_j y_j,</span>
-<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-254"><a href="#cb12-254" aria-hidden="true" tabindex="-1"></a><span class="fu">## 固定 draft，再独立 gap filling</span></span>
+<span id="cb12-255"><a href="#cb12-255" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-256"><a href="#cb12-256" aria-hidden="true" tabindex="-1"></a><span class="fu">### Gap filling 是“最小修复”，不是新基因发现</span></span>
 <span id="cb12-257"><a href="#cb12-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a>其中 $y_j$ 表示是否加入 reaction $j$，$w_j$ 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。</span>
+<span id="cb12-258"><a href="#cb12-258" aria-hidden="true" tabindex="-1"></a>若 draft 在指定 medium 下无法达到最小 biomass，gap filling 从 reaction universe 中选择一组 $A$，使修复后的网络可行，并最小化代价：</span>
 <span id="cb12-259"><a href="#cb12-259" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a>本次定义：</span>
-<span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a>B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},</span>
-<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-260"><a href="#cb12-260" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a>\min_A \sum_{j\in A} w_j y_j,</span>
+<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a>其中 $y_j$ 表示是否加入 reaction $j$，$w_j$ 可由 gene evidence、pathway context 或默认 penalty 决定。这个问题通常有多个等价或近等价解；medium 越宽松，模型越容易找到生长路径，但它也更少测试具体 auxotrophy。新增 reaction 的正确表述是“optimization-required repair candidate”，不能倒推为“MAG 中存在该 enzyme”。</span>
 <span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a>并用 $B_g&gt;10\%$ 作为需要人工复核的 **audit flag**，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。</span>
+<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a>本次定义：</span>
 <span id="cb12-267"><a href="#cb12-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seqdb</span> <span class="st">"</span><span class="va">$SEQDB</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a>  <span class="at">--jobs</span> 8 <span class="dt">\</span></span>
-<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads-per-job</span> 4</span>
-<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/model-plan.tsv"</span></span>
-<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
-<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>核心命令等价于：</span>
-<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a><span class="co"># gapseq bacterial branch: evidence -&gt; fixed draft -&gt; ALLmed repair</span></span>
-<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> find <span class="at">-p</span> all <span class="at">-t</span> Bacteria <span class="at">-b</span> 200 <span class="at">-i</span> 0 <span class="at">-c</span> 75 <span class="dt">\</span></span>
-<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">-K</span> 4 <span class="at">-A</span> diamond <span class="at">-O</span> <span class="at">-D</span> <span class="st">"</span><span class="va">$SEQDB</span><span class="st">"</span> <span class="at">-v</span> 1 <span class="at">-f</span> gapseq/SGB_002 SGB_002.faa</span>
-<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> find-transport <span class="at">-b</span> 50 <span class="at">-i</span> 0 <span class="at">-c</span> 75 <span class="at">-K</span> 4 <span class="at">-A</span> diamond <span class="dt">\</span></span>
-<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> 1 <span class="at">-f</span> gapseq/SGB_002 SGB_002.faa</span>
-<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> draft <span class="at">-r</span> SGB_002-all-Reactions.tbl <span class="at">-t</span> SGB_002-Transporter.tbl <span class="dt">\</span></span>
-<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> SGB_002-all-Pathways.tbl <span class="at">-b</span> Bacteria <span class="at">-n</span> SGB_002 <span class="dt">\</span></span>
-<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">-u</span> 200 <span class="at">-l</span> 100 <span class="at">-f</span> gapseq/SGB_002</span>
-<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> fill <span class="at">-m</span> SGB_002-draft.RDS <span class="dt">\</span></span>
-<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">/share/gapseq/dat/media/ALLmed.csv"</span> <span class="dt">\</span></span>
-<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">-b</span> 100 <span class="at">-k</span> 0.01 <span class="at">-z</span> glpk <span class="at">-v</span> <span class="at">-f</span> gapseq/SGB_002/filled-permissive</span>
-<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a><span class="co"># CarveMe：同一 protein FASTA 只做一次 DIAMOND；gapfill 作用于固定 draft</span></span>
-<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a><span class="ex">diamond</span> blastp <span class="at">-d</span> bigg_proteins.dmnd <span class="at">-q</span> SGB_002.faa <span class="dt">\</span></span>
-<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> SGB_002-diamond.tsv <span class="at">--more-sensitive</span> <span class="at">--top</span> 10 <span class="at">--quiet</span> <span class="at">--threads</span> 4</span>
-<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a><span class="ex">carve</span> <span class="at">--diamond</span> <span class="at">-u</span> bacteria <span class="at">--fbc2</span> <span class="at">--solver</span> scip <span class="dt">\</span></span>
-<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="at">-o</span> SGB_002-draft.xml SGB_002-diamond.tsv</span>
-<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a><span class="ex">gapfill</span> <span class="at">-m</span> LB <span class="at">-u</span> bacteria <span class="at">--fbc2</span> <span class="at">-v</span> <span class="dt">\</span></span>
-<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> SGB_002-filled-LB.xml SGB_002-draft.xml</span>
-<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a>Archaea 自动切换到 gapseq <span class="in">`-t Archaea -m Archaea -b Archaea`</span> 与 CarveMe <span class="in">`-u archaea`</span>。<span class="in">`SGB_008`</span> 使用 <span class="in">`autotrophic.csv -e highH2`</span>，<span class="in">`SGB_010`</span> 使用官方 methanogen tutorial 的 <span class="in">`MM_anaerobic_CO2_H2.csv -e highH2`</span>，<span class="in">`SGB_018`</span> 使用 <span class="in">`meerwasser.csv`</span> 作为 marine host-rich proxy。最初把细菌型 <span class="in">`LBmed.csv`</span>、继而把单一 <span class="in">`ALLmed.csv`</span> 强加给全部 Archaea 时，三个初始补洞均不可行；这些失败日志被保留，最终模型只采用预先记录的 ecology-aware profiles。批处理具备 resume：只有 required output 非空才跳过；任何一步 return code 非零都不会写 <span class="in">`.article60-models-complete`</span>。</span>
-<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a><span class="fu">### 培养基敏感性优先于一个“漂亮生长率”</span></span>
-<span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a><span class="al">![修复后模型在各工具声明的宽松、rich/minimal proxy 条件下是否达到 biomass threshold。格子只表示 feasibility。](../figures/60-medium-feasibility.png)</span>{#fig-60-medium}</span>
+<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a>B_g = 100\times \frac{|R_g^{filled}\setminus R_g^{draft}|}{|R_g^{filled}|},</span>
+<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a>并用 $B_g&gt;10\%$ 作为需要人工复核的 **audit flag**，不是普适质量标准。所有新增和删除 reaction IDs 都从两个已固定 SBML 的集合差得到。</span>
+<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a>  <span class="at">--seqdb</span> <span class="st">"</span><span class="va">$SEQDB</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a>  <span class="at">--jobs</span> 8 <span class="dt">\</span></span>
+<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads-per-job</span> 4</span>
+<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/model-plan.tsv"</span></span>
+<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
+<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>核心命令等价于：</span>
+<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a><span class="co"># gapseq bacterial branch: evidence -&gt; fixed draft -&gt; ALLmed repair</span></span>
+<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> find <span class="at">-p</span> all <span class="at">-t</span> Bacteria <span class="at">-b</span> 200 <span class="at">-i</span> 0 <span class="at">-c</span> 75 <span class="dt">\</span></span>
+<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">-K</span> 4 <span class="at">-A</span> diamond <span class="at">-O</span> <span class="at">-D</span> <span class="st">"</span><span class="va">$SEQDB</span><span class="st">"</span> <span class="at">-v</span> 1 <span class="at">-f</span> gapseq/SGB_002 SGB_002.faa</span>
+<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> find-transport <span class="at">-b</span> 50 <span class="at">-i</span> 0 <span class="at">-c</span> 75 <span class="at">-K</span> 4 <span class="at">-A</span> diamond <span class="dt">\</span></span>
+<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> 1 <span class="at">-f</span> gapseq/SGB_002 SGB_002.faa</span>
+<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> draft <span class="at">-r</span> SGB_002-all-Reactions.tbl <span class="at">-t</span> SGB_002-Transporter.tbl <span class="dt">\</span></span>
+<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> SGB_002-all-Pathways.tbl <span class="at">-b</span> Bacteria <span class="at">-n</span> SGB_002 <span class="dt">\</span></span>
+<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">-u</span> 200 <span class="at">-l</span> 100 <span class="at">-f</span> gapseq/SGB_002</span>
+<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a><span class="ex">gapseq</span> fill <span class="at">-m</span> SGB_002-draft.RDS <span class="dt">\</span></span>
+<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">/share/gapseq/dat/media/ALLmed.csv"</span> <span class="dt">\</span></span>
+<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>  <span class="at">-b</span> 100 <span class="at">-k</span> 0.01 <span class="at">-z</span> glpk <span class="at">-v</span> <span class="at">-f</span> gapseq/SGB_002/filled-permissive</span>
+<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a><span class="co"># CarveMe：同一 protein FASTA 只做一次 DIAMOND；gapfill 作用于固定 draft</span></span>
+<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a><span class="ex">diamond</span> blastp <span class="at">-d</span> bigg_proteins.dmnd <span class="at">-q</span> SGB_002.faa <span class="dt">\</span></span>
+<span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> SGB_002-diamond.tsv <span class="at">--more-sensitive</span> <span class="at">--top</span> 10 <span class="at">--quiet</span> <span class="at">--threads</span> 4</span>
+<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a><span class="ex">carve</span> <span class="at">--diamond</span> <span class="at">-u</span> bacteria <span class="at">--fbc2</span> <span class="at">--solver</span> scip <span class="dt">\</span></span>
+<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="at">-o</span> SGB_002-draft.xml SGB_002-diamond.tsv</span>
+<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a><span class="ex">gapfill</span> <span class="at">-m</span> LB <span class="at">-u</span> bacteria <span class="at">--fbc2</span> <span class="at">-v</span> <span class="dt">\</span></span>
+<span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> SGB_002-filled-LB.xml SGB_002-draft.xml</span>
+<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a>修复后模型在各自 construction medium 中 **24/24** 达到阈值；换成 post-hoc proxy 后，gapseq 在共同 rich proxy 中为 **9/12**、在 `MM_glu` 中为 **0/12**，CarveMe 在 `M9` 中为 **4/12**。全部 **48/48** no-uptake audits 均未产生正 biomass。由同一模型在不同约束下得到不同结论，正是培养基敏感性，而不是可忽略的数值波动。</span>
+<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a>Archaea 自动切换到 gapseq <span class="in">`-t Archaea -m Archaea -b Archaea`</span> 与 CarveMe <span class="in">`-u archaea`</span>。<span class="in">`SGB_008`</span> 使用 <span class="in">`autotrophic.csv -e highH2`</span>，<span class="in">`SGB_010`</span> 使用官方 methanogen tutorial 的 <span class="in">`MM_anaerobic_CO2_H2.csv -e highH2`</span>，<span class="in">`SGB_018`</span> 使用 <span class="in">`meerwasser.csv`</span> 作为 marine host-rich proxy。最初把细菌型 <span class="in">`LBmed.csv`</span>、继而把单一 <span class="in">`ALLmed.csv`</span> 强加给全部 Archaea 时，三个初始补洞均不可行；这些失败日志被保留，最终模型只采用预先记录的 ecology-aware profiles。批处理具备 resume：只有 required output 非空才跳过；任何一步 return code 非零都不会写 <span class="in">`.article60-models-complete`</span>。</span>
 <span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a>宽松 medium 下可行而 minimal proxy 下不可行，可能来自真实 auxotrophy、缺失 transporter、MAG 不完整、biomass composition 或 gap-fill medium bias。正确升级路线是：</span>
+<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a><span class="fu">### 培养基敏感性优先于一个“漂亮生长率”</span></span>
 <span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用实验配方或环境化学测量重建 medium；</span>
-<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>显式报告 exchange bounds 与单位；</span>
-<span id="cb12-319"><a href="#cb12-319" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>先跑 feasibility，再做 FVA/pFBA，检查 alternative optima；</span>
-<span id="cb12-320"><a href="#cb12-320" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>对关键 auxotrophy 做 gene/neighborhood 与培养实验验证；</span>
-<span id="cb12-321"><a href="#cb12-321" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>社区模型再增加 abundance、shared compartment 和 uptake-capacity assumptions。</span>
+<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a><span class="al">![修复后模型在各工具声明的宽松、rich/minimal proxy 条件下是否达到 biomass threshold。格子只表示 feasibility。](../figures/60-medium-feasibility.png)</span>{#fig-60-medium}</span>
+<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-319"><a href="#cb12-319" aria-hidden="true" tabindex="-1"></a>修复后模型在各自 construction medium 中 **24/24** 达到阈值；换成 post-hoc proxy 后，gapseq 在共同 rich proxy 中为 **9/12**、在 `MM_glu` 中为 **0/12**，CarveMe 在 `M9` 中为 **4/12**。全部 **48/48** no-uptake audits 均未产生正 biomass。由同一模型在不同约束下得到不同结论，正是培养基敏感性，而不是可忽略的数值波动。</span>
+<span id="cb12-320"><a href="#cb12-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-321"><a href="#cb12-321" aria-hidden="true" tabindex="-1"></a>宽松 medium 下可行而 minimal proxy 下不可行，可能来自真实 auxotrophy、缺失 transporter、MAG 不完整、biomass composition 或 gap-fill medium bias。正确升级路线是：</span>
 <span id="cb12-322"><a href="#cb12-322" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-323"><a href="#cb12-323" aria-hidden="true" tabindex="-1"></a><span class="fu">## 统一解析、FBA audit、作图与保存</span></span>
-<span id="cb12-324"><a href="#cb12-324" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-325"><a href="#cb12-325" aria-hidden="true" tabindex="-1"></a><span class="fu">### FBA 是带假设的可行域优化</span></span>
-<span id="cb12-326"><a href="#cb12-326" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-327"><a href="#cb12-327" aria-hidden="true" tabindex="-1"></a>设 $S \in \mathbb{R}^{m\times r}$ 为 metabolite × reaction 的 stoichiometric matrix，$v$ 为 reaction flux，稳态近似为：</span>
+<span id="cb12-323"><a href="#cb12-323" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>用实验配方或环境化学测量重建 medium；</span>
+<span id="cb12-324"><a href="#cb12-324" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>显式报告 exchange bounds 与单位；</span>
+<span id="cb12-325"><a href="#cb12-325" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>先跑 feasibility，再做 FVA/pFBA，检查 alternative optima；</span>
+<span id="cb12-326"><a href="#cb12-326" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>对关键 auxotrophy 做 gene/neighborhood 与培养实验验证；</span>
+<span id="cb12-327"><a href="#cb12-327" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>社区模型再增加 abundance、shared compartment 和 uptake-capacity assumptions。</span>
 <span id="cb12-328"><a href="#cb12-328" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-329"><a href="#cb12-329" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a>Sv=0.</span>
-<span id="cb12-331"><a href="#cb12-331" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-329"><a href="#cb12-329" aria-hidden="true" tabindex="-1"></a><span class="fu">## 统一解析、FBA audit、作图与保存</span></span>
+<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-331"><a href="#cb12-331" aria-hidden="true" tabindex="-1"></a><span class="fu">### FBA 是带假设的可行域优化</span></span>
 <span id="cb12-332"><a href="#cb12-332" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a>培养基、反应方向和容量写进上下界：</span>
+<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a>设 $S \in \mathbb{R}^{m\times r}$ 为 metabolite × reaction 的 stoichiometric matrix，$v$ 为 reaction flux，稳态近似为：</span>
 <span id="cb12-334"><a href="#cb12-334" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-335"><a href="#cb12-335" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-336"><a href="#cb12-336" aria-hidden="true" tabindex="-1"></a>\ell_j \le v_j \le u_j,</span>
-<span id="cb12-337"><a href="#cb12-337" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-335"><a href="#cb12-335" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-336"><a href="#cb12-336" aria-hidden="true" tabindex="-1"></a>Sv=0.</span>
+<span id="cb12-337"><a href="#cb12-337" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb12-338"><a href="#cb12-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-339"><a href="#cb12-339" aria-hidden="true" tabindex="-1"></a>常见 FBA 以 biomass reaction 为目标 <span class="co">[</span><span class="ot">@orth2010fba</span><span class="co">]</span>：</span>
+<span id="cb12-339"><a href="#cb12-339" aria-hidden="true" tabindex="-1"></a>培养基、反应方向和容量写进上下界：</span>
 <span id="cb12-340"><a href="#cb12-340" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-341"><a href="#cb12-341" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb12-342"><a href="#cb12-342" aria-hidden="true" tabindex="-1"></a>\max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.</span>
-<span id="cb12-343"><a href="#cb12-343" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb12-341"><a href="#cb12-341" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-342"><a href="#cb12-342" aria-hidden="true" tabindex="-1"></a>\ell_j \le v_j \le u_j,</span>
+<span id="cb12-343"><a href="#cb12-343" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb12-344"><a href="#cb12-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-345"><a href="#cb12-345" aria-hidden="true" tabindex="-1"></a>因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。</span>
+<span id="cb12-345"><a href="#cb12-345" aria-hidden="true" tabindex="-1"></a>常见 FBA 以 biomass reaction 为目标 <span class="co">[</span><span class="ot">@orth2010fba</span><span class="co">]</span>：</span>
 <span id="cb12-346"><a href="#cb12-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-347"><a href="#cb12-347" aria-hidden="true" tabindex="-1"></a><span class="fu">### 培养基是模型条件，不是装饰参数</span></span>
-<span id="cb12-348"><a href="#cb12-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-349"><a href="#cb12-349" aria-hidden="true" tabindex="-1"></a>gapseq 与 CarveMe 使用不同 reaction namespace 和内置 medium vocabulary：前者以 ModelSEED-style IDs 为主，后者以 BiGG IDs 为主。这里的 standardized reconstruction conditions 是：</span>
+<span id="cb12-347"><a href="#cb12-347" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb12-348"><a href="#cb12-348" aria-hidden="true" tabindex="-1"></a>\max_v c^Tv \quad \text{subject to } Sv=0,\; \ell\le v\le u.</span>
+<span id="cb12-349"><a href="#cb12-349" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb12-350"><a href="#cb12-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-351"><a href="#cb12-351" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Tool <span class="pp">|</span> Draft reconstruction <span class="pp">|</span> Gap-fill medium <span class="pp">|</span> Post-hoc sensitivity <span class="pp">|</span></span>
-<span id="cb12-352"><a href="#cb12-352" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
-<span id="cb12-353"><a href="#cb12-353" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq 2.1.0 <span class="pp">|</span> sequence + pathway + transporter evidence；Archaea 固定 <span class="in">`-m Archaea`</span> <span class="pp">|</span> Bacteria: <span class="in">`ALLmed.csv`</span>; SGB_008: <span class="in">`autotrophic.csv + highH2`</span>; SGB_010: <span class="in">`MM_anaerobic_CO2_H2.csv + highH2`</span>; SGB_018: <span class="in">`meerwasser.csv`</span> <span class="pp">|</span> common <span class="in">`ALLmed.csv`</span>, <span class="in">`MM_glu.csv`</span>, no uptake <span class="pp">|</span></span>
-<span id="cb12-354"><a href="#cb12-354" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe 1.6.6 <span class="pp">|</span> bacteria/archaea universal model carving <span class="pp">|</span> built-in <span class="in">`LB`</span> <span class="pp">|</span> built-in <span class="in">`M9`</span>, no uptake <span class="pp">|</span></span>
-<span id="cb12-355"><a href="#cb12-355" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-356"><a href="#cb12-356" aria-hidden="true" tabindex="-1"></a>这些 gapseq profiles 与 CarveMe <span class="in">`LB`</span> 的化学组成不同；三个 archaeal profiles 之间也不同。因此跨工具或跨生态型只能比较结构规模、修复负担和“各自在声明条件下是否可行”，不能把 objective value 当成同一实验条件下的性能竞赛。若研究问题是某个培养基或环境样本，必须把 measured medium composition 映射到每套 namespace，再做 mass/charge、exchange 和 concentration-bound audit。</span>
-<span id="cb12-357"><a href="#cb12-357" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-358"><a href="#cb12-358" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-359"><a href="#cb12-359" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">/bin/python"</span> scripts/summarize_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-360"><a href="#cb12-360" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-361"><a href="#cb12-361" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-362"><a href="#cb12-362" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span></span>
+<span id="cb12-351"><a href="#cb12-351" aria-hidden="true" tabindex="-1"></a>因此正的 biomass objective 只说明：在固定 stoichiometry、bounds、exchange set、biomass composition、steady-state assumption 和 objective 下，solver 找到一个可行解。它没有使用酶浓度、转录调控、动力学参数或群落空间结构，也不能把任意单位的 objective value 直接写成样本中的生长速率。</span>
+<span id="cb12-352"><a href="#cb12-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-353"><a href="#cb12-353" aria-hidden="true" tabindex="-1"></a><span class="fu">### 培养基是模型条件，不是装饰参数</span></span>
+<span id="cb12-354"><a href="#cb12-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-355"><a href="#cb12-355" aria-hidden="true" tabindex="-1"></a>gapseq 与 CarveMe 使用不同 reaction namespace 和内置 medium vocabulary：前者以 ModelSEED-style IDs 为主，后者以 BiGG IDs 为主。这里的 standardized reconstruction conditions 是：</span>
+<span id="cb12-356"><a href="#cb12-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-357"><a href="#cb12-357" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Tool <span class="pp">|</span> Draft reconstruction <span class="pp">|</span> Gap-fill medium <span class="pp">|</span> Post-hoc sensitivity <span class="pp">|</span></span>
+<span id="cb12-358"><a href="#cb12-358" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|---|</span></span>
+<span id="cb12-359"><a href="#cb12-359" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> gapseq 2.1.0 <span class="pp">|</span> sequence + pathway + transporter evidence；Archaea 固定 <span class="in">`-m Archaea`</span> <span class="pp">|</span> Bacteria: <span class="in">`ALLmed.csv`</span>; SGB_008: <span class="in">`autotrophic.csv + highH2`</span>; SGB_010: <span class="in">`MM_anaerobic_CO2_H2.csv + highH2`</span>; SGB_018: <span class="in">`meerwasser.csv`</span> <span class="pp">|</span> common <span class="in">`ALLmed.csv`</span>, <span class="in">`MM_glu.csv`</span>, no uptake <span class="pp">|</span></span>
+<span id="cb12-360"><a href="#cb12-360" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CarveMe 1.6.6 <span class="pp">|</span> bacteria/archaea universal model carving <span class="pp">|</span> built-in <span class="in">`LB`</span> <span class="pp">|</span> built-in <span class="in">`M9`</span>, no uptake <span class="pp">|</span></span>
+<span id="cb12-361"><a href="#cb12-361" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-362"><a href="#cb12-362" aria-hidden="true" tabindex="-1"></a>这些 gapseq profiles 与 CarveMe <span class="in">`LB`</span> 的化学组成不同；三个 archaeal profiles 之间也不同。因此跨工具或跨生态型只能比较结构规模、修复负担和“各自在声明条件下是否可行”，不能把 objective value 当成同一实验条件下的性能竞赛。若研究问题是某个培养基或环境样本，必须把 measured medium composition 映射到每套 namespace，再做 mass/charge、exchange 和 concentration-bound audit。</span>
 <span id="cb12-363"><a href="#cb12-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-364"><a href="#cb12-364" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span> scripts/plot_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-365"><a href="#cb12-365" aria-hidden="true" tabindex="-1"></a>  <span class="at">--summary-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-366"><a href="#cb12-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/figures"</span></span>
-<span id="cb12-367"><a href="#cb12-367" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-368"><a href="#cb12-368" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-369"><a href="#cb12-369" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-370"><a href="#cb12-370" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-371"><a href="#cb12-371" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/60-genome-scale-models-frozen"</span> <span class="dt">\</span></span>
-<span id="cb12-372"><a href="#cb12-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-373"><a href="#cb12-373" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-374"><a href="#cb12-374" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-cache</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/gem-cache"</span></span>
-<span id="cb12-375"><a href="#cb12-375" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-376"><a href="#cb12-376" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-377"><a href="#cb12-377" aria-hidden="true" tabindex="-1"></a>统一解析器读取 SBML-FBC2，分别计算 reactions、metabolites、genes、GPR-backed reactions、no-GPR reactions、topological dead ends 和 biomass reaction。FBA threshold 固定为 $10^{-6}$。对每个 tool × stage 都做 no-uptake audit；若在完全关闭 exchange uptake 后仍能产生正 biomass，则标记 leak/energy-generating-cycle risk。</span>
-<span id="cb12-378"><a href="#cb12-378" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-379"><a href="#cb12-379" aria-hidden="true" tabindex="-1"></a><span class="fu">### Controlled incompleteness 比横截面相关更接近因果检查</span></span>
-<span id="cb12-380"><a href="#cb12-380" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-381"><a href="#cb12-381" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 *N. europaea* parent 的 retained bases、predicted proteins、draft reactions 和 repair burden。](../figures/60-truncation-sensitivity.png)</span>{#fig-60-truncation}</span>
+<span id="cb12-364"><a href="#cb12-364" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-365"><a href="#cb12-365" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">/bin/python"</span> scripts/summarize_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-366"><a href="#cb12-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-367"><a href="#cb12-367" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-368"><a href="#cb12-368" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span></span>
+<span id="cb12-369"><a href="#cb12-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-370"><a href="#cb12-370" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span> scripts/plot_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-371"><a href="#cb12-371" aria-hidden="true" tabindex="-1"></a>  <span class="at">--summary-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-372"><a href="#cb12-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/figures"</span></span>
+<span id="cb12-373"><a href="#cb12-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-374"><a href="#cb12-374" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-375"><a href="#cb12-375" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-376"><a href="#cb12-376" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-377"><a href="#cb12-377" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/60-genome-scale-models-frozen"</span> <span class="dt">\</span></span>
+<span id="cb12-378"><a href="#cb12-378" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-379"><a href="#cb12-379" aria-hidden="true" tabindex="-1"></a>  <span class="at">--carveme-env</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-380"><a href="#cb12-380" aria-hidden="true" tabindex="-1"></a>  <span class="at">--database-cache</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/gem-cache"</span></span>
+<span id="cb12-381"><a href="#cb12-381" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-382"><a href="#cb12-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-383"><a href="#cb12-383" aria-hidden="true" tabindex="-1"></a>真实 MAG 的 completeness 与 gap-fill burden 相关时，taxonomy、genome size 和 lifestyle 都是混杂因素。<span class="in">`TRUNC_050/070/090/100`</span> 固定 parent、taxonomy、原始 contigs 和 gene caller，只改变 retained sequence；因此能直接展示缺失序列如何传导到 gene evidence、draft size 与 optimization repair。它仍不是完整的 assembly-error simulation：没有加入 misassembly、frameshift、strain mixture 或 differential coverage。</span>
+<span id="cb12-383"><a href="#cb12-383" aria-hidden="true" tabindex="-1"></a>统一解析器读取 SBML-FBC2，分别计算 reactions、metabolites、genes、GPR-backed reactions、no-GPR reactions、topological dead ends 和 biomass reaction。FBA threshold 固定为 $10^{-6}$。对每个 tool × stage 都做 no-uptake audit；若在完全关闭 exchange uptake 后仍能产生正 biomass，则标记 leak/energy-generating-cycle risk。</span>
 <span id="cb12-384"><a href="#cb12-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-385"><a href="#cb12-385" aria-hidden="true" tabindex="-1"></a>在 gapseq 中，retention 从 52.04% 增至 100% 时，predicted proteins 从 1,289 增至 2,468，draft reactions 从 1,106 增至 1,671，repair burden 从 16.90% 降至 7.53%；CarveMe 的对应负担从 1.54% 降至 0.21%，但中间点并非严格单调。<span class="in">`TRUNC_100`</span> 与 parent 在两套工具、两个阶段的 reaction Jaccard 与结构哈希均完全一致（4/4），说明这条确定性控制没有把运行波动误当成缺失效应。</span>
+<span id="cb12-385"><a href="#cb12-385" aria-hidden="true" tabindex="-1"></a><span class="fu">### Controlled incompleteness 比横截面相关更接近因果检查</span></span>
 <span id="cb12-386"><a href="#cb12-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-387"><a href="#cb12-387" aria-hidden="true" tabindex="-1"></a><span class="fu">### 一个通过求解的 SBML 仍可能质量很差</span></span>
+<span id="cb12-387"><a href="#cb12-387" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 *N. europaea* parent 的 retained bases、predicted proteins、draft reactions 和 repair burden。](../figures/60-truncation-sensitivity.png)</span>{#fig-60-truncation}</span>
 <span id="cb12-388"><a href="#cb12-388" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-389"><a href="#cb12-389" aria-hidden="true" tabindex="-1"></a><span class="al">![修复负担、topological dead ends、GPR genes 与 no-uptake flag 的联合审计。圆点面积对应模型 genes；叉号表示 no-uptake biomass 风险。](../figures/60-model-audit.png)</span>{#fig-60-audit}</span>
+<span id="cb12-389"><a href="#cb12-389" aria-hidden="true" tabindex="-1"></a>真实 MAG 的 completeness 与 gap-fill burden 相关时，taxonomy、genome size 和 lifestyle 都是混杂因素。<span class="in">`TRUNC_050/070/090/100`</span> 固定 parent、taxonomy、原始 contigs 和 gene caller，只改变 retained sequence；因此能直接展示缺失序列如何传导到 gene evidence、draft size 与 optimization repair。它仍不是完整的 assembly-error simulation：没有加入 misassembly、frameshift、strain mixture 或 differential coverage。</span>
 <span id="cb12-390"><a href="#cb12-390" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-391"><a href="#cb12-391" aria-hidden="true" tabindex="-1"></a>至少增加以下升级检查：</span>
+<span id="cb12-391"><a href="#cb12-391" aria-hidden="true" tabindex="-1"></a>在 gapseq 中，retention 从 52.04% 增至 100% 时，predicted proteins 从 1,289 增至 2,468，draft reactions 从 1,106 增至 1,671，repair burden 从 16.90% 降至 7.53%；CarveMe 的对应负担从 1.54% 降至 0.21%，但中间点并非严格单调。<span class="in">`TRUNC_100`</span> 与 parent 在两套工具、两个阶段的 reaction Jaccard 与结构哈希均完全一致（4/4），说明这条确定性控制没有把运行波动误当成缺失效应。</span>
 <span id="cb12-392"><a href="#cb12-392" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-393"><a href="#cb12-393" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MEMOTE 的 stoichiometric consistency、annotation、mass/charge balance、biomass precursor 与 basic test suite <span class="co">[</span><span class="ot">@lieven2020memote</span><span class="co">]</span>；</span>
-<span id="cb12-394"><a href="#cb12-394" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>blocked reactions 与 dead-end metabolites；</span>
-<span id="cb12-395"><a href="#cb12-395" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>energy-generating cycles 和 no-carbon/no-nitrogen controls；</span>
-<span id="cb12-396"><a href="#cb12-396" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>phenotype arrays、growth/no-growth media、essential genes、secreted metabolites；</span>
-<span id="cb12-397"><a href="#cb12-397" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>reaction directionality 与 thermodynamic constraints；</span>
-<span id="cb12-398"><a href="#cb12-398" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>alternative gap-fill solutions 或 model ensemble。</span>
-<span id="cb12-399"><a href="#cb12-399" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-400"><a href="#cb12-400" aria-hidden="true" tabindex="-1"></a>CarveMe 当前 SCIP backend 对 carving 与 gap filling 使用 600 s time limit 和 0.001 relative gap，允许 suboptimal solution。这里固定 <span class="in">`ensemble_size = 1`</span>，适合作为可审计的基线，不代表 repair set 唯一。关键 phenotype 应至少重建 20 个 alternative models 或枚举 near-optimal gap-fill sets，再报告 consensus prediction 与 uncertainty interval。</span>
-<span id="cb12-401"><a href="#cb12-401" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-402"><a href="#cb12-402" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常追问的八个问题"}</span>
-<span id="cb12-403"><a href="#cb12-403" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**把 gap-filled reaction 当作基因组证据**：必须分开 GPR-backed 与 no-GPR reactions，并列出 added set。</span>
-<span id="cb12-404"><a href="#cb12-404" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**培养基没有版本或配方**：名称相同也可能 composition 不同；保存 machine-readable medium file 与 checksum。</span>
-<span id="cb12-405"><a href="#cb12-405" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**把 FBA objective 叫作真实 growth rate**：没有 calibrated uptake bounds 与 phenotype validation 时，只写 feasibility。</span>
-<span id="cb12-406"><a href="#cb12-406" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**忽略 MAG completeness/contamination**：低完整度造成 false auxotrophy，高污染造成 composite metabolism。</span>
-<span id="cb12-407"><a href="#cb12-407" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**直接比较 gapseq/CarveMe reaction IDs**：ModelSEED 与 BiGG namespace 不能做字符串 Jaccard。</span>
-<span id="cb12-408"><a href="#cb12-408" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**两个独立重建结果相减当成 gap fill**：不同 MILP optimum 会混入差集；应固定 draft 后独立补洞。</span>
-<span id="cb12-409"><a href="#cb12-409" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**只测 rich medium**：rich feasibility 不能证明 minimal-medium phenotype；至少增加 minimal、no uptake 和目标环境条件。</span>
-<span id="cb12-410"><a href="#cb12-410" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>**solver 返回结果就算质控通过**：还需 mass/charge、cycles、dead ends、MEMOTE、phenotype 和 alternative-solution audit。</span>
-<span id="cb12-411"><a href="#cb12-411" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb12-412"><a href="#cb12-412" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-413"><a href="#cb12-413" aria-hidden="true" tabindex="-1"></a><span class="fu">## fail-closed QA</span></span>
-<span id="cb12-414"><a href="#cb12-414" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-415"><a href="#cb12-415" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-416"><a href="#cb12-416" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span> scripts/validate_article60_gem.py <span class="dt">\</span></span>
-<span id="cb12-417"><a href="#cb12-417" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-418"><a href="#cb12-418" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/60-genome-scale-models-frozen"</span> <span class="dt">\</span></span>
-<span id="cb12-419"><a href="#cb12-419" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/chapters/60-genome-scale-models.qmd"</span> <span class="dt">\</span></span>
-<span id="cb12-420"><a href="#cb12-420" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/figures"</span> <span class="dt">\</span></span>
-<span id="cb12-421"><a href="#cb12-421" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/qa/article60"</span> <span class="dt">\</span></span>
-<span id="cb12-422"><a href="#cb12-422" aria-hidden="true" tabindex="-1"></a>  <span class="at">--stage-dir</span> /tmp/article60-frozen-reanalysis <span class="dt">\</span></span>
-<span id="cb12-423"><a href="#cb12-423" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-424"><a href="#cb12-424" aria-hidden="true" tabindex="-1"></a>  <span class="at">--model-python</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">/bin/python"</span> <span class="dt">\</span></span>
-<span id="cb12-425"><a href="#cb12-425" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot-python</span> <span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span></span>
-<span id="cb12-426"><a href="#cb12-426" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-427"><a href="#cb12-427" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> qa/article60/validation-summary.json</span>
-<span id="cb12-428"><a href="#cb12-428" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-429"><a href="#cb12-429" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-430"><a href="#cb12-430" aria-hidden="true" tabindex="-1"></a>验证器解压全部 48 个 models，在独立目录重算 8 份 summary artifacts、重新生成 6 组 PDF/PNG/TIFF，并比较 table SHA-256 与 PNG pixel hash。它还检查 draft 是否被完整保留、reconstruction medium 是否产生可行 biomass、no-uptake 是否为零、exact-control reaction Jaccard 是否为 1，以及 source/figure/Methods/数据库锁是否完整。</span>
-<span id="cb12-431"><a href="#cb12-431" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-432"><a href="#cb12-432" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不把不同 namespace 的 reaction IDs 直接求 Jaccard</span></span>
-<span id="cb12-433"><a href="#cb12-433" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-434"><a href="#cb12-434" aria-hidden="true" tabindex="-1"></a>gapseq 以 ModelSEED-style reaction IDs 为主，CarveMe 使用 BiGG IDs。字符串交集会把同一化学反应当成不同，也会把 protonation、compartment 或 reversibility 不同的反应错误合并。跨工具比较若必须落到 reaction level，应先映射到 MetaNetX/EC/Rhea，并逐项处理：</span>
+<span id="cb12-393"><a href="#cb12-393" aria-hidden="true" tabindex="-1"></a><span class="fu">### 一个通过求解的 SBML 仍可能质量很差</span></span>
+<span id="cb12-394"><a href="#cb12-394" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-395"><a href="#cb12-395" aria-hidden="true" tabindex="-1"></a><span class="al">![修复负担、topological dead ends、GPR genes 与 no-uptake flag 的联合审计。圆点面积对应模型 genes；叉号表示 no-uptake biomass 风险。](../figures/60-model-audit.png)</span>{#fig-60-audit}</span>
+<span id="cb12-396"><a href="#cb12-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-397"><a href="#cb12-397" aria-hidden="true" tabindex="-1"></a>至少增加以下升级检查：</span>
+<span id="cb12-398"><a href="#cb12-398" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-399"><a href="#cb12-399" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MEMOTE 的 stoichiometric consistency、annotation、mass/charge balance、biomass precursor 与 basic test suite <span class="co">[</span><span class="ot">@lieven2020memote</span><span class="co">]</span>；</span>
+<span id="cb12-400"><a href="#cb12-400" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>blocked reactions 与 dead-end metabolites；</span>
+<span id="cb12-401"><a href="#cb12-401" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>energy-generating cycles 和 no-carbon/no-nitrogen controls；</span>
+<span id="cb12-402"><a href="#cb12-402" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>phenotype arrays、growth/no-growth media、essential genes、secreted metabolites；</span>
+<span id="cb12-403"><a href="#cb12-403" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>reaction directionality 与 thermodynamic constraints；</span>
+<span id="cb12-404"><a href="#cb12-404" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>alternative gap-fill solutions 或 model ensemble。</span>
+<span id="cb12-405"><a href="#cb12-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-406"><a href="#cb12-406" aria-hidden="true" tabindex="-1"></a>CarveMe 当前 SCIP backend 对 carving 与 gap filling 使用 600 s time limit 和 0.001 relative gap，允许 suboptimal solution。这里固定 <span class="in">`ensemble_size = 1`</span>，适合作为可审计的基线，不代表 repair set 唯一。关键 phenotype 应至少重建 20 个 alternative models 或枚举 near-optimal gap-fill sets，再报告 consensus prediction 与 uncertainty interval。</span>
+<span id="cb12-407"><a href="#cb12-407" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-408"><a href="#cb12-408" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="审稿人最常追问的八个问题"}</span>
+<span id="cb12-409"><a href="#cb12-409" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**把 gap-filled reaction 当作基因组证据**：必须分开 GPR-backed 与 no-GPR reactions，并列出 added set。</span>
+<span id="cb12-410"><a href="#cb12-410" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**培养基没有版本或配方**：名称相同也可能 composition 不同；保存 machine-readable medium file 与 checksum。</span>
+<span id="cb12-411"><a href="#cb12-411" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**把 FBA objective 叫作真实 growth rate**：没有 calibrated uptake bounds 与 phenotype validation 时，只写 feasibility。</span>
+<span id="cb12-412"><a href="#cb12-412" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**忽略 MAG completeness/contamination**：低完整度造成 false auxotrophy，高污染造成 composite metabolism。</span>
+<span id="cb12-413"><a href="#cb12-413" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**直接比较 gapseq/CarveMe reaction IDs**：ModelSEED 与 BiGG namespace 不能做字符串 Jaccard。</span>
+<span id="cb12-414"><a href="#cb12-414" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**两个独立重建结果相减当成 gap fill**：不同 MILP optimum 会混入差集；应固定 draft 后独立补洞。</span>
+<span id="cb12-415"><a href="#cb12-415" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**只测 rich medium**：rich feasibility 不能证明 minimal-medium phenotype；至少增加 minimal、no uptake 和目标环境条件。</span>
+<span id="cb12-416"><a href="#cb12-416" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>**solver 返回结果就算质控通过**：还需 mass/charge、cycles、dead ends、MEMOTE、phenotype 和 alternative-solution audit。</span>
+<span id="cb12-417"><a href="#cb12-417" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-418"><a href="#cb12-418" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-419"><a href="#cb12-419" aria-hidden="true" tabindex="-1"></a><span class="fu">## fail-closed QA</span></span>
+<span id="cb12-420"><a href="#cb12-420" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-421"><a href="#cb12-421" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-422"><a href="#cb12-422" aria-hidden="true" tabindex="-1"></a><span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span> scripts/validate_article60_gem.py <span class="dt">\</span></span>
+<span id="cb12-423"><a href="#cb12-423" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-424"><a href="#cb12-424" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/data/small/60-genome-scale-models-frozen"</span> <span class="dt">\</span></span>
+<span id="cb12-425"><a href="#cb12-425" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/chapters/60-genome-scale-models.qmd"</span> <span class="dt">\</span></span>
+<span id="cb12-426"><a href="#cb12-426" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/figures"</span> <span class="dt">\</span></span>
+<span id="cb12-427"><a href="#cb12-427" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">/qa/article60"</span> <span class="dt">\</span></span>
+<span id="cb12-428"><a href="#cb12-428" aria-hidden="true" tabindex="-1"></a>  <span class="at">--stage-dir</span> /tmp/article60-frozen-reanalysis <span class="dt">\</span></span>
+<span id="cb12-429"><a href="#cb12-429" aria-hidden="true" tabindex="-1"></a>  <span class="at">--gapseq-env</span> <span class="st">"</span><span class="va">$GAPSEQ_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-430"><a href="#cb12-430" aria-hidden="true" tabindex="-1"></a>  <span class="at">--model-python</span> <span class="st">"</span><span class="va">$CARVEME_ENV</span><span class="st">/bin/python"</span> <span class="dt">\</span></span>
+<span id="cb12-431"><a href="#cb12-431" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot-python</span> <span class="st">"</span><span class="va">$PRODIGAL_ENV</span><span class="st">/bin/python"</span></span>
+<span id="cb12-432"><a href="#cb12-432" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-433"><a href="#cb12-433" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> qa/article60/validation-summary.json</span>
+<span id="cb12-434"><a href="#cb12-434" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-435"><a href="#cb12-435" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-436"><a href="#cb12-436" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>compartment normalization；</span>
-<span id="cb12-437"><a href="#cb12-437" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>proton/water balancing；</span>
-<span id="cb12-438"><a href="#cb12-438" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>directionality；</span>
-<span id="cb12-439"><a href="#cb12-439" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>generic compounds；</span>
-<span id="cb12-440"><a href="#cb12-440" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>one-to-many mappings；</span>
-<span id="cb12-441"><a href="#cb12-441" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>biomass 与 exchange pseudo-reactions。</span>
-<span id="cb12-442"><a href="#cb12-442" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-443"><a href="#cb12-443" aria-hidden="true" tabindex="-1"></a>因此这里只在各自 namespace 内比较 draft/filled 与 parent/exact control；跨工具图比较的是 counts、fractions、feasibility pattern 和 audit flags，不声称 reaction-set concordance。</span>
-<span id="cb12-444"><a href="#cb12-444" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-445"><a href="#cb12-445" aria-hidden="true" tabindex="-1"></a><span class="fu">### 证据阶梯限定 Results 的措辞</span></span>
-<span id="cb12-446"><a href="#cb12-446" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-447"><a href="#cb12-447" aria-hidden="true" tabindex="-1"></a><span class="al">![MAG-derived GEM 的六级证据阶梯。外部 phenotype 或 flux validation 才能把 feasibility 推进到生物学验证。](../figures/60-evidence-ladder.png)</span>{#fig-60-evidence}</span>
+<span id="cb12-436"><a href="#cb12-436" aria-hidden="true" tabindex="-1"></a>验证器解压全部 48 个 models，在独立目录重算 8 份 summary artifacts、重新生成 6 组 PDF/PNG/TIFF，并比较 table SHA-256 与 PNG pixel hash。它还检查 draft 是否被完整保留、reconstruction medium 是否产生可行 biomass、no-uptake 是否为零、exact-control reaction Jaccard 是否为 1，以及 source/figure/Methods/数据库锁是否完整。</span>
+<span id="cb12-437"><a href="#cb12-437" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-438"><a href="#cb12-438" aria-hidden="true" tabindex="-1"></a><span class="fu">### 不把不同 namespace 的 reaction IDs 直接求 Jaccard</span></span>
+<span id="cb12-439"><a href="#cb12-439" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-440"><a href="#cb12-440" aria-hidden="true" tabindex="-1"></a>gapseq 以 ModelSEED-style reaction IDs 为主，CarveMe 使用 BiGG IDs。字符串交集会把同一化学反应当成不同，也会把 protonation、compartment 或 reversibility 不同的反应错误合并。跨工具比较若必须落到 reaction level，应先映射到 MetaNetX/EC/Rhea，并逐项处理：</span>
+<span id="cb12-441"><a href="#cb12-441" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-442"><a href="#cb12-442" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>compartment normalization；</span>
+<span id="cb12-443"><a href="#cb12-443" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>proton/water balancing；</span>
+<span id="cb12-444"><a href="#cb12-444" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>directionality；</span>
+<span id="cb12-445"><a href="#cb12-445" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>generic compounds；</span>
+<span id="cb12-446"><a href="#cb12-446" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>one-to-many mappings；</span>
+<span id="cb12-447"><a href="#cb12-447" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>biomass 与 exchange pseudo-reactions。</span>
 <span id="cb12-448"><a href="#cb12-448" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-449"><a href="#cb12-449" aria-hidden="true" tabindex="-1"></a>从 checksum-locked MAG 到 positive FBA objective，证据逐层增加，但每一层都有结论上限。最常见的越级是把 gap-filled reaction 写成 encoded pathway，或把 biomass objective 写成 measured growth。若没有同条件 phenotype/flux 数据，Results 应使用 <span class="in">`predicted`</span>, <span class="in">`feasible`</span>, <span class="in">`model-supported`</span> 和 <span class="in">`under the specified constraints`</span>。</span>
+<span id="cb12-449"><a href="#cb12-449" aria-hidden="true" tabindex="-1"></a>因此这里只在各自 namespace 内比较 draft/filled 与 parent/exact control；跨工具图比较的是 counts、fractions、feasibility pattern 和 audit flags，不声称 reaction-set concordance。</span>
 <span id="cb12-450"><a href="#cb12-450" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-451"><a href="#cb12-451" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="Reduced symbiont 不是自动重建流程的错误对照"}</span>
-<span id="cb12-452"><a href="#cb12-452" aria-hidden="true" tabindex="-1"></a>像 *Nanoarchaeum equitans* 这样的 obligate symbiont 可能依赖宿主提供 metabolites。强迫其单独在通用 medium 下合成完整 biomass，会把真实生态依赖“修复”为大量假设反应。此类 genome 应同时报告 single-organism infeasibility、host/community context 和 exchanged-metabolite hypotheses。</span>
-<span id="cb12-453"><a href="#cb12-453" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb12-451"><a href="#cb12-451" aria-hidden="true" tabindex="-1"></a><span class="fu">### 证据阶梯限定 Results 的措辞</span></span>
+<span id="cb12-452"><a href="#cb12-452" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-453"><a href="#cb12-453" aria-hidden="true" tabindex="-1"></a><span class="al">![MAG-derived GEM 的六级证据阶梯。外部 phenotype 或 flux validation 才能把 feasibility 推进到生物学验证。](../figures/60-evidence-ladder.png)</span>{#fig-60-evidence}</span>
 <span id="cb12-454"><a href="#cb12-454" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-455"><a href="#cb12-455" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="一个实用的发表门槛"}</span>
-<span id="cb12-456"><a href="#cb12-456" aria-hidden="true" tabindex="-1"></a>正文主图至少给出 MAG quality、draft/filled size、gap-fill burden、medium sensitivity 和 no-uptake audit；Supplementary Data 交付 SBML、medium files、GPR/reaction tables、added reaction list、solver/version/database locks 与 phenotype validation table。</span>
-<span id="cb12-457"><a href="#cb12-457" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb12-458"><a href="#cb12-458" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-459"><a href="#cb12-459" aria-hidden="true" tabindex="-1"></a><span class="fu">## 注明模型约束、补缺和敏感性 {#sec-methods}</span></span>
+<span id="cb12-455"><a href="#cb12-455" aria-hidden="true" tabindex="-1"></a>从 checksum-locked MAG 到 positive FBA objective，证据逐层增加，但每一层都有结论上限。最常见的越级是把 gap-filled reaction 写成 encoded pathway，或把 biomass objective 写成 measured growth。若没有同条件 phenotype/flux 数据，Results 应使用 <span class="in">`predicted`</span>, <span class="in">`feasible`</span>, <span class="in">`model-supported`</span> 和 <span class="in">`under the specified constraints`</span>。</span>
+<span id="cb12-456"><a href="#cb12-456" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-457"><a href="#cb12-457" aria-hidden="true" tabindex="-1"></a>::: {.callout-warning title="Reduced symbiont 不是自动重建流程的错误对照"}</span>
+<span id="cb12-458"><a href="#cb12-458" aria-hidden="true" tabindex="-1"></a>像 *Nanoarchaeum equitans* 这样的 obligate symbiont 可能依赖宿主提供 metabolites。强迫其单独在通用 medium 下合成完整 biomass，会把真实生态依赖“修复”为大量假设反应。此类 genome 应同时报告 single-organism infeasibility、host/community context 和 exchanged-metabolite hypotheses。</span>
+<span id="cb12-459"><a href="#cb12-459" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-460"><a href="#cb12-460" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-461"><a href="#cb12-461" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb12-462"><a href="#cb12-462" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-463"><a href="#cb12-463" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Genome-scale metabolic models were reconstructed from eight non-redundant metagenome-assembled genomes recovered from the PRJEB52977 uneven mock-community data set (ERR9765746 and ERR9765747). MAG identities were checksum-locked, quality estimates were obtained with CheckM2, and taxonomy was assigned with GTDB-Tk release R232. Four deterministic contig-retention controls (52.036793%, 70.175068%, 91.069344%, and 100%) were generated from the *Nitrosomonas europaea* MAG using seed 59002. Protein-coding genes were predicted once for all reconstruction methods using Prodigal v2.6.3 in metagenomic mode, and genome-prefixed protein identifiers were used. Draft and gap-filled models were generated with gapseq v2.1.0 (GLPK v5.0; sequence database v1.5, Zenodo 20446806, UniProt 2026_01) and CarveMe v1.6.6 (DIAMOND v2.1.13; SCIP v10.0.3; bacterial or archaeal universe as appropriate). Bacterial gapseq drafts were gap-filled with the versioned ALLmed.csv definition; the three archaeal stress cases used versioned ecology-aware profiles (autotrophic plus highH2, MM_anaerobic_CO2_H2 plus highH2, or meerwasser). CarveMe's independent gapfill command was applied to fixed drafts using its versioned LB definition. ALLmed/MM_glu (gapseq), M9 (CarveMe), and no-uptake constraints were evaluated post hoc. Biomass feasibility was defined as an objective value greater than $10^{-6}$. Added reactions, GPR support, topological dead ends, medium-dependent feasibility, and no-uptake biomass production were audited for every model. All SBML files, medium definitions, command logs, software locks, database checksums, and derived tables were retained.</span></span>
+<span id="cb12-461"><a href="#cb12-461" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="一个实用的发表门槛"}</span>
+<span id="cb12-462"><a href="#cb12-462" aria-hidden="true" tabindex="-1"></a>正文主图至少给出 MAG quality、draft/filled size、gap-fill burden、medium sensitivity 和 no-uptake audit；Supplementary Data 交付 SBML、medium files、GPR/reaction tables、added reaction list、solver/version/database locks 与 phenotype validation table。</span>
+<span id="cb12-463"><a href="#cb12-463" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb12-464"><a href="#cb12-464" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-465"><a href="#cb12-465" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb12-465"><a href="#cb12-465" aria-hidden="true" tabindex="-1"></a><span class="fu">## 注明模型约束、补缺和敏感性 {#sec-methods}</span></span>
 <span id="cb12-466"><a href="#cb12-466" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-467"><a href="#cb12-467" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; We reconstructed fixed draft and gap-filled models for 12 genome inputs with two automated pipelines, yielding 48 SBML models. Median gap-fill burdens were 13.00% for gapseq and 0.69% for CarveMe; 8/12 and 1/12 models, respectively, exceeded the prespecified 10% audit threshold. All 24 gap-filled models were feasible in their declared construction media, whereas feasibility under the common-rich/minimal proxies was 9/12 and 0/12 for gapseq and 4/12 under the CarveMe M9 proxy. None of the 48 gap-filled or draft models produced biomass when uptake was disabled. Deterministic truncation of the *Nitrosomonas europaea* parent reduced protein and draft-network evidence and increased repair burden, whereas the 100% retained control reproduced the parent reaction structure in all four tool-by-stage comparisons. Gap-filled reactions were interpreted as optimization-required hypotheses, and no objective value was interpreted as an experimentally measured growth rate or flux.</span></span>
+<span id="cb12-467"><a href="#cb12-467" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb12-468"><a href="#cb12-468" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-469"><a href="#cb12-469" aria-hidden="true" tabindex="-1"></a>若使用自己的数据，Methods 还要补：sample accession、assembly/binning/refinement lineage、MAG quality gate、gene caller mode、每个 medium 的完整配方和 bounds、oxygen condition、biomass equation、solver tolerance/time limit、gap-fill penalty、ensemble size、MEMOTE version，以及 phenotype/flux validation 的来源。</span>
+<span id="cb12-469"><a href="#cb12-469" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Genome-scale metabolic models were reconstructed from eight non-redundant metagenome-assembled genomes recovered from the PRJEB52977 uneven mock-community data set (ERR9765746 and ERR9765747). MAG identities were checksum-locked, quality estimates were obtained with CheckM2, and taxonomy was assigned with GTDB-Tk release R232. Four deterministic contig-retention controls (52.036793%, 70.175068%, 91.069344%, and 100%) were generated from the *Nitrosomonas europaea* MAG using seed 59002. Protein-coding genes were predicted once for all reconstruction methods using Prodigal v2.6.3 in metagenomic mode, and genome-prefixed protein identifiers were used. Draft and gap-filled models were generated with gapseq v2.1.0 (GLPK v5.0; sequence database v1.5, Zenodo 20446806, UniProt 2026_01) and CarveMe v1.6.6 (DIAMOND v2.1.13; SCIP v10.0.3; bacterial or archaeal universe as appropriate). Bacterial gapseq drafts were gap-filled with the versioned ALLmed.csv definition; the three archaeal stress cases used versioned ecology-aware profiles (autotrophic plus highH2, MM_anaerobic_CO2_H2 plus highH2, or meerwasser). CarveMe's independent gapfill command was applied to fixed drafts using its versioned LB definition. ALLmed/MM_glu (gapseq), M9 (CarveMe), and no-uptake constraints were evaluated post hoc. Biomass feasibility was defined as an objective value greater than $10^{-6}$. Added reactions, GPR support, topological dead ends, medium-dependent feasibility, and no-uptake biomass production were audited for every model. All SBML files, medium definitions, command logs, software locks, database checksums, and derived tables were retained.</span></span>
 <span id="cb12-470"><a href="#cb12-470" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-471"><a href="#cb12-471" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb12-471"><a href="#cb12-471" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
 <span id="cb12-472"><a href="#cb12-472" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-473"><a href="#cb12-473" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最少需要什么</span></span>
+<span id="cb12-473"><a href="#cb12-473" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; We reconstructed fixed draft and gap-filled models for 12 genome inputs with two automated pipelines, yielding 48 SBML models. Median gap-fill burdens were 13.00% for gapseq and 0.69% for CarveMe; 8/12 and 1/12 models, respectively, exceeded the prespecified 10% audit threshold. All 24 gap-filled models were feasible in their declared construction media, whereas feasibility under the common-rich/minimal proxies was 9/12 and 0/12 for gapseq and 4/12 under the CarveMe M9 proxy. None of the 48 gap-filled or draft models produced biomass when uptake was disabled. Deterministic truncation of the *Nitrosomonas europaea* parent reduced protein and draft-network evidence and increased repair burden, whereas the 100% retained control reproduced the parent reaction structure in all four tool-by-stage comparisons. Gap-filled reactions were interpreted as optimization-required hypotheses, and no objective value was interpreted as an experimentally measured growth rate or flux.</span></span>
 <span id="cb12-474"><a href="#cb12-474" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-475"><a href="#cb12-475" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>每个 MAG 一份 FASTA；建议同时有 CheckM2 completeness/contamination、GUNC contamination/chimerism 与 GTDB-Tk taxonomy。</span>
-<span id="cb12-476"><a href="#cb12-476" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>明确的 sample/MAG lineage：assembly、binning、refinement、dereplication 和 representative selection。</span>
-<span id="cb12-477"><a href="#cb12-477" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>研究条件的 medium composition；环境研究至少准备可测的 carbon、nitrogen、electron donor/acceptor、oxygen 与 salinity constraints。</span>
-<span id="cb12-478"><a href="#cb12-478" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>能验证模型的外部证据：culture growth/no-growth、Biolog、gene essentiality、metabolite uptake/secretion、isotope tracing 或 condition-matched transcript/protein data。</span>
-<span id="cb12-479"><a href="#cb12-479" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-480"><a href="#cb12-480" aria-hidden="true" tabindex="-1"></a><span class="fu">### 替换 input panel</span></span>
-<span id="cb12-481"><a href="#cb12-481" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-482"><a href="#cb12-482" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb12-483"><a href="#cb12-483" aria-hidden="true" tabindex="-1"></a><span class="co"># 目录中每个 basename 必须唯一；先固定 checksum ledger</span></span>
-<span id="cb12-484"><a href="#cb12-484" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> my_mags <span class="at">-maxdepth</span> 1 <span class="at">-type</span> f <span class="at">-name</span> <span class="st">'*.fna'</span> <span class="at">-print0</span> <span class="dt">\</span></span>
-<span id="cb12-485"><a href="#cb12-485" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-z</span> <span class="kw">|</span> <span class="fu">xargs</span> <span class="at">-0</span> sha256sum <span class="op">&gt;</span> my_mags.sha256</span>
-<span id="cb12-486"><a href="#cb12-486" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-487"><a href="#cb12-487" aria-hidden="true" tabindex="-1"></a><span class="co"># 用相同 gene caller 为全部工具生成共享 proteins</span></span>
-<span id="cb12-488"><a href="#cb12-488" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> genome <span class="kw">in</span> my_mags/<span class="pp">*</span>.fna<span class="kw">;</span> <span class="cf">do</span></span>
-<span id="cb12-489"><a href="#cb12-489" aria-hidden="true" tabindex="-1"></a>  <span class="va">sample</span><span class="op">=</span><span class="va">$(</span><span class="fu">basename</span> <span class="st">"</span><span class="va">$genome</span><span class="st">"</span> .fna<span class="va">)</span></span>
-<span id="cb12-490"><a href="#cb12-490" aria-hidden="true" tabindex="-1"></a>  <span class="ex">prodigal</span> <span class="at">-q</span> <span class="at">-p</span> meta <span class="at">-i</span> <span class="st">"</span><span class="va">$genome</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb12-491"><a href="#cb12-491" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> <span class="st">"my_proteins/</span><span class="va">${sample}</span><span class="st">.faa"</span> <span class="dt">\</span></span>
-<span id="cb12-492"><a href="#cb12-492" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> <span class="st">"my_genes/</span><span class="va">${sample}</span><span class="st">.fna"</span> <span class="dt">\</span></span>
-<span id="cb12-493"><a href="#cb12-493" aria-hidden="true" tabindex="-1"></a>    <span class="at">-f</span> gff <span class="at">-o</span> <span class="st">"my_gff/</span><span class="va">${sample}</span><span class="st">.gff"</span></span>
-<span id="cb12-494"><a href="#cb12-494" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
-<span id="cb12-495"><a href="#cb12-495" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-496"><a href="#cb12-496" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-497"><a href="#cb12-497" aria-hidden="true" tabindex="-1"></a>将 <span class="in">`prepare_article60_gem.py`</span> 的 <span class="in">`PRIMARY_PANEL`</span> 换成自己的 checksum ledger，不要删除 quality、taxonomy、domain 与 protein-ID gates。随机截短只用于 sensitivity analysis，不可替代 CheckM2/GUNC 的真实质量评估。</span>
-<span id="cb12-498"><a href="#cb12-498" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-499"><a href="#cb12-499" aria-hidden="true" tabindex="-1"></a><span class="fu">### 按研究问题改变模型，而不是只换 FASTA</span></span>
-<span id="cb12-500"><a href="#cb12-500" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-501"><a href="#cb12-501" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 研究问题 <span class="pp">|</span> 还要增加的约束/数据 <span class="pp">|</span> 推荐输出 <span class="pp">|</span></span>
-<span id="cb12-502"><a href="#cb12-502" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb12-503"><a href="#cb12-503" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 培养条件优化 <span class="pp">|</span> 实际 medium、pH/oxygen、uptake bounds <span class="pp">|</span> growth feasibility + required nutrients + FVA <span class="pp">|</span></span>
-<span id="cb12-504"><a href="#cb12-504" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Auxotrophy <span class="pp">|</span> minimal media panel、transporter audit <span class="pp">|</span> gap-fill alternatives + culture validation <span class="pp">|</span></span>
-<span id="cb12-505"><a href="#cb12-505" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Cross-feeding <span class="pp">|</span> sample-specific MAG set、shared compartment、abundance <span class="pp">|</span> exchanged metabolites + donor/receiver sensitivity <span class="pp">|</span></span>
-<span id="cb12-506"><a href="#cb12-506" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Disease cohort <span class="pp">|</span> subject-level MAG/reaction abundance、diet/medication <span class="pp">|</span> stratified model predictions + external cohort validation <span class="pp">|</span></span>
-<span id="cb12-507"><a href="#cb12-507" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 环境过程 <span class="pp">|</span> electron donors/acceptors、temperature/salinity proxies <span class="pp">|</span> feasible redox routes + geochemical validation <span class="pp">|</span></span>
-<span id="cb12-508"><a href="#cb12-508" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-509"><a href="#cb12-509" aria-hidden="true" tabindex="-1"></a>最终交付至少包括 <span class="in">`models/draft/`</span>、<span class="in">`models/gapfilled/`</span>、<span class="in">`media/`</span>、<span class="in">`added-reactions.tsv`</span>、<span class="in">`gpr-audit.tsv`</span>、<span class="in">`model-qc.tsv`</span>、<span class="in">`phenotype-validation.tsv`</span>、environment locks、database manifests、commands 和 checksums。若模型将用于机制主张，优先验证关键 exchange/auxotrophy，而不是继续增加自动生成的网络图。</span>
-<span id="cb12-510"><a href="#cb12-510" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-511"><a href="#cb12-511" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb12-512"><a href="#cb12-512" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-513"><a href="#cb12-513" aria-hidden="true" tabindex="-1"></a>六组图遵守同一视觉语法：gapseq 为蓝色、CarveMe 为橙色、feasible 为绿色、audit threshold 为黄色/虚线、no-uptake flag 为叉号。所有轴、图例、annotations 和 species labels 使用英文；中文只在正文和 caption。输出包含矢量 PDF、350 dpi PNG 与 LZW-compressed TIFF。</span>
+<span id="cb12-475"><a href="#cb12-475" aria-hidden="true" tabindex="-1"></a>若使用自己的数据，Methods 还要补：sample accession、assembly/binning/refinement lineage、MAG quality gate、gene caller mode、每个 medium 的完整配方和 bounds、oxygen condition、biomass equation、solver tolerance/time limit、gap-fill penalty、ensemble size、MEMOTE version，以及 phenotype/flux validation 的来源。</span>
+<span id="cb12-476"><a href="#cb12-476" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-477"><a href="#cb12-477" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb12-478"><a href="#cb12-478" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-479"><a href="#cb12-479" aria-hidden="true" tabindex="-1"></a><span class="fu">### 最少需要什么</span></span>
+<span id="cb12-480"><a href="#cb12-480" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-481"><a href="#cb12-481" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>每个 MAG 一份 FASTA；建议同时有 CheckM2 completeness/contamination、GUNC contamination/chimerism 与 GTDB-Tk taxonomy。</span>
+<span id="cb12-482"><a href="#cb12-482" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>明确的 sample/MAG lineage：assembly、binning、refinement、dereplication 和 representative selection。</span>
+<span id="cb12-483"><a href="#cb12-483" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>研究条件的 medium composition；环境研究至少准备可测的 carbon、nitrogen、electron donor/acceptor、oxygen 与 salinity constraints。</span>
+<span id="cb12-484"><a href="#cb12-484" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>能验证模型的外部证据：culture growth/no-growth、Biolog、gene essentiality、metabolite uptake/secretion、isotope tracing 或 condition-matched transcript/protein data。</span>
+<span id="cb12-485"><a href="#cb12-485" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-486"><a href="#cb12-486" aria-hidden="true" tabindex="-1"></a><span class="fu">### 替换 input panel</span></span>
+<span id="cb12-487"><a href="#cb12-487" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-488"><a href="#cb12-488" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb12-489"><a href="#cb12-489" aria-hidden="true" tabindex="-1"></a><span class="co"># 目录中每个 basename 必须唯一；先固定 checksum ledger</span></span>
+<span id="cb12-490"><a href="#cb12-490" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> my_mags <span class="at">-maxdepth</span> 1 <span class="at">-type</span> f <span class="at">-name</span> <span class="st">'*.fna'</span> <span class="at">-print0</span> <span class="dt">\</span></span>
+<span id="cb12-491"><a href="#cb12-491" aria-hidden="true" tabindex="-1"></a>  <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-z</span> <span class="kw">|</span> <span class="fu">xargs</span> <span class="at">-0</span> sha256sum <span class="op">&gt;</span> my_mags.sha256</span>
+<span id="cb12-492"><a href="#cb12-492" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-493"><a href="#cb12-493" aria-hidden="true" tabindex="-1"></a><span class="co"># 用相同 gene caller 为全部工具生成共享 proteins</span></span>
+<span id="cb12-494"><a href="#cb12-494" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> genome <span class="kw">in</span> my_mags/<span class="pp">*</span>.fna<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-495"><a href="#cb12-495" aria-hidden="true" tabindex="-1"></a>  <span class="va">sample</span><span class="op">=</span><span class="va">$(</span><span class="fu">basename</span> <span class="st">"</span><span class="va">$genome</span><span class="st">"</span> .fna<span class="va">)</span></span>
+<span id="cb12-496"><a href="#cb12-496" aria-hidden="true" tabindex="-1"></a>  <span class="ex">prodigal</span> <span class="at">-q</span> <span class="at">-p</span> meta <span class="at">-i</span> <span class="st">"</span><span class="va">$genome</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb12-497"><a href="#cb12-497" aria-hidden="true" tabindex="-1"></a>    <span class="at">-a</span> <span class="st">"my_proteins/</span><span class="va">${sample}</span><span class="st">.faa"</span> <span class="dt">\</span></span>
+<span id="cb12-498"><a href="#cb12-498" aria-hidden="true" tabindex="-1"></a>    <span class="at">-d</span> <span class="st">"my_genes/</span><span class="va">${sample}</span><span class="st">.fna"</span> <span class="dt">\</span></span>
+<span id="cb12-499"><a href="#cb12-499" aria-hidden="true" tabindex="-1"></a>    <span class="at">-f</span> gff <span class="at">-o</span> <span class="st">"my_gff/</span><span class="va">${sample}</span><span class="st">.gff"</span></span>
+<span id="cb12-500"><a href="#cb12-500" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-501"><a href="#cb12-501" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb12-502"><a href="#cb12-502" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-503"><a href="#cb12-503" aria-hidden="true" tabindex="-1"></a>将 <span class="in">`prepare_article60_gem.py`</span> 的 <span class="in">`PRIMARY_PANEL`</span> 换成自己的 checksum ledger，不要删除 quality、taxonomy、domain 与 protein-ID gates。随机截短只用于 sensitivity analysis，不可替代 CheckM2/GUNC 的真实质量评估。</span>
+<span id="cb12-504"><a href="#cb12-504" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-505"><a href="#cb12-505" aria-hidden="true" tabindex="-1"></a><span class="fu">### 按研究问题改变模型，而不是只换 FASTA</span></span>
+<span id="cb12-506"><a href="#cb12-506" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-507"><a href="#cb12-507" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 研究问题 <span class="pp">|</span> 还要增加的约束/数据 <span class="pp">|</span> 推荐输出 <span class="pp">|</span></span>
+<span id="cb12-508"><a href="#cb12-508" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb12-509"><a href="#cb12-509" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 培养条件优化 <span class="pp">|</span> 实际 medium、pH/oxygen、uptake bounds <span class="pp">|</span> growth feasibility + required nutrients + FVA <span class="pp">|</span></span>
+<span id="cb12-510"><a href="#cb12-510" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Auxotrophy <span class="pp">|</span> minimal media panel、transporter audit <span class="pp">|</span> gap-fill alternatives + culture validation <span class="pp">|</span></span>
+<span id="cb12-511"><a href="#cb12-511" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Cross-feeding <span class="pp">|</span> sample-specific MAG set、shared compartment、abundance <span class="pp">|</span> exchanged metabolites + donor/receiver sensitivity <span class="pp">|</span></span>
+<span id="cb12-512"><a href="#cb12-512" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Disease cohort <span class="pp">|</span> subject-level MAG/reaction abundance、diet/medication <span class="pp">|</span> stratified model predictions + external cohort validation <span class="pp">|</span></span>
+<span id="cb12-513"><a href="#cb12-513" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 环境过程 <span class="pp">|</span> electron donors/acceptors、temperature/salinity proxies <span class="pp">|</span> feasible redox routes + geochemical validation <span class="pp">|</span></span>
 <span id="cb12-514"><a href="#cb12-514" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-515"><a href="#cb12-515" aria-hidden="true" tabindex="-1"></a>作图前先把数据整理成长表，不在 plotting code 内重算生物学结论：</span>
+<span id="cb12-515"><a href="#cb12-515" aria-hidden="true" tabindex="-1"></a>最终交付至少包括 <span class="in">`models/draft/`</span>、<span class="in">`models/gapfilled/`</span>、<span class="in">`media/`</span>、<span class="in">`added-reactions.tsv`</span>、<span class="in">`gpr-audit.tsv`</span>、<span class="in">`model-qc.tsv`</span>、<span class="in">`phenotype-validation.tsv`</span>、environment locks、database manifests、commands 和 checksums。若模型将用于机制主张，优先验证关键 exchange/auxotrophy，而不是继续增加自动生成的网络图。</span>
 <span id="cb12-516"><a href="#cb12-516" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-517"><a href="#cb12-517" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb12-518"><a href="#cb12-518" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(ggplot2)</span>
-<span id="cb12-519"><a href="#cb12-519" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260760</span>)</span>
+<span id="cb12-517"><a href="#cb12-517" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb12-518"><a href="#cb12-518" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-519"><a href="#cb12-519" aria-hidden="true" tabindex="-1"></a>六组图遵守同一视觉语法：gapseq 为蓝色、CarveMe 为橙色、feasible 为绿色、audit threshold 为黄色/虚线、no-uptake flag 为叉号。所有轴、图例、annotations 和 species labels 使用英文；中文只在正文和 caption。输出包含矢量 PDF、350 dpi PNG 与 LZW-compressed TIFF。</span>
 <span id="cb12-520"><a href="#cb12-520" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-521"><a href="#cb12-521" aria-hidden="true" tabindex="-1"></a>gap <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
-<span id="cb12-522"><a href="#cb12-522" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/60-genome-scale-models-frozen/gapfill-burden.tsv"</span>,</span>
-<span id="cb12-523"><a href="#cb12-523" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
-<span id="cb12-524"><a href="#cb12-524" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb12-525"><a href="#cb12-525" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb12-526"><a href="#cb12-526" aria-hidden="true" tabindex="-1"></a>    <span class="at">AddedFractionOfFilledPct =</span> <span class="fu">as.numeric</span>(AddedFractionOfFilledPct),</span>
-<span id="cb12-527"><a href="#cb12-527" aria-hidden="true" tabindex="-1"></a>    <span class="at">Tool =</span> <span class="fu">factor</span>(Tool, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"gapseq"</span>, <span class="st">"CarveMe"</span>))</span>
-<span id="cb12-528"><a href="#cb12-528" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb12-529"><a href="#cb12-529" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-530"><a href="#cb12-530" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> gap <span class="sc">%&gt;%</span></span>
-<span id="cb12-531"><a href="#cb12-531" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">grepl</span>(<span class="st">"^SGB_"</span>, Genome)) <span class="sc">%&gt;%</span></span>
-<span id="cb12-532"><a href="#cb12-532" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(Genome, AddedFractionOfFilledPct),</span>
-<span id="cb12-533"><a href="#cb12-533" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> AddedFractionOfFilledPct, <span class="at">fill =</span> Tool)) <span class="sc">+</span></span>
-<span id="cb12-534"><a href="#cb12-534" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.75</span>), <span class="at">width =</span> <span class="fl">0.68</span>) <span class="sc">+</span></span>
-<span id="cb12-535"><a href="#cb12-535" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">10</span>, <span class="at">linetype =</span> <span class="dv">2</span>, <span class="at">color =</span> pal_pub[[<span class="st">"Audit"</span>]]) <span class="sc">+</span></span>
-<span id="cb12-536"><a href="#cb12-536" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_pub</span>() <span class="sc">+</span></span>
-<span id="cb12-537"><a href="#cb12-537" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Quality-audited real MAG"</span>, <span class="at">y =</span> <span class="st">"Gap-fill burden (%)"</span>,</span>
-<span id="cb12-538"><a href="#cb12-538" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Tool"</span>) <span class="sc">+</span></span>
-<span id="cb12-539"><a href="#cb12-539" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pub</span>() <span class="sc">+</span> <span class="fu">coord_flip</span>()</span>
-<span id="cb12-540"><a href="#cb12-540" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-541"><a href="#cb12-541" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p, <span class="st">"figures/60-gapfill-burden-replot"</span>)</span>
-<span id="cb12-542"><a href="#cb12-542" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb12-543"><a href="#cb12-543" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-544"><a href="#cb12-544" aria-hidden="true" tabindex="-1"></a>模型大小使用 paired dumbbell，突出同一 genome 的 draft-to-filled 变化；feasibility 用 binary heatmap，不用连续渐变暗示 objective value 可跨工具比较；sensitivity 图保留实际 retained percentage；audit 图同时编码 repair、dead ends、genes 和 leaks，避免用单一分数盖住不同失败模式。</span>
-<span id="cb12-545"><a href="#cb12-545" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-546"><a href="#cb12-546" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb12-547"><a href="#cb12-547" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-548"><a href="#cb12-548" aria-hidden="true" tabindex="-1"></a>GEM 是带 GPR、化学计量、边界和培养基的约束系统；重点审计 gap filling、培养基依赖、泄漏与 MAG 不完整性。</span>
+<span id="cb12-521"><a href="#cb12-521" aria-hidden="true" tabindex="-1"></a>作图前先把数据整理成长表，不在 plotting code 内重算生物学结论：</span>
+<span id="cb12-522"><a href="#cb12-522" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-523"><a href="#cb12-523" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb12-524"><a href="#cb12-524" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(ggplot2)</span>
+<span id="cb12-525"><a href="#cb12-525" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260760</span>)</span>
+<span id="cb12-526"><a href="#cb12-526" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-527"><a href="#cb12-527" aria-hidden="true" tabindex="-1"></a>gap <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(</span>
+<span id="cb12-528"><a href="#cb12-528" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/small/60-genome-scale-models-frozen/gapfill-burden.tsv"</span>,</span>
+<span id="cb12-529"><a href="#cb12-529" aria-hidden="true" tabindex="-1"></a>  <span class="at">show_col_types =</span> <span class="cn">FALSE</span></span>
+<span id="cb12-530"><a href="#cb12-530" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb12-531"><a href="#cb12-531" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb12-532"><a href="#cb12-532" aria-hidden="true" tabindex="-1"></a>    <span class="at">AddedFractionOfFilledPct =</span> <span class="fu">as.numeric</span>(AddedFractionOfFilledPct),</span>
+<span id="cb12-533"><a href="#cb12-533" aria-hidden="true" tabindex="-1"></a>    <span class="at">Tool =</span> <span class="fu">factor</span>(Tool, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"gapseq"</span>, <span class="st">"CarveMe"</span>))</span>
+<span id="cb12-534"><a href="#cb12-534" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb12-535"><a href="#cb12-535" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-536"><a href="#cb12-536" aria-hidden="true" tabindex="-1"></a>p <span class="ot">&lt;-</span> gap <span class="sc">%&gt;%</span></span>
+<span id="cb12-537"><a href="#cb12-537" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">grepl</span>(<span class="st">"^SGB_"</span>, Genome)) <span class="sc">%&gt;%</span></span>
+<span id="cb12-538"><a href="#cb12-538" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">reorder</span>(Genome, AddedFractionOfFilledPct),</span>
+<span id="cb12-539"><a href="#cb12-539" aria-hidden="true" tabindex="-1"></a>             <span class="at">y =</span> AddedFractionOfFilledPct, <span class="at">fill =</span> Tool)) <span class="sc">+</span></span>
+<span id="cb12-540"><a href="#cb12-540" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.75</span>), <span class="at">width =</span> <span class="fl">0.68</span>) <span class="sc">+</span></span>
+<span id="cb12-541"><a href="#cb12-541" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">10</span>, <span class="at">linetype =</span> <span class="dv">2</span>, <span class="at">color =</span> pal_pub[[<span class="st">"Audit"</span>]]) <span class="sc">+</span></span>
+<span id="cb12-542"><a href="#cb12-542" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_pub</span>() <span class="sc">+</span></span>
+<span id="cb12-543"><a href="#cb12-543" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Quality-audited real MAG"</span>, <span class="at">y =</span> <span class="st">"Gap-fill burden (%)"</span>,</span>
+<span id="cb12-544"><a href="#cb12-544" aria-hidden="true" tabindex="-1"></a>       <span class="at">fill =</span> <span class="st">"Tool"</span>) <span class="sc">+</span></span>
+<span id="cb12-545"><a href="#cb12-545" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_pub</span>() <span class="sc">+</span> <span class="fu">coord_flip</span>()</span>
+<span id="cb12-546"><a href="#cb12-546" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-547"><a href="#cb12-547" aria-hidden="true" tabindex="-1"></a><span class="fu">save_pub</span>(p, <span class="st">"figures/60-gapfill-burden-replot"</span>)</span>
+<span id="cb12-548"><a href="#cb12-548" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb12-549"><a href="#cb12-549" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-550"><a href="#cb12-550" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb12-550"><a href="#cb12-550" aria-hidden="true" tabindex="-1"></a>模型大小使用 paired dumbbell，突出同一 genome 的 draft-to-filled 变化；feasibility 用 binary heatmap，不用连续渐变暗示 objective value 可跨工具比较；sensitivity 图保留实际 retained percentage；audit 图同时编码 repair、dead ends、genes 和 leaks，避免用单一分数盖住不同失败模式。</span>
 <span id="cb12-551"><a href="#cb12-551" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-552"><a href="#cb12-552" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>gapseq 方法、benchmark 与 gap-filling 设计：<span class="co">[</span><span class="ot">@zimmermann2021gapseq</span><span class="co">]</span>；本次 sequence DB 快照：<span class="co">[</span><span class="ot">@zimmermann2026gapseqdb</span><span class="co">]</span>；软件版本：<span class="co">[</span><span class="ot">@gapseq2026software</span><span class="co">]</span>。</span>
-<span id="cb12-553"><a href="#cb12-553" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CarveMe top-down reconstruction、gap filling 与 phenotype benchmark：<span class="co">[</span><span class="ot">@machado2018carveme</span><span class="co">]</span>；软件版本：<span class="co">[</span><span class="ot">@carveme2026software</span><span class="co">]</span>。</span>
-<span id="cb12-554"><a href="#cb12-554" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>FBA 的约束、objective 与解释边界：<span class="co">[</span><span class="ot">@orth2010fba</span><span class="co">]</span>。</span>
-<span id="cb12-555"><a href="#cb12-555" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GEM 的标准化质量测试与可复用性审计：<span class="co">[</span><span class="ot">@lieven2020memote</span><span class="co">]</span>。</span>
-<span id="cb12-556"><a href="#cb12-556" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真实 mock-community 数据：<span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。</span>
+<span id="cb12-552"><a href="#cb12-552" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb12-553"><a href="#cb12-553" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-554"><a href="#cb12-554" aria-hidden="true" tabindex="-1"></a>GEM 是带 GPR、化学计量、边界和培养基的约束系统；重点审计 gap filling、培养基依赖、泄漏与 MAG 不完整性。</span>
+<span id="cb12-555"><a href="#cb12-555" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-556"><a href="#cb12-556" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb12-557"><a href="#cb12-557" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-558"><a href="#cb12-558" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>gapseq 方法、benchmark 与 gap-filling 设计：<span class="co">[</span><span class="ot">@zimmermann2021gapseq</span><span class="co">]</span>；本次 sequence DB 快照：<span class="co">[</span><span class="ot">@zimmermann2026gapseqdb</span><span class="co">]</span>；软件版本：<span class="co">[</span><span class="ot">@gapseq2026software</span><span class="co">]</span>。</span>
+<span id="cb12-559"><a href="#cb12-559" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CarveMe top-down reconstruction、gap filling 与 phenotype benchmark：<span class="co">[</span><span class="ot">@machado2018carveme</span><span class="co">]</span>；软件版本：<span class="co">[</span><span class="ot">@carveme2026software</span><span class="co">]</span>。</span>
+<span id="cb12-560"><a href="#cb12-560" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>FBA 的约束、objective 与解释边界：<span class="co">[</span><span class="ot">@orth2010fba</span><span class="co">]</span>。</span>
+<span id="cb12-561"><a href="#cb12-561" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GEM 的标准化质量测试与可复用性审计：<span class="co">[</span><span class="ot">@lieven2020memote</span><span class="co">]</span>。</span>
+<span id="cb12-562"><a href="#cb12-562" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真实 mock-community 数据：<span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。</span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

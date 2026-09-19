@@ -918,7 +918,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">在 Windows 上建立可检查的 Linux 分析环境</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">在 Windows 上建立可检查的 Linux 分析环境</a>
+  <ul class="collapse">
+  <li><a href="#能创建环境还要确认命令实际从哪里运行" id="toc-能创建环境还要确认命令实际从哪里运行" class="nav-link" data-scroll-target="#能创建环境还要确认命令实际从哪里运行">能创建环境，还要确认命令实际从哪里运行</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#一次完整结果核对包含通过失败和明确未运行" id="toc-一次完整结果核对包含通过失败和明确未运行" class="nav-link" data-scroll-target="#一次完整结果核对包含通过失败和明确未运行">一次完整结果核对包含通过、失败和明确未运行</a></li>
   <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先锁定输入、版本和算力边界</a>
@@ -1021,7 +1024,7 @@ div.csl-indent {
     <div>
     <div class="quarto-title-meta-heading">发布于</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">2026年9月17日</p>
+      <p class="date">2026年9月19日</p>
     </div>
   </div>
   
@@ -1038,13 +1041,13 @@ div.csl-indent {
 <strong>真实数据：</strong>环境冒烟读取 Meslier 等 71-strain MOCK1 的已固化 ENA 证据 <span class="citation" data-cites="meslier2022platforms">(<a href="02-three-analysis-layers.html#ref-meslier2022platforms" role="doc-biblioref">Meslier 等 2022年</a>)</span>：project <code>PRJEB52977</code>、sample <code>SAMEA14435832</code>、4 个 checksum-identified FASTQ sources，以及 Illumina、历史 ONT R9、PacBio CCS 各 5,000 条 records 的 15,000 行指标。原始 FASTQ 不进入 Git。<br>
 <strong>预计资源：</strong>WSL2 与 Ubuntu 首次安装通常需 10–25 分钟并重启 Windows；Miniforge 和本文环境的求解/下载时间取决于网络与缓存。一次原生 Linux 实测解析为 71 个包，环境占用约 409 MB；验证约需 1 核、低于 1 GB RAM、1–2 分钟。若要继续完整 short-read QC 与 profiling，建议从 8 核、16–32 GB RAM、至少 200 GB Linux 侧可用磁盘起步；组装、分箱和大型数据库常需更高配置，必须按第 10–11 篇重新估算。没有服务器时，先用本章固化表完成学习和审计，把完整 FASTQ、数据库与组装任务提交到 HPC 或合规云环境。</p>
 </blockquote>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="能创建环境，还要确认命令实际从哪里运行">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>能创建环境，还要确认命令实际从哪里运行
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1053,13 +1056,7 @@ div.csl-indent {
 </div>
 <section id="sec-target" class="level2">
 <h2 class="anchored" data-anchor-id="sec-target">在 Windows 上建立可检查的 Linux 分析环境</h2>
-<p>环境搭建不产生生物学效应值，却决定论文中的命令能否被第三方重跑。它通常对应：</p>
-<ol type="1">
-<li>Methods 的 <strong>Computational environment</strong>，报告 host/guest 操作系统、软件环境、版本和文件系统；</li>
-<li>Supplementary Methods 的 <strong>reproducibility workflow</strong>，说明 Windows、WSL2、Linux、环境管理器、工具和数据的层次；</li>
-<li>代码仓库中的 machine-readable audit，保存环境文件 hash、包 build、输入 hash 和验收状态。</li>
-</ol>
-<p>关键不是截一张“终端没有报错”的图，而是把两个证据平面分开：</p>
+<p>Windows 的管理命令与 Ubuntu 内的分析命令属于不同执行层。安装环境之前先确认当前终端，否则同名命令可能指向不同软件：</p>
 <ul>
 <li><strong>Windows control plane</strong>：<code>wsl.exe --install</code>、<code>wsl.exe --update</code>、distribution 是否为 <code>VERSION 2</code>；</li>
 <li><strong>Linux execution plane</strong>：Linux kernel、架构、文件系统、<code>conda</code>/<code>mamba</code>、命名环境、命令入口和真实输入。</li>
@@ -1075,6 +1072,11 @@ div.csl-indent {
 </figure>
 </div>
 <p>这条边界非常重要。本仓库在原生 Ubuntu Linux 上执行了环境和数据审计，不能据此写成“已在 Windows 11 + WSL2 实测”。Windows 用户应在自己的 PowerShell 中补齐 <code>wsl.exe</code> 证据，再在 Ubuntu 中运行同一套 Linux 侧验证。</p>
+<section id="能创建环境还要确认命令实际从哪里运行" class="level3">
+<h3 class="anchored" data-anchor-id="能创建环境还要确认命令实际从哪里运行">能创建环境，还要确认命令实际从哪里运行</h3>
+<p>同名 Python 或 R 可以同时存在于 Windows、WSL、base 与项目环境中。排错时先确认当前终端、可执行路径和实际加载版本，再修改依赖；否则可能在一个环境安装包，却在另一个环境运行分析。把项目与高频读写放在合适的 Linux 文件系统，也比只增加线程更能避免不必要的 I/O 开销。</p>
+<p>本例已验证的是原生 Linux 执行层，不能把它冒充某台 Windows 电脑的 WSL 验收。Windows 虚拟化、发行版版本和资源分配仍需在读者机器上确认。后续重建环境时应使用与目标平台匹配的锁文件，而不是跨操作系统直接复制安装目录。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -2850,7 +2852,7 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb61-42"><a href="#cb61-42" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **真实数据：**环境冒烟读取 Meslier 等 71-strain MOCK1 的已固化 ENA 证据 </span><span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span><span class="at">：project </span><span class="in">`PRJEB52977`</span><span class="at">、sample </span><span class="in">`SAMEA14435832`</span><span class="at">、4 个 checksum-identified FASTQ sources，以及 Illumina、历史 ONT R9、PacBio CCS 各 5,000 条 records 的 15,000 行指标。原始 FASTQ 不进入 Git。</span>  </span>
 <span id="cb61-43"><a href="#cb61-43" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **预计资源：**WSL2 与 Ubuntu 首次安装通常需 10–25 分钟并重启 Windows；Miniforge 和本文环境的求解/下载时间取决于网络与缓存。一次原生 Linux 实测解析为 71 个包，环境占用约 409 MB；验证约需 1 核、低于 1 GB RAM、1–2 分钟。若要继续完整 short-read QC 与 profiling，建议从 8 核、16–32 GB RAM、至少 200 GB Linux 侧可用磁盘起步；组装、分箱和大型数据库常需更高配置，必须按第 10–11 篇重新估算。没有服务器时，先用本章固化表完成学习和审计，把完整 FASTQ、数据库与组装任务提交到 HPC 或合规云环境。</span></span>
 <span id="cb61-44"><a href="#cb61-44" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-45"><a href="#cb61-45" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb61-45"><a href="#cb61-45" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="能创建环境，还要确认命令实际从哪里运行"}</span>
 <span id="cb61-46"><a href="#cb61-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb61-47"><a href="#cb61-47" aria-hidden="true" tabindex="-1"></a>区分 Windows 管理命令与 Linux 分析命令；环境创建成功后，还要检查实际工具入口。</span>
 <span id="cb61-48"><a href="#cb61-48" aria-hidden="true" tabindex="-1"></a></span>
@@ -2858,20 +2860,20 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb61-50"><a href="#cb61-50" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb61-51"><a href="#cb61-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## 在 Windows 上建立可检查的 Linux 分析环境 {#sec-target}</span></span>
 <span id="cb61-52"><a href="#cb61-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-53"><a href="#cb61-53" aria-hidden="true" tabindex="-1"></a>环境搭建不产生生物学效应值，却决定论文中的命令能否被第三方重跑。它通常对应：</span>
+<span id="cb61-53"><a href="#cb61-53" aria-hidden="true" tabindex="-1"></a>Windows 的管理命令与 Ubuntu 内的分析命令属于不同执行层。安装环境之前先确认当前终端，否则同名命令可能指向不同软件：</span>
 <span id="cb61-54"><a href="#cb61-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-55"><a href="#cb61-55" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Methods 的 **Computational environment**，报告 host/guest 操作系统、软件环境、版本和文件系统；</span>
-<span id="cb61-56"><a href="#cb61-56" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Supplementary Methods 的 **reproducibility workflow**，说明 Windows、WSL2、Linux、环境管理器、工具和数据的层次；</span>
-<span id="cb61-57"><a href="#cb61-57" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>代码仓库中的 machine-readable audit，保存环境文件 hash、包 build、输入 hash 和验收状态。</span>
-<span id="cb61-58"><a href="#cb61-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-59"><a href="#cb61-59" aria-hidden="true" tabindex="-1"></a>关键不是截一张“终端没有报错”的图，而是把两个证据平面分开：</span>
-<span id="cb61-60"><a href="#cb61-60" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-61"><a href="#cb61-61" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Windows control plane**：<span class="in">`wsl.exe --install`</span>、<span class="in">`wsl.exe --update`</span>、distribution 是否为 <span class="in">`VERSION 2`</span>；</span>
-<span id="cb61-62"><a href="#cb61-62" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Linux execution plane**：Linux kernel、架构、文件系统、<span class="in">`conda`</span>/<span class="in">`mamba`</span>、命名环境、命令入口和真实输入。</span>
+<span id="cb61-55"><a href="#cb61-55" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Windows control plane**：<span class="in">`wsl.exe --install`</span>、<span class="in">`wsl.exe --update`</span>、distribution 是否为 <span class="in">`VERSION 2`</span>；</span>
+<span id="cb61-56"><a href="#cb61-56" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>**Linux execution plane**：Linux kernel、架构、文件系统、<span class="in">`conda`</span>/<span class="in">`mamba`</span>、命名环境、命令入口和真实输入。</span>
+<span id="cb61-57"><a href="#cb61-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-58"><a href="#cb61-58" aria-hidden="true" tabindex="-1"></a><span class="al">![Windows 侧指令与 Linux 侧实测证据必须分开报告。本仓库验证机是原生 Linux，因此 Windows control plane 保留为待 Windows 主机验证。](../figures/09-wsl2-layer-map.png)</span>{#fig-wsl2-layer-map}</span>
+<span id="cb61-59"><a href="#cb61-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-60"><a href="#cb61-60" aria-hidden="true" tabindex="-1"></a>这条边界非常重要。本仓库在原生 Ubuntu Linux 上执行了环境和数据审计，不能据此写成“已在 Windows 11 + WSL2 实测”。Windows 用户应在自己的 PowerShell 中补齐 <span class="in">`wsl.exe`</span> 证据，再在 Ubuntu 中运行同一套 Linux 侧验证。</span>
+<span id="cb61-61"><a href="#cb61-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-62"><a href="#cb61-62" aria-hidden="true" tabindex="-1"></a><span class="fu">### 能创建环境，还要确认命令实际从哪里运行</span></span>
 <span id="cb61-63"><a href="#cb61-63" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-64"><a href="#cb61-64" aria-hidden="true" tabindex="-1"></a><span class="al">![Windows 侧指令与 Linux 侧实测证据必须分开报告。本仓库验证机是原生 Linux，因此 Windows control plane 保留为待 Windows 主机验证。](../figures/09-wsl2-layer-map.png)</span>{#fig-wsl2-layer-map}</span>
+<span id="cb61-64"><a href="#cb61-64" aria-hidden="true" tabindex="-1"></a>同名 Python 或 R 可以同时存在于 Windows、WSL、base 与项目环境中。排错时先确认当前终端、可执行路径和实际加载版本，再修改依赖；否则可能在一个环境安装包，却在另一个环境运行分析。把项目与高频读写放在合适的 Linux 文件系统，也比只增加线程更能避免不必要的 I/O 开销。</span>
 <span id="cb61-65"><a href="#cb61-65" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb61-66"><a href="#cb61-66" aria-hidden="true" tabindex="-1"></a>这条边界非常重要。本仓库在原生 Ubuntu Linux 上执行了环境和数据审计，不能据此写成“已在 Windows 11 + WSL2 实测”。Windows 用户应在自己的 PowerShell 中补齐 <span class="in">`wsl.exe`</span> 证据，再在 Ubuntu 中运行同一套 Linux 侧验证。</span>
+<span id="cb61-66"><a href="#cb61-66" aria-hidden="true" tabindex="-1"></a>本例已验证的是原生 Linux 执行层，不能把它冒充某台 Windows 电脑的 WSL 验收。Windows 虚拟化、发行版版本和资源分配仍需在读者机器上确认。后续重建环境时应使用与目标平台匹配的锁文件，而不是跨操作系统直接复制安装目录。</span>
 <span id="cb61-67"><a href="#cb61-67" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb61-68"><a href="#cb61-68" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
 <span id="cb61-69"><a href="#cb61-69" aria-hidden="true" tabindex="-1"></a></span>

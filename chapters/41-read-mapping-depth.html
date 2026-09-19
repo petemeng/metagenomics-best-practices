@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">平均深度相近，覆盖范围也相同吗？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">平均深度相近，覆盖范围也相同吗？</a>
+  <ul class="collapse">
+  <li><a href="#相同平均深度为什么覆盖证据可能完全不同" id="toc-相同平均深度为什么覆盖证据可能完全不同" class="nav-link" data-scroll-target="#相同平均深度为什么覆盖证据可能完全不同">相同平均深度，为什么覆盖证据可能完全不同？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -990,7 +1022,7 @@ div.csl-indent {
 
 
 <blockquote class="blockquote">
-<p><strong>先给结论：</strong>回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity &gt;=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 <code>log1p(depth)</code> 的 Pearson (r=0.792)、Spearman ()。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。</p>
+<p><strong>先给结论：</strong>回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity &gt;=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 <code>log1p(depth)</code> 的 Pearson (r=0.792)、Spearman <span class="math inline">\(\rho=0.483\)</span>。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。</p>
 </blockquote>
 <div class="callout callout-style-default callout-important callout-titled" title="算力与数据边界">
 <div class="callout-header d-flex align-content-center">
@@ -1005,13 +1037,13 @@ div.csl-indent {
 <p>本次用 24 CPU cores 建索引、16 cores 比对，两个样本各约 200 万 read pairs。Bowtie2 建索引用时 45 秒、peak RAM 0.58 GiB；每个样本的比对与排序用时 59–63 秒、peak RAM 1.35 GiB；整个工作目录占 769 MB，其中两个 BAM 合计约 554 MB。建议预留 <strong>16 GB RAM、24 CPU cores、20 GB 可用磁盘，预计耗时 30 分钟</strong>。真实队列的 BAM 通常接近或超过压缩 FASTQ 体积，磁盘应按样本数线性预估；没有服务器时，可读取 <code>data/small/41-read-mapping-depth-frozen/</code> 中的完整 JGI 矩阵、paired-contig 证据、日志与汇总表。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="相同平均深度，为什么覆盖证据可能完全不同">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>相同平均深度，为什么覆盖证据可能完全不同
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1032,6 +1064,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="相同平均深度为什么覆盖证据可能完全不同" class="level3">
+<h3 class="anchored" data-anchor-id="相同平均深度为什么覆盖证据可能完全不同">相同平均深度，为什么覆盖证据可能完全不同？</h3>
+<p>平均值可以由少数高覆盖区域拉高；breadth 则说明有多少参考位置得到支持。多重比对或保守区域富集时，高 depth 与低 breadth 可以同时出现。因此检出、丰度和分箱输入要分别说明各自使用的覆盖统计，不能只保留一个均值。</p>
+<p>深度矩阵还必须使用同一个 contig 坐标与样本顺序。两个样本几乎所有 contigs 都有正深度，不意味着它们具有足够不同的共丰度轨迹来区分基因组。样本间信息相近时，分箱仍需要其他证据；增加矩阵列名并不等于增加独立的覆盖变化。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1329,8 +1366,12 @@ div.csl-indent {
 <h2 class="anchored" data-anchor-id="读取-compact-matrix-并复核">读取 compact matrix 并复核</h2>
 <section id="mean-depth-与-breadth-回答不同问题" class="level3">
 <h3 class="anchored" data-anchor-id="mean-depth-与-breadth-回答不同问题">Mean depth 与 breadth 回答不同问题</h3>
-<p>对长度为 (L_c) 的 contig (c)，碱基深度为 (d_{ci})：</p>
-<p>[ d_c=<em>{i=1}^{L_c}d</em>{ci}, B_c=100. ]</p>
+<p>对长度为 <span class="math inline">\(L_c\)</span> 的 contig <span class="math inline">\(c\)</span>，碱基深度为 <span class="math inline">\(d_{ci}\)</span>：</p>
+<p><span class="math display">\[
+\bar d_c=\frac{1}{L_c}\sum_{i=1}^{L_c}d_{ci},
+\qquad
+B_c=100\frac{\sum_i I(d_{ci}&gt;0)}{L_c}.
+\]</span></p>
 <p>一个短重复区吸附大量 reads 时，mean depth 可以很高但 breadth 很低；一个低丰度 genome 的 contig 可能 breadth 很高而 mean depth 只有 1–2x。分箱常用 mean depth 形成多样本 abundance vector，污染审计则应同时看 breadth、MAPQ 和局部深度异常。</p>
 <div class="cell">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/41-read-mapping-depth-frozen"</span></span>
@@ -1976,13 +2017,13 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> upstream</span></span>
 <span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity &gt;=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 </span><span class="in">`log1p(depth)`</span><span class="at"> 的 Pearson (r=0.792)、Spearman </span><span class="sc">\(</span><span class="at">\rho=0.483</span><span class="sc">\)</span><span class="at">。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**回帖率（read recruitment）、覆盖广度（breadth）与平均深度（mean depth）不是同一个指标。两份约 200 万对的真实 mock clean reads 回比同一套 18,354 条、84.81 Mb 的 MEGAHIT 共组装后，Bowtie2 总体比对率为 87.48%/87.25%，组装碱基覆盖广度为 95.30%/95.10%；JGI 以端到端 identity &gt;=97% 汇总后的长度加权平均深度为 5.813x/5.787x。18,353 条 contigs 在两个样本中同时获得正深度，但 </span><span class="in">`log1p(depth)`</span><span class="at"> 的 Pearson (r=0.792)、Spearman $\rho=0.483$。因此，深度矩阵能为分箱提供共丰度信号，却不能替代序列组成，也不能把“检出”误写成“稳定丰度”。</span></span>
 <span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据边界"}</span>
 <span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>本次用 24 CPU cores 建索引、16 cores 比对，两个样本各约 200 万 read pairs。Bowtie2 建索引用时 45 秒、peak RAM 0.58 GiB；每个样本的比对与排序用时 59--63 秒、peak RAM 1.35 GiB；整个工作目录占 769 MB，其中两个 BAM 合计约 554 MB。建议预留 **16 GB RAM、24 CPU cores、20 GB 可用磁盘，预计耗时 30 分钟**。真实队列的 BAM 通常接近或超过压缩 FASTQ 体积，磁盘应按样本数线性预估；没有服务器时，可读取 <span class="in">`data/small/41-read-mapping-depth-frozen/`</span> 中的完整 JGI 矩阵、paired-contig 证据、日志与汇总表。</span>
 <span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="相同平均深度，为什么覆盖证据可能完全不同"}</span>
 <span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>把 depth 与 breadth 分开看；多重比对和配对规则会影响深度矩阵，不能只靠均值筛选。</span>
 <span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -1996,305 +2037,311 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a><span class="al">![同一共组装坐标系上的两样本 JGI 深度；相关但不完全相同的共丰度为分箱提供信息。](../figures/41-depth-concordance.png)</span>{#fig-41-depth}</span>
 <span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a><span class="fu">### 相同平均深度，为什么覆盖证据可能完全不同？</span></span>
 <span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/41/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 4.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>平均值可以由少数高覆盖区域拉高；breadth 则说明有多少参考位置得到支持。多重比对或保守区域富集时，高 depth 与低 breadth 可以同时出现。因此检出、丰度和分箱输入要分别说明各自使用的覆盖统计，不能只保留一个均值。</span>
 <span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/41/download.R)</span>。</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>深度矩阵还必须使用同一个 contig 坐标与样本顺序。两个样本几乎所有 contigs 都有正深度，不意味着它们具有足够不同的共丰度轨迹来区分基因组。样本间信息相近时，分箱仍需要其他证据；增加矩阵列名并不等于增加独立的覆盖变化。</span>
 <span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-41</span></span>
-<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/41/files.tsv"</span>))</span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
-<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实数据与 lineage</span></span>
-<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 标识符 <span class="pp">|</span> 角色 <span class="pp">|</span></span>
-<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK1 clean paired reads <span class="pp">|</span> PRJEB52977 / ERR9765746；1,999,853 pairs <span class="pp">|</span> 含 71 strains 的不均一 DNA mock <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
-<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK2 clean paired reads <span class="pp">|</span> PRJEB52977 / ERR9765747；1,999,888 pairs <span class="pp">|</span> 含 87 strains 的不均一 DNA mock <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
-<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEGAHIT co-assembly <span class="pp">|</span> 18,354 contigs &gt;=1 kb；84,811,518 bp；N50 15,928 bp <span class="pp">|</span> 两个 mock 的共同 mapping 坐标系 <span class="pp">|</span></span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/41/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 4.1 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/41/download.R)</span>。</span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-41</span></span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/41/files.tsv"</span>))</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实数据与 lineage</span></span>
 <span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a>FASTQ 来自每个 ENA run 的无放回固定 200 万 pairs 子集，经 fastp Q20/长度过滤；共组装来自相同 clean reads。准备器重新核对四个 FASTQ、压缩 assembly 与解压 assembly 的 SHA-256，并要求 contig 数、总长度和最短长度满足合同。</span>
-<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="dt">\</span></span>
-<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/assembly-linux-64.lock</span>
-<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate metagenome-assembly-2026.07</span>
-<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="ex">bowtie2</span> <span class="at">--version</span></span>
-<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> <span class="at">--version</span></span>
-<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="ex">jgi_summarize_bam_contig_depths</span></span>
-<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>))</span>
-<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
-<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260741</span>)</span>
-<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a>  <span class="at">MOCK1 =</span> <span class="st">"#0072B2"</span>, <span class="at">MOCK2 =</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">No concordant alignment</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#BDBDBD"</span>,</span>
-<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Unique concordant alignment</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#009E73"</span>,</span>
-<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Multiple concordant alignments</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
-<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">180</span>, <span class="at">height =</span> <span class="dv">120</span>,</span>
-<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 checksum-locked 输入 {#sec-code}</span></span>
-<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a><span class="fu">### “比对上”至少有四层分母 {#sec-theory}</span></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 标识符 <span class="pp">|</span> 角色 <span class="pp">|</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK1 clean paired reads <span class="pp">|</span> PRJEB52977 / ERR9765746；1,999,853 pairs <span class="pp">|</span> 含 71 strains 的不均一 DNA mock <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK2 clean paired reads <span class="pp">|</span> PRJEB52977 / ERR9765747；1,999,888 pairs <span class="pp">|</span> 含 87 strains 的不均一 DNA mock <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span> <span class="pp">|</span></span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEGAHIT co-assembly <span class="pp">|</span> 18,354 contigs &gt;=1 kb；84,811,518 bp；N50 15,928 bp <span class="pp">|</span> 两个 mock 的共同 mapping 坐标系 <span class="pp">|</span></span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a>FASTQ 来自每个 ENA run 的无放回固定 200 万 pairs 子集，经 fastp Q20/长度过滤；共组装来自相同 clean reads。准备器重新核对四个 FASTQ、压缩 assembly 与解压 assembly 的 SHA-256，并要求 contig 数、总长度和最短长度满足合同。</span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="dt">\</span></span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate metagenome-assembly-2026.07</span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="ex">bowtie2</span> <span class="at">--version</span></span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> <span class="at">--version</span></span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="ex">jgi_summarize_bam_contig_depths</span></span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>))</span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260741</span>)</span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">MOCK1 =</span> <span class="st">"#0072B2"</span>, <span class="at">MOCK2 =</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">No concordant alignment</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#BDBDBD"</span>,</span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Unique concordant alignment</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#009E73"</span>,</span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Multiple concordant alignments</span><span class="st">`</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">180</span>, <span class="at">height =</span> <span class="dv">120</span>,</span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Bowtie2 的 overall alignment rate：至少一个 mate 获得 alignment 的 reads 比例，包含 concordant、discordant 与 singleton 情况 <span class="co">[</span><span class="ot">@langmead2012bowtie2</span><span class="co">]</span>。</span>
-<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>paired alignment fate：read pairs 被分为 concordantly 0 次、恰好 1 次和多次，三类必须闭合到输入 pair 总数。</span>
-<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>BAM record：经过 SAM flag、MAPQ、identity、alignment length 等策略后真正进入计数的 alignment records <span class="co">[</span><span class="ot">@li2009samtools</span><span class="co">]</span>。</span>
-<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>contig depth/breadth：以 assembly bases 或 contigs 为分母聚合，不再以 reads 为分母。</span>
-<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>这四个比例数值接近时也不能互换。Methods 必须同时写 numerator、denominator 和过滤策略。</span>
-<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article41"</span></span>
-<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
-<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article41_mapping_depth.py <span class="dt">\</span></span>
-<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span></span>
-<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a>准备器要求 Bowtie2 2.5.5、SAMtools 1.23.1 和 MetaBAT2 depth utility 2.18。<span class="in">`inputs/samples.tsv`</span> 写入 run accession、clean pair 数和 FASTQ 绝对路径；<span class="in">`input-audit.tsv`</span> 与 <span class="in">`input-lineage.tsv`</span> 保存身份与来源。</span>
-<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从一个 mapping rate 升级为分层 ledger {#sec-audit}</span></span>
-<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a>MOCK1 的 87.48% overall alignment 并不等于 62.54% unique concordant pairs，也不等于 95.30% assembly breadth。前者可包含 discordant/singleton alignment，第二个以 read pairs 为分母，第三个以 assembly bases 为分母。出版表应分别命名，禁止统称为 <span class="in">`mapping percentage`</span>。</span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 checksum-locked 输入 {#sec-code}</span></span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a><span class="fu">### “比对上”至少有四层分母 {#sec-theory}</span></span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Bowtie2 的 overall alignment rate：至少一个 mate 获得 alignment 的 reads 比例，包含 concordant、discordant 与 singleton 情况 <span class="co">[</span><span class="ot">@langmead2012bowtie2</span><span class="co">]</span>。</span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>paired alignment fate：read pairs 被分为 concordantly 0 次、恰好 1 次和多次，三类必须闭合到输入 pair 总数。</span>
+<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>BAM record：经过 SAM flag、MAPQ、identity、alignment length 等策略后真正进入计数的 alignment records <span class="co">[</span><span class="ot">@li2009samtools</span><span class="co">]</span>。</span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>contig depth/breadth：以 assembly bases 或 contigs 为分母聚合，不再以 reads 为分母。</span>
+<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>这四个比例数值接近时也不能互换。Methods 必须同时写 numerator、denominator 和过滤策略。</span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article41"</span></span>
+<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article41_mapping_depth.py <span class="dt">\</span></span>
+<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a>  <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span></span>
+<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a><span class="fu">### BWA/Bowtie2 的替换边界</span></span>
+<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a>准备器要求 Bowtie2 2.5.5、SAMtools 1.23.1 和 MetaBAT2 depth utility 2.18。<span class="in">`inputs/samples.tsv`</span> 写入 run accession、clean pair 数和 FASTQ 绝对路径；<span class="in">`input-audit.tsv`</span> 与 <span class="in">`input-lineage.tsv`</span> 保存身份与来源。</span>
 <span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a>BWA-MEM 与 Bowtie2 都可用于短读回比 <span class="co">[</span><span class="ot">@li2009bwa; @langmead2012bowtie2</span><span class="co">]</span>。真正决定可比性的不是工具名，而是 reference FASTA、paired/single 模式、secondary/supplementary policy、MAPQ、identity、最短 alignment、duplicate 与 overlap 处理。更换 aligner 时，必须重新生成完整 BAM 和 depth matrix，不能只替换 Methods 中的软件名。</span>
+<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从一个 mapping rate 升级为分层 ledger {#sec-audit}</span></span>
 <span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立索引并逐样本回比</span></span>
+<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a>MOCK1 的 87.48% overall alignment 并不等于 62.54% unique concordant pairs，也不等于 95.30% assembly breadth。前者可包含 discordant/singleton alignment，第二个以 read pairs 为分母，第三个以 assembly bases 为分母。出版表应分别命名，禁止统称为 <span class="in">`mapping percentage`</span>。</span>
 <span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article41_mapping_depth.py <span class="dt">\</span></span>
-<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 24</span>
-<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a><span class="fu">### BWA/Bowtie2 的替换边界</span></span>
+<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a>BWA-MEM 与 Bowtie2 都可用于短读回比 <span class="co">[</span><span class="ot">@li2009bwa; @langmead2012bowtie2</span><span class="co">]</span>。真正决定可比性的不是工具名，而是 reference FASTA、paired/single 模式、secondary/supplementary policy、MAPQ、identity、最短 alignment、duplicate 与 overlap 处理。更换 aligner 时，必须重新生成完整 BAM 和 depth matrix，不能只替换 Methods 中的软件名。</span>
+<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立索引并逐样本回比</span></span>
 <span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a>核心命令展开如下：</span>
-<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a><span class="ex">bowtie2</span> <span class="at">--very-sensitive</span> <span class="at">--seed</span> 20260741 <span class="at">-p</span> 16 <span class="dt">\</span></span>
-<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a>  <span class="at">-x</span> work/article41/index/megahit-coassembly.ge1000 <span class="dt">\</span></span>
-<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> SAMPLE_R1.fastq.gz <span class="at">-2</span> SAMPLE_R2.fastq.gz <span class="dv">2</span><span class="op">&gt;</span> SAMPLE.bowtie2.log <span class="kw">|</span></span>
-<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> view <span class="at">-@</span> 4 <span class="at">-b</span> <span class="at">-F</span> 3588 <span class="at">-q</span> 0 <span class="at">-</span> <span class="kw">|</span></span>
-<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> sort <span class="at">-@</span> 8 <span class="at">-m</span> 2G <span class="at">-o</span> SAMPLE.primary.sorted.bam <span class="at">-</span></span>
-<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index <span class="at">-@</span> 8 SAMPLE.primary.sorted.bam</span>
-<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a>Bowtie2 默认只报告一个 selected alignment，不启用 <span class="in">`-a/-k`</span>；<span class="in">`-F 3588`</span> 排除 unmapped、QC-fail、duplicate 与 supplementary records。主账本保留 MAPQ 0，让 multi-mapping 的不确定性保持可见；若研究问题需要 strain-resolved SNP，必须改用更严格且预注册的 alignment policy。</span>
-<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 隐藏 multi-mapping policy"}</span>
-<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a>MAPQ 0 会保留重复区的 selected alignments；MAPQ 10/20 会改变 depth mass 与低丰度 contig。阈值应在看结果前固定，并做 sensitivity branch。</span>
-<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article41_mapping_depth.py <span class="dt">\</span></span>
+<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 24</span>
+<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a>核心命令展开如下：</span>
+<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a><span class="ex">bowtie2</span> <span class="at">--very-sensitive</span> <span class="at">--seed</span> 20260741 <span class="at">-p</span> 16 <span class="dt">\</span></span>
+<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a>  <span class="at">-x</span> work/article41/index/megahit-coassembly.ge1000 <span class="dt">\</span></span>
+<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a>  <span class="at">-1</span> SAMPLE_R1.fastq.gz <span class="at">-2</span> SAMPLE_R2.fastq.gz <span class="dv">2</span><span class="op">&gt;</span> SAMPLE.bowtie2.log <span class="kw">|</span></span>
+<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> view <span class="at">-@</span> 4 <span class="at">-b</span> <span class="at">-F</span> 3588 <span class="at">-q</span> 0 <span class="at">-</span> <span class="kw">|</span></span>
+<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a>  <span class="ex">samtools</span> sort <span class="at">-@</span> 8 <span class="at">-m</span> 2G <span class="at">-o</span> SAMPLE.primary.sorted.bam <span class="at">-</span></span>
+<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="ex">samtools</span> index <span class="at">-@</span> 8 SAMPLE.primary.sorted.bam</span>
+<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成 JGI 多样本矩阵</span></span>
+<span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a>Bowtie2 默认只报告一个 selected alignment，不启用 <span class="in">`-a/-k`</span>；<span class="in">`-F 3588`</span> 排除 unmapped、QC-fail、duplicate 与 supplementary records。主账本保留 MAPQ 0，让 multi-mapping 的不确定性保持可见；若研究问题需要 strain-resolved SNP，必须改用更严格且预注册的 alignment policy。</span>
 <span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a><span class="fu">### JGI depth 不是 `samtools coverage` 的改名</span></span>
-<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a><span class="in">`jgi_summarize_bam_contig_depths`</span> 会按 contig 和 BAM 汇总平均深度与方差，并可应用端到端 identity、MAPQ 和 contig-edge 规则。主分支固定 <span class="in">`--percentIdentity 97 --minMapQual 0`</span>；<span class="in">`samtools coverage`</span> 则读取已过滤 BAM，作为独立 breadth/mean-depth 账本。两个长度加权 mean depth 相差约 5%，正是统计口径不同的结果，不应强行要求相等。</span>
+<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 隐藏 multi-mapping policy"}</span>
+<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a>MAPQ 0 会保留重复区的 selected alignments；MAPQ 10/20 会改变 depth mass 与低丰度 contig。阈值应在看结果前固定，并做 sensitivity branch。</span>
+<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a><span class="fu">### 多样本深度只有在坐标和设计一致时才有意义</span></span>
+<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成 JGI 多样本矩阵</span></span>
 <span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a>深度矩阵每一行必须对应同一条 assembly contig，每一列必须对应一个独立 library。不能把不同 assembly 的同名 contig 拼接，也不能把同一 library 的技术拆分伪装成 biological replicates。批次、测序深度、样本组成与 strain sharing 都会改变 depth correlation。</span>
+<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a><span class="fu">### JGI depth 不是 `samtools coverage` 的改名</span></span>
 <span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a><span class="ex">jgi_summarize_bam_contig_depths</span> <span class="dt">\</span></span>
-<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outputDepth</span> work/article41/depth/jgi-depth.tsv <span class="dt">\</span></span>
-<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pairedContigs</span> work/article41/depth/paired-contigs.tsv <span class="dt">\</span></span>
-<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a>  <span class="at">--percentIdentity</span> 97 <span class="at">--minMapQual</span> 0 <span class="dt">\</span></span>
-<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a>  <span class="at">--referenceFasta</span> work/article41/inputs/megahit-coassembly.ge1000.fna <span class="dt">\</span></span>
-<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a>  work/article41/bam/MOCK1.primary.sorted.bam <span class="dt">\</span></span>
-<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a>  work/article41/bam/MOCK2.primary.sorted.bam</span>
-<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a><span class="in">`paired-contigs.tsv`</span> 保留 read-pair 支持的 contig linkage；不能只保存 depth table 后删除所有关联证据。JGI 输出中 <span class="in">`contigName/contigLen/totalAvgDepth`</span> 后面每个 BAM 占两列：mean depth 与 variance。</span>
-<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 mean depth 升级为 depth + variance + breadth</span></span>
-<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a>JGI 长度加权 depth 为 5.813x/5.787x，SAMtools 账本为 6.143x/6.119x。差异来自 JGI 的 97% identity 与 edge 规则。把两者做成独立列，可以定位短 contig、边缘堆积、低 identity 和局部重复造成的异常，而不是选一个更“好看”的数。</span>
+<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="in">`jgi_summarize_bam_contig_depths`</span> 会按 contig 和 BAM 汇总平均深度与方差，并可应用端到端 identity、MAPQ 和 contig-edge 规则。主分支固定 <span class="in">`--percentIdentity 97 --minMapQual 0`</span>；<span class="in">`samtools coverage`</span> 则读取已过滤 BAM，作为独立 breadth/mean-depth 账本。两个长度加权 mean depth 相差约 5%，正是统计口径不同的结果，不应强行要求相等。</span>
+<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a><span class="fu">### 多样本深度只有在坐标和设计一致时才有意义</span></span>
+<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a>深度矩阵每一行必须对应同一条 assembly contig，每一列必须对应一个独立 library。不能把不同 assembly 的同名 contig 拼接，也不能把同一 library 的技术拆分伪装成 biological replicates。批次、测序深度、样本组成与 strain sharing 都会改变 depth correlation。</span>
+<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a><span class="ex">jgi_summarize_bam_contig_depths</span> <span class="dt">\</span></span>
+<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a>  <span class="at">--outputDepth</span> work/article41/depth/jgi-depth.tsv <span class="dt">\</span></span>
+<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pairedContigs</span> work/article41/depth/paired-contigs.tsv <span class="dt">\</span></span>
+<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a>  <span class="at">--percentIdentity</span> 97 <span class="at">--minMapQual</span> 0 <span class="dt">\</span></span>
+<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a>  <span class="at">--referenceFasta</span> work/article41/inputs/megahit-coassembly.ge1000.fna <span class="dt">\</span></span>
+<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a>  work/article41/bam/MOCK1.primary.sorted.bam <span class="dt">\</span></span>
+<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a>  work/article41/bam/MOCK2.primary.sorted.bam</span>
+<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 每个样本各组装、再按 contig 名拼 depth"}</span>
-<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a>不同 assembly 的 <span class="in">`k141_123`</span> 没有共同坐标含义。多样本 depth 必须回比同一个 assembly FASTA，并核对每行 contig length。</span>
-<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a><span class="in">`paired-contigs.tsv`</span> 保留 read-pair 支持的 contig linkage；不能只保存 depth table 后删除所有关联证据。JGI 输出中 <span class="in">`contigName/contigLen/totalAvgDepth`</span> 后面每个 BAM 占两列：mean depth 与 variance。</span>
+<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 mean depth 升级为 depth + variance + breadth</span></span>
 <span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. BAM 没排序或 reference 不一致"}</span>
-<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a>JGI 工具要求 coordinate-sorted BAM；BAM header、FASTA 与 <span class="in">`.fai`</span> 的 sequence 名和长度必须一致。只改 FASTA header 就会破坏合同。</span>
-<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 mean depth 当作均匀覆盖"}</span>
-<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a>同样的 5x mean depth 可以来自全长约 5x，也可以来自 10% 区域约 50x。必须并列报告 breadth、variance 和局部 coverage 轨迹。</span>
-<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立守恒记录表</span></span>
+<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>JGI 长度加权 depth 为 5.813x/5.787x，SAMtools 账本为 6.143x/6.119x。差异来自 JGI 的 97% identity 与 edge 规则。把两者做成独立列，可以定位短 contig、边缘堆积、低 identity 和局部重复造成的异常，而不是选一个更“好看”的数。</span>
+<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 每个样本各组装、再按 contig 名拼 depth"}</span>
+<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a>不同 assembly 的 <span class="in">`k141_123`</span> 没有共同坐标含义。多样本 depth 必须回比同一个 assembly FASTA，并核对每行 contig length。</span>
+<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. BAM 没排序或 reference 不一致"}</span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>JGI 工具要求 coordinate-sorted BAM；BAM header、FASTA 与 <span class="in">`.fai`</span> 的 sequence 名和长度必须一致。只改 FASTA header 就会破坏合同。</span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article41_mapping_depth.py <span class="dt">\</span></span>
-<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 mean depth 当作均匀覆盖"}</span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>同样的 5x mean depth 可以来自全长约 5x，也可以来自 10% 区域约 50x。必须并列报告 breadth、variance 和局部 coverage 轨迹。</span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mapping-summary.tsv"</span></span>
-<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/depth-summary.tsv"</span></span>
-<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Sample <span class="pp">|</span> Input pairs <span class="pp">|</span> Concordant 0 <span class="pp">|</span> Concordant once <span class="pp">|</span> Concordant multiple <span class="pp">|</span> Overall alignment <span class="pp">|</span> Assembly breadth <span class="pp">|</span></span>
-<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|---:|---:|</span></span>
-<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK1 <span class="pp">|</span> 1,999,853 <span class="pp">|</span> 730,631 <span class="pp">|</span> 1,250,638 <span class="pp">|</span> 18,584 <span class="pp">|</span> 87.48% <span class="pp">|</span> 95.30% <span class="pp">|</span></span>
-<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK2 <span class="pp">|</span> 1,999,888 <span class="pp">|</span> 650,532 <span class="pp">|</span> 1,329,470 <span class="pp">|</span> 19,886 <span class="pp">|</span> 87.25% <span class="pp">|</span> 95.10% <span class="pp">|</span></span>
-<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>三类 concordant fate 对每个样本精确闭合到输入 pairs；coverage 与 JGI 表都必须精确覆盖 18,354 条 assembly contigs。任何丢行、重名或长度不一致都会终止汇总。</span>
-<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a><span class="al">![输入 read pairs 的 Bowtie2 concordant fate；三段之和精确为 100%。](../figures/41-mapping-fate.png)</span>{#fig-41-fate}</span>
-<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 overall alignment 当作 proper pairs"}</span>
-<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a>Bowtie2 overall rate 与 concordant/properly paired 分母不同。至少同时保留 Bowtie2 log、<span class="in">`samtools flagstat`</span> 和输入 pair ledger。</span>
-<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立守恒记录表</span></span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article41_mapping_depth.py <span class="dt">\</span></span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mapping-summary.tsv"</span></span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/depth-summary.tsv"</span></span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Sample <span class="pp">|</span> Input pairs <span class="pp">|</span> Concordant 0 <span class="pp">|</span> Concordant once <span class="pp">|</span> Concordant multiple <span class="pp">|</span> Overall alignment <span class="pp">|</span> Assembly breadth <span class="pp">|</span></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---:|---:|---:|---:|---:|</span></span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK1 <span class="pp">|</span> 1,999,853 <span class="pp">|</span> 730,631 <span class="pp">|</span> 1,250,638 <span class="pp">|</span> 18,584 <span class="pp">|</span> 87.48% <span class="pp">|</span> 95.30% <span class="pp">|</span></span>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MOCK2 <span class="pp">|</span> 1,999,888 <span class="pp">|</span> 650,532 <span class="pp">|</span> 1,329,470 <span class="pp">|</span> 19,886 <span class="pp">|</span> 87.25% <span class="pp">|</span> 95.10% <span class="pp">|</span></span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>三类 concordant fate 对每个样本精确闭合到输入 pairs；coverage 与 JGI 表都必须精确覆盖 18,354 条 assembly contigs。任何丢行、重名或长度不一致都会终止汇总。</span>
 <span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="fu">## 读取 compact matrix 并复核</span></span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="al">![输入 read pairs 的 Bowtie2 concordant fate；三段之和精确为 100%。](../figures/41-mapping-fate.png)</span>{#fig-41-fate}</span>
 <span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a><span class="fu">### Mean depth 与 breadth 回答不同问题</span></span>
-<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>对长度为 <span class="sc">\(</span>L_c<span class="sc">\)</span> 的 contig <span class="sc">\(</span>c<span class="sc">\)</span>，碱基深度为 <span class="sc">\(</span>d_{ci}<span class="sc">\)</span>：</span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 overall alignment 当作 proper pairs"}</span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>Bowtie2 overall rate 与 concordant/properly paired 分母不同。至少同时保留 Bowtie2 log、<span class="in">`samtools flagstat`</span> 和输入 pair ledger。</span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a>\bar d_c=\frac{1}{L_c}\sum_{i=1}^{L_c}d_{ci},</span>
-<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a>\qquad</span>
-<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a>B_c=100\frac{\sum_i I(d_{ci}&gt;0)}{L_c}.</span>
-<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a><span class="fu">## 读取 compact matrix 并复核</span></span>
+<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a><span class="fu">### Mean depth 与 breadth 回答不同问题</span></span>
+<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a>对长度为 $L_c$ 的 contig $c$，碱基深度为 $d_{ci}$：</span>
 <span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a>一个短重复区吸附大量 reads 时，mean depth 可以很高但 breadth 很低；一个低丰度 genome 的 contig 可能 breadth 很高而 mean depth 只有 1--2x。分箱常用 mean depth 形成多样本 abundance vector，污染审计则应同时看 breadth、MAPQ 和局部深度异常。</span>
-<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/41-read-mapping-depth-frozen"</span></span>
-<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"mapping-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a>depth <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"contig-depth-wide.tsv.gz"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a>correlation <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"depth-correlation.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(depth) <span class="sc">==</span> <span class="dv">18354</span>, <span class="sc">!</span><span class="fu">anyDuplicated</span>(depth<span class="sc">$</span>Contig))</span>
-<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(mapping<span class="sc">$</span>ReadPairs <span class="sc">==</span></span>
-<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a>  mapping<span class="sc">$</span>ConcordantZero <span class="sc">+</span> mapping<span class="sc">$</span>ConcordantOnce <span class="sc">+</span> mapping<span class="sc">$</span>ConcordantMultiple))</span>
-<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(correlation<span class="sc">$</span>DetectedInBoth <span class="sc">==</span> <span class="dv">18353</span>)</span>
-<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a>\bar d_c=\frac{1}{L_c}\sum_{i=1}^{L_c}d_{ci},</span>
+<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a>\qquad</span>
+<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a>B_c=100\frac{\sum_i I(d_{ci}&gt;0)}{L_c}.</span>
+<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a>一个短重复区吸附大量 reads 时，mean depth 可以很高但 breadth 很低；一个低丰度 genome 的 contig 可能 breadth 很高而 mean depth 只有 1--2x。分箱常用 mean depth 形成多样本 abundance vector，污染审计则应同时看 breadth、MAPQ 和局部深度异常。</span>
+<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/41-read-mapping-depth-frozen"</span></span>
+<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a>mapping <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"mapping-summary.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a>depth <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"contig-depth-wide.tsv.gz"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a>correlation <span class="ot">&lt;-</span> <span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"depth-correlation.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 contig 上 mean depth 与 breadth 的关系；横虚线只用于诊断，不是普适过滤阈值。](../figures/41-depth-breadth.png)</span>{#fig-41-breadth}</span>
-<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单样本 coverage 升级为 common-coordinate matrix</span></span>
-<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a>MOCK1/MOCK2 分别有 18,353/18,354 条 positive-depth contigs，看上去几乎全检出；但 rank correlation 只有 0.483。mock 中 shared genomes、不同 DNA abundance、重复序列和低深度噪声共同作用，说明 presence 不能替代 abundance pattern。分箱时应保留两列，而不是先求均值。</span>
+<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(depth) <span class="sc">==</span> <span class="dv">18354</span>, <span class="sc">!</span><span class="fu">anyDuplicated</span>(depth<span class="sc">$</span>Contig))</span>
+<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(mapping<span class="sc">$</span>ReadPairs <span class="sc">==</span></span>
+<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a>  mapping<span class="sc">$</span>ConcordantZero <span class="sc">+</span> mapping<span class="sc">$</span>ConcordantOnce <span class="sc">+</span> mapping<span class="sc">$</span>ConcordantMultiple))</span>
+<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(correlation<span class="sc">$</span>DetectedInBoth <span class="sc">==</span> <span class="dv">18353</span>)</span>
+<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存与结果核对</span></span>
+<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 contig 上 mean depth 与 breadth 的关系；横虚线只用于诊断，不是普适过滤阈值。](../figures/41-depth-breadth.png)</span>{#fig-41-breadth}</span>
 <span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article41_mapping_depth.py <span class="dt">\</span></span>
-<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/41-read-mapping-depth-frozen</span>
-<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article41_mapping_depth.R <span class="dt">\</span></span>
-<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/41-read-mapping-depth-frozen <span class="dt">\</span></span>
-<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
-<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article41_mapping_depth.py <span class="dt">\</span></span>
-<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/41-read-mapping-depth-frozen <span class="dt">\</span></span>
-<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/41-read-mapping-depth <span class="dt">\</span></span>
-<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="at">--chapter</span> chapters/41-read-mapping-depth.qmd</span>
-<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a><span class="fu">### 对自然队列的进一步升级</span></span>
-<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a>自然样本应加入 negative control、host-depleted read ledger、library size、insert-size、contig uniqueness、GC/length bias 与 strain mixture 检查。若要比较绝对 microbial load，还需 spike-in、qPCR 或 flow-cytometry 等外部量纲；relative depth 本身只有组成意义。</span>
-<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 把两个技术标准当生物学重复"}</span>
-<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a>MOCK1 与 MOCK2 的成员和输入 abundance 不同，只用于 workflow 与守恒审计，不能估计人群方差或做疾病差异检验。</span>
-<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从单样本 coverage 升级为 common-coordinate matrix</span></span>
+<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>MOCK1/MOCK2 分别有 18,353/18,354 条 positive-depth contigs，看上去几乎全检出；但 rank correlation 只有 0.483。mock 中 shared genomes、不同 DNA abundance、重复序列和低深度噪声共同作用，说明 presence 不能替代 abundance pattern。分箱时应保留两列，而不是先求均值。</span>
+<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存与结果核对</span></span>
+<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article41_mapping_depth.py <span class="dt">\</span></span>
+<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/41-read-mapping-depth-frozen</span>
+<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article41_mapping_depth.R <span class="dt">\</span></span>
+<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/41-read-mapping-depth-frozen <span class="dt">\</span></span>
+<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
+<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article41_mapping_depth.py <span class="dt">\</span></span>
+<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/41-read-mapping-depth-frozen <span class="dt">\</span></span>
+<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/41-read-mapping-depth <span class="dt">\</span></span>
+<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="at">--chapter</span> chapters/41-read-mapping-depth.qmd</span>
+<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a><span class="fu">### 对自然队列的进一步升级</span></span>
 <span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录回比规则和覆盖度定义 {#sec-methods}</span></span>
+<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a>自然样本应加入 negative control、host-depleted read ledger、library size、insert-size、contig uniqueness、GC/length bias 与 strain mixture 检查。若要比较绝对 microbial load，还需 spike-in、qPCR 或 flow-cytometry 等外部量纲；relative depth 本身只有组成意义。</span>
 <span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Checksum-identified Illumina paired-end reads from two uneven synthetic microbial DNA communities (PRJEB52977; ERR9765746 and ERR9765747) were analyzed as fixed 2,000,000-pair subsets generated without replacement. After fastp filtering, 1,999,853 and 1,999,888 read pairs remained. Reads were aligned independently to a common checksum-locked MEGAHIT v1.2.9 co-assembly comprising 18,354 contigs &gt;=1 kb (84,811,518 bp; N50 15,928 bp) with Bowtie2 v2.5.5 using </span><span class="in">`--very-sensitive`</span><span class="at">, 16 threads and seed 20260741. Bowtie2 used its default single selected-alignment reporting mode. Unmapped, QC-fail, duplicate and supplementary records were excluded with SAMtools v1.23.1 (</span><span class="in">`-F 3588`</span><span class="at">); coordinate-sorted BAM files were indexed and audited with </span><span class="in">`flagstat`</span><span class="at">, </span><span class="in">`idxstats`</span><span class="at">, </span><span class="in">`stats`</span><span class="at"> and </span><span class="in">`coverage`</span><span class="at">. Multi-sample contig depth and variance were calculated with </span><span class="in">`jgi_summarize_bam_contig_depths`</span><span class="at"> from MetaBAT2 v2.18 using a minimum end-to-end identity of 97%, minimum mapping quality of 0 and default edge exclusion. The common contig coordinate set, read-pair fate, assembly-base breadth, length-weighted mean depth, commands, resource usage, environment lock and SHA-256 checksums were retained. Correlations were calculated across all 18,354 contigs after </span><span class="in">`log1p`</span><span class="at"> transformation; no inferential comparison was made between the two non-replicate mock communities.</span></span>
+<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 把两个技术标准当生物学重复"}</span>
+<span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a>MOCK1 与 MOCK2 的成员和输入 abundance 不同，只用于 workflow 与守恒审计，不能估计人群方差或做疾病差异检验。</span>
+<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="fu">## 记录回比规则和覆盖度定义 {#sec-methods}</span></span>
 <span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Bowtie2 overall alignment rates were 87.48% and 87.25% for MOCK1 and MOCK2, respectively. Unique concordant alignments accounted for 62.54% and 66.48% of input pairs, while 0.93% and 0.99% aligned concordantly more than once. The mapped BAMs covered 95.30% and 95.10% of assembly bases. JGI length-weighted mean depths were 5.813x and 5.787x, compared with 6.143x and 6.119x in the independent SAMtools coverage ledger. Of 18,354 contigs, 18,353 had positive depth in both samples; Pearson and Spearman correlations of </span><span class="in">`log1p`</span><span class="at"> depth were 0.792 and 0.483, respectively.</span></span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Checksum-identified Illumina paired-end reads from two uneven synthetic microbial DNA communities (PRJEB52977; ERR9765746 and ERR9765747) were analyzed as fixed 2,000,000-pair subsets generated without replacement. After fastp filtering, 1,999,853 and 1,999,888 read pairs remained. Reads were aligned independently to a common checksum-locked MEGAHIT v1.2.9 co-assembly comprising 18,354 contigs &gt;=1 kb (84,811,518 bp; N50 15,928 bp) with Bowtie2 v2.5.5 using </span><span class="in">`--very-sensitive`</span><span class="at">, 16 threads and seed 20260741. Bowtie2 used its default single selected-alignment reporting mode. Unmapped, QC-fail, duplicate and supplementary records were excluded with SAMtools v1.23.1 (</span><span class="in">`-F 3588`</span><span class="at">); coordinate-sorted BAM files were indexed and audited with </span><span class="in">`flagstat`</span><span class="at">, </span><span class="in">`idxstats`</span><span class="at">, </span><span class="in">`stats`</span><span class="at"> and </span><span class="in">`coverage`</span><span class="at">. Multi-sample contig depth and variance were calculated with </span><span class="in">`jgi_summarize_bam_contig_depths`</span><span class="at"> from MetaBAT2 v2.18 using a minimum end-to-end identity of 97%, minimum mapping quality of 0 and default edge exclusion. The common contig coordinate set, read-pair fate, assembly-base breadth, length-weighted mean depth, commands, resource usage, environment lock and SHA-256 checksums were retained. Correlations were calculated across all 18,354 contigs after </span><span class="in">`log1p`</span><span class="at"> transformation; no inferential comparison was made between the two non-replicate mock communities.</span></span>
 <span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>固定一份最终 assembly FASTA；记录压缩与解压 SHA-256、contig 数、总 bp、最短长度和 N50。</span>
-<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>建立 sample sheet：一行一个独立 library，保留 sample、run、R1/R2、clean pairs、batch 与 biological replicate ID。</span>
-<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 aligner preset、seed、secondary/supplementary、MAPQ、identity、minimum aligned length、duplicate 与 orphan policy。</span>
-<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>每个样本输出 coordinate-sorted/indexed BAM、Bowtie2/BWA log、flagstat、idxstats 和 coverage；先核对 reads/pairs 守恒。</span>
-<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用同一 FASTA 和全部 BAM 一次性生成 JGI depth；对 <span class="in">`contigName + contigLen`</span> 做严格 identity check。</span>
-<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>同时保留 mean depth、variance、breadth、mean MAPQ 与 paired-contig linkage，至少画 depth--depth 和 depth--breadth 诊断图。</span>
-<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>对 MAPQ/identity/contig-length 做预设 sensitivity branches；不要按 MAG 数量最高的阈值倒推主分析。</span>
-<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>将 BAM 留在受控产物区，把 compact depth matrix、commands、versions、checksums、normalized logs 和三种图形格式纳入交付。</span>
-<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Alignment fate 使用 100% stacked bars，并在每个 &gt;=3% 区块内写百分比；不能让 raw counts 与 percent 共用一个轴。</span>
-<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Depth--depth 图在两轴同时使用 log scale，加入 <span class="in">`y=x`</span> 参考线，并写明 pseudocount 仅用于显示。</span>
-<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Contig 长度使用连续色标，不用数十种离散颜色；样本颜色固定为 blue/orange 的色盲友好组合。</span>
-<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Breadth 以 0--100% 显示，50% 横线仅作诊断；图注说明 JGI 与 SAMtools 的不同过滤口径。</span>
-<span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内标题、轴、图例和注释全部使用英文；样本名采用稳定的 ASCII ID。</span>
-<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>每张图同时导出 PDF、350-dpi PNG 和 LZW TIFF。PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。</span>
-<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a>回比率、覆盖广度和平均深度回答不同问题；用两个真实 mock 样本建立完整 mapping fate 与多样本深度矩阵账本。</span>
-<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Bowtie2 overall alignment rates were 87.48% and 87.25% for MOCK1 and MOCK2, respectively. Unique concordant alignments accounted for 62.54% and 66.48% of input pairs, while 0.93% and 0.99% aligned concordantly more than once. The mapped BAMs covered 95.30% and 95.10% of assembly bases. JGI length-weighted mean depths were 5.813x and 5.787x, compared with 6.143x and 6.119x in the independent SAMtools coverage ledger. Of 18,354 contigs, 18,353 had positive depth in both samples; Pearson and Spearman correlations of </span><span class="in">`log1p`</span><span class="at"> depth were 0.792 and 0.483, respectively.</span></span>
+<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>固定一份最终 assembly FASTA；记录压缩与解压 SHA-256、contig 数、总 bp、最短长度和 N50。</span>
+<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>建立 sample sheet：一行一个独立 library，保留 sample、run、R1/R2、clean pairs、batch 与 biological replicate ID。</span>
+<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>预注册 aligner preset、seed、secondary/supplementary、MAPQ、identity、minimum aligned length、duplicate 与 orphan policy。</span>
+<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>每个样本输出 coordinate-sorted/indexed BAM、Bowtie2/BWA log、flagstat、idxstats 和 coverage；先核对 reads/pairs 守恒。</span>
+<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>用同一 FASTA 和全部 BAM 一次性生成 JGI depth；对 <span class="in">`contigName + contigLen`</span> 做严格 identity check。</span>
+<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>同时保留 mean depth、variance、breadth、mean MAPQ 与 paired-contig linkage，至少画 depth--depth 和 depth--breadth 诊断图。</span>
+<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>对 MAPQ/identity/contig-length 做预设 sensitivity branches；不要按 MAG 数量最高的阈值倒推主分析。</span>
+<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>将 BAM 留在受控产物区，把 compact depth matrix、commands、versions、checksums、normalized logs 和三种图形格式纳入交付。</span>
+<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>Alignment fate 使用 100% stacked bars，并在每个 &gt;=3% 区块内写百分比；不能让 raw counts 与 percent 共用一个轴。</span>
+<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>Depth--depth 图在两轴同时使用 log scale，加入 <span class="in">`y=x`</span> 参考线，并写明 pseudocount 仅用于显示。</span>
+<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>Contig 长度使用连续色标，不用数十种离散颜色；样本颜色固定为 blue/orange 的色盲友好组合。</span>
+<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>Breadth 以 0--100% 显示，50% 横线仅作诊断；图注说明 JGI 与 SAMtools 的不同过滤口径。</span>
+<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内标题、轴、图例和注释全部使用英文；样本名采用稳定的 ASCII ID。</span>
+<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>每张图同时导出 PDF、350-dpi PNG 和 LZW TIFF。PDF 用于排版，PNG 用于网页，TIFF 用于投稿系统。</span>
 <span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台不均一 microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
-<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Bowtie2 <span class="co">[</span><span class="ot">@langmead2012bowtie2</span><span class="co">]</span></span>
-<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>BWA <span class="co">[</span><span class="ot">@li2009bwa</span><span class="co">]</span></span>
-<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>SAM/BAM 与 SAMtools <span class="co">[</span><span class="ot">@li2009samtools</span><span class="co">]</span></span>
-<span id="cb11-352"><a href="#cb11-352" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaBAT2 与 JGI depth workflow <span class="co">[</span><span class="ot">@kang2019metabat2</span><span class="co">]</span></span>
-<span id="cb11-353"><a href="#cb11-353" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaBAT 的 coverage/composition 框架 <span class="co">[</span><span class="ot">@kang2015metabat</span><span class="co">]</span></span>
+<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a>回比率、覆盖广度和平均深度回答不同问题；用两个真实 mock 样本建立完整 mapping fate 与多样本深度矩阵账本。</span>
+<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-352"><a href="#cb11-352" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-353"><a href="#cb11-353" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-354"><a href="#cb11-354" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台不均一 microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb11-355"><a href="#cb11-355" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Bowtie2 <span class="co">[</span><span class="ot">@langmead2012bowtie2</span><span class="co">]</span></span>
+<span id="cb11-356"><a href="#cb11-356" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>BWA <span class="co">[</span><span class="ot">@li2009bwa</span><span class="co">]</span></span>
+<span id="cb11-357"><a href="#cb11-357" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>SAM/BAM 与 SAMtools <span class="co">[</span><span class="ot">@li2009samtools</span><span class="co">]</span></span>
+<span id="cb11-358"><a href="#cb11-358" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaBAT2 与 JGI depth workflow <span class="co">[</span><span class="ot">@kang2019metabat2</span><span class="co">]</span></span>
+<span id="cb11-359"><a href="#cb11-359" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MetaBAT 的 coverage/composition 框架 <span class="co">[</span><span class="ot">@kang2015metabat</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

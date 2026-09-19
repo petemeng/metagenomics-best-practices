@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">提交 MAG 之前，哪些异常还需要人工检查？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">提交 MAG 之前，哪些异常还需要人工检查？</a>
+  <ul class="collapse">
+  <li><a href="#异常标记为什么不应该自动删除序列" id="toc-异常标记为什么不应该自动删除序列" class="nav-link" data-scroll-target="#异常标记为什么不应该自动删除序列">异常标记为什么不应该自动删除序列？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -1012,13 +1044,13 @@ div.csl-indent {
 <p>本次自动化预审使用 <strong>1 CPU core</strong>，耗时 <strong>54.08 秒</strong>，峰值 RAM <strong>0.066 GiB</strong>；12 份 review FASTA 合计约 35 MB。建议准备 <strong>4 cores、8 GB RAM、5 GB 可用磁盘</strong>。真正耗时的是人工复核：按 MAG 复杂度预留 <strong>10–30 分钟/MAG</strong>，大型 anvi’o profile 还会受 BAM 体积影响。没有服务器时，可在普通工作站读取 <code>data/small/49-mag-curation-submission-frozen/</code> 的压缩审计表与 review FASTA；若需要交互式 anvi’o/Bandage，可把单个 MAG、对应 BAM 和 assembly graph 下载到本地逐一检查。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="异常标记为什么不应该自动删除序列">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>异常标记为什么不应该自动删除序列
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1027,7 +1059,7 @@ div.csl-indent {
 </div>
 <section id="sec-target" class="level2">
 <h2 class="anchored" data-anchor-id="sec-target">提交 MAG 之前，哪些异常还需要人工检查？</h2>
-<p>这一环节通常不会成为论文主图，而会落在三处：Methods 的 curation/submission 描述、补充材料的逐 MAG MIMAG 表，以及 Data availability 中可核验的 BioProject、BioSample 与 assembly accessions。最接近发表图的是 completeness–contamination quality panel；但真正决定数据能否复用的是“每个点背后的稳定 ID、质量字段、来源关系和 accession”。MIMAG 为 MAG 质量与元数据报告建立了最低标准 <span class="citation" data-cites="bowers2017mimag">(<a href="02-three-analysis-layers.html#ref-bowers2017mimag" role="doc-biblioref"><span class="nocase">Bowers 等</span> 2017年</a>)</span>。</p>
+<p>completeness–contamination 图概括基因组质量，逐 MAG 记录则说明每个点的稳定 ID、质量字段、来源关系与 accession。只有两者可以对应，其他研究者才能复核或复用这些基因组。MIMAG 为 MAG 质量与元数据报告建立了最低标准 <span class="citation" data-cites="bowers2017mimag">(<a href="02-three-analysis-layers.html#ref-bowers2017mimag" role="doc-biblioref"><span class="nocase">Bowers 等</span> 2017年</a>)</span>。</p>
 <div id="fig-49-funnel" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
 <div aria-describedby="fig-49-funnel-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
@@ -1049,6 +1081,11 @@ div.csl-indent {
 </figure>
 </div>
 <p>这两个图回答不同问题：quality panel 是序列质量证据，submission funnel 是可提交性证据。不能用前者替代后者。</p>
+<section id="异常标记为什么不应该自动删除序列" class="level3">
+<h3 class="anchored" data-anchor-id="异常标记为什么不应该自动删除序列">异常标记为什么不应该自动删除序列？</h3>
+<p>GC 或深度偏离可能来自错分，也可能来自同一基因组内部的真实异质性。只按单个 robust-z 阈值删除会改变基因组组成，并可能人为提高某些质量指标。本例 135 条标记的作用是定位需要复核的位置，不是已经判定 135 条污染序列。</p>
+<p>技术质量与外部提交资格也是两件事。稳定 ID、来源关系、数据权利及提交元数据不足时，即使序列通过数值门槛，也不能替代相应确认。若人工修改最终 FASTA，应保留变更理由并重算全部依赖序列的结果，而不是只更新一个名称或质量数字。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1169,8 +1206,10 @@ div.csl-indent {
 <h3 class="anchored" data-anchor-id="sec-theory">自动质控回答“哪里可疑”，人工校正回答“是否有生物学理由修改”</h3>
 <p>同一 MAG 内，GC、覆盖深度、四核苷酸组成和 taxonomy 明显偏离的 contig 可能来自污染，也可能是 plasmid、genomic island、rRNA operon、重复区或真实的水平转移。自动规则适合缩小检查范围，不适合自动删序列。删除决定至少要联合 read mapping、assembly graph、taxonomy、gene context 和边界支持。</p>
 <p>本次对每个 MAG 内部独立计算 GC 与 <code>log2(mean depth + 0.1)</code> 的 median/MAD robust z-score：</p>
-<p>[ z_i^{}=. ]</p>
-<p>任一轴满足 (|z|&gt;3.5) 即标记 review；阈值在分析前固定，动作永远是 <code>REVIEW_ONLY</code>。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。</p>
+<p><span class="math display">\[
+z_i^{\mathrm{robust}}=\frac{x_i-\mathrm{median}(x)}{1.4826\times\mathrm{MAD}(x)}.
+\]</span></p>
+<p>任一轴满足 <span class="math inline">\(|z|&gt;3.5\)</span> 即标记 review；阈值在分析前固定，动作永远是 <code>REVIEW_ONLY</code>。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"results/49-mag-curation-submission"</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2039,7 +2078,7 @@ Wick, Ryan R., Mark B. Schultz, Justin Zobel, 和 Kathryn E. Holt. 2015年. <spa
 <span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>本次自动化预审使用 **1 CPU core**，耗时 **54.08 秒**，峰值 RAM **0.066 GiB**；12 份 review FASTA 合计约 35 MB。建议准备 **4 cores、8 GB RAM、5 GB 可用磁盘**。真正耗时的是人工复核：按 MAG 复杂度预留 **10--30 分钟/MAG**，大型 anvi'o profile 还会受 BAM 体积影响。没有服务器时，可在普通工作站读取 <span class="in">`data/small/49-mag-curation-submission-frozen/`</span> 的压缩审计表与 review FASTA；若需要交互式 anvi'o/Bandage，可把单个 MAG、对应 BAM 和 assembly graph 下载到本地逐一检查。</span>
 <span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="异常标记为什么不应该自动删除序列"}</span>
 <span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>保留覆盖、GC、组装连接与质量记录；人工删除或修改 contig 必须留下可追踪依据。</span>
 <span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -2047,7 +2086,7 @@ Wick, Ryan R., Mark B. Schultz, Justin Zobel, 和 Kathryn E. Holt. 2015年. <spa
 <span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="fu">## 提交 MAG 之前，哪些异常还需要人工检查？ {#sec-target}</span></span>
 <span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>这一环节通常不会成为论文主图，而会落在三处：Methods 的 curation/submission 描述、补充材料的逐 MAG MIMAG 表，以及 Data availability 中可核验的 BioProject、BioSample 与 assembly accessions。最接近发表图的是 completeness--contamination quality panel；但真正决定数据能否复用的是“每个点背后的稳定 ID、质量字段、来源关系和 accession”。MIMAG 为 MAG 质量与元数据报告建立了最低标准 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span>。</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>completeness--contamination 图概括基因组质量，逐 MAG 记录则说明每个点的稳定 ID、质量字段、来源关系与 accession。只有两者可以对应，其他研究者才能复核或复用这些基因组。MIMAG 为 MAG 质量与元数据报告建立了最低标准 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span>。</span>
 <span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a><span class="al">![从 24 个非冗余 SGB 到 12 个技术复核 MAG；人工与元数据关卡尚未通过，因此 external-ready 为 0。](../figures/49-submission-funnel.png)</span>{#fig-49-funnel}</span>
 <span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a></span>
@@ -2055,368 +2094,374 @@ Wick, Ryan R., Mark B. Schultz, Justin Zobel, 和 Kathryn E. Holt. 2015年. <spa
 <span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>这两个图回答不同问题：quality panel 是序列质量证据，submission funnel 是可提交性证据。不能用前者替代后者。</span>
 <span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a><span class="fu">### 异常标记为什么不应该自动删除序列？</span></span>
 <span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/49/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 21.5 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>GC 或深度偏离可能来自错分，也可能来自同一基因组内部的真实异质性。只按单个 robust-z 阈值删除会改变基因组组成，并可能人为提高某些质量指标。本例 135 条标记的作用是定位需要复核的位置，不是已经判定 135 条污染序列。</span>
 <span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/49/download.R)</span>。</span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>技术质量与外部提交资格也是两件事。稳定 ID、来源关系、数据权利及提交元数据不足时，即使序列通过数值门槛，也不能替代相应确认。若人工修改最终 FASTA，应保留变更理由并重算全部依赖序列的结果，而不是只更新一个名称或质量数字。</span>
 <span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-49</span></span>
-<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/49/files.tsv"</span>))</span>
-<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
-<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入对象与 lineage</span></span>
-<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 固定对象 <span class="pp">|</span> 本章用途 <span class="pp">|</span></span>
-<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> read/contig depth <span class="pp">|</span> PRJEB52977 的 ERR9765746/ERR9765747；<span class="in">`41-read-mapping-depth-frozen/`</span> <span class="pp">|</span> 双样本 contig-depth 异常筛查 <span class="pp">|</span></span>
-<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> refinement membership <span class="pp">|</span> <span class="in">`43-bin-refinement-frozen/`</span> <span class="pp">|</span> MAG--contig 映射 <span class="pp">|</span></span>
-<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG quality/graph <span class="pp">|</span> <span class="in">`44-mag-qc-mimag-graph-frozen/`</span> <span class="pp">|</span> CheckM2、GUNC、rRNA/tRNA、assembly graph 证据 <span class="pp">|</span></span>
-<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 95% ANI catalog <span class="pp">|</span> <span class="in">`45-drep-dereplication-frozen/`</span> <span class="pp">|</span> 24 个 species representatives 与 sequence SHA-256 <span class="pp">|</span></span>
-<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GTDB taxonomy <span class="pp">|</span> <span class="in">`46-gtdbtk-taxonomy-frozen/`</span> <span class="pp">|</span> 未改写的 GTDB R232 lineage <span class="pp">|</span></span>
-<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG coverage <span class="pp">|</span> <span class="in">`48-mag-abundance-coverm-frozen/`</span> <span class="pp">|</span> coverage、breadth 与 assembly metadata <span class="pp">|</span></span>
-<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a>脚本在生成任何 review file 前逐个验证六个冻结包的 <span class="in">`file-checksums.sha256`</span>，并再次核对 Article 44 与 Article 45 representative sequence hash。known mock identities 不参与 curation gate。</span>
-<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a><span class="co"># 自动预审只需 Python 标准库；交互式复核另建环境</span></span>
-<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-curation-2026.07 <span class="at">-c</span> conda-forge <span class="at">-c</span> bioconda <span class="dt">\</span></span>
-<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a>  python=3.13 anvio bandage samtools</span>
-<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-curation-2026.07 anvi-self-test <span class="at">--suite</span> mini</span>
-<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-curation-2026.07 Bandage <span class="at">--help</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"ggrepel"</span>))</span>
-<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(forcats)</span>
-<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260749</span>)</span>
-<span id="cb14-107"><a href="#cb14-107" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-108"><a href="#cb14-108" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pass"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Review"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>, <span class="st">"Blocked"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">"High quality"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Medium quality"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
-<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
-<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
-<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb14-128"><a href="#cb14-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb14-129"><a href="#cb14-129" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb14-130"><a href="#cb14-130" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb14-131"><a href="#cb14-131" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb14-132"><a href="#cb14-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb14-133"><a href="#cb14-133" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-134"><a href="#cb14-134" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-135"><a href="#cb14-135" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-136"><a href="#cb14-136" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb14-137"><a href="#cb14-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-138"><a href="#cb14-138" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立 fail-closed 技术复核集 {#sec-code}</span></span>
-<span id="cb14-139"><a href="#cb14-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-140"><a href="#cb14-140" aria-hidden="true" tabindex="-1"></a><span class="fu">### 自动质控回答“哪里可疑”，人工校正回答“是否有生物学理由修改” {#sec-theory}</span></span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/49/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 21.5 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/49/download.R)</span>。</span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-49</span></span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/49/files.tsv"</span>))</span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
+<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入对象与 lineage</span></span>
+<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 固定对象 <span class="pp">|</span> 本章用途 <span class="pp">|</span></span>
+<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> read/contig depth <span class="pp">|</span> PRJEB52977 的 ERR9765746/ERR9765747；<span class="in">`41-read-mapping-depth-frozen/`</span> <span class="pp">|</span> 双样本 contig-depth 异常筛查 <span class="pp">|</span></span>
+<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> refinement membership <span class="pp">|</span> <span class="in">`43-bin-refinement-frozen/`</span> <span class="pp">|</span> MAG--contig 映射 <span class="pp">|</span></span>
+<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG quality/graph <span class="pp">|</span> <span class="in">`44-mag-qc-mimag-graph-frozen/`</span> <span class="pp">|</span> CheckM2、GUNC、rRNA/tRNA、assembly graph 证据 <span class="pp">|</span></span>
+<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 95% ANI catalog <span class="pp">|</span> <span class="in">`45-drep-dereplication-frozen/`</span> <span class="pp">|</span> 24 个 species representatives 与 sequence SHA-256 <span class="pp">|</span></span>
+<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GTDB taxonomy <span class="pp">|</span> <span class="in">`46-gtdbtk-taxonomy-frozen/`</span> <span class="pp">|</span> 未改写的 GTDB R232 lineage <span class="pp">|</span></span>
+<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG coverage <span class="pp">|</span> <span class="in">`48-mag-abundance-coverm-frozen/`</span> <span class="pp">|</span> coverage、breadth 与 assembly metadata <span class="pp">|</span></span>
+<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a>脚本在生成任何 review file 前逐个验证六个冻结包的 <span class="in">`file-checksums.sha256`</span>，并再次核对 Article 44 与 Article 45 representative sequence hash。known mock identities 不参与 curation gate。</span>
+<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a><span class="co"># 自动预审只需 Python 标准库；交互式复核另建环境</span></span>
+<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-curation-2026.07 <span class="at">-c</span> conda-forge <span class="at">-c</span> bioconda <span class="dt">\</span></span>
+<span id="cb14-101"><a href="#cb14-101" aria-hidden="true" tabindex="-1"></a>  python=3.13 anvio bandage samtools</span>
+<span id="cb14-102"><a href="#cb14-102" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-curation-2026.07 anvi-self-test <span class="at">--suite</span> mini</span>
+<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-curation-2026.07 Bandage <span class="at">--help</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"ggrepel"</span>))</span>
+<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(forcats)</span>
+<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260749</span>)</span>
+<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Pass"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Review"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>, <span class="st">"Blocked"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a>  <span class="st">"High quality"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Medium quality"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span></span>
+<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#EEEEEE"</span>),</span>
+<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-128"><a href="#cb14-128" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-129"><a href="#cb14-129" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb14-130"><a href="#cb14-130" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb14-131"><a href="#cb14-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb14-132"><a href="#cb14-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb14-133"><a href="#cb14-133" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb14-134"><a href="#cb14-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb14-135"><a href="#cb14-135" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb14-136"><a href="#cb14-136" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb14-137"><a href="#cb14-137" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb14-138"><a href="#cb14-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb14-139"><a href="#cb14-139" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-140"><a href="#cb14-140" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-141"><a href="#cb14-141" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-142"><a href="#cb14-142" aria-hidden="true" tabindex="-1"></a>同一 MAG 内，GC、覆盖深度、四核苷酸组成和 taxonomy 明显偏离的 contig 可能来自污染，也可能是 plasmid、genomic island、rRNA operon、重复区或真实的水平转移。自动规则适合缩小检查范围，不适合自动删序列。删除决定至少要联合 read mapping、assembly graph、taxonomy、gene context 和边界支持。</span>
+<span id="cb14-142"><a href="#cb14-142" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
 <span id="cb14-143"><a href="#cb14-143" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-144"><a href="#cb14-144" aria-hidden="true" tabindex="-1"></a>本次对每个 MAG 内部独立计算 GC 与 <span class="in">`log2(mean depth + 0.1)`</span> 的 median/MAD robust z-score：</span>
+<span id="cb14-144"><a href="#cb14-144" aria-hidden="true" tabindex="-1"></a><span class="fu">## 建立 fail-closed 技术复核集 {#sec-code}</span></span>
 <span id="cb14-145"><a href="#cb14-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-146"><a href="#cb14-146" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb14-147"><a href="#cb14-147" aria-hidden="true" tabindex="-1"></a>z_i^{\mathrm{robust}}=\frac{x_i-\mathrm{median}(x)}{1.4826\times\mathrm{MAD}(x)}.</span>
-<span id="cb14-148"><a href="#cb14-148" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb14-146"><a href="#cb14-146" aria-hidden="true" tabindex="-1"></a><span class="fu">### 自动质控回答“哪里可疑”，人工校正回答“是否有生物学理由修改” {#sec-theory}</span></span>
+<span id="cb14-147"><a href="#cb14-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-148"><a href="#cb14-148" aria-hidden="true" tabindex="-1"></a>同一 MAG 内，GC、覆盖深度、四核苷酸组成和 taxonomy 明显偏离的 contig 可能来自污染，也可能是 plasmid、genomic island、rRNA operon、重复区或真实的水平转移。自动规则适合缩小检查范围，不适合自动删序列。删除决定至少要联合 read mapping、assembly graph、taxonomy、gene context 和边界支持。</span>
 <span id="cb14-149"><a href="#cb14-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-150"><a href="#cb14-150" aria-hidden="true" tabindex="-1"></a>任一轴满足 <span class="sc">\(</span>|z|&gt;3.5<span class="sc">\)</span> 即标记 review；阈值在分析前固定，动作永远是 <span class="in">`REVIEW_ONLY`</span>。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。</span>
+<span id="cb14-150"><a href="#cb14-150" aria-hidden="true" tabindex="-1"></a>本次对每个 MAG 内部独立计算 GC 与 <span class="in">`log2(mean depth + 0.1)`</span> 的 median/MAD robust z-score：</span>
 <span id="cb14-151"><a href="#cb14-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-152"><a href="#cb14-152" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-153"><a href="#cb14-153" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb14-154"><a href="#cb14-154" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"results/49-mag-curation-submission"</span></span>
+<span id="cb14-152"><a href="#cb14-152" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb14-153"><a href="#cb14-153" aria-hidden="true" tabindex="-1"></a>z_i^{\mathrm{robust}}=\frac{x_i-\mathrm{median}(x)}{1.4826\times\mathrm{MAD}(x)}.</span>
+<span id="cb14-154"><a href="#cb14-154" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb14-155"><a href="#cb14-155" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-156"><a href="#cb14-156" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article49_mag_submission.py <span class="dt">\</span></span>
-<span id="cb14-157"><a href="#cb14-157" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
-<span id="cb14-158"><a href="#cb14-158" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-159"><a href="#cb14-159" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/catalog-disposition.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 15</span>
-<span id="cb14-160"><a href="#cb14-160" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/submission-readiness-checklist.tsv"</span></span>
-<span id="cb14-161"><a href="#cb14-161" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-162"><a href="#cb14-162" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-163"><a href="#cb14-163" aria-hidden="true" tabindex="-1"></a>筛选结果固定为：24 个 catalog representatives 中，12 个进入 <span class="in">`TECHNICAL_REVIEW_SET`</span>，4 个因 completeness &lt;90% 暂停，8 个因未经过完整 Article 44 MIMAG/GUNC audit 暂停。后一类即使 completeness 看起来很高，也不能绕过 lineage 完整性直接上传。</span>
+<span id="cb14-156"><a href="#cb14-156" aria-hidden="true" tabindex="-1"></a>任一轴满足 $|z|&gt;3.5$ 即标记 review；阈值在分析前固定，动作永远是 <span class="in">`REVIEW_ONLY`</span>。若 MAD 为 0，该轴全部记为 0，避免除零和人为放大微小差异。</span>
+<span id="cb14-157"><a href="#cb14-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-158"><a href="#cb14-158" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-159"><a href="#cb14-159" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb14-160"><a href="#cb14-160" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"results/49-mag-curation-submission"</span></span>
+<span id="cb14-161"><a href="#cb14-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-162"><a href="#cb14-162" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article49_mag_submission.py <span class="dt">\</span></span>
+<span id="cb14-163"><a href="#cb14-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span></span>
 <span id="cb14-164"><a href="#cb14-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-165"><a href="#cb14-165" aria-hidden="true" tabindex="-1"></a><span class="al">![序列、人工、taxonomy、元数据与 accession 十个关卡的状态；阻断项不会被数值质量覆盖。](../figures/49-readiness-matrix.png)</span>{#fig-49-readiness}</span>
-<span id="cb14-166"><a href="#cb14-166" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-167"><a href="#cb14-167" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 completeness/contamination 二维图升级为完整证据链</span></span>
+<span id="cb14-165"><a href="#cb14-165" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/catalog-disposition.tsv"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 15</span>
+<span id="cb14-166"><a href="#cb14-166" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/submission-readiness-checklist.tsv"</span></span>
+<span id="cb14-167"><a href="#cb14-167" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-168"><a href="#cb14-168" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-169"><a href="#cb14-169" aria-hidden="true" tabindex="-1"></a>CheckM2 衡量 completeness/contamination，GUNC 检查 lineage-level chimerism，rRNA/tRNA 支持 MIMAG tier，coverage/GC 与 assembly graph 支持人工 curation，GTDB/NCBI 名称解决 taxonomy，BioSample 解决来源。每层都不可由另一层代替。</span>
+<span id="cb14-169"><a href="#cb14-169" aria-hidden="true" tabindex="-1"></a>筛选结果固定为：24 个 catalog representatives 中，12 个进入 <span class="in">`TECHNICAL_REVIEW_SET`</span>，4 个因 completeness &lt;90% 暂停，8 个因未经过完整 Article 44 MIMAG/GUNC audit 暂停。后一类即使 completeness 看起来很高，也不能绕过 lineage 完整性直接上传。</span>
 <span id="cb14-170"><a href="#cb14-170" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-171"><a href="#cb14-171" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. completeness &gt;=90% 就直接上传"}</span>
-<span id="cb14-172"><a href="#cb14-172" aria-hidden="true" tabindex="-1"></a>这只是 NCBI 的一个数值门槛。先确认单一 organism、全部识别序列、GUNC/MIMAG、人工 curation、来源元数据、taxonomy 和数据所有权。</span>
-<span id="cb14-173"><a href="#cb14-173" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-171"><a href="#cb14-171" aria-hidden="true" tabindex="-1"></a><span class="al">![序列、人工、taxonomy、元数据与 accession 十个关卡的状态；阻断项不会被数值质量覆盖。](../figures/49-readiness-matrix.png)</span>{#fig-49-readiness}</span>
+<span id="cb14-172"><a href="#cb14-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-173"><a href="#cb14-173" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 completeness/contamination 二维图升级为完整证据链</span></span>
 <span id="cb14-174"><a href="#cb14-174" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-175"><a href="#cb14-175" aria-hidden="true" tabindex="-1"></a><span class="fu">## 做 GC/depth 异常筛查，但不自动删 contig</span></span>
+<span id="cb14-175"><a href="#cb14-175" aria-hidden="true" tabindex="-1"></a>CheckM2 衡量 completeness/contamination，GUNC 检查 lineage-level chimerism，rRNA/tRNA 支持 MIMAG tier，coverage/GC 与 assembly graph 支持人工 curation，GTDB/NCBI 名称解决 taxonomy，BioSample 解决来源。每层都不可由另一层代替。</span>
 <span id="cb14-176"><a href="#cb14-176" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-177"><a href="#cb14-177" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-178"><a href="#cb14-178" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/contig-anomaly-audit.tsv.gz"</span> <span class="kw">|</span> <span class="dt">\</span></span>
-<span id="cb14-179"><a href="#cb14-179" aria-hidden="true" tabindex="-1"></a>  <span class="fu">awk</span> <span class="at">-F</span> <span class="st">'\t'</span> <span class="st">'NR==1 || $12=="True"'</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 20</span>
+<span id="cb14-177"><a href="#cb14-177" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. completeness &gt;=90% 就直接上传"}</span>
+<span id="cb14-178"><a href="#cb14-178" aria-hidden="true" tabindex="-1"></a>这只是 NCBI 的一个数值门槛。先确认单一 organism、全部识别序列、GUNC/MIMAG、人工 curation、来源元数据、taxonomy 和数据所有权。</span>
+<span id="cb14-179"><a href="#cb14-179" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-180"><a href="#cb14-180" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-181"><a href="#cb14-181" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/manual-review-sheet.tsv"</span></span>
-<span id="cb14-182"><a href="#cb14-182" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-183"><a href="#cb14-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-184"><a href="#cb14-184" aria-hidden="true" tabindex="-1"></a>12 个 MAG 共 1,829 条 contig，其中 135 条触发至少一个 robust-z 信号；两个 MAG 没有触发项。被标记序列占各 MAG 长度的 0--4.93%，但所有 12 个 Article 44 graph audit 都显示 k141 graph fragmented。后者说明“没有异常点”也不能跳过 graph inspection。</span>
-<span id="cb14-185"><a href="#cb14-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-186"><a href="#cb14-186" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 MAG 被 robust GC/depth 筛查标记的长度比例；点大小是 flagged-contig 数，颜色是 graph-boundary read-pair weight。](../figures/49-curation-flags.png)</span>{#fig-49-flags}</span>
-<span id="cb14-187"><a href="#cb14-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-188"><a href="#cb14-188" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从自动删异常 contig 升级为 review-only 规则</span></span>
+<span id="cb14-181"><a href="#cb14-181" aria-hidden="true" tabindex="-1"></a><span class="fu">## 做 GC/depth 异常筛查，但不自动删 contig</span></span>
+<span id="cb14-182"><a href="#cb14-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-183"><a href="#cb14-183" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-184"><a href="#cb14-184" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/contig-anomaly-audit.tsv.gz"</span> <span class="kw">|</span> <span class="dt">\</span></span>
+<span id="cb14-185"><a href="#cb14-185" aria-hidden="true" tabindex="-1"></a>  <span class="fu">awk</span> <span class="at">-F</span> <span class="st">'\t'</span> <span class="st">'NR==1 || $12=="True"'</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 20</span>
+<span id="cb14-186"><a href="#cb14-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-187"><a href="#cb14-187" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/manual-review-sheet.tsv"</span></span>
+<span id="cb14-188"><a href="#cb14-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-189"><a href="#cb14-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-190"><a href="#cb14-190" aria-hidden="true" tabindex="-1"></a>135 条异常 contig 中可能混合污染和真实 accessory sequence。本次只输出 <span class="in">`OutlierSignals`</span> 与 robust z-score；没有 sequence deletion。人工若决定删除，必须保留理由、原序列/新序列 hash，并从质量评估开始重跑，而不是只修改最终 FASTA。</span>
+<span id="cb14-190"><a href="#cb14-190" aria-hidden="true" tabindex="-1"></a>12 个 MAG 共 1,829 条 contig，其中 135 条触发至少一个 robust-z 信号；两个 MAG 没有触发项。被标记序列占各 MAG 长度的 0--4.93%，但所有 12 个 Article 44 graph audit 都显示 k141 graph fragmented。后者说明“没有异常点”也不能跳过 graph inspection。</span>
 <span id="cb14-191"><a href="#cb14-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-192"><a href="#cb14-192" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 用 GC 或 depth 阈值自动删除 contig"}</span>
-<span id="cb14-193"><a href="#cb14-193" aria-hidden="true" tabindex="-1"></a>plasmid、genomic island 与 repeat 都可能离群。自动规则只生成 review queue；删除必须有多证据支持，并触发全链重跑。</span>
-<span id="cb14-194"><a href="#cb14-194" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-192"><a href="#cb14-192" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 MAG 被 robust GC/depth 筛查标记的长度比例；点大小是 flagged-contig 数，颜色是 graph-boundary read-pair weight。](../figures/49-curation-flags.png)</span>{#fig-49-flags}</span>
+<span id="cb14-193"><a href="#cb14-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-194"><a href="#cb14-194" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从自动删异常 contig 升级为 review-only 规则</span></span>
 <span id="cb14-195"><a href="#cb14-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-196"><a href="#cb14-196" aria-hidden="true" tabindex="-1"></a><span class="fu">## 在 anvi'o 与 Bandage 中逐条签字</span></span>
+<span id="cb14-196"><a href="#cb14-196" aria-hidden="true" tabindex="-1"></a>135 条异常 contig 中可能混合污染和真实 accessory sequence。本次只输出 <span class="in">`OutlierSignals`</span> 与 robust z-score；没有 sequence deletion。人工若决定删除，必须保留理由、原序列/新序列 hash，并从质量评估开始重跑，而不是只修改最终 FASTA。</span>
 <span id="cb14-197"><a href="#cb14-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-198"><a href="#cb14-198" aria-hidden="true" tabindex="-1"></a><span class="fu">### 去冗余代表是提交坐标，不是自动获得的“物种名”</span></span>
-<span id="cb14-199"><a href="#cb14-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-200"><a href="#cb14-200" aria-hidden="true" tabindex="-1"></a>95% ANI clustering 让一个物种水平 cluster 只保留一个代表，减少同一 biome 内重复提交；ENA 也明确要求优先提交最高质量的 unique-taxon MAG，并建议每个 biome 的每个 species 只保留一个代表 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。<span class="in">`SGB_###`</span> 是内部稳定键，<span class="in">`MBPMAG###`</span> 是提交前稳定 isolate；GTDB taxonomy 是注释字段。三者不能互相覆盖。</span>
+<span id="cb14-198"><a href="#cb14-198" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 用 GC 或 depth 阈值自动删除 contig"}</span>
+<span id="cb14-199"><a href="#cb14-199" aria-hidden="true" tabindex="-1"></a>plasmid、genomic island 与 repeat 都可能离群。自动规则只生成 review queue；删除必须有多证据支持，并触发全链重跑。</span>
+<span id="cb14-200"><a href="#cb14-200" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-201"><a href="#cb14-201" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-202"><a href="#cb14-202" aria-hidden="true" tabindex="-1"></a>下面是一份单 MAG 的操作骨架。<span class="in">`MAG_FASTA`</span>、<span class="in">`MAG_BAM`</span> 与 <span class="in">`ASSEMBLY_GRAPH`</span> 必须来自同一 assembly coordinate；BAM 先排序并建立 index。若手动删改 contig，需要重新生成 FASTA、checksum、CheckM2/GUNC、mapping depth、taxonomy 和所有下游表。</span>
+<span id="cb14-202"><a href="#cb14-202" aria-hidden="true" tabindex="-1"></a><span class="fu">## 在 anvi'o 与 Bandage 中逐条签字</span></span>
 <span id="cb14-203"><a href="#cb14-203" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-204"><a href="#cb14-204" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-205"><a href="#cb14-205" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_ID</span><span class="op">=</span><span class="st">"MBPMAG001"</span></span>
-<span id="cb14-206"><a href="#cb14-206" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_FASTA</span><span class="op">=</span><span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.fna"</span></span>
-<span id="cb14-207"><a href="#cb14-207" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_BAM</span><span class="op">=</span><span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.bam"</span></span>
-<span id="cb14-208"><a href="#cb14-208" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_GRAPH</span><span class="op">=</span><span class="st">"work/curation/final.contigs.gfa"</span></span>
+<span id="cb14-204"><a href="#cb14-204" aria-hidden="true" tabindex="-1"></a><span class="fu">### 去冗余代表是提交坐标，不是自动获得的“物种名”</span></span>
+<span id="cb14-205"><a href="#cb14-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-206"><a href="#cb14-206" aria-hidden="true" tabindex="-1"></a>95% ANI clustering 让一个物种水平 cluster 只保留一个代表，减少同一 biome 内重复提交；ENA 也明确要求优先提交最高质量的 unique-taxon MAG，并建议每个 biome 的每个 species 只保留一个代表 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。<span class="in">`SGB_###`</span> 是内部稳定键，<span class="in">`MBPMAG###`</span> 是提交前稳定 isolate；GTDB taxonomy 是注释字段。三者不能互相覆盖。</span>
+<span id="cb14-207"><a href="#cb14-207" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-208"><a href="#cb14-208" aria-hidden="true" tabindex="-1"></a>下面是一份单 MAG 的操作骨架。<span class="in">`MAG_FASTA`</span>、<span class="in">`MAG_BAM`</span> 与 <span class="in">`ASSEMBLY_GRAPH`</span> 必须来自同一 assembly coordinate；BAM 先排序并建立 index。若手动删改 contig，需要重新生成 FASTA、checksum、CheckM2/GUNC、mapping depth、taxonomy 和所有下游表。</span>
 <span id="cb14-209"><a href="#cb14-209" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-210"><a href="#cb14-210" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-gen-contigs-database</span> <span class="dt">\</span></span>
-<span id="cb14-211"><a href="#cb14-211" aria-hidden="true" tabindex="-1"></a>  <span class="at">-f</span> <span class="st">"</span><span class="va">${MAG_FASTA}</span><span class="st">"</span> <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span> <span class="dt">\</span></span>
-<span id="cb14-212"><a href="#cb14-212" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> <span class="st">"</span><span class="va">${MAG_ID}</span><span class="st">"</span></span>
-<span id="cb14-213"><a href="#cb14-213" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-init-bam</span> <span class="st">"</span><span class="va">${MAG_BAM}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-214"><a href="#cb14-214" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.sorted.bam"</span></span>
-<span id="cb14-215"><a href="#cb14-215" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-profile</span> <span class="dt">\</span></span>
-<span id="cb14-216"><a href="#cb14-216" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.sorted.bam"</span> <span class="dt">\</span></span>
-<span id="cb14-217"><a href="#cb14-217" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span> <span class="dt">\</span></span>
-<span id="cb14-218"><a href="#cb14-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-PROFILE"</span> <span class="dt">\</span></span>
-<span id="cb14-219"><a href="#cb14-219" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample-name</span> MOCK1</span>
-<span id="cb14-220"><a href="#cb14-220" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-interactive</span> <span class="dt">\</span></span>
-<span id="cb14-221"><a href="#cb14-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-PROFILE/PROFILE.db"</span> <span class="dt">\</span></span>
-<span id="cb14-222"><a href="#cb14-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span></span>
-<span id="cb14-223"><a href="#cb14-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-224"><a href="#cb14-224" aria-hidden="true" tabindex="-1"></a><span class="ex">Bandage</span> image <span class="st">"</span><span class="va">${ASSEMBLY_GRAPH}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-225"><a href="#cb14-225" aria-hidden="true" tabindex="-1"></a>  <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-graph.png"</span></span>
-<span id="cb14-226"><a href="#cb14-226" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-227"><a href="#cb14-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-228"><a href="#cb14-228" aria-hidden="true" tabindex="-1"></a>anvi'o 用于联合查看 coverage、GC、taxonomy 与 contig membership <span class="co">[</span><span class="ot">@eren2015anvio</span><span class="co">]</span>；Bandage 用于检查 contig 在 assembly graph 中的连接、分支和重复结构 <span class="co">[</span><span class="ot">@wick2015bandage</span><span class="co">]</span>。<span class="in">`manual-review-sheet.tsv`</span> 的 <span class="in">`AnvioManualSignoff`</span> 与 <span class="in">`BandageManualSignoff`</span> 只有研究者实际看完并记录证据后才能由 <span class="in">`PENDING_INVESTIGATOR_REVIEW`</span> 改为通过或拒绝。</span>
+<span id="cb14-210"><a href="#cb14-210" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-211"><a href="#cb14-211" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_ID</span><span class="op">=</span><span class="st">"MBPMAG001"</span></span>
+<span id="cb14-212"><a href="#cb14-212" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_FASTA</span><span class="op">=</span><span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.fna"</span></span>
+<span id="cb14-213"><a href="#cb14-213" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_BAM</span><span class="op">=</span><span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.bam"</span></span>
+<span id="cb14-214"><a href="#cb14-214" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_GRAPH</span><span class="op">=</span><span class="st">"work/curation/final.contigs.gfa"</span></span>
+<span id="cb14-215"><a href="#cb14-215" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-216"><a href="#cb14-216" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-gen-contigs-database</span> <span class="dt">\</span></span>
+<span id="cb14-217"><a href="#cb14-217" aria-hidden="true" tabindex="-1"></a>  <span class="at">-f</span> <span class="st">"</span><span class="va">${MAG_FASTA}</span><span class="st">"</span> <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span> <span class="dt">\</span></span>
+<span id="cb14-218"><a href="#cb14-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">-n</span> <span class="st">"</span><span class="va">${MAG_ID}</span><span class="st">"</span></span>
+<span id="cb14-219"><a href="#cb14-219" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-init-bam</span> <span class="st">"</span><span class="va">${MAG_BAM}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-220"><a href="#cb14-220" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.sorted.bam"</span></span>
+<span id="cb14-221"><a href="#cb14-221" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-profile</span> <span class="dt">\</span></span>
+<span id="cb14-222"><a href="#cb14-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.sorted.bam"</span> <span class="dt">\</span></span>
+<span id="cb14-223"><a href="#cb14-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span> <span class="dt">\</span></span>
+<span id="cb14-224"><a href="#cb14-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-PROFILE"</span> <span class="dt">\</span></span>
+<span id="cb14-225"><a href="#cb14-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--sample-name</span> MOCK1</span>
+<span id="cb14-226"><a href="#cb14-226" aria-hidden="true" tabindex="-1"></a><span class="ex">anvi-interactive</span> <span class="dt">\</span></span>
+<span id="cb14-227"><a href="#cb14-227" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-PROFILE/PROFILE.db"</span> <span class="dt">\</span></span>
+<span id="cb14-228"><a href="#cb14-228" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">.db"</span></span>
 <span id="cb14-229"><a href="#cb14-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-230"><a href="#cb14-230" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成稳定 isolate、review FASTA 与 MIMAG supplement</span></span>
-<span id="cb14-231"><a href="#cb14-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-232"><a href="#cb14-232" aria-hidden="true" tabindex="-1"></a><span class="fu">### NCBI 数值门槛、MIMAG quality tier 与提交就绪是三层概念</span></span>
+<span id="cb14-230"><a href="#cb14-230" aria-hidden="true" tabindex="-1"></a><span class="ex">Bandage</span> image <span class="st">"</span><span class="va">${ASSEMBLY_GRAPH}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-231"><a href="#cb14-231" aria-hidden="true" tabindex="-1"></a>  <span class="st">"work/curation/</span><span class="va">${MAG_ID}</span><span class="st">-graph.png"</span></span>
+<span id="cb14-232"><a href="#cb14-232" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-233"><a href="#cb14-233" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-234"><a href="#cb14-234" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI 当前接收 MAG 的基础序列门槛包括：单一生物体、包含已识别的全部 genome sequence、CheckM/CheckM2 completeness &gt;=90%、总长度 &gt;=100,000 nt <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>。</span>
-<span id="cb14-235"><a href="#cb14-235" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG high-quality tier 还要结合 contamination、完整 5S/16S/23S rRNA 与 tRNA 等证据 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span>。</span>
-<span id="cb14-236"><a href="#cb14-236" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>提交就绪还需要数据所有权、taxonomy 名称、每个 MAG 的 BioSample、来源元数据、sequence/header、项目和文件一致性。</span>
+<span id="cb14-234"><a href="#cb14-234" aria-hidden="true" tabindex="-1"></a>anvi'o 用于联合查看 coverage、GC、taxonomy 与 contig membership <span class="co">[</span><span class="ot">@eren2015anvio</span><span class="co">]</span>；Bandage 用于检查 contig 在 assembly graph 中的连接、分支和重复结构 <span class="co">[</span><span class="ot">@wick2015bandage</span><span class="co">]</span>。<span class="in">`manual-review-sheet.tsv`</span> 的 <span class="in">`AnvioManualSignoff`</span> 与 <span class="in">`BandageManualSignoff`</span> 只有研究者实际看完并记录证据后才能由 <span class="in">`PENDING_INVESTIGATOR_REVIEW`</span> 改为通过或拒绝。</span>
+<span id="cb14-235"><a href="#cb14-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-236"><a href="#cb14-236" aria-hidden="true" tabindex="-1"></a><span class="fu">## 生成稳定 isolate、review FASTA 与 MIMAG supplement</span></span>
 <span id="cb14-237"><a href="#cb14-237" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-238"><a href="#cb14-238" aria-hidden="true" tabindex="-1"></a>因此，一个 MAG 可以通过 NCBI 数值门槛、属于 MIMAG medium quality，同时仍因元数据或人工复核缺失而不能提交。</span>
+<span id="cb14-238"><a href="#cb14-238" aria-hidden="true" tabindex="-1"></a><span class="fu">### NCBI 数值门槛、MIMAG quality tier 与提交就绪是三层概念</span></span>
 <span id="cb14-239"><a href="#cb14-239" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-240"><a href="#cb14-240" aria-hidden="true" tabindex="-1"></a>自动预审按 SGB 顺序分配 <span class="in">`MBPMAG001`</span>--<span class="in">`MBPMAG012`</span>。每条 contig 重写为唯一 header，并加入真实来源 run：</span>
-<span id="cb14-241"><a href="#cb14-241" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-242"><a href="#cb14-242" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
-<span id="cb14-243"><a href="#cb14-243" aria-hidden="true" tabindex="-1"></a><span class="in">&gt;MBPMAG001_contig00001 [SRA=ERR9765746,ERR9765747]</span></span>
-<span id="cb14-244"><a href="#cb14-244" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-240"><a href="#cb14-240" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI 当前接收 MAG 的基础序列门槛包括：单一生物体、包含已识别的全部 genome sequence、CheckM/CheckM2 completeness &gt;=90%、总长度 &gt;=100,000 nt <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>。</span>
+<span id="cb14-241"><a href="#cb14-241" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG high-quality tier 还要结合 contamination、完整 5S/16S/23S rRNA 与 tRNA 等证据 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span>。</span>
+<span id="cb14-242"><a href="#cb14-242" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>提交就绪还需要数据所有权、taxonomy 名称、每个 MAG 的 BioSample、来源元数据、sequence/header、项目和文件一致性。</span>
+<span id="cb14-243"><a href="#cb14-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-244"><a href="#cb14-244" aria-hidden="true" tabindex="-1"></a>因此，一个 MAG 可以通过 NCBI 数值门槛、属于 MIMAG medium quality，同时仍因元数据或人工复核缺失而不能提交。</span>
 <span id="cb14-245"><a href="#cb14-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-246"><a href="#cb14-246" aria-hidden="true" tabindex="-1"></a>gzip 使用固定时间戳，因而同一输入可得到相同文件 SHA-256。检查 review FASTA 与补充表：</span>
+<span id="cb14-246"><a href="#cb14-246" aria-hidden="true" tabindex="-1"></a>自动预审按 SGB 顺序分配 <span class="in">`MBPMAG001`</span>--<span class="in">`MBPMAG012`</span>。每条 contig 重写为唯一 header，并加入真实来源 run：</span>
 <span id="cb14-247"><a href="#cb14-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-248"><a href="#cb14-248" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-249"><a href="#cb14-249" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/review-fasta/MBPMAG001.fsa.gz"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 3</span>
-<span id="cb14-250"><a href="#cb14-250" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/review-fasta-manifest.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-251"><a href="#cb14-251" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mimag-quality-supplement.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-252"><a href="#cb14-252" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-248"><a href="#cb14-248" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb14-249"><a href="#cb14-249" aria-hidden="true" tabindex="-1"></a><span class="in">&gt;MBPMAG001_contig00001 [SRA=ERR9765746,ERR9765747]</span></span>
+<span id="cb14-250"><a href="#cb14-250" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-251"><a href="#cb14-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-252"><a href="#cb14-252" aria-hidden="true" tabindex="-1"></a>gzip 使用固定时间戳，因而同一输入可得到相同文件 SHA-256。检查 review FASTA 与补充表：</span>
 <span id="cb14-253"><a href="#cb14-253" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-254"><a href="#cb14-254" aria-hidden="true" tabindex="-1"></a>12 个 technical-review MAG 全部通过 NCBI 的 completeness/size 数值门槛；其中 4 个达到本次 MIMAG high-quality 记录，8 个为 medium quality。review FASTA 仍带有 <span class="in">`DO_NOT_SUBMIT`</span> 状态，直到所有人工与元数据关卡关闭。</span>
-<span id="cb14-255"><a href="#cb14-255" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-256"><a href="#cb14-256" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 用 cluster ID、物种名或 SRA accession 充当 isolate"}</span>
-<span id="cb14-257"><a href="#cb14-257" aria-hidden="true" tabindex="-1"></a>isolate 应是唯一、稳定的字母数字标识，且不包含 organism 名称。cluster 与 taxonomy 会重算，run accession 表示来源 reads，三者语义不同。</span>
-<span id="cb14-258"><a href="#cb14-258" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-254"><a href="#cb14-254" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-255"><a href="#cb14-255" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/review-fasta/MBPMAG001.fsa.gz"</span> <span class="kw">|</span> <span class="fu">head</span> <span class="at">-n</span> 3</span>
+<span id="cb14-256"><a href="#cb14-256" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/review-fasta-manifest.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-257"><a href="#cb14-257" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/mimag-quality-supplement.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-258"><a href="#cb14-258" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-259"><a href="#cb14-259" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-260"><a href="#cb14-260" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先协调 NCBI organism name，再注册 BioSample</span></span>
+<span id="cb14-260"><a href="#cb14-260" aria-hidden="true" tabindex="-1"></a>12 个 technical-review MAG 全部通过 NCBI 的 completeness/size 数值门槛；其中 4 个达到本次 MIMAG high-quality 记录，8 个为 medium quality。review FASTA 仍带有 <span class="in">`DO_NOT_SUBMIT`</span> 状态，直到所有人工与元数据关卡关闭。</span>
 <span id="cb14-261"><a href="#cb14-261" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-262"><a href="#cb14-262" aria-hidden="true" tabindex="-1"></a><span class="fu">### 环境样本与 MAG BioSample 不是同一个对象</span></span>
-<span id="cb14-263"><a href="#cb14-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-264"><a href="#cb14-264" aria-hidden="true" tabindex="-1"></a>原始 reads 对应混合群落的 physical/environmental BioSample；每个 MAG 则代表一个计算恢复的单一 organism bin，需要独立的 organism-specific MAG BioSample。NCBI 要求每个 MAG 使用唯一、稳定的字母数字 isolate，且不把 organism 名缩写塞进 isolate <span class="co">[</span><span class="ot">@ncbi2026biosampleorganism</span><span class="co">]</span>。ENA 同样要求每个 MAG 关联独立 MAG sample，并通过 <span class="in">`sample derived from`</span> 指回来源样本 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
+<span id="cb14-262"><a href="#cb14-262" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 用 cluster ID、物种名或 SRA accession 充当 isolate"}</span>
+<span id="cb14-263"><a href="#cb14-263" aria-hidden="true" tabindex="-1"></a>isolate 应是唯一、稳定的字母数字标识，且不包含 organism 名称。cluster 与 taxonomy 会重算，run accession 表示来源 reads，三者语义不同。</span>
+<span id="cb14-264"><a href="#cb14-264" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-265"><a href="#cb14-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-266"><a href="#cb14-266" aria-hidden="true" tabindex="-1"></a>NCBI 不直接采用未发表的 GTDB ad hoc name。提交前把“唯一 isolate + 未改写 GTDB lineage”两列发给 <span class="in">`genomes@ncbi.nlm.nih.gov`</span>，由 taxonomy 团队返回可用 organism name <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>：</span>
+<span id="cb14-266"><a href="#cb14-266" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先协调 NCBI organism name，再注册 BioSample</span></span>
 <span id="cb14-267"><a href="#cb14-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-268"><a href="#cb14-268" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-269"><a href="#cb14-269" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/taxonomy-name-request.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-270"><a href="#cb14-270" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-268"><a href="#cb14-268" aria-hidden="true" tabindex="-1"></a><span class="fu">### 环境样本与 MAG BioSample 不是同一个对象</span></span>
+<span id="cb14-269"><a href="#cb14-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-270"><a href="#cb14-270" aria-hidden="true" tabindex="-1"></a>原始 reads 对应混合群落的 physical/environmental BioSample；每个 MAG 则代表一个计算恢复的单一 organism bin，需要独立的 organism-specific MAG BioSample。NCBI 要求每个 MAG 使用唯一、稳定的字母数字 isolate，且不把 organism 名缩写塞进 isolate <span class="co">[</span><span class="ot">@ncbi2026biosampleorganism</span><span class="co">]</span>。ENA 同样要求每个 MAG 关联独立 MAG sample，并通过 <span class="in">`sample derived from`</span> 指回来源样本 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
 <span id="cb14-271"><a href="#cb14-271" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-272"><a href="#cb14-272" aria-hidden="true" tabindex="-1"></a>收到名称后，再建立一个研究级 BioProject 和每个 MAG 一个 MIMAG BioSample。当前 NCBI MIMAG 6.0 的必填来源字段包括 isolate、collection_date、<span class="in">`env_broad_scale`</span>、<span class="in">`env_local_scale`</span>、<span class="in">`env_medium`</span>、<span class="in">`geo_loc_name`</span>、<span class="in">`isolation_source`</span> 与 <span class="in">`lat_lon`</span> <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span>。本地 draft 对教程来源无法证明的字段明确写为 investigator must supply：</span>
+<span id="cb14-272"><a href="#cb14-272" aria-hidden="true" tabindex="-1"></a>NCBI 不直接采用未发表的 GTDB ad hoc name。提交前把“唯一 isolate + 未改写 GTDB lineage”两列发给 <span class="in">`genomes@ncbi.nlm.nih.gov`</span>，由 taxonomy 团队返回可用 organism name <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>：</span>
 <span id="cb14-273"><a href="#cb14-273" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb14-274"><a href="#cb14-274" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-275"><a href="#cb14-275" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/biosample-review-draft.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-276"><a href="#cb14-276" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/genome-batch-review-draft.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb14-277"><a href="#cb14-277" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-278"><a href="#cb14-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-279"><a href="#cb14-279" aria-hidden="true" tabindex="-1"></a>NCBI 路径的最小对象关系是：</span>
-<span id="cb14-280"><a href="#cb14-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-281"><a href="#cb14-281" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
-<span id="cb14-282"><a href="#cb14-282" aria-hidden="true" tabindex="-1"></a><span class="in">one research effort -&gt; one BioProject</span></span>
-<span id="cb14-283"><a href="#cb14-283" aria-hidden="true" tabindex="-1"></a><span class="in">mixed source sample -&gt; raw-read BioSample + ERR/SRR/DRR runs</span></span>
-<span id="cb14-284"><a href="#cb14-284" aria-hidden="true" tabindex="-1"></a><span class="in">one organism bin    -&gt; one MIMAG BioSample -&gt; one MAG assembly file</span></span>
-<span id="cb14-285"><a href="#cb14-285" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-275"><a href="#cb14-275" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/taxonomy-name-request.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-276"><a href="#cb14-276" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-277"><a href="#cb14-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-278"><a href="#cb14-278" aria-hidden="true" tabindex="-1"></a>收到名称后，再建立一个研究级 BioProject 和每个 MAG 一个 MIMAG BioSample。当前 NCBI MIMAG 6.0 的必填来源字段包括 isolate、collection_date、<span class="in">`env_broad_scale`</span>、<span class="in">`env_local_scale`</span>、<span class="in">`env_medium`</span>、<span class="in">`geo_loc_name`</span>、<span class="in">`isolation_source`</span> 与 <span class="in">`lat_lon`</span> <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span>。本地 draft 对教程来源无法证明的字段明确写为 investigator must supply：</span>
+<span id="cb14-279"><a href="#cb14-279" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-280"><a href="#cb14-280" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-281"><a href="#cb14-281" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/biosample-review-draft.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-282"><a href="#cb14-282" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-t</span> <span class="at">-s</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">/summary/genome-batch-review-draft.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb14-283"><a href="#cb14-283" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb14-284"><a href="#cb14-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-285"><a href="#cb14-285" aria-hidden="true" tabindex="-1"></a>NCBI 路径的最小对象关系是：</span>
 <span id="cb14-286"><a href="#cb14-286" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-287"><a href="#cb14-287" aria-hidden="true" tabindex="-1"></a>每个 MAG 在 batch submission 中单独一行、单独一个 sequence file；一个 batch 最多 400 个 assemblies <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>。不要随机拼接 contigs，也不要把 organism 写成 <span class="in">`metagenome`</span>；病毒基因组走 MIUVIG/病毒提交路径，不走 MIMAG <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span>。</span>
-<span id="cb14-288"><a href="#cb14-288" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-289"><a href="#cb14-289" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“挑最好看的 bin”升级为 checksum-covered species representative {#sec-audit}</span></span>
-<span id="cb14-290"><a href="#cb14-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-291"><a href="#cb14-291" aria-hidden="true" tabindex="-1"></a>先用 95% ANI 去冗余，再在每个 cluster 内固定 representative 和 sequence SHA-256。这样补充表、taxonomy、abundance 与提交文件指向同一序列；文件名变化不会悄悄替换 genome。</span>
+<span id="cb14-287"><a href="#cb14-287" aria-hidden="true" tabindex="-1"></a><span class="in">```text</span></span>
+<span id="cb14-288"><a href="#cb14-288" aria-hidden="true" tabindex="-1"></a><span class="in">one research effort -&gt; one BioProject</span></span>
+<span id="cb14-289"><a href="#cb14-289" aria-hidden="true" tabindex="-1"></a><span class="in">mixed source sample -&gt; raw-read BioSample + ERR/SRR/DRR runs</span></span>
+<span id="cb14-290"><a href="#cb14-290" aria-hidden="true" tabindex="-1"></a><span class="in">one organism bin    -&gt; one MIMAG BioSample -&gt; one MAG assembly file</span></span>
+<span id="cb14-291"><a href="#cb14-291" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-292"><a href="#cb14-292" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-293"><a href="#cb14-293" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 GTDB species label 升级为 NCBI taxonomy 协调</span></span>
+<span id="cb14-293"><a href="#cb14-293" aria-hidden="true" tabindex="-1"></a>每个 MAG 在 batch submission 中单独一行、单独一个 sequence file；一个 batch 最多 400 个 assemblies <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>。不要随机拼接 contigs，也不要把 organism 写成 <span class="in">`metagenome`</span>；病毒基因组走 MIUVIG/病毒提交路径，不走 MIMAG <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span>。</span>
 <span id="cb14-294"><a href="#cb14-294" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-295"><a href="#cb14-295" aria-hidden="true" tabindex="-1"></a>GTDB R232 为 24/24 SGB 提供 species assignment，但这不自动保证名称可被 NCBI Taxonomy 接受。提交前发送未改写 lineage；收到 NCBI 名称后才能填 <span class="in">`organism`</span>。内部 SGB/isolate ID 始终不随 taxonomy release 改变。</span>
+<span id="cb14-295"><a href="#cb14-295" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“挑最好看的 bin”升级为 checksum-covered species representative {#sec-audit}</span></span>
 <span id="cb14-296"><a href="#cb14-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-297"><a href="#cb14-297" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从只写 NCBI 路径升级为 INSDC-aware 提交计划</span></span>
+<span id="cb14-297"><a href="#cb14-297" aria-hidden="true" tabindex="-1"></a>先用 95% ANI 去冗余，再在每个 cluster 内固定 representative 和 sequence SHA-256。这样补充表、taxonomy、abundance 与提交文件指向同一序列；文件名变化不会悄悄替换 genome。</span>
 <span id="cb14-298"><a href="#cb14-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-299"><a href="#cb14-299" aria-hidden="true" tabindex="-1"></a>NCBI 与 ENA 最终通过 INSDC 交换数据，但注册表、字段名、认证方式和 validation 工具不同。研究开始时选择一个主提交入口；不要在两端重复创建同一 assembly，也不要把一端的临时 accession 当成另一端的字段。</span>
+<span id="cb14-299"><a href="#cb14-299" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 GTDB species label 升级为 NCBI taxonomy 协调</span></span>
 <span id="cb14-300"><a href="#cb14-300" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-301"><a href="#cb14-301" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 GTDB taxonomy 直接填进 NCBI organism"}</span>
-<span id="cb14-302"><a href="#cb14-302" aria-hidden="true" tabindex="-1"></a>GTDB 的 unpublished/ad hoc names 未必存在于 NCBI Taxonomy。先提交 isolate + unmodified GTDB lineage 给 NCBI taxonomy 协调。</span>
-<span id="cb14-303"><a href="#cb14-303" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-301"><a href="#cb14-301" aria-hidden="true" tabindex="-1"></a>GTDB R232 为 24/24 SGB 提供 species assignment，但这不自动保证名称可被 NCBI Taxonomy 接受。提交前发送未改写 lineage；收到 NCBI 名称后才能填 <span class="in">`organism`</span>。内部 SGB/isolate ID 始终不随 taxonomy release 改变。</span>
+<span id="cb14-302"><a href="#cb14-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-303"><a href="#cb14-303" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从只写 NCBI 路径升级为 INSDC-aware 提交计划</span></span>
 <span id="cb14-304"><a href="#cb14-304" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-305"><a href="#cb14-305" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 所有 MAG 共用一个 BioSample"}</span>
-<span id="cb14-306"><a href="#cb14-306" aria-hidden="true" tabindex="-1"></a>raw reads 对应混合样本，MAG 对应单一 organism bin。每个 MAG 都需要自己的 organism-specific MAG BioSample，并指回来源 runs/sample。</span>
-<span id="cb14-307"><a href="#cb14-307" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb14-308"><a href="#cb14-308" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-309"><a href="#cb14-309" aria-hidden="true" tabindex="-1"></a><span class="fu">## 需要走 ENA 时，重新映射为 ENA manifest</span></span>
+<span id="cb14-305"><a href="#cb14-305" aria-hidden="true" tabindex="-1"></a>NCBI 与 ENA 最终通过 INSDC 交换数据，但注册表、字段名、认证方式和 validation 工具不同。研究开始时选择一个主提交入口；不要在两端重复创建同一 assembly，也不要把一端的临时 accession 当成另一端的字段。</span>
+<span id="cb14-306"><a href="#cb14-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-307"><a href="#cb14-307" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 把 GTDB taxonomy 直接填进 NCBI organism"}</span>
+<span id="cb14-308"><a href="#cb14-308" aria-hidden="true" tabindex="-1"></a>GTDB 的 unpublished/ad hoc names 未必存在于 NCBI Taxonomy。先提交 isolate + unmodified GTDB lineage 给 NCBI taxonomy 协调。</span>
+<span id="cb14-309"><a href="#cb14-309" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-310"><a href="#cb14-310" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-311"><a href="#cb14-311" aria-hidden="true" tabindex="-1"></a><span class="fu">### accession 只能由数据库签发</span></span>
-<span id="cb14-312"><a href="#cb14-312" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-313"><a href="#cb14-313" aria-hidden="true" tabindex="-1"></a><span class="in">`PRJNA...`</span>、<span class="in">`SAMN...`</span>、<span class="in">`PRJEB...`</span>、<span class="in">`SAMEA...`</span>、<span class="in">`GCA_...`</span> 都不是本地文件名。只有完成注册或提交后，数据库返回的 accession 才能进入论文。提交前可保留空值、<span class="in">`UNREGISTERED`</span> 或阻断状态，但不能制造“看起来像真的”编号。</span>
+<span id="cb14-311"><a href="#cb14-311" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 所有 MAG 共用一个 BioSample"}</span>
+<span id="cb14-312"><a href="#cb14-312" aria-hidden="true" tabindex="-1"></a>raw reads 对应混合样本，MAG 对应单一 organism bin。每个 MAG 都需要自己的 organism-specific MAG BioSample，并指回来源 runs/sample。</span>
+<span id="cb14-313"><a href="#cb14-313" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-314"><a href="#cb14-314" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-315"><a href="#cb14-315" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb14-316"><a href="#cb14-316" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>点开：为什么公开教程数据不能直接再次提交<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb14-317"><a href="#cb14-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-318"><a href="#cb14-318" aria-hidden="true" tabindex="-1"></a>NCBI 明确要求只提交由提交者自行确定的序列，不应把从公共数据库下载的数据作为自己的新 genome submission <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>；ENA 对 third-party data assembly 也要求先联系 helpdesk <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。本次 ERR9765746/ERR9765747 是公开 mock 数据，只用于演示预审结构。review FASTA 被显式标记为 <span class="in">`DEMONSTRATION_REVIEW_FILE—DO_NOT_SUBMIT`</span>，没有触发任何外部提交。</span>
-<span id="cb14-319"><a href="#cb14-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-320"><a href="#cb14-320" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb14-321"><a href="#cb14-321" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-322"><a href="#cb14-322" aria-hidden="true" tabindex="-1"></a>NCBI draft 不能原样冒充 ENA manifest。ENA 要求预注册 study 与独立 MAG sample，MAG sample 使用 GSC MIMAGS checklist，并通过 mandatory <span class="in">`sample derived from`</span> 指向来源 sample。contig-level MAG 通常是一份 manifest 加一份 FASTA，通过 Webin-CLI 的 genome context 校验 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
+<span id="cb14-315"><a href="#cb14-315" aria-hidden="true" tabindex="-1"></a><span class="fu">## 需要走 ENA 时，重新映射为 ENA manifest</span></span>
+<span id="cb14-316"><a href="#cb14-316" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-317"><a href="#cb14-317" aria-hidden="true" tabindex="-1"></a><span class="fu">### accession 只能由数据库签发</span></span>
+<span id="cb14-318"><a href="#cb14-318" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-319"><a href="#cb14-319" aria-hidden="true" tabindex="-1"></a><span class="in">`PRJNA...`</span>、<span class="in">`SAMN...`</span>、<span class="in">`PRJEB...`</span>、<span class="in">`SAMEA...`</span>、<span class="in">`GCA_...`</span> 都不是本地文件名。只有完成注册或提交后，数据库返回的 accession 才能进入论文。提交前可保留空值、<span class="in">`UNREGISTERED`</span> 或阻断状态，但不能制造“看起来像真的”编号。</span>
+<span id="cb14-320"><a href="#cb14-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-321"><a href="#cb14-321" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb14-322"><a href="#cb14-322" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>点开：为什么公开教程数据不能直接再次提交<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
 <span id="cb14-323"><a href="#cb14-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-324"><a href="#cb14-324" aria-hidden="true" tabindex="-1"></a>manifest 至少记录 <span class="in">`STUDY`</span>、<span class="in">`SAMPLE`</span>、<span class="in">`ASSEMBLYNAME`</span>、<span class="in">`ASSEMBLY_TYPE`</span>、<span class="in">`COVERAGE`</span>、<span class="in">`PROGRAM`</span>、<span class="in">`PLATFORM`</span> 与 <span class="in">`FASTA`</span>；来源 runs 可写入 <span class="in">`RUN_REF`</span>。正式 accession 由 ENA 返回，不能提前填写。先只做 validation：</span>
+<span id="cb14-324"><a href="#cb14-324" aria-hidden="true" tabindex="-1"></a>NCBI 明确要求只提交由提交者自行确定的序列，不应把从公共数据库下载的数据作为自己的新 genome submission <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span>；ENA 对 third-party data assembly 也要求先联系 helpdesk <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。本次 ERR9765746/ERR9765747 是公开 mock 数据，只用于演示预审结构。review FASTA 被显式标记为 <span class="in">`DEMONSTRATION_REVIEW_FILE—DO_NOT_SUBMIT`</span>，没有触发任何外部提交。</span>
 <span id="cb14-325"><a href="#cb14-325" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-326"><a href="#cb14-326" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-327"><a href="#cb14-327" aria-hidden="true" tabindex="-1"></a><span class="ex">webin-cli</span> <span class="dt">\</span></span>
-<span id="cb14-328"><a href="#cb14-328" aria-hidden="true" tabindex="-1"></a>  <span class="at">-username</span> <span class="st">"</span><span class="va">${WEBIN_USER}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-329"><a href="#cb14-329" aria-hidden="true" tabindex="-1"></a>  <span class="at">-password</span> <span class="st">"</span><span class="va">${WEBIN_PASSWORD}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-330"><a href="#cb14-330" aria-hidden="true" tabindex="-1"></a>  <span class="at">-context</span> genome <span class="dt">\</span></span>
-<span id="cb14-331"><a href="#cb14-331" aria-hidden="true" tabindex="-1"></a>  <span class="at">-manifest</span> <span class="st">"</span><span class="va">${ENA_MANIFEST}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-332"><a href="#cb14-332" aria-hidden="true" tabindex="-1"></a>  <span class="at">-validate</span></span>
-<span id="cb14-333"><a href="#cb14-333" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-334"><a href="#cb14-334" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-335"><a href="#cb14-335" aria-hidden="true" tabindex="-1"></a>使用 third-party data 或只提交 MAG、不提交 lower-level assembly/reads 时，应先按 ENA 文档联系 helpdesk 或建立并关联 environmental source sample。<span class="in">`-validate`</span> 成功不等于已经提交，ERZ 也不是论文中最终引用的 assembly accession <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
-<span id="cb14-336"><a href="#cb14-336" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-337"><a href="#cb14-337" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“文件准备好”升级为权限与来源检查</span></span>
-<span id="cb14-338"><a href="#cb14-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-339"><a href="#cb14-339" aria-hidden="true" tabindex="-1"></a>公开数据可用于复现，不等于可以作为自己的新提交。当前 review package 故意保留 5 个 blocked gates，<span class="in">`external_submission_performed=false`</span>、<span class="in">`accessions_invented=false`</span>。这不是缺失结果，而是防止重复提交和错误归属的正确结果。</span>
+<span id="cb14-326"><a href="#cb14-326" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb14-327"><a href="#cb14-327" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-328"><a href="#cb14-328" aria-hidden="true" tabindex="-1"></a>NCBI draft 不能原样冒充 ENA manifest。ENA 要求预注册 study 与独立 MAG sample，MAG sample 使用 GSC MIMAGS checklist，并通过 mandatory <span class="in">`sample derived from`</span> 指向来源 sample。contig-level MAG 通常是一份 manifest 加一份 FASTA，通过 Webin-CLI 的 genome context 校验 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
+<span id="cb14-329"><a href="#cb14-329" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-330"><a href="#cb14-330" aria-hidden="true" tabindex="-1"></a>manifest 至少记录 <span class="in">`STUDY`</span>、<span class="in">`SAMPLE`</span>、<span class="in">`ASSEMBLYNAME`</span>、<span class="in">`ASSEMBLY_TYPE`</span>、<span class="in">`COVERAGE`</span>、<span class="in">`PROGRAM`</span>、<span class="in">`PLATFORM`</span> 与 <span class="in">`FASTA`</span>；来源 runs 可写入 <span class="in">`RUN_REF`</span>。正式 accession 由 ENA 返回，不能提前填写。先只做 validation：</span>
+<span id="cb14-331"><a href="#cb14-331" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-332"><a href="#cb14-332" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-333"><a href="#cb14-333" aria-hidden="true" tabindex="-1"></a><span class="ex">webin-cli</span> <span class="dt">\</span></span>
+<span id="cb14-334"><a href="#cb14-334" aria-hidden="true" tabindex="-1"></a>  <span class="at">-username</span> <span class="st">"</span><span class="va">${WEBIN_USER}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-335"><a href="#cb14-335" aria-hidden="true" tabindex="-1"></a>  <span class="at">-password</span> <span class="st">"</span><span class="va">${WEBIN_PASSWORD}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-336"><a href="#cb14-336" aria-hidden="true" tabindex="-1"></a>  <span class="at">-context</span> genome <span class="dt">\</span></span>
+<span id="cb14-337"><a href="#cb14-337" aria-hidden="true" tabindex="-1"></a>  <span class="at">-manifest</span> <span class="st">"</span><span class="va">${ENA_MANIFEST}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-338"><a href="#cb14-338" aria-hidden="true" tabindex="-1"></a>  <span class="at">-validate</span></span>
+<span id="cb14-339"><a href="#cb14-339" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-340"><a href="#cb14-340" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-341"><a href="#cb14-341" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 为了写论文先编 accession"}</span>
-<span id="cb14-342"><a href="#cb14-342" aria-hidden="true" tabindex="-1"></a>提交前只写“accession pending”或保持 blocked；数据库签发后再更新。仿真的 PRJNA/SAMN/GCA 编号会污染数据血缘。</span>
-<span id="cb14-343"><a href="#cb14-343" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-341"><a href="#cb14-341" aria-hidden="true" tabindex="-1"></a>使用 third-party data 或只提交 MAG、不提交 lower-level assembly/reads 时，应先按 ENA 文档联系 helpdesk 或建立并关联 environmental source sample。<span class="in">`-validate`</span> 成功不等于已经提交，ERZ 也不是论文中最终引用的 assembly accession <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span>。</span>
+<span id="cb14-342"><a href="#cb14-342" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-343"><a href="#cb14-343" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“文件准备好”升级为权限与来源检查</span></span>
 <span id="cb14-344"><a href="#cb14-344" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-345"><a href="#cb14-345" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="7. 把 validation success 当作已公开"}</span>
-<span id="cb14-346"><a href="#cb14-346" aria-hidden="true" tabindex="-1"></a>Webin-CLI <span class="in">`-validate`</span>、本地 checksum 和 NCBI 页面预检都不是 release。论文应引用数据库最终可检索的 study/sample/assembly accessions 与 release 状态。</span>
-<span id="cb14-347"><a href="#cb14-347" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb14-348"><a href="#cb14-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-349"><a href="#cb14-349" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="8. 重复提交公共数据或在 NCBI/ENA 两端重复提交"}</span>
-<span id="cb14-350"><a href="#cb14-350" aria-hidden="true" tabindex="-1"></a>先确认提交权、原始研究的现有 accession 与主提交入口。third-party assembly 应联系数据库支持；INSDC 会交换数据，不需要双重提交。</span>
-<span id="cb14-351"><a href="#cb14-351" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb14-352"><a href="#cb14-352" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-353"><a href="#cb14-353" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存证据、出图并结果核对</span></span>
+<span id="cb14-345"><a href="#cb14-345" aria-hidden="true" tabindex="-1"></a>公开数据可用于复现，不等于可以作为自己的新提交。当前 review package 故意保留 5 个 blocked gates，<span class="in">`external_submission_performed=false`</span>、<span class="in">`accessions_invented=false`</span>。这不是缺失结果，而是防止重复提交和错误归属的正确结果。</span>
+<span id="cb14-346"><a href="#cb14-346" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-347"><a href="#cb14-347" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 为了写论文先编 accession"}</span>
+<span id="cb14-348"><a href="#cb14-348" aria-hidden="true" tabindex="-1"></a>提交前只写“accession pending”或保持 blocked；数据库签发后再更新。仿真的 PRJNA/SAMN/GCA 编号会污染数据血缘。</span>
+<span id="cb14-349"><a href="#cb14-349" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-350"><a href="#cb14-350" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-351"><a href="#cb14-351" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="7. 把 validation success 当作已公开"}</span>
+<span id="cb14-352"><a href="#cb14-352" aria-hidden="true" tabindex="-1"></a>Webin-CLI <span class="in">`-validate`</span>、本地 checksum 和 NCBI 页面预检都不是 release。论文应引用数据库最终可检索的 study/sample/assembly accessions 与 release 状态。</span>
+<span id="cb14-353"><a href="#cb14-353" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb14-354"><a href="#cb14-354" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-355"><a href="#cb14-355" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb14-356"><a href="#cb14-356" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article49_mag_submission.py <span class="dt">\</span></span>
-<span id="cb14-357"><a href="#cb14-357" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-358"><a href="#cb14-358" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/49-mag-curation-submission-frozen</span>
-<span id="cb14-359"><a href="#cb14-359" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-360"><a href="#cb14-360" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article49_mag_submission.R <span class="dt">\</span></span>
-<span id="cb14-361"><a href="#cb14-361" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/49-mag-curation-submission-frozen <span class="dt">\</span></span>
-<span id="cb14-362"><a href="#cb14-362" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
-<span id="cb14-363"><a href="#cb14-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-364"><a href="#cb14-364" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article49_mag_submission.py <span class="dt">\</span></span>
-<span id="cb14-365"><a href="#cb14-365" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb14-366"><a href="#cb14-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/49-mag-curation-submission-frozen <span class="dt">\</span></span>
-<span id="cb14-367"><a href="#cb14-367" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/49-mag-curation-submission <span class="dt">\</span></span>
-<span id="cb14-368"><a href="#cb14-368" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb14-369"><a href="#cb14-369" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/49-mag-curation-submission.qmd</span>
-<span id="cb14-370"><a href="#cb14-370" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb14-371"><a href="#cb14-371" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-372"><a href="#cb14-372" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保留基因组修改与提交信息 {#sec-methods}</span></span>
-<span id="cb14-373"><a href="#cb14-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-374"><a href="#cb14-374" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb14-375"><a href="#cb14-375" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-376"><a href="#cb14-376" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Species-level genome bins were defined by 95%-ANI dereplication, and each representative was tracked by a stable SGB identifier and SHA-256 digest. Representatives were eligible for pre-submission review only when a complete CheckM2/GUNC/MIMAG audit was available and the assembly met the contemporary NCBI numerical requirements of &gt;=90% CheckM2 completeness and &gt;=100,000 nt total length. Within each eligible MAG, contigs were screened using median/MAD robust z-scores for GC content and log2(mean depth + 0.1) in two independently mapped metagenomes; absolute robust z-scores &gt;3.5 were flagged for review and never triggered automatic sequence removal. Coverage, GC, taxonomic assignment, gene context, and assembly-graph connectivity were designated for joint inspection in anvi'o and Bandage. Stable alphanumeric isolate identifiers were assigned independently of taxonomy. MIMAG quality fields, GTDB-Tk v2.7.2 taxonomy against GTDB R232, source-run relationships, FASTA SHA-256 values, and submission-readiness gates were retained in tabular form. Organism names, per-MAG BioSamples, source metadata, and accessions were required before external submission; no third-party tutorial assembly was submitted.</span></span>
+<span id="cb14-355"><a href="#cb14-355" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="8. 重复提交公共数据或在 NCBI/ENA 两端重复提交"}</span>
+<span id="cb14-356"><a href="#cb14-356" aria-hidden="true" tabindex="-1"></a>先确认提交权、原始研究的现有 accession 与主提交入口。third-party assembly 应联系数据库支持；INSDC 会交换数据，不需要双重提交。</span>
+<span id="cb14-357"><a href="#cb14-357" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb14-358"><a href="#cb14-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-359"><a href="#cb14-359" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保存证据、出图并结果核对</span></span>
+<span id="cb14-360"><a href="#cb14-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-361"><a href="#cb14-361" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb14-362"><a href="#cb14-362" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article49_mag_submission.py <span class="dt">\</span></span>
+<span id="cb14-363"><a href="#cb14-363" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-364"><a href="#cb14-364" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/49-mag-curation-submission-frozen</span>
+<span id="cb14-365"><a href="#cb14-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-366"><a href="#cb14-366" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article49_mag_submission.R <span class="dt">\</span></span>
+<span id="cb14-367"><a href="#cb14-367" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/49-mag-curation-submission-frozen <span class="dt">\</span></span>
+<span id="cb14-368"><a href="#cb14-368" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> figures</span>
+<span id="cb14-369"><a href="#cb14-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-370"><a href="#cb14-370" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article49_mag_submission.py <span class="dt">\</span></span>
+<span id="cb14-371"><a href="#cb14-371" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb14-372"><a href="#cb14-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/49-mag-curation-submission-frozen <span class="dt">\</span></span>
+<span id="cb14-373"><a href="#cb14-373" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/49-mag-curation-submission <span class="dt">\</span></span>
+<span id="cb14-374"><a href="#cb14-374" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb14-375"><a href="#cb14-375" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/49-mag-curation-submission.qmd</span>
+<span id="cb14-376"><a href="#cb14-376" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb14-377"><a href="#cb14-377" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-378"><a href="#cb14-378" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb14-378"><a href="#cb14-378" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保留基因组修改与提交信息 {#sec-methods}</span></span>
 <span id="cb14-379"><a href="#cb14-379" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-380"><a href="#cb14-380" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of 24 species-level representatives, 16 had a complete upstream MAG audit and 12 additionally passed the NCBI completeness and assembly-size numerical gates; four were held below the completeness threshold and eight were held because the complete audit was unavailable. The technical-review set comprised 1,829 contigs. A prespecified robust GC/depth screen flagged 135 contigs (706,042 bp) for manual review, but no contig was removed automatically. Four MAGs met the recorded MIMAG high-quality criteria and eight were medium quality. All 12 required investigator signoff, taxonomy coordination, source-metadata completion, and registered project/sample accessions. Consequently, zero assemblies were classified as externally submission-ready, no accessions were invented, and no external submission was performed.</span></span>
+<span id="cb14-380"><a href="#cb14-380" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb14-381"><a href="#cb14-381" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-382"><a href="#cb14-382" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb14-382"><a href="#cb14-382" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Species-level genome bins were defined by 95%-ANI dereplication, and each representative was tracked by a stable SGB identifier and SHA-256 digest. Representatives were eligible for pre-submission review only when a complete CheckM2/GUNC/MIMAG audit was available and the assembly met the contemporary NCBI numerical requirements of &gt;=90% CheckM2 completeness and &gt;=100,000 nt total length. Within each eligible MAG, contigs were screened using median/MAD robust z-scores for GC content and log2(mean depth + 0.1) in two independently mapped metagenomes; absolute robust z-scores &gt;3.5 were flagged for review and never triggered automatic sequence removal. Coverage, GC, taxonomic assignment, gene context, and assembly-graph connectivity were designated for joint inspection in anvi'o and Bandage. Stable alphanumeric isolate identifiers were assigned independently of taxonomy. MIMAG quality fields, GTDB-Tk v2.7.2 taxonomy against GTDB R232, source-run relationships, FASTA SHA-256 values, and submission-readiness gates were retained in tabular form. Organism names, per-MAG BioSamples, source metadata, and accessions were required before external submission; no third-party tutorial assembly was submitted.</span></span>
 <span id="cb14-383"><a href="#cb14-383" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-384"><a href="#cb14-384" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>在分析前确定提交权、主提交入口和是否已有 BioProject/Study；对 third-party data 先咨询 NCBI/ENA。</span>
-<span id="cb14-385"><a href="#cb14-385" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用 95% ANI 或研究预设的 species boundary 去冗余；每个 biome/species cluster 选择最高质量代表，并固定内部 SGB ID 与 sequence SHA-256。</span>
-<span id="cb14-386"><a href="#cb14-386" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>只把具有完整 CheckM2、GUNC、MIMAG、coverage 和 graph lineage 的 MAG 放入技术复核集；门槛与例外写入 protocol。</span>
-<span id="cb14-387"><a href="#cb14-387" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>为每条 contig 汇总 GC、多个样本 depth、taxonomy、gene annotation 与 graph neighbor；异常检测只负责排序。</span>
-<span id="cb14-388"><a href="#cb14-388" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>在 anvi'o/Bandage 中记录 reviewer、日期、证据、决定与理由。任何删改都产生新 FASTA、新 checksum，并重跑 QC、taxonomy、abundance 和补充表。</span>
-<span id="cb14-389"><a href="#cb14-389" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>为每个代表分配不含 organism 名的稳定 isolate；将 GTDB release 与未改写 lineage 单独保留。</span>
-<span id="cb14-390"><a href="#cb14-390" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>NCBI 路径先协调 organism name，再注册一个研究级 BioProject、来源 mixed-sample BioSample 与每 MAG 一个 MIMAG BioSample；用真实 run accession 填 <span class="in">`derived_from`</span>/FASTA <span class="in">`[SRA=...]`</span>。</span>
-<span id="cb14-391"><a href="#cb14-391" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>ENA 路径建立 study、environmental source sample、独立 MAG sample 和 GSC MIMAGS checklist；为每个 MAG 生成 manifest，并先执行 Webin-CLI <span class="in">`-validate`</span>。</span>
-<span id="cb14-392"><a href="#cb14-392" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>将 assembly method/version、binning/refinement、coverage、sequencing platform、MIMAG fields、文件 hash、最终 accession 与 release date 写入补充材料和 Data availability。</span>
-<span id="cb14-393"><a href="#cb14-393" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>只有数据库返回并可检索的 accession 才进入终稿；blocked/pending 状态保留到责任人逐项签字。</span>
-<span id="cb14-394"><a href="#cb14-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-395"><a href="#cb14-395" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb14-396"><a href="#cb14-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-397"><a href="#cb14-397" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>funnel 从 24 到 0 保留每个 gate 的真实数量，不用百分比掩盖小样本。</span>
-<span id="cb14-398"><a href="#cb14-398" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>readiness matrix 使用绿色/橙色/朱红区分 pass/review/blocked，并直接打印英文状态。</span>
-<span id="cb14-399"><a href="#cb14-399" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>quality plot 同时画 completeness=90% 与 contamination=5% 参考线；颜色只表示记录到的 MIMAG tier。</span>
-<span id="cb14-400"><a href="#cb14-400" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>curation plot 用 flagged length percentage 而非仅用 contig 数，避免碎片化 MAG 因 contig 多而被视觉放大。</span>
-<span id="cb14-401"><a href="#cb14-401" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>每个点以稳定 isolate 标注；taxonomy 放在表中，避免长名称遮挡。</span>
-<span id="cb14-402"><a href="#cb14-402" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>所有图内文字为英文，导出 PDF、350 dpi PNG 与 LZW TIFF；Data availability table 另导出 TSV/CSV，不把 accession 只藏在图片里。</span>
-<span id="cb14-403"><a href="#cb14-403" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-404"><a href="#cb14-404" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb14-405"><a href="#cb14-405" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-406"><a href="#cb14-406" aria-hidden="true" tabindex="-1"></a>把自动质量门、异常 contig 标记、人工复核、稳定命名与数据库提交拆成独立状态；未获得 accession 前绝不伪造可提交结论。</span>
-<span id="cb14-407"><a href="#cb14-407" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-408"><a href="#cb14-408" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb14-384"><a href="#cb14-384" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb14-385"><a href="#cb14-385" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-386"><a href="#cb14-386" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Of 24 species-level representatives, 16 had a complete upstream MAG audit and 12 additionally passed the NCBI completeness and assembly-size numerical gates; four were held below the completeness threshold and eight were held because the complete audit was unavailable. The technical-review set comprised 1,829 contigs. A prespecified robust GC/depth screen flagged 135 contigs (706,042 bp) for manual review, but no contig was removed automatically. Four MAGs met the recorded MIMAG high-quality criteria and eight were medium quality. All 12 required investigator signoff, taxonomy coordination, source-metadata completion, and registered project/sample accessions. Consequently, zero assemblies were classified as externally submission-ready, no accessions were invented, and no external submission was performed.</span></span>
+<span id="cb14-387"><a href="#cb14-387" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-388"><a href="#cb14-388" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb14-389"><a href="#cb14-389" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-390"><a href="#cb14-390" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>在分析前确定提交权、主提交入口和是否已有 BioProject/Study；对 third-party data 先咨询 NCBI/ENA。</span>
+<span id="cb14-391"><a href="#cb14-391" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用 95% ANI 或研究预设的 species boundary 去冗余；每个 biome/species cluster 选择最高质量代表，并固定内部 SGB ID 与 sequence SHA-256。</span>
+<span id="cb14-392"><a href="#cb14-392" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>只把具有完整 CheckM2、GUNC、MIMAG、coverage 和 graph lineage 的 MAG 放入技术复核集；门槛与例外写入 protocol。</span>
+<span id="cb14-393"><a href="#cb14-393" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>为每条 contig 汇总 GC、多个样本 depth、taxonomy、gene annotation 与 graph neighbor；异常检测只负责排序。</span>
+<span id="cb14-394"><a href="#cb14-394" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>在 anvi'o/Bandage 中记录 reviewer、日期、证据、决定与理由。任何删改都产生新 FASTA、新 checksum，并重跑 QC、taxonomy、abundance 和补充表。</span>
+<span id="cb14-395"><a href="#cb14-395" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>为每个代表分配不含 organism 名的稳定 isolate；将 GTDB release 与未改写 lineage 单独保留。</span>
+<span id="cb14-396"><a href="#cb14-396" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>NCBI 路径先协调 organism name，再注册一个研究级 BioProject、来源 mixed-sample BioSample 与每 MAG 一个 MIMAG BioSample；用真实 run accession 填 <span class="in">`derived_from`</span>/FASTA <span class="in">`[SRA=...]`</span>。</span>
+<span id="cb14-397"><a href="#cb14-397" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>ENA 路径建立 study、environmental source sample、独立 MAG sample 和 GSC MIMAGS checklist；为每个 MAG 生成 manifest，并先执行 Webin-CLI <span class="in">`-validate`</span>。</span>
+<span id="cb14-398"><a href="#cb14-398" aria-hidden="true" tabindex="-1"></a><span class="ss">9. </span>将 assembly method/version、binning/refinement、coverage、sequencing platform、MIMAG fields、文件 hash、最终 accession 与 release date 写入补充材料和 Data availability。</span>
+<span id="cb14-399"><a href="#cb14-399" aria-hidden="true" tabindex="-1"></a><span class="ss">10. </span>只有数据库返回并可检索的 accession 才进入终稿；blocked/pending 状态保留到责任人逐项签字。</span>
+<span id="cb14-400"><a href="#cb14-400" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-401"><a href="#cb14-401" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb14-402"><a href="#cb14-402" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-403"><a href="#cb14-403" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>funnel 从 24 到 0 保留每个 gate 的真实数量，不用百分比掩盖小样本。</span>
+<span id="cb14-404"><a href="#cb14-404" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>readiness matrix 使用绿色/橙色/朱红区分 pass/review/blocked，并直接打印英文状态。</span>
+<span id="cb14-405"><a href="#cb14-405" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>quality plot 同时画 completeness=90% 与 contamination=5% 参考线；颜色只表示记录到的 MIMAG tier。</span>
+<span id="cb14-406"><a href="#cb14-406" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>curation plot 用 flagged length percentage 而非仅用 contig 数，避免碎片化 MAG 因 contig 多而被视觉放大。</span>
+<span id="cb14-407"><a href="#cb14-407" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>每个点以稳定 isolate 标注；taxonomy 放在表中，避免长名称遮挡。</span>
+<span id="cb14-408"><a href="#cb14-408" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>所有图内文字为英文，导出 PDF、350 dpi PNG 与 LZW TIFF；Data availability table 另导出 TSV/CSV，不把 accession 只藏在图片里。</span>
 <span id="cb14-409"><a href="#cb14-409" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-410"><a href="#cb14-410" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG 最低信息与质量标准 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span></span>
-<span id="cb14-411"><a href="#cb14-411" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI MAG submission FAQ 与当前序列门槛 <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span></span>
-<span id="cb14-412"><a href="#cb14-412" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI MIMAG BioSample package 6.0 <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span></span>
-<span id="cb14-413"><a href="#cb14-413" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI BioSample organism 与 MAG isolate 规则 <span class="co">[</span><span class="ot">@ncbi2026biosampleorganism</span><span class="co">]</span></span>
-<span id="cb14-414"><a href="#cb14-414" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ENA MAG sample、manifest 与 Webin-CLI 路径 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span></span>
-<span id="cb14-415"><a href="#cb14-415" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>anvi'o 交互式多组学检查 <span class="co">[</span><span class="ot">@eren2015anvio</span><span class="co">]</span></span>
-<span id="cb14-416"><a href="#cb14-416" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Bandage assembly graph inspection <span class="co">[</span><span class="ot">@wick2015bandage</span><span class="co">]</span></span>
+<span id="cb14-410"><a href="#cb14-410" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb14-411"><a href="#cb14-411" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-412"><a href="#cb14-412" aria-hidden="true" tabindex="-1"></a>把自动质量门、异常 contig 标记、人工复核、稳定命名与数据库提交拆成独立状态；未获得 accession 前绝不伪造可提交结论。</span>
+<span id="cb14-413"><a href="#cb14-413" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-414"><a href="#cb14-414" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb14-415"><a href="#cb14-415" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-416"><a href="#cb14-416" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG 最低信息与质量标准 <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span></span>
+<span id="cb14-417"><a href="#cb14-417" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI MAG submission FAQ 与当前序列门槛 <span class="co">[</span><span class="ot">@ncbi2026magfaq</span><span class="co">]</span></span>
+<span id="cb14-418"><a href="#cb14-418" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI MIMAG BioSample package 6.0 <span class="co">[</span><span class="ot">@ncbi2026mimag</span><span class="co">]</span></span>
+<span id="cb14-419"><a href="#cb14-419" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>NCBI BioSample organism 与 MAG isolate 规则 <span class="co">[</span><span class="ot">@ncbi2026biosampleorganism</span><span class="co">]</span></span>
+<span id="cb14-420"><a href="#cb14-420" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>ENA MAG sample、manifest 与 Webin-CLI 路径 <span class="co">[</span><span class="ot">@ena2026magsubmission</span><span class="co">]</span></span>
+<span id="cb14-421"><a href="#cb14-421" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>anvi'o 交互式多组学检查 <span class="co">[</span><span class="ot">@eren2015anvio</span><span class="co">]</span></span>
+<span id="cb14-422"><a href="#cb14-422" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Bandage assembly graph inspection <span class="co">[</span><span class="ot">@wick2015bandage</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">通路相关基因存在，是否足以支持代谢功能？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">通路相关基因存在，是否足以支持代谢功能？</a>
+  <ul class="collapse">
+  <li><a href="#功能注释高度一致是否意味着功能已被验证" id="toc-功能注释高度一致是否意味着功能已被验证" class="nav-link" data-scroll-target="#功能注释高度一致是否意味着功能已被验证">功能注释高度一致，是否意味着功能已被验证？</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-preparation" id="toc-sec-preparation" class="nav-link" data-scroll-target="#sec-preparation">先锁定输入、版本和算力边界</a>
   <ul class="collapse">
@@ -1011,13 +1043,13 @@ div.csl-indent {
 <p>本次 28 个 genome inputs 在大内存节点上使用 DRAM <strong>24 个并行分片 × 每片 3 threads</strong>，总 CPU ceiling 为 72；METABOLIC-G 使用 32 threads。建议为这一并行配置预留 <strong>192–256 GB RAM、72 CPU、80 GB 磁盘和 30–60 分钟</strong>。普通服务器可把 <code>--dram-jobs</code> 降到 4–8，并为每个 KOfam scan 预留约 8 GB RAM，代价是延长 wall time。实测 DRAM annotation wall time 为 <strong>41 min 50.94 s</strong>，merge 为 2.85 s，distill 为 56.98 s；METABOLIC 的独立 Prodigal 步骤为 <strong>2 min 10.39 s</strong>，METABOLIC-G 为 <strong>13 min 01.69 s</strong>。数据库构建与全部步骤的 GNU-time 账本保存在固化包。没有服务器时，先用固化的 <code>annotations.tsv.gz</code>、<code>product.tsv</code>、六张 METABOLIC worksheets 和每基因组 KO 表完成统计与作图；完整 HMM 搜索放到 HPC 或云端批处理。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="功能注释高度一致，是否意味着功能已被验证">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>功能注释高度一致，是否意味着功能已被验证
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1038,6 +1070,11 @@ div.csl-indent {
 </figcaption>
 </figure>
 </div>
+<section id="功能注释高度一致是否意味着功能已被验证" class="level3">
+<h3 class="anchored" data-anchor-id="功能注释高度一致是否意味着功能已被验证">功能注释高度一致，是否意味着功能已被验证？</h3>
+<p>24 个 MAG 的两套注释共有 2,678 个 KO，样本层 Jaccard 中位数为 0.853；307/312 个模块判定一致。这说明在当前输入和规则下，多数注释结论可以相互对应，不等于这些功能已经被独立实验验证。共享参考知识和同一组预测蛋白，也会带来共同偏差。</p>
+<p>模块未完整检出可能来自真实缺失、MAG 不完整或注释遗漏。应把“哪些反应得到支持”和“哪些关键环节仍未知”分开，再结合基因组质量解释。注释一致适合提高后续核验的优先级，但不能把代谢潜力直接升级为表达、活性或通量。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1404,11 +1441,16 @@ div.csl-indent {
 <h2 class="anchored" data-anchor-id="汇总-komodulestraits-与-mag-质量">汇总 KO、modules、traits 与 MAG 质量</h2>
 <section id="module-completeness-是连续量presence-是人为决策" class="level3">
 <h3 class="anchored" data-anchor-id="module-completeness-是连续量presence-是人为决策">Module completeness 是连续量，presence 是人为决策</h3>
-<p>设 module 有 (S) 个逻辑 steps，第 (s) 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：</p>
-<p>[ C_m = _{s=1}^{S} I(s), C_m . ]</p>
-<p>本次为跨工具审计预先固定 (C_m ) 作为 DRAM presence，并使用 METABOLIC-G 的 <code>-m-cutoff 0.75</code>。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。</p>
-<p>对于 genome (g)，两套 KO 集合的一致性用 Jaccard 指数：</p>
-<p>[ J_g = {|K_g^{DRAM}K_g^{METABOLIC}|}. ]</p>
+<p>设 module 有 <span class="math inline">\(S\)</span> 个逻辑 steps，第 <span class="math inline">\(s\)</span> 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：</p>
+<p><span class="math display">\[
+C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.
+\]</span></p>
+<p>本次为跨工具审计预先固定 <span class="math inline">\(C_m \ge 0.75\)</span> 作为 DRAM presence，并使用 METABOLIC-G 的 <code>-m-cutoff 0.75</code>。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。</p>
+<p>对于 genome <span class="math inline">\(g\)</span>，两套 KO 集合的一致性用 Jaccard 指数：</p>
+<p><span class="math display">\[
+J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}
+{|K_g^{DRAM}\cup K_g^{METABOLIC}|}.
+\]</span></p>
 <p>Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。</p>
 </section>
 <section id="mag-质量限定了absence和完整-pathway的可信度" class="level3">
@@ -2204,7 +2246,7 @@ Zhou, Zhichao, Patricia Q. Tran, Adam M. Breister, 等. 2022年. <span>《<span>
 <span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>本次 28 个 genome inputs 在大内存节点上使用 DRAM **24 个并行分片 × 每片 3 threads**，总 CPU ceiling 为 72；METABOLIC-G 使用 32 threads。建议为这一并行配置预留 **192--256 GB RAM、72 CPU、80 GB 磁盘和 30--60 分钟**。普通服务器可把 `--dram-jobs` 降到 4--8，并为每个 KOfam scan 预留约 8 GB RAM，代价是延长 wall time。实测 DRAM annotation wall time 为 **41 min 50.94 s**，merge 为 2.85 s，distill 为 56.98 s；METABOLIC 的独立 Prodigal 步骤为 **2 min 10.39 s**，METABOLIC-G 为 **13 min 01.69 s**。数据库构建与全部步骤的 GNU-time 账本保存在固化包。没有服务器时，先用固化的 <span class="in">`annotations.tsv.gz`</span>、<span class="in">`product.tsv`</span>、六张 METABOLIC worksheets 和每基因组 KO 表完成统计与作图；完整 HMM 搜索放到 HPC 或云端批处理。</span>
 <span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="功能注释高度一致，是否意味着功能已被验证"}</span>
 <span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>同源注释、模块完整度与代谢潜力要分开；不完整 MAG 的缺失不能直接写成功能缺失。</span>
 <span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a></span>
@@ -2218,445 +2260,451 @@ Zhou, Zhichao, Patricia Q. Tran, Adam M. Breister, 等. 2022年. <span>《<span>
 <span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="al">![DRAM 对 13 个共享 KEGG modules 的连续 step coverage。叉号表示在 0.75 presence cutoff 上与 METABOLIC 的二元判定不一致。](../figures/59-pathway-module-heatmap.png)</span>{#fig-59-module-heatmap}</span>
 <span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a><span class="fu">### 功能注释高度一致，是否意味着功能已被验证？</span></span>
 <span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/59/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 23.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>24 个 MAG 的两套注释共有 2,678 个 KO，样本层 Jaccard 中位数为 0.853；307/312 个模块判定一致。这说明在当前输入和规则下，多数注释结论可以相互对应，不等于这些功能已经被独立实验验证。共享参考知识和同一组预测蛋白，也会带来共同偏差。</span>
 <span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/59/download.R)</span>。</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>模块未完整检出可能来自真实缺失、MAG 不完整或注释遗漏。应把“哪些反应得到支持”和“哪些关键环节仍未知”分开，再结合基因组质量解释。注释一致适合提高后续核验的优先级，但不能把代谢潜力直接升级为表达、活性或通量。</span>
 <span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-59</span></span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/59/files.tsv"</span>))</span>
-<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-preparation}</span></span>
-<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实输入与固定身份</span></span>
-<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a>主分析从 PRJEB52977 的 ERR9765746/ERR9765747 真实 uneven microbial mocks 重建结果开始 <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。124 个通过 minimum QC gate 的候选经 95% ANI dRep 得到 24 个 representatives；这里直接读取 checksum-locked representative FASTA 与 GTDB-Tk R232 ledger，不依赖内存中的上一步对象。</span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/59/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 23.0 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/59/download.R)</span>。</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-59</span></span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/59/files.tsv"</span>))</span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Analysis set <span class="pp">|</span> 数量 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
-<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|</span></span>
-<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Primary real MAG <span class="pp">|</span> 24 <span class="pp">|</span> DRAM/METABOLIC 主比较；含 16 Bacteria、8 Archaea <span class="pp">|</span></span>
-<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`TRUNC_050/070/090/100`</span> <span class="pp">|</span> 4 <span class="pp">|</span> <span class="in">`SGB_002`</span> 的确定性 contig-retention sensitivity <span class="pp">|</span></span>
-<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 合计 <span class="pp">|</span> 28 <span class="pp">|</span> 两套工具使用序列完全相同、扩展名分别适配各自入口 <span class="pp">|</span></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先锁定输入、版本和算力边界 {#sec-preparation}</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="fu">### 真实输入与固定身份</span></span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a>主分析从 PRJEB52977 的 ERR9765746/ERR9765747 真实 uneven microbial mocks 重建结果开始 <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span>。124 个通过 minimum QC gate 的候选经 95% ANI dRep 得到 24 个 representatives；这里直接读取 checksum-locked representative FASTA 与 GTDB-Tk R232 ledger，不依赖内存中的上一步对象。</span>
 <span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a>截短以 seed **59002** 打乱 contig order，再依次保留到目标累计长度；实际 sequence retention 为 52.036793%、70.175068%、91.069344% 和 100%。<span class="in">`TRUNC_100`</span> 与 parent FASTA 的序列内容完全相同，是流程确定性的 positive control。随机过程之外，所有输入按 basename 字典序处理。</span>
-<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库快照</span></span>
-<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 资源 <span class="pp">|</span> 锁定版本 <span class="pp">|</span> 压缩文件身份 <span class="pp">|</span></span>
-<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> KOfam profiles <span class="pp">|</span> 2026-06-01 <span class="pp">|</span> 1,557,643,213 bytes；SHA-256 <span class="in">`038cb13c...c19606f`</span> <span class="pp">|</span></span>
-<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> KOfam <span class="in">`ko_list`</span> <span class="pp">|</span> 2026-06-01 <span class="pp">|</span> 909,392 bytes；SHA-256 <span class="in">`d418b074...27041a`</span> <span class="pp">|</span></span>
-<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> METABOLIC rules/HMM <span class="pp">|</span> v4.0 commit <span class="in">`9723633...191fdbb3`</span> <span class="pp">|</span> 三个 source archives 逐文件 SHA-256 <span class="pp">|</span></span>
-<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> dbCAN HMM <span class="pp">|</span> 5.2.9, 2026-05-05 <span class="pp">|</span> 129,842,960 bytes；SHA-256 <span class="in">`396c791f...baa7a5`</span> <span class="pp">|</span></span>
-<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEROPS <span class="in">`pepunit.lib`</span> <span class="pp">|</span> file dated 2023-02-22 <span class="pp">|</span> 457,531,072 bytes；SHA-256 <span class="in">`5deb3c49...dcd74`</span> <span class="pp">|</span></span>
-<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> DRAM forms <span class="pp">|</span> 1.5.0 commit <span class="in">`fe61d75...41b03f1`</span> <span class="pp">|</span> 5 个 TSV 逐文件 SHA-256 <span class="pp">|</span></span>
-<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a>METABOLIC v4.0 请求 2,644 个 KOfam profiles；锁定快照中 <span class="in">`K18513.hmm`</span> 已不存在，因此兼容层只纳入 2,643 个实际存在的 profiles，并把 <span class="in">`K18513`</span> 标为 fail-closed exclusion。METABOLIC 的 per-genome KO grid 有 2,678 行，因为另有 35 个 curated HMM rules 映射到 KO；不能把 2,678 误写成 KOfam profile 数。</span>
-<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、下载数据库并内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="co"># 两套工具隔离，避免 DRAM 的 Python ABI 与 METABOLIC 的 Perl/R 依赖互相覆盖</span></span>
-<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-dram-2026.07 <span class="dt">\</span></span>
-<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/dram-linux-64.lock</span>
-<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-metabolic-2026.07 <span class="dt">\</span></span>
-<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/metabolic-linux-64.lock</span>
-<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="co"># Figure environment: pandas 2.2.3 / matplotlib 3.11.1 / seaborn 0.13.2 / Pillow 12.3.0</span></span>
-<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
-<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/drep-linux-64.lock</span>
-<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a><span class="co"># DRAM 1.5.0 必须屏蔽 user-site；环境锁固定 NumPy 1.23.5 与 setuptools 80.10.2</span></span>
-<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a><span class="va">PYTHONNOUSERSITE</span><span class="op">=</span>1 <span class="ex">conda</span> run <span class="at">-n</span> metagenome-dram-2026.07 <span class="dt">\</span></span>
-<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>  DRAM-setup.py version</span>
-<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-metabolic-2026.07 hmmsearch <span class="at">-h</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-metabolic-2026.07 diamond version</span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Analysis set <span class="pp">|</span> 数量 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---:|---|</span></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Primary real MAG <span class="pp">|</span> 24 <span class="pp">|</span> DRAM/METABOLIC 主比较；含 16 Bacteria、8 Archaea <span class="pp">|</span></span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`TRUNC_050/070/090/100`</span> <span class="pp">|</span> 4 <span class="pp">|</span> <span class="in">`SGB_002`</span> 的确定性 contig-retention sensitivity <span class="pp">|</span></span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 合计 <span class="pp">|</span> 28 <span class="pp">|</span> 两套工具使用序列完全相同、扩展名分别适配各自入口 <span class="pp">|</span></span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a>截短以 seed **59002** 打乱 contig order，再依次保留到目标累计长度；实际 sequence retention 为 52.036793%、70.175068%、91.069344% 和 100%。<span class="in">`TRUNC_100`</span> 与 parent FASTA 的序列内容完全相同，是流程确定性的 positive control。随机过程之外，所有输入按 basename 字典序处理。</span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库快照</span></span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 资源 <span class="pp">|</span> 锁定版本 <span class="pp">|</span> 压缩文件身份 <span class="pp">|</span></span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> KOfam profiles <span class="pp">|</span> 2026-06-01 <span class="pp">|</span> 1,557,643,213 bytes；SHA-256 <span class="in">`038cb13c...c19606f`</span> <span class="pp">|</span></span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> KOfam <span class="in">`ko_list`</span> <span class="pp">|</span> 2026-06-01 <span class="pp">|</span> 909,392 bytes；SHA-256 <span class="in">`d418b074...27041a`</span> <span class="pp">|</span></span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> METABOLIC rules/HMM <span class="pp">|</span> v4.0 commit <span class="in">`9723633...191fdbb3`</span> <span class="pp">|</span> 三个 source archives 逐文件 SHA-256 <span class="pp">|</span></span>
+<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> dbCAN HMM <span class="pp">|</span> 5.2.9, 2026-05-05 <span class="pp">|</span> 129,842,960 bytes；SHA-256 <span class="in">`396c791f...baa7a5`</span> <span class="pp">|</span></span>
+<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MEROPS <span class="in">`pepunit.lib`</span> <span class="pp">|</span> file dated 2023-02-22 <span class="pp">|</span> 457,531,072 bytes；SHA-256 <span class="in">`5deb3c49...dcd74`</span> <span class="pp">|</span></span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> DRAM forms <span class="pp">|</span> 1.5.0 commit <span class="in">`fe61d75...41b03f1`</span> <span class="pp">|</span> 5 个 TSV 逐文件 SHA-256 <span class="pp">|</span></span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a>METABOLIC v4.0 请求 2,644 个 KOfam profiles；锁定快照中 <span class="in">`K18513.hmm`</span> 已不存在，因此兼容层只纳入 2,643 个实际存在的 profiles，并把 <span class="in">`K18513`</span> 标为 fail-closed exclusion。METABOLIC 的 per-genome KO grid 有 2,678 行，因为另有 35 个 curated HMM rules 映射到 KO；不能把 2,678 误写成 KOfam profile 数。</span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;&lt;</span><span class="kw">strong</span><span class="dt">&gt;</span>安装精确环境、下载数据库并内联作图函数<span class="dt">&lt;/</span><span class="kw">strong</span><span class="dt">&gt;&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a><span class="co"># 两套工具隔离，避免 DRAM 的 Python ABI 与 METABOLIC 的 Perl/R 依赖互相覆盖</span></span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-dram-2026.07 <span class="dt">\</span></span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/dram-linux-64.lock</span>
+<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-metabolic-2026.07 <span class="dt">\</span></span>
+<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/metabolic-linux-64.lock</span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a><span class="co"># Figure environment: pandas 2.2.3 / matplotlib 3.11.1 / seaborn 0.13.2 / Pillow 12.3.0</span></span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">--name</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>  <span class="at">--file</span> env/drep-linux-64.lock</span>
 <span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a><span class="co"># 大数据库不进入 Git；先按 manifest 下载，再以 bytes + SHA-256 双门核验</span></span>
-<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> metabolism-install</span>
-<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> metabolism-verify</span>
-<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> data/small/59-metabolism-database-manifest.tsv</span>
-<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/kofam-2026-06-01/profiles.tar.gz</span>
-<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/kofam-2026-06-01/ko_list.gz</span>
-<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/merops-2023-02-22/pepunit.lib</span>
-<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
-<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
-<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260759</span>)</span>
-<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a>  <span class="st">"DRAM"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"METABOLIC"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Agreement"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Review"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
-<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Discordance"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#7A7A7A"</span>,</span>
-<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#EEF3F5"</span>, <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#253238"</span></span>
-<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
-<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
-<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
-<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
-<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
-<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
-<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/59-dram-metabolic-frozen/`</span> 保存输入 ledger、数据库 manifest/compatibility audit、压缩后的 DRAM annotations、DRAM distillate、METABOLIC 六张 worksheets、28 组 KO result/hit tables、命令、日志、资源账本、环境锁和全部汇总表。31 GB 数据库与完整 MAG FASTA 不重复打包；其来源、bytes、checksum 和派生关系均在证据包中。</span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a><span class="co"># DRAM 1.5.0 必须屏蔽 user-site；环境锁固定 NumPy 1.23.5 与 setuptools 80.10.2</span></span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a><span class="va">PYTHONNOUSERSITE</span><span class="op">=</span>1 <span class="ex">conda</span> run <span class="at">-n</span> metagenome-dram-2026.07 <span class="dt">\</span></span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>  DRAM-setup.py version</span>
+<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-metabolic-2026.07 hmmsearch <span class="at">-h</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-metabolic-2026.07 diamond version</span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a><span class="co"># 大数据库不进入 Git；先按 manifest 下载，再以 bytes + SHA-256 双门核验</span></span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> metabolism-install</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> metabolism-verify</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> data/small/59-metabolism-database-manifest.tsv</span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/kofam-2026-06-01/profiles.tar.gz</span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/kofam-2026-06-01/ko_list.gz</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> work/article59/database/merops-2023-02-22/pepunit.lib</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260759</span>)</span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a>  <span class="st">"DRAM"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"METABOLIC"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Agreement"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>, <span class="st">"Review"</span> <span class="ot">=</span> <span class="st">"#E69F00"</span>,</span>
+<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Discordance"</span> <span class="ot">=</span> <span class="st">"#CC79A7"</span>, <span class="st">"Gray"</span> <span class="ot">=</span> <span class="st">"#7A7A7A"</span>,</span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>  <span class="st">"Light"</span> <span class="ot">=</span> <span class="st">"#EEF3F5"</span>, <span class="st">"Dark"</span> <span class="ot">=</span> <span class="st">"#253238"</span></span>
+<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.major =</span> <span class="fu">element_line</span>(<span class="at">color =</span> <span class="st">"#ECEFF1"</span>, <span class="at">linewidth =</span> <span class="fl">0.3</span>),</span>
+<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>),</span>
+<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span>,</span>
+<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.caption =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"#455A64"</span>, <span class="at">hjust =</span> <span class="dv">0</span>)</span>
+<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">205</span>, <span class="at">height =</span> <span class="dv">145</span>,</span>
+<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/59-dram-metabolic-frozen"</span></span>
-<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
-<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/kofam-compatibility-audit.tsv"</span> <span class="kw">|</span> <span class="fu">grep</span> K18513</span>
-<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/ko-counts-by-genome.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/module-agreement-summary.tsv"</span></span>
-<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
-<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 MAG、数据库链接与确定性 sensitivity inputs {#sec-code}</span></span>
-<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="fu">### Profile HMM 命中首先是序列证据 {#sec-theory}</span></span>
-<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a>KOfamKOALA 为每个 KEGG Ortholog（KO）建立 profile hidden Markov model，并提供 profile-specific adaptive score threshold <span class="co">[</span><span class="ot">@aramaki2020kofamkoala</span><span class="co">]</span>。HMMER 搜索给出的 score、E-value 和 domain alignment 是“该蛋白与某个家族相似”的证据 <span class="co">[</span><span class="ot">@eddy2011hmmer</span><span class="co">]</span>，但单次命中仍可能遇到：</span>
+<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
+<span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a><span class="fu">### 先核验保存证据</span></span>
+<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a><span class="in">`data/small/59-dram-metabolic-frozen/`</span> 保存输入 ledger、数据库 manifest/compatibility audit、压缩后的 DRAM annotations、DRAM distillate、METABOLIC 六张 worksheets、28 组 KO result/hit tables、命令、日志、资源账本、环境锁和全部汇总表。31 GB 数据库与完整 MAG FASTA 不重复打包；其来源、bytes、checksum 和派生关系均在证据包中。</span>
+<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">/data/small/59-dram-metabolic-frozen"</span></span>
+<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="at">-c</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/file-checksums.sha256"</span></span>
+<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/kofam-compatibility-audit.tsv"</span> <span class="kw">|</span> <span class="fu">grep</span> K18513</span>
+<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/ko-counts-by-genome.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/module-agreement-summary.tsv"</span></span>
+<span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$FROZEN</span><span class="st">/summary.json"</span></span>
+<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>同一保守 domain 被多个功能共享；</span>
-<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>截短基因只覆盖 HMM 的局部；</span>
-<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>paralog 与真正催化亚基难以区分；</span>
-<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>gene calling 跨 contig 边界而丢失 N/C 端；</span>
-<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>contamination 把另一类群的命中带入当前 bin。</span>
+<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a><span class="fu">## 准备 MAG、数据库链接与确定性 sensitivity inputs {#sec-code}</span></span>
+<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a><span class="fu">### Profile HMM 命中首先是序列证据 {#sec-theory}</span></span>
+<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a>KOfamKOALA 为每个 KEGG Ortholog（KO）建立 profile hidden Markov model，并提供 profile-specific adaptive score threshold <span class="co">[</span><span class="ot">@aramaki2020kofamkoala</span><span class="co">]</span>。HMMER 搜索给出的 score、E-value 和 domain alignment 是“该蛋白与某个家族相似”的证据 <span class="co">[</span><span class="ot">@eddy2011hmmer</span><span class="co">]</span>，但单次命中仍可能遇到：</span>
 <span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a>因此第一层结果应保存 gene ID、contig、坐标、strand、score、threshold、alignment 与 competing annotations，不能只留下一个扁平的 KO presence/absence 表。</span>
-<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article59"</span></span>
-<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a><span class="va">CACHE</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/metabolism-cache"</span></span>
-<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a><span class="va">DRAM_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-dram-2026.07"</span></span>
-<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a><span class="va">METABOLIC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-metabolic-2026.07"</span></span>
-<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kofam-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/kofam-2026-06-01"</span> <span class="dt">\</span></span>
-<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
-<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a>  <span class="at">--merops-file</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/merops-2023-02-22/pepunit.lib"</span> <span class="dt">\</span></span>
-<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dbcan-hmm</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/dbcan-5.2.9/dbCAN.hmm"</span> <span class="dt">\</span></span>
-<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-source</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/DRAM"</span> <span class="dt">\</span></span>
-<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span></span>
-<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/database-audit.tsv"</span></span>
-<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/kofam-compatibility-audit.tsv"</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-E</span> <span class="st">'Profile|K18513'</span></span>
-<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a>脚本先核验 12 个数据库资产，再从 <span class="in">`data/small/45-drep-dereplication-frozen/representative-genomes/`</span> 解压 24 个真实 FASTA，并与 <span class="in">`data/small/46-gtdbtk-taxonomy-frozen/taxonomy-summary.tsv`</span> 的 payload SHA-256 对齐。任何一个 genome、release 或 checksum 不匹配都会停止，不会产生部分有效的完成标记。</span>
-<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>送入 METABOLIC 的 contig 与 protein identifiers 都带 <span class="in">`genome_id__`</span> 前缀。这个 gate 很重要：parent MAG 与截短 sensitivity genomes 共享原始 contig names；若 gene IDs 不加 genome prefix，合并 HMM 搜索会把重复 ID 归到错误 genome，制造整列假阴性。</span>
-<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 taxonomy 当成功能证据"}</span>
-<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>GTDB-Tk R232 taxonomy 用于标记 genome lineage，不自动赋予该属/种的教科书代谢。功能结论必须来自当前 genome 的序列证据；反过来，一个孤立 gene hit 也不能推翻整套分类。</span>
-<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>同一保守 domain 被多个功能共享；</span>
+<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>截短基因只覆盖 HMM 的局部；</span>
+<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>paralog 与真正催化亚基难以区分；</span>
+<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>gene calling 跨 contig 边界而丢失 N/C 端；</span>
+<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>contamination 把另一类群的命中带入当前 bin。</span>
+<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a>因此第一层结果应保存 gene ID、contig、坐标、strand、score、threshold、alignment 与 competing annotations，不能只留下一个扁平的 KO presence/absence 表。</span>
+<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/work/article59"</span></span>
+<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a><span class="va">CACHE</span><span class="op">=</span><span class="st">"</span><span class="va">$ROOT</span><span class="st">/db/metabolism-cache"</span></span>
+<span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a><span class="va">DRAM_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-dram-2026.07"</span></span>
+<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a><span class="va">METABOLIC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-metabolic-2026.07"</span></span>
+<span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kofam-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/kofam-2026-06-01"</span> <span class="dt">\</span></span>
+<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
+<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">--merops-file</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/merops-2023-02-22/pepunit.lib"</span> <span class="dt">\</span></span>
+<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dbcan-hmm</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/dbcan-5.2.9/dbCAN.hmm"</span> <span class="dt">\</span></span>
+<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-source</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/DRAM"</span> <span class="dt">\</span></span>
+<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span></span>
+<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/database-audit.tsv"</span></span>
+<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/input-mag-ledger.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/kofam-compatibility-audit.tsv"</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-E</span> <span class="st">'Profile|K18513'</span></span>
+<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>脚本先核验 12 个数据库资产，再从 <span class="in">`data/small/45-drep-dereplication-frozen/representative-genomes/`</span> 解压 24 个真实 FASTA，并与 <span class="in">`data/small/46-gtdbtk-taxonomy-frozen/taxonomy-summary.tsv`</span> 的 payload SHA-256 对齐。任何一个 genome、release 或 checksum 不匹配都会停止，不会产生部分有效的完成标记。</span>
 <span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 混用数据库 release 或隐性更新"}</span>
-<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>同一 cohort 中的 genomes 必须使用同一 KOfam、dbCAN、MEROPS 和 rule forms。不要让下载脚本指向 <span class="in">`latest`</span> 后在队列中途更新；每个 archive 记录 release、bytes、SHA-256 和 retrieval date。</span>
-<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="8. parent 与截短对照复用 gene IDs"}</span>
-<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a>同一 genome 的完整与截短 FASTA 会共享 contig names。若合并 HMM 搜索只用裸 gene ID，后出现的记录可能覆盖前面的归属，造成某些 genomes 整列为零。所有 protein IDs 必须全局唯一；这里强制使用 <span class="in">`genome_id__contig_gene`</span>，并要求每个 genome 至少有一个 KO hit、100% control 精确复现 parent KO set。</span>
-<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a><span class="fu">## 构建 KOfam-only DRAM database 与 METABOLIC indexes</span></span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>送入 METABOLIC 的 contig 与 protein identifiers 都带 <span class="in">`genome_id__`</span> 前缀。这个 gate 很重要：parent MAG 与截短 sensitivity genomes 共享原始 contig names；若 gene IDs 不加 genome prefix，合并 HMM 搜索会把重复 ID 归到错误 genome，制造整列假阴性。</span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 把 taxonomy 当成功能证据"}</span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>GTDB-Tk R232 taxonomy 用于标记 genome lineage，不自动赋予该属/种的教科书代谢。功能结论必须来自当前 genome 的序列证据；反过来，一个孤立 gene hit 也不能推翻整套分类。</span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 混用数据库 release 或隐性更新"}</span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>同一 cohort 中的 genomes 必须使用同一 KOfam、dbCAN、MEROPS 和 rule forms。不要让下载脚本指向 <span class="in">`latest`</span> 后在队列中途更新；每个 archive 记录 release、bytes、SHA-256 和 retrieval date。</span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a><span class="fu">### 诊断性过程常需要组合规则、motif 与邻域</span></span>
-<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>氮循环、甲烷代谢、硫循环和金属还原常由多亚基复合物、相似酶家族和方向不同的反应共同决定。METABOLIC 在通用 KOfam 之外使用 curated HMMs、multi-gene rules 与部分 motif gates，将 gene-level hits 汇总成 function presence <span class="co">[</span><span class="ot">@zhou2022metabolic</span><span class="co">]</span>。这比“任意一个 KO 命中即阳性”更接近生物学，但仍需要人工检查：</span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="8. parent 与截短对照复用 gene IDs"}</span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>同一 genome 的完整与截短 FASTA 会共享 contig names。若合并 HMM 搜索只用裸 gene ID，后出现的记录可能覆盖前面的归属，造成某些 genomes 整列为零。所有 protein IDs 必须全局唯一；这里强制使用 <span class="in">`genome_id__contig_gene`</span>，并要求每个 genome 至少有一个 KO hit、100% control 精确复现 parent KO set。</span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>必需亚基是否齐全，还是只有 accessory subunit；</span>
-<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>diagnostic residue 或 motif 是否位于高质量 alignment 区域；</span>
-<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>基因是否位于合理 operon/neighborhood，而不是分散在可疑 contigs；</span>
-<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>同一 contig 的 coverage、GC 和 taxonomy 是否与 MAG 主体一致；</span>
-<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>反应方向是否能由基因家族本身确定。</span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="fu">## 构建 KOfam-only DRAM database 与 METABOLIC indexes</span></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a><span class="fu">### 诊断性过程常需要组合规则、motif 与邻域</span></span>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a>氮循环、甲烷代谢、硫循环和金属还原常由多亚基复合物、相似酶家族和方向不同的反应共同决定。METABOLIC 在通用 KOfam 之外使用 curated HMMs、multi-gene rules 与部分 motif gates，将 gene-level hits 汇总成 function presence <span class="co">[</span><span class="ot">@zhou2022metabolic</span><span class="co">]</span>。这比“任意一个 KO 命中即阳性”更接近生物学，但仍需要人工检查：</span>
 <span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/setup_article59_dram_database.py <span class="dt">\</span></span>
-<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kofam-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/kofam-2026-06-01"</span> <span class="dt">\</span></span>
-<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-source</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/DRAM"</span> <span class="dt">\</span></span>
-<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 32</span>
-<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/setup_article59_metabolic_database.py <span class="dt">\</span></span>
-<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
-<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span></span>
-<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/dram-database-file-audit.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
-<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-database-file-audit.tsv"</span></span>
-<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/merops-normalization-audit.tsv"</span></span>
-<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a>DRAM database deliberately只启用 KOfam，以便工具比较不被 UniRef、Pfam 等额外资源混淆。MEROPS FASTA 的 whitespace cleanup 写入新文件，原始 <span class="in">`pepunit.lib`</span> 不被修改；peptidase database 的生物学定义来自 MEROPS <span class="co">[</span><span class="ot">@rawlings2014merops</span><span class="co">]</span>。METABOLIC v4.0 安装说明中的 dbCAN v10 URL 已失效，因此这里使用当前 dbCAN 5.2.9 HMM，并把替换后的文件身份和兼容性审计写入 Methods <span class="co">[</span><span class="ot">@zheng2023dbcan3</span><span class="co">]</span>。</span>
-<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a><span class="fu">### 同一 KOfam snapshot 不等于同一 workflow {#sec-audit}</span></span>
-<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a>这次比较主动把 KOfam release 固定到 2026-06-01，因此数据库时间漂移被大幅压低，但搜索空间并不相同：DRAM 用完整 27,754-profile archive，METABOLIC 用 2,643-profile subset 加 35 条 curated KO rules。只有共同 2,678-KO grid 可以进入 KO Jaccard；全库 DRAM 数不能直接与 METABOLIC 数比较。共同域内的剩余差异主要来自 gene-to-KO parsing、profile threshold 应用、curated HMM、alternative steps 和 module logic。若两个工具不一致，正确顺序是回到 gene IDs 与 raw hits，再检查规则；不能投票后把少数结果删除。</span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>必需亚基是否齐全，还是只有 accessory subunit；</span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>diagnostic residue 或 motif 是否位于高质量 alignment 区域；</span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>基因是否位于合理 operon/neighborhood，而不是分散在可疑 contigs；</span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>同一 contig 的 coverage、GC 和 taxonomy 是否与 MAG 主体一致；</span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>反应方向是否能由基因家族本身确定。</span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/setup_article59_dram_database.py <span class="dt">\</span></span>
+<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kofam-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/kofam-2026-06-01"</span> <span class="dt">\</span></span>
+<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-source</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/DRAM"</span> <span class="dt">\</span></span>
+<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 32</span>
+<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/setup_article59_metabolic_database.py <span class="dt">\</span></span>
+<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
+<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span></span>
+<span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/dram-database-file-audit.tsv"</span> <span class="kw">|</span> <span class="fu">head</span></span>
+<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-database-file-audit.tsv"</span></span>
+<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/merops-normalization-audit.tsv"</span></span>
+<span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 让污染 contigs 拼出一条完整通路"}</span>
-<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a>若 pathway genes 分布在 coverage、GC 或 taxonomy 异常的 contigs 上，完整模块可能是 composite signal。对 contamination &gt;=5% 或 GUNC 可疑的 MAG，先做 contig-level provenance，再讨论单细胞代谢能力。</span>
-<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a>DRAM database deliberately只启用 KOfam，以便工具比较不被 UniRef、Pfam 等额外资源混淆。MEROPS FASTA 的 whitespace cleanup 写入新文件，原始 <span class="in">`pepunit.lib`</span> 不被修改；peptidase database 的生物学定义来自 MEROPS <span class="co">[</span><span class="ot">@rawlings2014merops</span><span class="co">]</span>。METABOLIC v4.0 安装说明中的 dbCAN v10 URL 已失效，因此这里使用当前 dbCAN 5.2.9 HMM，并把替换后的文件身份和兼容性审计写入 Methods <span class="co">[</span><span class="ot">@zheng2023dbcan3</span><span class="co">]</span>。</span>
+<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a><span class="fu">### 同一 KOfam snapshot 不等于同一 workflow {#sec-audit}</span></span>
 <span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 DRAM 和 METABOLIC-G</span></span>
+<span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a>这次比较主动把 KOfam release 固定到 2026-06-01，因此数据库时间漂移被大幅压低，但搜索空间并不相同：DRAM 用完整 27,754-profile archive，METABOLIC 用 2,643-profile subset 加 35 条 curated KO rules。只有共同 2,678-KO grid 可以进入 KO Jaccard；全库 DRAM 数不能直接与 METABOLIC 数比较。共同域内的剩余差异主要来自 gene-to-KO parsing、profile threshold 应用、curated HMM、alternative steps 和 module logic。若两个工具不一致，正确顺序是回到 gene IDs 与 raw hits，再检查规则；不能投票后把少数结果删除。</span>
 <span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
-<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-jobs</span> 24 <span class="dt">\</span></span>
-<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-threads-per-job</span> 3 <span class="dt">\</span></span>
-<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-threads</span> 32</span>
-<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
-<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
-<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a>DRAM 1.5.0 对多 genome input 内部近似逐个做 KOfam scan；为利用节点 CPU，脚本把 28 个 FASTA 拆成独立、basename 固定的 shards，完成后再调用官方 <span class="in">`merge_annotations`</span> 和 <span class="in">`distill`</span>。若会话中断，只有同时存在非空 <span class="in">`annotations.tsv`</span>、<span class="in">`genes.faa`</span>、<span class="in">`genes.fna`</span>、<span class="in">`genes.gff`</span> 和 <span class="in">`scaffolds.fna`</span> 的 shard 才可复用；不完整目录会被重新计算。</span>
+<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 让污染 contigs 拼出一条完整通路"}</span>
+<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a>若 pathway genes 分布在 coverage、GC 或 taxonomy 异常的 contigs 上，完整模块可能是 composite signal。对 contamination &gt;=5% 或 GUNC 可疑的 MAG，先做 contig-level provenance，再讨论单细胞代谢能力。</span>
+<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 DRAM 和 METABOLIC-G</span></span>
+<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-dir</span> <span class="st">"</span><span class="va">$CACHE</span><span class="st">/sources/METABOLIC"</span> <span class="dt">\</span></span>
+<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-env</span> <span class="st">"</span><span class="va">$DRAM_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-env</span> <span class="st">"</span><span class="va">$METABOLIC_ENV</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-jobs</span> 24 <span class="dt">\</span></span>
+<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a>  <span class="at">--dram-threads-per-job</span> 3 <span class="dt">\</span></span>
+<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--metabolic-threads</span> 32</span>
 <span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a>每个 DRAM 入口都设置 <span class="in">`PYTHONNOUSERSITE=1`</span>。这是依赖隔离要求：否则用户目录中的 NumPy 可能先于 exact conda lock 被 import。DRAM environment 同时固定 <span class="in">`setuptools=80.10.2`</span>，以保留 1.5.0 使用的 <span class="in">`pkg_resources`</span> compatibility。</span>
-<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a>METABOLIC-G 使用官方支持的 protein-folder input：先由锁定的 Prodigal 2.6.3 <span class="in">`-p meta`</span> 为 28 个 genomes 生成 <span class="in">`.faa`</span>，再运行：</span>
+<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/command-log.tsv"</span></span>
+<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/run-contract.json"</span></span>
+<span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a><span class="ex">METABOLIC-G.pl</span> <span class="dt">\</span></span>
-<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 32 <span class="dt">\</span></span>
-<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m-cutoff</span> 0.75 <span class="dt">\</span></span>
-<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-proteins"</span> <span class="dt">\</span></span>
-<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a>  <span class="at">-kofam-db</span> small <span class="dt">\</span></span>
-<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-output"</span></span>
-<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a>这种入口不要求为 FASTA parsing 额外引入旧版 BioPerl，并保证两个 workflow 都使用同一版 Prodigal。完成 gate 同时要求 six worksheets、28 个 KO result/hit pairs，以及日志中的 HMM、dbCAN、MEROPS 和 <span class="in">`METABOLIC-G was done`</span> 四类完成证据。</span>
-<span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a><span class="fu">### DRAM 1.5.0 是稳定复现锚点，DRAM2 仍需分支验证</span></span>
-<span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a>本次选择 DRAM 1.5.0，是因为已发表版本、exact conda lock 和输出 schema 可以一起锁定。DRAM2 提供重新设计的数据库与工作流，但截至本次环境审计仍以 beta release 迭代；不要把 DRAM2 beta 的命令、database manifest 或输出列与 DRAM 1.5.0 混写。迁移时应建立独立环境与数据库，先在同一批 checksum-identified MAGs 上验证 KO retention、module schema 和 resource use，再决定是否替换主流程。</span>
+<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a>DRAM 1.5.0 对多 genome input 内部近似逐个做 KOfam scan；为利用节点 CPU，脚本把 28 个 FASTA 拆成独立、basename 固定的 shards，完成后再调用官方 <span class="in">`merge_annotations`</span> 和 <span class="in">`distill`</span>。若会话中断，只有同时存在非空 <span class="in">`annotations.tsv`</span>、<span class="in">`genes.faa`</span>、<span class="in">`genes.fna`</span>、<span class="in">`genes.gff`</span> 和 <span class="in">`scaffolds.fna`</span> 的 shard 才可复用；不完整目录会被重新计算。</span>
+<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a>每个 DRAM 入口都设置 <span class="in">`PYTHONNOUSERSITE=1`</span>。这是依赖隔离要求：否则用户目录中的 NumPy 可能先于 exact conda lock 被 import。DRAM environment 同时固定 <span class="in">`setuptools=80.10.2`</span>，以保留 1.5.0 使用的 <span class="in">`pkg_resources`</span> compatibility。</span>
+<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a>METABOLIC-G 使用官方支持的 protein-folder input：先由锁定的 Prodigal 2.6.3 <span class="in">`-p meta`</span> 为 28 个 genomes 生成 <span class="in">`.faa`</span>，再运行：</span>
+<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="ex">METABOLIC-G.pl</span> <span class="dt">\</span></span>
+<span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 32 <span class="dt">\</span></span>
+<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m-cutoff</span> 0.75 <span class="dt">\</span></span>
+<span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a>  <span class="at">-in</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-proteins"</span> <span class="dt">\</span></span>
+<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a>  <span class="at">-kofam-db</span> small <span class="dt">\</span></span>
+<span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/metabolic-output"</span></span>
+<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库更新必须与方法更新一起报告</span></span>
+<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a>这种入口不要求为 FASTA parsing 额外引入旧版 BioPerl，并保证两个 workflow 都使用同一版 Prodigal。完成 gate 同时要求 six worksheets、28 个 KO result/hit pairs，以及日志中的 HMM、dbCAN、MEROPS 和 <span class="in">`METABOLIC-G was done`</span> 四类完成证据。</span>
 <span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a>KOfam、dbCAN、MEROPS 和 curated forms 都会变化。数据库版本改变可能比软件 minor version 更显著地改变 hits。这里遇到的 <span class="in">`K18513`</span> 缺失采用 fail-closed exclusion，不下载来源不明的旧 profile；METABOLIC 旧 dbCAN URL 失效则以当前 5.2.9 替换，并完整记录 checksum。正式研究若必须忠实复现旧论文，应保留旧数据库快照；若采用新库，则把结果写成 method update 而非声称 byte-level replication。</span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="fu">### DRAM 1.5.0 是稳定复现锚点，DRAM2 仍需分支验证</span></span>
 <span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 gene hit 写成 activity 或 flux"}</span>
-<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a>Genome annotation描述 DNA 编码潜力。即使某条 pathway 的所有 genes 都在，也不能证明它在采样条件下表达、产生代谢物或贡献净通量。结果中使用 <span class="in">`encoded`</span>, <span class="in">`genomic potential`</span>, <span class="in">`putative`</span>；只有增加条件匹配的功能证据后再使用 <span class="in">`active`</span> 或 <span class="in">`flux`</span>。</span>
-<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a>本次选择 DRAM 1.5.0，是因为已发表版本、exact conda lock 和输出 schema 可以一起锁定。DRAM2 提供重新设计的数据库与工作流，但截至本次环境审计仍以 beta release 迭代；不要把 DRAM2 beta 的命令、database manifest 或输出列与 DRAM 1.5.0 混写。迁移时应建立独立环境与数据库，先在同一批 checksum-identified MAGs 上验证 KO retention、module schema 和 resource use，再决定是否替换主流程。</span>
+<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a><span class="fu">### 数据库更新必须与方法更新一起报告</span></span>
 <span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 只看 KO 名，不检查 motif、亚基和邻域"}</span>
-<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a>氮、硫、甲烷和金属过程常有 homolog ambiguity。对决定性结论保留 raw HMM hit、alignment 与 gene coordinates；必要时用人工结构域/保守位点检查和独立工具验证。</span>
-<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总 KO、modules、traits 与 MAG 质量</span></span>
+<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a>KOfam、dbCAN、MEROPS 和 curated forms 都会变化。数据库版本改变可能比软件 minor version 更显著地改变 hits。这里遇到的 <span class="in">`K18513`</span> 缺失采用 fail-closed exclusion，不下载来源不明的旧 profile；METABOLIC 旧 dbCAN URL 失效则以当前 5.2.9 替换，并完整记录 checksum。正式研究若必须忠实复现旧论文，应保留旧数据库快照；若采用新库，则把结果写成 method update 而非声称 byte-level replication。</span>
+<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把 gene hit 写成 activity 或 flux"}</span>
+<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a>Genome annotation描述 DNA 编码潜力。即使某条 pathway 的所有 genes 都在，也不能证明它在采样条件下表达、产生代谢物或贡献净通量。结果中使用 <span class="in">`encoded`</span>, <span class="in">`genomic potential`</span>, <span class="in">`putative`</span>；只有增加条件匹配的功能证据后再使用 <span class="in">`active`</span> 或 <span class="in">`flux`</span>。</span>
+<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a><span class="fu">### Module completeness 是连续量，presence 是人为决策</span></span>
-<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a>设 module 有 <span class="sc">\(</span>S<span class="sc">\)</span> 个逻辑 steps，第 <span class="sc">\(</span>s<span class="sc">\)</span> 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：</span>
+<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. 只看 KO 名，不检查 motif、亚基和邻域"}</span>
+<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a>氮、硫、甲烷和金属过程常有 homolog ambiguity。对决定性结论保留 raw HMM hit、alignment 与 gene coordinates；必要时用人工结构域/保守位点检查和独立工具验证。</span>
+<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a>C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.</span>
-<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
+<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总 KO、modules、traits 与 MAG 质量</span></span>
+<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="fu">### Module completeness 是连续量，presence 是人为决策</span></span>
 <span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a>本次为跨工具审计预先固定 <span class="sc">\(</span>C_m \ge 0.75<span class="sc">\)</span> 作为 DRAM presence，并使用 METABOLIC-G 的 <span class="in">`-m-cutoff 0.75`</span>。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。</span>
+<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a>设 module 有 $S$ 个逻辑 steps，第 $s$ 个 step 由一个 KO、多个可替代 KO，或多亚基组合满足。DRAM 的简化 module coverage 可写为：</span>
 <span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a>对于 genome <span class="sc">\(</span>g<span class="sc">\)</span>，两套 KO 集合的一致性用 Jaccard 指数：</span>
-<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="sc">\[</span></span>
-<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a>J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}</span>
-<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a>{|K_g^{DRAM}\cup K_g^{METABOLIC}|}.</span>
-<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a><span class="sc">\]</span></span>
-<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a>Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。</span>
-<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a><span class="fu">### MAG 质量限定了“absence”和“完整 pathway”的可信度</span></span>
-<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a>本次每个 SGB 都带回 CheckM2 completeness/contamination 与 GTDB-Tk R232 taxonomy。解释规则是：</span>
+<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a>C_m = \frac{1}{S}\sum_{s=1}^{S} I(\text{step }s\text{ is supported}), \qquad 0 \le C_m \le 1.</span>
+<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a>本次为跨工具审计预先固定 $C_m \ge 0.75$ 作为 DRAM presence，并使用 METABOLIC-G 的 <span class="in">`-m-cutoff 0.75`</span>。同一个数字不保证两个工具会给出相同结论，因为它们对 alternative routes、complex subunits、module definitions 和上游 gene hits 的处理不同。应同时报告连续 coverage、cutoff 和 missing steps，而不是只导出彩色格子。</span>
+<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a>对于 genome $g$，两套 KO 集合的一致性用 Jaccard 指数：</span>
+<span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a>J_g = \frac{|K_g^{DRAM}\cap K_g^{METABOLIC}|}</span>
+<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a>{|K_g^{DRAM}\cup K_g^{METABOLIC}|}.</span>
+<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a>$$</span>
 <span id="cb11-352"><a href="#cb11-352" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-353"><a href="#cb11-353" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG 状态 <span class="pp">|</span> 对阴性结果的解释 <span class="pp">|</span> 对阳性 pathway 的审计 <span class="pp">|</span></span>
-<span id="cb11-354"><a href="#cb11-354" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb11-355"><a href="#cb11-355" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness &lt;70% <span class="pp">|</span> 不把未检出写成生物学缺失 <span class="pp">|</span> 检查是否只剩少数保守步骤 <span class="pp">|</span></span>
-<span id="cb11-356"><a href="#cb11-356" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness 70--90% <span class="pp">|</span> absence 仅作弱证据 <span class="pp">|</span> 报告 missing steps 与 contig 边界 <span class="pp">|</span></span>
-<span id="cb11-357"><a href="#cb11-357" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness &gt;=90% <span class="pp">|</span> absence 仍是暂定结论 <span class="pp">|</span> 检查 gene call、motif 与替代路线 <span class="pp">|</span></span>
-<span id="cb11-358"><a href="#cb11-358" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Contamination &gt;=5% <span class="pp">|</span> 可能额外检出外源基因 <span class="pp">|</span> 检查 pathway 是否由异质 contigs 拼成 <span class="pp">|</span></span>
-<span id="cb11-359"><a href="#cb11-359" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-360"><a href="#cb11-360" aria-hidden="true" tabindex="-1"></a><span class="in">`SGB_006`</span> 的 CheckM2 contamination 为 6.95%，因此被显式标成 composite-pathway risk；<span class="in">`SGB_008`</span> 和 <span class="in">`SGB_015`</span> completeness 分别为 59.51% 和 69.48%，因此其阴性结果不能升级为物种层面的基因缺失。</span>
-<span id="cb11-361"><a href="#cb11-361" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-362"><a href="#cb11-362" aria-hidden="true" tabindex="-1"></a><span class="al">![24 个真实代表 MAG 的关键碳、氮、硫、甲烷、砷和金属过程规则。蓝格仅表示规则通过，不表示该过程正在发生。](../figures/59-key-process-evidence.png)</span>{#fig-59-key-processes}</span>
-<span id="cb11-363"><a href="#cb11-363" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-364"><a href="#cb11-364" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-365"><a href="#cb11-365" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-366"><a href="#cb11-366" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-367"><a href="#cb11-367" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
-<span id="cb11-368"><a href="#cb11-368" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-369"><a href="#cb11-369" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/ko-counts-by-genome.tsv"</span></span>
-<span id="cb11-370"><a href="#cb11-370" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/module-agreement-summary.tsv"</span></span>
-<span id="cb11-371"><a href="#cb11-371" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/completeness-absence-audit.tsv"</span></span>
-<span id="cb11-372"><a href="#cb11-372" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/truncation-sensitivity.tsv"</span></span>
-<span id="cb11-373"><a href="#cb11-373" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-353"><a href="#cb11-353" aria-hidden="true" tabindex="-1"></a>Jaccard 不等于准确率；当两套流程共享数据库但 gene calling、threshold parsing 或 curated rules 不同，它衡量的是 workflow-level concordance。</span>
+<span id="cb11-354"><a href="#cb11-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-355"><a href="#cb11-355" aria-hidden="true" tabindex="-1"></a><span class="fu">### MAG 质量限定了“absence”和“完整 pathway”的可信度</span></span>
+<span id="cb11-356"><a href="#cb11-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-357"><a href="#cb11-357" aria-hidden="true" tabindex="-1"></a>本次每个 SGB 都带回 CheckM2 completeness/contamination 与 GTDB-Tk R232 taxonomy。解释规则是：</span>
+<span id="cb11-358"><a href="#cb11-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-359"><a href="#cb11-359" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> MAG 状态 <span class="pp">|</span> 对阴性结果的解释 <span class="pp">|</span> 对阳性 pathway 的审计 <span class="pp">|</span></span>
+<span id="cb11-360"><a href="#cb11-360" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-361"><a href="#cb11-361" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness &lt;70% <span class="pp">|</span> 不把未检出写成生物学缺失 <span class="pp">|</span> 检查是否只剩少数保守步骤 <span class="pp">|</span></span>
+<span id="cb11-362"><a href="#cb11-362" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness 70--90% <span class="pp">|</span> absence 仅作弱证据 <span class="pp">|</span> 报告 missing steps 与 contig 边界 <span class="pp">|</span></span>
+<span id="cb11-363"><a href="#cb11-363" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Completeness &gt;=90% <span class="pp">|</span> absence 仍是暂定结论 <span class="pp">|</span> 检查 gene call、motif 与替代路线 <span class="pp">|</span></span>
+<span id="cb11-364"><a href="#cb11-364" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Contamination &gt;=5% <span class="pp">|</span> 可能额外检出外源基因 <span class="pp">|</span> 检查 pathway 是否由异质 contigs 拼成 <span class="pp">|</span></span>
+<span id="cb11-365"><a href="#cb11-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-366"><a href="#cb11-366" aria-hidden="true" tabindex="-1"></a><span class="in">`SGB_006`</span> 的 CheckM2 contamination 为 6.95%，因此被显式标成 composite-pathway risk；<span class="in">`SGB_008`</span> 和 <span class="in">`SGB_015`</span> completeness 分别为 59.51% 和 69.48%，因此其阴性结果不能升级为物种层面的基因缺失。</span>
+<span id="cb11-367"><a href="#cb11-367" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-368"><a href="#cb11-368" aria-hidden="true" tabindex="-1"></a><span class="al">![24 个真实代表 MAG 的关键碳、氮、硫、甲烷、砷和金属过程规则。蓝格仅表示规则通过，不表示该过程正在发生。](../figures/59-key-process-evidence.png)</span>{#fig-59-key-processes}</span>
+<span id="cb11-369"><a href="#cb11-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-370"><a href="#cb11-370" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-371"><a href="#cb11-371" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-372"><a href="#cb11-372" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-373"><a href="#cb11-373" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span></span>
 <span id="cb11-374"><a href="#cb11-374" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-375"><a href="#cb11-375" aria-hidden="true" tabindex="-1"></a>DRAM 完整分支搜索全部 27,754 个 KOfam profiles，METABOLIC <span class="in">`small`</span> 分支搜索其中 2,643 个 module-related profiles 并加入 35 个 curated HMM-to-KO rules。跨工具 KO 数与 Jaccard 因此严格限制在 METABOLIC 明示的共同 **2,678-KO grid**；DRAM full-KOfam KO 数另列，只用于自身的完整度/截短敏感性。Module comparison 只取两者共同覆盖的 13 个 KEGG modules，并把 DRAM coverage 在 0.75 上二值化。关键过程表固定 26 个 METABOLIC curated rules，未通过的格子仍保留为 <span class="in">`false`</span>，避免只展示阳性命中造成选择性报告。</span>
-<span id="cb11-376"><a href="#cb11-376" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-377"><a href="#cb11-377" aria-hidden="true" tabindex="-1"></a>::: {.callout-note title="实跑结果"}</span>
-<span id="cb11-378"><a href="#cb11-378" aria-hidden="true" tabindex="-1"></a>24 个真实 MAG 的 DRAM full-KOfam KO 数中位数为 **931.5**；限制到共同 KO ID 域后，DRAM 与 METABOLIC 的中位数分别为 **226.5** 和 **253.5**。13 个共享 modules 共形成 312 次比较，其中 307 次一致；5 次差异来自 `M00004`（1）、`M00009`（2）、`M00173`（1）和 `M00422`（1）。26 个 curated function rules 的 624 个 genome × rule cells 中有 **86 个阳性**。</span>
-<span id="cb11-379"><a href="#cb11-379" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-380"><a href="#cb11-380" aria-hidden="true" tabindex="-1"></a>截短对照保留 52.04%、70.18%、91.07% 和 100% parent sequence 时，DRAM full-KOfam parent KO retention 分别为 **59.04%、73.93%、93.87% 和 100%**，METABOLIC 分别为 **64.05%、78.92%、95.68% 和 100%**；所有截短分支的新 KO 数均为 0。序列完全相同的 <span class="in">`TRUNC_100`</span> 在两套工具中都逐 KO 精确复现 parent，说明前三级的损失来自 contig removal，而不是随机漂移或 ID 冲突。</span>
-<span id="cb11-381"><a href="#cb11-381" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-375"><a href="#cb11-375" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/ko-counts-by-genome.tsv"</span></span>
+<span id="cb11-376"><a href="#cb11-376" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/module-agreement-summary.tsv"</span></span>
+<span id="cb11-377"><a href="#cb11-377" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/completeness-absence-audit.tsv"</span></span>
+<span id="cb11-378"><a href="#cb11-378" aria-hidden="true" tabindex="-1"></a><span class="ex">column</span> <span class="at">-ts</span> <span class="st">$'</span><span class="dt">\t</span><span class="st">'</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary/truncation-sensitivity.tsv"</span></span>
+<span id="cb11-379"><a href="#cb11-379" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-380"><a href="#cb11-380" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-381"><a href="#cb11-381" aria-hidden="true" tabindex="-1"></a>DRAM 完整分支搜索全部 27,754 个 KOfam profiles，METABOLIC <span class="in">`small`</span> 分支搜索其中 2,643 个 module-related profiles 并加入 35 个 curated HMM-to-KO rules。跨工具 KO 数与 Jaccard 因此严格限制在 METABOLIC 明示的共同 **2,678-KO grid**；DRAM full-KOfam KO 数另列，只用于自身的完整度/截短敏感性。Module comparison 只取两者共同覆盖的 13 个 KEGG modules，并把 DRAM coverage 在 0.75 上二值化。关键过程表固定 26 个 METABOLIC curated rules，未通过的格子仍保留为 <span class="in">`false`</span>，避免只展示阳性命中造成选择性报告。</span>
 <span id="cb11-382"><a href="#cb11-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-383"><a href="#cb11-383" aria-hidden="true" tabindex="-1"></a><span class="fu">### 截短实验校准“阴性”结论</span></span>
-<span id="cb11-384"><a href="#cb11-384" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-385"><a href="#cb11-385" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 *N. europaea* MAG 在不同 sequence-retention levels 下的 KO 与 positive-module retention。](../figures/59-truncation-sensitivity.png)</span>{#fig-59-truncation}</span>
-<span id="cb11-386"><a href="#cb11-386" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-387"><a href="#cb11-387" aria-hidden="true" tabindex="-1"></a>截短 sensitivity branch 不试图模拟所有组装错误；它只隔离 contig loss 这一机制。若一个 parent-positive KO 或 module 在 50%/70% sequence branch 消失，这就是假阴性的直接演示。相反，真实污染可能引入新 KO、创建虚假完整模块；因此 completeness 和 contamination 要在同一张审计图中呈现。</span>
+<span id="cb11-383"><a href="#cb11-383" aria-hidden="true" tabindex="-1"></a>::: {.callout-note title="实跑结果"}</span>
+<span id="cb11-384"><a href="#cb11-384" aria-hidden="true" tabindex="-1"></a>24 个真实 MAG 的 DRAM full-KOfam KO 数中位数为 **931.5**；限制到共同 KO ID 域后，DRAM 与 METABOLIC 的中位数分别为 **226.5** 和 **253.5**。13 个共享 modules 共形成 312 次比较，其中 307 次一致；5 次差异来自 `M00004`（1）、`M00009`（2）、`M00173`（1）和 `M00422`（1）。26 个 curated function rules 的 624 个 genome × rule cells 中有 **86 个阳性**。</span>
+<span id="cb11-385"><a href="#cb11-385" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-386"><a href="#cb11-386" aria-hidden="true" tabindex="-1"></a>截短对照保留 52.04%、70.18%、91.07% 和 100% parent sequence 时，DRAM full-KOfam parent KO retention 分别为 **59.04%、73.93%、93.87% 和 100%**，METABOLIC 分别为 **64.05%、78.92%、95.68% 和 100%**；所有截短分支的新 KO 数均为 0。序列完全相同的 <span class="in">`TRUNC_100`</span> 在两套工具中都逐 KO 精确复现 parent，说明前三级的损失来自 contig removal，而不是随机漂移或 ID 冲突。</span>
+<span id="cb11-387"><a href="#cb11-387" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-388"><a href="#cb11-388" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-389"><a href="#cb11-389" aria-hidden="true" tabindex="-1"></a><span class="al">![CheckM2 completeness、contamination、KO 数与跨工具一致性。低完整度放大阴性风险，污染放大复合通路风险。](../figures/59-completeness-absence-audit.png)</span>{#fig-59-absence-audit}</span>
+<span id="cb11-389"><a href="#cb11-389" aria-hidden="true" tabindex="-1"></a><span class="fu">### 截短实验校准“阴性”结论</span></span>
 <span id="cb11-390"><a href="#cb11-390" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-391"><a href="#cb11-391" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把不完整 MAG 的未检出写成物种缺失"}</span>
-<span id="cb11-392"><a href="#cb11-392" aria-hidden="true" tabindex="-1"></a>低 completeness、contig break 和 truncated gene 都会制造 false absence。至少联报 CheckM2、contig count、missing module steps，并用完整度敏感性或高质量 genome 子集复核。</span>
-<span id="cb11-393"><a href="#cb11-393" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-391"><a href="#cb11-391" aria-hidden="true" tabindex="-1"></a><span class="al">![同一 *N. europaea* MAG 在不同 sequence-retention levels 下的 KO 与 positive-module retention。](../figures/59-truncation-sensitivity.png)</span>{#fig-59-truncation}</span>
+<span id="cb11-392"><a href="#cb11-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-393"><a href="#cb11-393" aria-hidden="true" tabindex="-1"></a>截短 sensitivity branch 不试图模拟所有组装错误；它只隔离 contig loss 这一机制。若一个 parent-positive KO 或 module 在 50%/70% sequence branch 消失，这就是假阴性的直接演示。相反，真实污染可能引入新 KO、创建虚假完整模块；因此 completeness 和 contamination 要在同一张审计图中呈现。</span>
 <span id="cb11-394"><a href="#cb11-394" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-395"><a href="#cb11-395" aria-hidden="true" tabindex="-1"></a><span class="fu">## 出图、保存并做独立重算 QA</span></span>
+<span id="cb11-395"><a href="#cb11-395" aria-hidden="true" tabindex="-1"></a><span class="al">![CheckM2 completeness、contamination、KO 数与跨工具一致性。低完整度放大阴性风险，污染放大复合通路风险。](../figures/59-completeness-absence-audit.png)</span>{#fig-59-absence-audit}</span>
 <span id="cb11-396"><a href="#cb11-396" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-397"><a href="#cb11-397" aria-hidden="true" tabindex="-1"></a><span class="fu">### 证据阶梯决定结论上限</span></span>
-<span id="cb11-398"><a href="#cb11-398" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-399"><a href="#cb11-399" aria-hidden="true" tabindex="-1"></a><span class="al">![从 adaptive-threshold HMM hit 到 condition-matched activity/flux evidence 的五层证据阶梯。](../figures/59-metabolism-evidence-ladder.png)</span>{#fig-59-evidence-ladder}</span>
+<span id="cb11-397"><a href="#cb11-397" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. 把不完整 MAG 的未检出写成物种缺失"}</span>
+<span id="cb11-398"><a href="#cb11-398" aria-hidden="true" tabindex="-1"></a>低 completeness、contig break 和 truncated gene 都会制造 false absence。至少联报 CheckM2、contig count、missing module steps，并用完整度敏感性或高质量 genome 子集复核。</span>
+<span id="cb11-399"><a href="#cb11-399" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-400"><a href="#cb11-400" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-401"><a href="#cb11-401" aria-hidden="true" tabindex="-1"></a>一个 gene hit 的结论上限是 homologous family detected；curated rule 可以支持 diagnostic trait；达到 cutoff 的模块支持 pathway encoded in part or in full；结合 MAG 质量与邻域审计后才可写“the genome has metabolic potential”。只有 RNA、protein、metabolite、isotope 或 flux evidence 才能把结论推进到 measured condition 下的 activity 或 flux。</span>
+<span id="cb11-401"><a href="#cb11-401" aria-hidden="true" tabindex="-1"></a><span class="fu">## 出图、保存并做独立重算 QA</span></span>
 <span id="cb11-402"><a href="#cb11-402" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-403"><a href="#cb11-403" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-404"><a href="#cb11-404" aria-hidden="true" tabindex="-1"></a><span class="va">MPLCONFIGDIR</span><span class="op">=</span>/tmp/article59-mpl <span class="dt">\</span></span>
-<span id="cb11-405"><a href="#cb11-405" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
-<span id="cb11-406"><a href="#cb11-406" aria-hidden="true" tabindex="-1"></a>python scripts/plot_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-407"><a href="#cb11-407" aria-hidden="true" tabindex="-1"></a>  <span class="at">--summary-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> <span class="dt">\</span></span>
-<span id="cb11-408"><a href="#cb11-408" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures</span>
-<span id="cb11-409"><a href="#cb11-409" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-410"><a href="#cb11-410" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-411"><a href="#cb11-411" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-412"><a href="#cb11-412" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-413"><a href="#cb11-413" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/59-dram-metabolic-frozen</span>
-<span id="cb11-414"><a href="#cb11-414" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-415"><a href="#cb11-415" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article59_metabolism.py <span class="dt">\</span></span>
-<span id="cb11-416"><a href="#cb11-416" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-417"><a href="#cb11-417" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/59-dram-metabolic-frozen <span class="dt">\</span></span>
-<span id="cb11-418"><a href="#cb11-418" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/59-dram-metabolic.qmd <span class="dt">\</span></span>
-<span id="cb11-419"><a href="#cb11-419" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb11-420"><a href="#cb11-420" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/59-dram-metabolic/validation <span class="dt">\</span></span>
-<span id="cb11-421"><a href="#cb11-421" aria-hidden="true" tabindex="-1"></a>  <span class="at">--stage-dir</span> /tmp/article59-validation <span class="dt">\</span></span>
-<span id="cb11-422"><a href="#cb11-422" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot-python</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-drep-2026.07/bin/python"</span></span>
-<span id="cb11-423"><a href="#cb11-423" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-424"><a href="#cb11-424" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-425"><a href="#cb11-425" aria-hidden="true" tabindex="-1"></a>QA 先逐文件核验固化包，再从压缩 DRAM annotations、product、METABOLIC worksheets 和 KO tables 构造一个全新的 staging directory，重算全部 summary tables 和六组 plots。表格要求 byte-identical，PNG 要求 normalized pixel hash 一致；任何 KO arithmetic、module cutoff、TRUNC_100 positive control、figure DPI 或 checksum 失败都会返回非零状态。</span>
-<span id="cb11-426"><a href="#cb11-426" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-427"><a href="#cb11-427" aria-hidden="true" tabindex="-1"></a><span class="al">![两个 workflow 的 KO 数、KO-set Jaccard，以及 13 个共享模块在 0.75 cutoff 上的一致率。](../figures/59-tool-concordance.png)</span>{#fig-59-tool-concordance}</span>
-<span id="cb11-428"><a href="#cb11-428" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-429"><a href="#cb11-429" aria-hidden="true" tabindex="-1"></a><span class="fu">### 今天怎样把 genome-centric potential 升级为生态结论</span></span>
+<span id="cb11-403"><a href="#cb11-403" aria-hidden="true" tabindex="-1"></a><span class="fu">### 证据阶梯决定结论上限</span></span>
+<span id="cb11-404"><a href="#cb11-404" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-405"><a href="#cb11-405" aria-hidden="true" tabindex="-1"></a><span class="al">![从 adaptive-threshold HMM hit 到 condition-matched activity/flux evidence 的五层证据阶梯。](../figures/59-metabolism-evidence-ladder.png)</span>{#fig-59-evidence-ladder}</span>
+<span id="cb11-406"><a href="#cb11-406" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-407"><a href="#cb11-407" aria-hidden="true" tabindex="-1"></a>一个 gene hit 的结论上限是 homologous family detected；curated rule 可以支持 diagnostic trait；达到 cutoff 的模块支持 pathway encoded in part or in full；结合 MAG 质量与邻域审计后才可写“the genome has metabolic potential”。只有 RNA、protein、metabolite、isotope 或 flux evidence 才能把结论推进到 measured condition 下的 activity 或 flux。</span>
+<span id="cb11-408"><a href="#cb11-408" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-409"><a href="#cb11-409" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-410"><a href="#cb11-410" aria-hidden="true" tabindex="-1"></a><span class="va">MPLCONFIGDIR</span><span class="op">=</span>/tmp/article59-mpl <span class="dt">\</span></span>
+<span id="cb11-411"><a href="#cb11-411" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> run <span class="at">-n</span> metagenome-drep-2026.07 <span class="dt">\</span></span>
+<span id="cb11-412"><a href="#cb11-412" aria-hidden="true" tabindex="-1"></a>python scripts/plot_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-413"><a href="#cb11-413" aria-hidden="true" tabindex="-1"></a>  <span class="at">--summary-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">/summary"</span> <span class="dt">\</span></span>
+<span id="cb11-414"><a href="#cb11-414" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures</span>
+<span id="cb11-415"><a href="#cb11-415" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-416"><a href="#cb11-416" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-417"><a href="#cb11-417" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-418"><a href="#cb11-418" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">$WORK</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-419"><a href="#cb11-419" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/59-dram-metabolic-frozen</span>
+<span id="cb11-420"><a href="#cb11-420" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-421"><a href="#cb11-421" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article59_metabolism.py <span class="dt">\</span></span>
+<span id="cb11-422"><a href="#cb11-422" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">$ROOT</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-423"><a href="#cb11-423" aria-hidden="true" tabindex="-1"></a>  <span class="at">--frozen-dir</span> data/small/59-dram-metabolic-frozen <span class="dt">\</span></span>
+<span id="cb11-424"><a href="#cb11-424" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/59-dram-metabolic.qmd <span class="dt">\</span></span>
+<span id="cb11-425"><a href="#cb11-425" aria-hidden="true" tabindex="-1"></a>  <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb11-426"><a href="#cb11-426" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/59-dram-metabolic/validation <span class="dt">\</span></span>
+<span id="cb11-427"><a href="#cb11-427" aria-hidden="true" tabindex="-1"></a>  <span class="at">--stage-dir</span> /tmp/article59-validation <span class="dt">\</span></span>
+<span id="cb11-428"><a href="#cb11-428" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plot-python</span> <span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-drep-2026.07/bin/python"</span></span>
+<span id="cb11-429"><a href="#cb11-429" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-430"><a href="#cb11-430" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-431"><a href="#cb11-431" aria-hidden="true" tabindex="-1"></a>推荐的升级顺序是：</span>
+<span id="cb11-431"><a href="#cb11-431" aria-hidden="true" tabindex="-1"></a>QA 先逐文件核验固化包，再从压缩 DRAM annotations、product、METABOLIC worksheets 和 KO tables 构造一个全新的 staging directory，重算全部 summary tables 和六组 plots。表格要求 byte-identical，PNG 要求 normalized pixel hash 一致；任何 KO arithmetic、module cutoff、TRUNC_100 positive control、figure DPI 或 checksum 失败都会返回非零状态。</span>
 <span id="cb11-432"><a href="#cb11-432" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-433"><a href="#cb11-433" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>对 key genes 检查 alignment、diagnostic motif、gene neighborhood 与 contig provenance；</span>
-<span id="cb11-434"><a href="#cb11-434" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用 CoverM/read mapping 证明携带该 pathway 的 MAG 在相应样本中存在，并报告 unique/shared mapping 规则；</span>
-<span id="cb11-435"><a href="#cb11-435" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用 metatranscriptomics 或 metaproteomics 检查同条件表达；</span>
-<span id="cb11-436"><a href="#cb11-436" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>用 targeted metabolite、stable-isotope probing、rate measurement 或培养实验验证产物/通量；</span>
-<span id="cb11-437"><a href="#cb11-437" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>若研究 community exchange，再构建 abundance-weighted network 或 genome-scale metabolic model，并显式列出 thermodynamic 与 medium assumptions。</span>
+<span id="cb11-433"><a href="#cb11-433" aria-hidden="true" tabindex="-1"></a><span class="al">![两个 workflow 的 KO 数、KO-set Jaccard，以及 13 个共享模块在 0.75 cutoff 上的一致率。](../figures/59-tool-concordance.png)</span>{#fig-59-tool-concordance}</span>
+<span id="cb11-434"><a href="#cb11-434" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-435"><a href="#cb11-435" aria-hidden="true" tabindex="-1"></a><span class="fu">### 今天怎样把 genome-centric potential 升级为生态结论</span></span>
+<span id="cb11-436"><a href="#cb11-436" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-437"><a href="#cb11-437" aria-hidden="true" tabindex="-1"></a>推荐的升级顺序是：</span>
 <span id="cb11-438"><a href="#cb11-438" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-439"><a href="#cb11-439" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="7. 把工具一致当成独立验证"}</span>
-<span id="cb11-440"><a href="#cb11-440" aria-hidden="true" tabindex="-1"></a>DRAM 与 METABOLIC 共享 KOfam 和 Prodigal 时并非统计独立。两者一致可提高 workflow robustness，但不能替代独立 biochemical evidence；两者不一致则应触发 raw-hit review。</span>
-<span id="cb11-441"><a href="#cb11-441" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-442"><a href="#cb11-442" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-443"><a href="#cb11-443" aria-hidden="true" tabindex="-1"></a><span class="fu">## 报告代谢注释与基因组完整性 {#sec-methods}</span></span>
+<span id="cb11-439"><a href="#cb11-439" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>对 key genes 检查 alignment、diagnostic motif、gene neighborhood 与 contig provenance；</span>
+<span id="cb11-440"><a href="#cb11-440" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>用 CoverM/read mapping 证明携带该 pathway 的 MAG 在相应样本中存在，并报告 unique/shared mapping 规则；</span>
+<span id="cb11-441"><a href="#cb11-441" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用 metatranscriptomics 或 metaproteomics 检查同条件表达；</span>
+<span id="cb11-442"><a href="#cb11-442" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>用 targeted metabolite、stable-isotope probing、rate measurement 或培养实验验证产物/通量；</span>
+<span id="cb11-443"><a href="#cb11-443" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>若研究 community exchange，再构建 abundance-weighted network 或 genome-scale metabolic model，并显式列出 thermodynamic 与 medium assumptions。</span>
 <span id="cb11-444"><a href="#cb11-444" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-445"><a href="#cb11-445" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb11-446"><a href="#cb11-446" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-447"><a href="#cb11-447" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-four nonredundant metagenome-assembled genomes reconstructed from PRJEB52977 runs ERR9765746 and ERR9765747 were analysed. Genome identities were fixed by SHA-256, quality estimates were obtained with CheckM2, and taxonomy was assigned with GTDB-Tk R232. Protein-coding genes were predicted with Prodigal v2.6.3 in metagenomic mode. Genome-resolved metabolic annotation was performed independently with DRAM v1.5.0 (source forms from commit fe61d759303f30db058d5d505c448b28e41b03f1) and METABOLIC-G v4.0 (commit 97236332519180f1d76a242dedb0aaa8191fdbb3). Both workflows used the checksum-locked KOfamKOALA archive dated 1 June 2026; 2,643 of 2,644 METABOLIC-requested profiles were present, whereas K18513 was excluded under a fail-closed compatibility rule. METABOLIC additionally used its bundled curated HMMs, dbCAN v5.2.9 profiles and the MEROPS pepunit library dated 22 February 2023. Module presence was evaluated at a prespecified completeness cutoff of 0.75. Distinct KO sets, module calls and curated biogeochemical traits were retained at the genome level. A deterministic contig-retention analysis of one *Nitrosomonas europaea* MAG (seed 59002; target retention 50%, 70%, 90% and 100%) assessed false absences caused by incomplete genome recovery. All commands, database checksums, exact environment locks and GNU-time measurements were retained.</span></span>
+<span id="cb11-445"><a href="#cb11-445" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="7. 把工具一致当成独立验证"}</span>
+<span id="cb11-446"><a href="#cb11-446" aria-hidden="true" tabindex="-1"></a>DRAM 与 METABOLIC 共享 KOfam 和 Prodigal 时并非统计独立。两者一致可提高 workflow robustness，但不能替代独立 biochemical evidence；两者不一致则应触发 raw-hit review。</span>
+<span id="cb11-447"><a href="#cb11-447" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-448"><a href="#cb11-448" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-449"><a href="#cb11-449" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-449"><a href="#cb11-449" aria-hidden="true" tabindex="-1"></a><span class="fu">## 报告代谢注释与基因组完整性 {#sec-methods}</span></span>
 <span id="cb11-450"><a href="#cb11-450" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-451"><a href="#cb11-451" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; DRAM and METABOLIC-G produced non-empty genome-level annotations for all 24 primary MAGs and four prespecified truncation controls. Within the common 2,678-KO identifier universe, the median genome-level KO-set Jaccard index was 0.853 (range, 0.794--0.941). Of 312 genome-level comparisons across 13 shared KEGG modules at the prespecified 0.75 threshold, 307 agreed (98.4%). The median distinct-KO counts were 226.5 for DRAM within the comparison universe and 253.5 for METABOLIC; DRAM detected a median of 931.5 KOs when its full 27,754-profile KOfam search space was retained. At 52.04%, 70.18%, 91.07% and 100% retained parent sequence, DRAM retained 59.04%, 73.93%, 93.87% and 100% of the parent full-KOfam KO set, respectively, whereas METABOLIC retained 64.05%, 78.92%, 95.68% and 100%. No truncation branch gained a new KO, and the sequence-identical 100% control exactly reproduced both parent KO sets. Accordingly, negative pathway calls in lower-completeness MAGs were treated as missing-data-sensitive evidence, and all genome-derived functions were reported as metabolic potential rather than measured activity or flux.</span></span>
+<span id="cb11-451"><a href="#cb11-451" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb11-452"><a href="#cb11-452" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-453"><a href="#cb11-453" aria-hidden="true" tabindex="-1"></a>Methods 中还应报告：输入 genome 数与选择规则、CheckM2/GUNC gate、GTDB release、gene caller、每个软件版本/commit、每个数据库 release/checksum、module cutoff、CPU/RAM、失败与重跑规则，以及 raw-hit/manual-review protocol。Results 则报告 numerator/denominator 与 disagreement，不能只写“多数 MAG 具有丰富代谢功能”。</span>
+<span id="cb11-453"><a href="#cb11-453" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Twenty-four nonredundant metagenome-assembled genomes reconstructed from PRJEB52977 runs ERR9765746 and ERR9765747 were analysed. Genome identities were fixed by SHA-256, quality estimates were obtained with CheckM2, and taxonomy was assigned with GTDB-Tk R232. Protein-coding genes were predicted with Prodigal v2.6.3 in metagenomic mode. Genome-resolved metabolic annotation was performed independently with DRAM v1.5.0 (source forms from commit fe61d759303f30db058d5d505c448b28e41b03f1) and METABOLIC-G v4.0 (commit 97236332519180f1d76a242dedb0aaa8191fdbb3). Both workflows used the checksum-locked KOfamKOALA archive dated 1 June 2026; 2,643 of 2,644 METABOLIC-requested profiles were present, whereas K18513 was excluded under a fail-closed compatibility rule. METABOLIC additionally used its bundled curated HMMs, dbCAN v5.2.9 profiles and the MEROPS pepunit library dated 22 February 2023. Module presence was evaluated at a prespecified completeness cutoff of 0.75. Distinct KO sets, module calls and curated biogeochemical traits were retained at the genome level. A deterministic contig-retention analysis of one *Nitrosomonas europaea* MAG (seed 59002; target retention 50%, 70%, 90% and 100%) assessed false absences caused by incomplete genome recovery. All commands, database checksums, exact environment locks and GNU-time measurements were retained.</span></span>
 <span id="cb11-454"><a href="#cb11-454" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-455"><a href="#cb11-455" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-455"><a href="#cb11-455" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
 <span id="cb11-456"><a href="#cb11-456" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-457"><a href="#cb11-457" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>准备每个 MAG 一个 FASTA，basename 唯一；建立 <span class="in">`genome_id / sample / binning branch / SHA-256 / CheckM2 / GUNC / GTDB-Tk`</span> ledger。</span>
-<span id="cb11-458"><a href="#cb11-458" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>先定义研究问题：碳利用、氮循环、硫循环、甲烷、抗性或整体 module survey；据此预注册 key genes、必需亚基、motif 与 cutoff。</span>
-<span id="cb11-459"><a href="#cb11-459" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用同一 Prodigal 和同一 database snapshot 批量注释所有 genomes；数据库在整个 cohort 冻结，不在中途更新。</span>
-<span id="cb11-460"><a href="#cb11-460" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>保存 gene-level raw hits 和 coordinates，再派生 KO/module/trait matrices；不要只保留 Excel summary。</span>
-<span id="cb11-461"><a href="#cb11-461" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>把 completeness、contamination、contig count、coverage 和 taxonomy 合并到每个功能格子；对 key pathways 做 contig-level review。</span>
-<span id="cb11-462"><a href="#cb11-462" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>预先定义 discordance rule：DRAM/METABOLIC 不一致时回看 raw alignment、alternative KO 和 module definition，不做盲目投票。</span>
-<span id="cb11-463"><a href="#cb11-463" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>若要比较样本或组别，再加入每样本 MAG abundance；presence/absence matrix 本身没有群落权重。</span>
-<span id="cb11-464"><a href="#cb11-464" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若要写 activity、exchange 或 flux，增加同条件 metatranscriptome/metaproteome/metabolome/isotope evidence，或进入 genome-scale model，同时报告 medium 与 thermodynamic assumptions。</span>
-<span id="cb11-465"><a href="#cb11-465" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-466"><a href="#cb11-466" aria-hidden="true" tabindex="-1"></a>最低交付物应包括：input ledger、database manifest、exact environments、commands、gene-level annotations、KO matrix、module coverage matrix、curated-rule matrix、MAG quality audit、discordance review、固化图表和 Methods/Results 文本。这样审稿人可以从一张 pathway heatmap 回到具体 genome、contig、gene 与数据库阈值。</span>
-<span id="cb11-467"><a href="#cb11-467" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-468"><a href="#cb11-468" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-figures}</span></span>
-<span id="cb11-469"><a href="#cb11-469" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-470"><a href="#cb11-470" aria-hidden="true" tabindex="-1"></a>六组图采用 colorblind-safe palette、英文轴标签、嵌入式矢量字体，并同时导出 PDF、350 dpi PNG 和 LZW-compressed TIFF。图形编码遵循以下规则：</span>
+<span id="cb11-457"><a href="#cb11-457" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; DRAM and METABOLIC-G produced non-empty genome-level annotations for all 24 primary MAGs and four prespecified truncation controls. Within the common 2,678-KO identifier universe, the median genome-level KO-set Jaccard index was 0.853 (range, 0.794--0.941). Of 312 genome-level comparisons across 13 shared KEGG modules at the prespecified 0.75 threshold, 307 agreed (98.4%). The median distinct-KO counts were 226.5 for DRAM within the comparison universe and 253.5 for METABOLIC; DRAM detected a median of 931.5 KOs when its full 27,754-profile KOfam search space was retained. At 52.04%, 70.18%, 91.07% and 100% retained parent sequence, DRAM retained 59.04%, 73.93%, 93.87% and 100% of the parent full-KOfam KO set, respectively, whereas METABOLIC retained 64.05%, 78.92%, 95.68% and 100%. No truncation branch gained a new KO, and the sequence-identical 100% control exactly reproduced both parent KO sets. Accordingly, negative pathway calls in lower-completeness MAGs were treated as missing-data-sensitive evidence, and all genome-derived functions were reported as metabolic potential rather than measured activity or flux.</span></span>
+<span id="cb11-458"><a href="#cb11-458" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-459"><a href="#cb11-459" aria-hidden="true" tabindex="-1"></a>Methods 中还应报告：输入 genome 数与选择规则、CheckM2/GUNC gate、GTDB release、gene caller、每个软件版本/commit、每个数据库 release/checksum、module cutoff、CPU/RAM、失败与重跑规则，以及 raw-hit/manual-review protocol。Results 则报告 numerator/denominator 与 disagreement，不能只写“多数 MAG 具有丰富代谢功能”。</span>
+<span id="cb11-460"><a href="#cb11-460" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-461"><a href="#cb11-461" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-462"><a href="#cb11-462" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-463"><a href="#cb11-463" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>准备每个 MAG 一个 FASTA，basename 唯一；建立 <span class="in">`genome_id / sample / binning branch / SHA-256 / CheckM2 / GUNC / GTDB-Tk`</span> ledger。</span>
+<span id="cb11-464"><a href="#cb11-464" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>先定义研究问题：碳利用、氮循环、硫循环、甲烷、抗性或整体 module survey；据此预注册 key genes、必需亚基、motif 与 cutoff。</span>
+<span id="cb11-465"><a href="#cb11-465" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>用同一 Prodigal 和同一 database snapshot 批量注释所有 genomes；数据库在整个 cohort 冻结，不在中途更新。</span>
+<span id="cb11-466"><a href="#cb11-466" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>保存 gene-level raw hits 和 coordinates，再派生 KO/module/trait matrices；不要只保留 Excel summary。</span>
+<span id="cb11-467"><a href="#cb11-467" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>把 completeness、contamination、contig count、coverage 和 taxonomy 合并到每个功能格子；对 key pathways 做 contig-level review。</span>
+<span id="cb11-468"><a href="#cb11-468" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>预先定义 discordance rule：DRAM/METABOLIC 不一致时回看 raw alignment、alternative KO 和 module definition，不做盲目投票。</span>
+<span id="cb11-469"><a href="#cb11-469" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>若要比较样本或组别，再加入每样本 MAG abundance；presence/absence matrix 本身没有群落权重。</span>
+<span id="cb11-470"><a href="#cb11-470" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>若要写 activity、exchange 或 flux，增加同条件 metatranscriptome/metaproteome/metabolome/isotope evidence，或进入 genome-scale model，同时报告 medium 与 thermodynamic assumptions。</span>
 <span id="cb11-471"><a href="#cb11-471" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-472"><a href="#cb11-472" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>module heatmap 用连续色阶表达 coverage，黑色 <span class="in">`×`</span> 单独标记 cutoff-level disagreement；</span>
-<span id="cb11-473"><a href="#cb11-473" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>curated process heatmap 上方加 positive-MAG count，避免把稀有规则与普遍规则看成同等证据；</span>
-<span id="cb11-474"><a href="#cb11-474" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>KO comparison 同时显示 identity line、domain shape、genome-size point area 和 Jaccard color；</span>
-<span id="cb11-475"><a href="#cb11-475" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>completeness audit 不拟合小样本相关线，只标出预先定义的高风险 genomes；</span>
-<span id="cb11-476"><a href="#cb11-476" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>truncation plot 同时显示 sequence、KO 和 module retention，不把二元模块曲线当作连续恢复率；</span>
-<span id="cb11-477"><a href="#cb11-477" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>evidence ladder 的每一级只写允许的 claim ceiling。</span>
-<span id="cb11-478"><a href="#cb11-478" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-479"><a href="#cb11-479" aria-hidden="true" tabindex="-1"></a>若正文版面有限，优先保留 @fig-59-module-heatmap、@fig-59-tool-concordance 和 @fig-59-truncation；其余放补充材料。投稿时 PDF 用于排版，TIFF 满足期刊 raster 要求，PNG 用于网页和公众号。不要从网页截图回填论文。</span>
-<span id="cb11-480"><a href="#cb11-480" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-481"><a href="#cb11-481" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb11-482"><a href="#cb11-482" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-483"><a href="#cb11-483" aria-hidden="true" tabindex="-1"></a>把同源基因、规则通过、模块完整、代谢潜力和真实通量分成五级结论，并用截短 MAG 暴露假阴性。</span>
+<span id="cb11-472"><a href="#cb11-472" aria-hidden="true" tabindex="-1"></a>最低交付物应包括：input ledger、database manifest、exact environments、commands、gene-level annotations、KO matrix、module coverage matrix、curated-rule matrix、MAG quality audit、discordance review、固化图表和 Methods/Results 文本。这样审稿人可以从一张 pathway heatmap 回到具体 genome、contig、gene 与数据库阈值。</span>
+<span id="cb11-473"><a href="#cb11-473" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-474"><a href="#cb11-474" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-figures}</span></span>
+<span id="cb11-475"><a href="#cb11-475" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-476"><a href="#cb11-476" aria-hidden="true" tabindex="-1"></a>六组图采用 colorblind-safe palette、英文轴标签、嵌入式矢量字体，并同时导出 PDF、350 dpi PNG 和 LZW-compressed TIFF。图形编码遵循以下规则：</span>
+<span id="cb11-477"><a href="#cb11-477" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-478"><a href="#cb11-478" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>module heatmap 用连续色阶表达 coverage，黑色 <span class="in">`×`</span> 单独标记 cutoff-level disagreement；</span>
+<span id="cb11-479"><a href="#cb11-479" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>curated process heatmap 上方加 positive-MAG count，避免把稀有规则与普遍规则看成同等证据；</span>
+<span id="cb11-480"><a href="#cb11-480" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>KO comparison 同时显示 identity line、domain shape、genome-size point area 和 Jaccard color；</span>
+<span id="cb11-481"><a href="#cb11-481" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>completeness audit 不拟合小样本相关线，只标出预先定义的高风险 genomes；</span>
+<span id="cb11-482"><a href="#cb11-482" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>truncation plot 同时显示 sequence、KO 和 module retention，不把二元模块曲线当作连续恢复率；</span>
+<span id="cb11-483"><a href="#cb11-483" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>evidence ladder 的每一级只写允许的 claim ceiling。</span>
 <span id="cb11-484"><a href="#cb11-484" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-485"><a href="#cb11-485" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-485"><a href="#cb11-485" aria-hidden="true" tabindex="-1"></a>若正文版面有限，优先保留 @fig-59-module-heatmap、@fig-59-tool-concordance 和 @fig-59-truncation；其余放补充材料。投稿时 PDF 用于排版，TIFF 满足期刊 raster 要求，PNG 用于网页和公众号。不要从网页截图回填论文。</span>
 <span id="cb11-486"><a href="#cb11-486" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-487"><a href="#cb11-487" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DRAM 工作流与 genome-centric distillation <span class="co">[</span><span class="ot">@shaffer2020dram</span><span class="co">]</span></span>
-<span id="cb11-488"><a href="#cb11-488" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>METABOLIC-G、biogeochemical traits 与 community-scale framework <span class="co">[</span><span class="ot">@zhou2022metabolic</span><span class="co">]</span></span>
-<span id="cb11-489"><a href="#cb11-489" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>KOfamKOALA adaptive-threshold profile HMM <span class="co">[</span><span class="ot">@aramaki2020kofamkoala</span><span class="co">]</span></span>
-<span id="cb11-490"><a href="#cb11-490" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>HMMER profile-HMM search <span class="co">[</span><span class="ot">@eddy2011hmmer</span><span class="co">]</span></span>
-<span id="cb11-491"><a href="#cb11-491" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MEROPS peptidase database <span class="co">[</span><span class="ot">@rawlings2014merops</span><span class="co">]</span></span>
-<span id="cb11-492"><a href="#cb11-492" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>dbCAN3 与 CAZyme/substrate annotation <span class="co">[</span><span class="ot">@zheng2023dbcan3</span><span class="co">]</span></span>
-<span id="cb11-493"><a href="#cb11-493" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 genome quality prediction <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
-<span id="cb11-494"><a href="#cb11-494" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB-Tk genome taxonomy <span class="co">[</span><span class="ot">@chaumeil2022gtdbtkv2</span><span class="co">]</span></span>
-<span id="cb11-495"><a href="#cb11-495" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb11-487"><a href="#cb11-487" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb11-488"><a href="#cb11-488" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-489"><a href="#cb11-489" aria-hidden="true" tabindex="-1"></a>把同源基因、规则通过、模块完整、代谢潜力和真实通量分成五级结论，并用截短 MAG 暴露假阴性。</span>
+<span id="cb11-490"><a href="#cb11-490" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-491"><a href="#cb11-491" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-492"><a href="#cb11-492" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-493"><a href="#cb11-493" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DRAM 工作流与 genome-centric distillation <span class="co">[</span><span class="ot">@shaffer2020dram</span><span class="co">]</span></span>
+<span id="cb11-494"><a href="#cb11-494" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>METABOLIC-G、biogeochemical traits 与 community-scale framework <span class="co">[</span><span class="ot">@zhou2022metabolic</span><span class="co">]</span></span>
+<span id="cb11-495"><a href="#cb11-495" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>KOfamKOALA adaptive-threshold profile HMM <span class="co">[</span><span class="ot">@aramaki2020kofamkoala</span><span class="co">]</span></span>
+<span id="cb11-496"><a href="#cb11-496" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>HMMER profile-HMM search <span class="co">[</span><span class="ot">@eddy2011hmmer</span><span class="co">]</span></span>
+<span id="cb11-497"><a href="#cb11-497" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MEROPS peptidase database <span class="co">[</span><span class="ot">@rawlings2014merops</span><span class="co">]</span></span>
+<span id="cb11-498"><a href="#cb11-498" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>dbCAN3 与 CAZyme/substrate annotation <span class="co">[</span><span class="ot">@zheng2023dbcan3</span><span class="co">]</span></span>
+<span id="cb11-499"><a href="#cb11-499" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 genome quality prediction <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
+<span id="cb11-500"><a href="#cb11-500" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GTDB-Tk genome taxonomy <span class="co">[</span><span class="ot">@chaumeil2022gtdbtkv2</span><span class="co">]</span></span>
+<span id="cb11-501"><a href="#cb11-501" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>PRJEB52977 多平台 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->

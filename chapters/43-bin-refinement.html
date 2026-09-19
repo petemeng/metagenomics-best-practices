@@ -134,6 +134,35 @@ div.csl-indent {
 }</script>
 <style>html{ scroll-behavior: smooth; }</style>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -919,7 +948,10 @@ div.csl-indent {
     <h2 id="toc-title">目录</h2>
    
   <ul>
-  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">合并分箱结果，为什么不能把好指标拼在一起？</a></li>
+  <li><a href="#sec-target" id="toc-sec-target" class="nav-link active" data-scroll-target="#sec-target">合并分箱结果，为什么不能把好指标拼在一起？</a>
+  <ul class="collapse">
+  <li><a href="#精炼后的质量必须针对最终序列重新计算" id="toc-精炼后的质量必须针对最终序列重新计算" class="nav-link" data-scroll-target="#精炼后的质量必须针对最终序列重新计算">精炼后的质量必须针对最终序列重新计算</a></li>
+  </ul></li>
   <li><a href="#sec-reader-inputs" id="toc-sec-reader-inputs" class="nav-link" data-scroll-target="#sec-reader-inputs">下载本例数据与分析代码</a></li>
   <li><a href="#sec-setup" id="toc-sec-setup" class="nav-link" data-scroll-target="#sec-setup">先确认系统环境与版本来源</a>
   <ul class="collapse">
@@ -992,7 +1024,7 @@ div.csl-indent {
 
 
 <blockquote class="blockquote">
-<p><strong>先给结论：</strong>精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 <strong>truth-blind</strong> 规则选择：先最大化 CheckM2 &gt;=50%、contamination &lt;10%、GUNC pass 的 bins；平局时最大化这些 bins 的 (sum(completeness-5contamination))，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。</p>
+<p><strong>先给结论：</strong>精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 <strong>truth-blind</strong> 规则选择：先最大化 CheckM2 &gt;=50%、contamination &lt;10%、GUNC pass 的 bins；平局时最大化这些 bins 的 <span class="math inline">\(\sum(\mathrm{completeness}-5\times\mathrm{contamination})\)</span>，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。</p>
 </blockquote>
 <div class="callout callout-style-default callout-important callout-titled" title="算力与数据边界">
 <div class="callout-header d-flex align-content-center">
@@ -1007,13 +1039,13 @@ div.csl-indent {
 <p>本次输入为五套候选 bins、74.93 Mb 共组装，使用 <strong>24 CPU cores</strong>。建议 <strong>96 GB RAM、150 GB 磁盘</strong>，预计耗时 <strong>2–6 小时</strong>；Binette 内部 CheckM2 与精炼后统一 CheckM2/GUNC 是主要算力开销。数据库为 CheckM2 v3 约 3.08 GB 与 GUNC ProGenomes 2.1 大型 DIAMOND 库。没有服务器时，可读取 <code>data/small/43-bin-refinement-frozen/</code> 的 candidate reconstruction、provenance、独立 QC、selection ledger、日志和环境锁。</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-tip callout-titled" title="先确定这一点">
+<div class="callout callout-style-default callout-tip callout-titled" title="精炼后的质量必须针对最终序列重新计算">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">提示</span>先确定这一点
+<span class="screen-reader-only">提示</span>精炼后的质量必须针对最终序列重新计算
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1035,6 +1067,11 @@ div.csl-indent {
 </figure>
 </div>
 <p>DAS Tool 产生 26 个 refined bins，其中 21 个通过 minimum gate；Binette 产生 27 个，其中 23 个通过。预注册 primary criterion 因而直接选择 Binette，不需要启动平局规则；其 passing score sum 也高于 DAS Tool（2,054.76 对 1,882.56）。决定完成后的 mock audit 中，Binette 与 DAS Tool 分别得到 17 和 13 个 HQ proxies。最终 23 个 selected candidates 共覆盖 57,793,968 bp，选择过程中未读取这组真值结果。</p>
+<section id="精炼后的质量必须针对最终序列重新计算" class="level3">
+<h3 class="anchored" data-anchor-id="精炼后的质量必须针对最终序列重新计算">精炼后的质量必须针对最终序列重新计算</h3>
+<p>split 或 merge 改变了 contig 集合，旧 bin 的最佳 completeness 与最低 contamination 不能拼成新 bin 的质量报告。最终序列需要重新评价，并保留每条 contig 来自哪个候选、是否重复进入多个结果。这样才能区分真正改善与同一序列被重复计算。</p>
+<p>Binette 用 CheckM2 参与选择，随后再次用 CheckM2 评分主要验证最终对象的一致性，不是完全独立的方法验证。GUNC、其他质量维度及留到最后的 mock 真值提供不同信息。应把选择用的标准与最终评价用的证据分开说明，不以一个总分替代全部质量检查。</p>
+</section>
 </section>
 <section id="sec-reader-inputs" class="level2">
 <h2 class="anchored" data-anchor-id="sec-reader-inputs">下载本例数据与分析代码</h2>
@@ -1955,13 +1992,13 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="an">reader-mode:</span><span class="co"> upstream</span></span>
 <span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 **truth-blind** 规则选择：先最大化 CheckM2 &gt;=50%、contamination &lt;10%、GUNC pass 的 bins；平局时最大化这些 bins 的 (sum(completeness-5\times contamination))，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **先给结论：**精炼不是把所有 bins 拼在一起，也不是按已知真值挑“最像答案”的结果。五套 checksum-locked partition 在同一 10,203-contig 坐标上重建并逐一核对 SHA-256；DAS Tool 用 single-copy genes 对候选打分和选集，Binette 用 CheckM2 驱动的 split/merge/set operations 寻找更好的组合。最终方法按运行前固定的 **truth-blind** 规则选择：先最大化 CheckM2 &gt;=50%、contamination &lt;10%、GUNC pass 的 bins；平局时最大化这些 bins 的 $\sum(\mathrm{completeness}-5\times\mathrm{contamination})$，仍平局则选 Binette。mock truth 只在决定之后解释 recovery/purity。</span></span>
 <span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>::: {.callout-important title="算力与数据边界"}</span>
 <span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>本次输入为五套候选 bins、74.93 Mb 共组装，使用 **24 CPU cores**。建议 **96 GB RAM、150 GB 磁盘**，预计耗时 **2--6 小时**；Binette 内部 CheckM2 与精炼后统一 CheckM2/GUNC 是主要算力开销。数据库为 CheckM2 v3 约 3.08 GB 与 GUNC ProGenomes 2.1 大型 DIAMOND 库。没有服务器时，可读取 <span class="in">`data/small/43-bin-refinement-frozen/`</span> 的 candidate reconstruction、provenance、独立 QC、selection ledger、日志和环境锁。</span>
 <span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="先确定这一点"}</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>::: {.callout-tip title="精炼后的质量必须针对最终序列重新计算"}</span>
 <span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>记录每个最终 bin 的来源和 contig 成员；选择不能借用已知真值，质量必须对最终序列重新计算。</span>
 <span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a></span>
@@ -1977,297 +2014,303 @@ Meslier, Victoria, Benoit Quinquis, Kévin Da Silva, 等. 2022年. <span>《Benc
 <span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>DAS Tool 产生 26 个 refined bins，其中 21 个通过 minimum gate；Binette 产生 27 个，其中 23 个通过。预注册 primary criterion 因而直接选择 Binette，不需要启动平局规则；其 passing score sum 也高于 DAS Tool（2,054.76 对 1,882.56）。决定完成后的 mock audit 中，Binette 与 DAS Tool 分别得到 17 和 13 个 HQ proxies。最终 23 个 selected candidates 共覆盖 57,793,968 bp，选择过程中未读取这组真值结果。</span>
 <span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a><span class="fu">### 精炼后的质量必须针对最终序列重新计算</span></span>
 <span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/43/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 2.7 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>split 或 merge 改变了 contig 集合，旧 bin 的最佳 completeness 与最低 contamination 不能拼成新 bin 的质量报告。最终序列需要重新评价，并保留每条 contig 来自哪个候选、是否重复进入多个结果。这样才能区分真正改善与同一序列被重复计算。</span>
 <span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/43/download.R)</span>。</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>Binette 用 CheckM2 参与选择，随后再次用 CheckM2 评分主要验证最终对象的一致性，不是完全独立的方法验证。GUNC、其他质量维度及留到最后的 mock 真值提供不同信息。应把选择用的标准与最终评价用的证据分开说明，不以一个总分替代全部质量检查。</span>
 <span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-43</span></span>
-<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
-<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
-<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
-<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/43/files.tsv"</span>))</span>
-<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
-<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
-<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
-<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
-<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
-<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入 lineage</span></span>
-<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 数量/坐标 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
-<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
-<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`42-binning-comparison-frozen`</span> memberships <span class="pp">|</span> MetaBAT2 single/multi、SemiBin2、VAMB、TaxVAMB 共五套 <span class="pp">|</span> 精炼候选集合 <span class="pp">|</span></span>
-<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Common co-assembly <span class="pp">|</span> 10,203 contigs &gt;=1.5 kb；74,932,939 bp <span class="pp">|</span> 重建所有 candidates <span class="pp">|</span></span>
-<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CheckM2 database <span class="pp">|</span> version 3；Zenodo 14897628 <span class="pp">|</span> Binette 内部与独立 QC <span class="pp">|</span></span>
-<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GUNC database <span class="pp">|</span> ProGenomes 2.1 <span class="pp">|</span> 独立 chimerism audit <span class="pp">|</span></span>
-<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Known mock genomes <span class="pp">|</span> PRJEB52977 / ERR9765746 / ERR9765747 <span class="pp">|</span> 选择完成后的 post-hoc audit <span class="pp">|</span></span>
-<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a>版本合同固定为 **DAS Tool 1.1.7、Binette 1.2.1、Prodigal 2.6.3、CheckM2 1.1.0、GUNC 1.1.0**。</span>
-<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
-<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
-<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="at">--file</span> env/assembly-linux-64.lock</span>
-<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-mag-qc-2026.07 <span class="at">--file</span> env/mag-qc-linux-64.lock</span>
-<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gunc-2026.07 <span class="at">--file</span> env/gunc-linux-64.lock</span>
-<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-mag-qc</span>
-<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/44-mag-qc-database-manifest.tsv</span>
-<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
-<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download checkm2-v3</span>
-<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download gunc-progenomes2.1</span>
-<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1"</span></span>
-<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/checkm2-v3/checkm2_database.tar.gz"</span> <span class="dt">\</span></span>
-<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span></span>
-<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd.gz"</span> <span class="dt">\</span></span>
-<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
-<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
-<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="fu">md5sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
-<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
-<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
-<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260743</span>)</span>
-<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"DAS Tool"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Binette"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
-<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Input binner"</span> <span class="ot">=</span> <span class="st">"#999999"</span>, <span class="st">"Refinement"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>)</span>
-<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
-<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
-<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
-<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
-<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
-<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
-<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
-<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
-<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
-<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
-<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
-<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
-<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a><span class="fu">## 从 frozen membership 精确重建输入 bins {#sec-code}</span></span>
-<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入是 partitions，不是互不相关的 FASTA 文件 {#sec-theory}</span></span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a><span class="fu">## 下载本例数据与分析代码 {#sec-reader-inputs}</span></span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">数据与代码清单</span><span class="co">](https://github.com/petemeng/metagenomics-best-practices/blob/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/examples/43/files.tsv)</span>列出了本例的输入表、分析脚本和环境文件（约 2.7 MiB）。本清单不含原始 FASTQ 或大型数据库；是否需要它们取决于下文的分析起点。清单中的已计算结果仅供核对；读取结果表不等于重新运行统计模型或上游工具。</span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>在新建文件夹中运行下面的 R 代码，下载完成后即可按正文中的相对路径读取文件。需要核验文件版本时，可使用<span class="co">[</span><span class="ot">带完整性检查的下载脚本</span><span class="co">](https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/62d27927776d6fd61479767fc219d590fb8259d2/examples/43/download.R)</span>。</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: reader-input-download-43</span></span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a><span class="co">#| eval: false</span></span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">timeout =</span> <span class="dv">600</span>)</span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>base_url <span class="ot">&lt;-</span> <span class="st">"https://raw.githubusercontent.com/petemeng/metagenomics-best-practices/e219a2cd01609cc208a89e291cbd363ed7f2fbd8/"</span></span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>files <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="fu">paste0</span>(base_url, <span class="st">"examples/43/files.tsv"</span>))</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_len</span>(<span class="fu">nrow</span>(files))) {</span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>  path <span class="ot">&lt;-</span> files<span class="sc">$</span>path[i]</span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(path), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(path)) {</span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">download.file</span>(<span class="fu">paste0</span>(base_url, files<span class="sc">$</span>source[i]), path, <span class="at">mode =</span> <span class="st">"wb"</span>)</span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a><span class="fu">## 先确认系统环境与版本来源 {#sec-setup}</span></span>
+<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入 lineage</span></span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> 输入 <span class="pp">|</span> 数量/坐标 <span class="pp">|</span> 作用 <span class="pp">|</span></span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a><span class="pp">|---|---|---|</span></span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> <span class="in">`42-binning-comparison-frozen`</span> memberships <span class="pp">|</span> MetaBAT2 single/multi、SemiBin2、VAMB、TaxVAMB 共五套 <span class="pp">|</span> 精炼候选集合 <span class="pp">|</span></span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Common co-assembly <span class="pp">|</span> 10,203 contigs &gt;=1.5 kb；74,932,939 bp <span class="pp">|</span> 重建所有 candidates <span class="pp">|</span></span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> CheckM2 database <span class="pp">|</span> version 3；Zenodo 14897628 <span class="pp">|</span> Binette 内部与独立 QC <span class="pp">|</span></span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> GUNC database <span class="pp">|</span> ProGenomes 2.1 <span class="pp">|</span> 独立 chimerism audit <span class="pp">|</span></span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a><span class="pp">|</span> Known mock genomes <span class="pp">|</span> PRJEB52977 / ERR9765746 / ERR9765747 <span class="pp">|</span> 选择完成后的 post-hoc audit <span class="pp">|</span></span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a>版本合同固定为 **DAS Tool 1.1.7、Binette 1.2.1、Prodigal 2.6.3、CheckM2 1.1.0、GUNC 1.1.0**。</span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">details</span><span class="ot"> class</span><span class="op">=</span><span class="st">"wechat-omit"</span><span class="dt">&gt;</span></span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">summary</span><span class="dt">&gt;</span>环境配置与完整运行说明<span class="dt">&lt;/</span><span class="kw">summary</span><span class="dt">&gt;</span></span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-assembly-2026.07 <span class="at">--file</span> env/assembly-linux-64.lock</span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-mag-qc-2026.07 <span class="at">--file</span> env/mag-qc-linux-64.lock</span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> create <span class="at">-n</span> metagenome-gunc-2026.07 <span class="at">--file</span> env/gunc-linux-64.lock</span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_ROOT</span><span class="op">=</span>/db/metagenome-mag-qc</span>
+<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DB_MANIFEST</span><span class="op">=</span>data/small/44-mag-qc-database-manifest.tsv</span>
+<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> audit</span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download checkm2-v3</span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a><span class="ex">db/download_db.sh</span> download gunc-progenomes2.1</span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1"</span></span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/checkm2-v3/checkm2_database.tar.gz"</span> <span class="dt">\</span></span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a>  <span class="at">-C</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3"</span></span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-cd</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/archives/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd.gz"</span> <span class="dt">\</span></span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a><span class="fu">sha256sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a><span class="fu">md5sum</span> <span class="st">"</span><span class="va">${DB_ROOT}</span><span class="st">/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">"ggplot2"</span>, <span class="st">"dplyr"</span>, <span class="st">"readr"</span>, <span class="st">"tidyr"</span>, <span class="st">"forcats"</span>, <span class="st">"scales"</span>, <span class="st">"patchwork"</span>))</span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2); <span class="fu">library</span>(dplyr); <span class="fu">library</span>(readr); <span class="fu">library</span>(tidyr); <span class="fu">library</span>(scales)</span>
+<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">20260743</span>)</span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>pal_pub <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"DAS Tool"</span> <span class="ot">=</span> <span class="st">"#0072B2"</span>, <span class="st">"Binette"</span> <span class="ot">=</span> <span class="st">"#D55E00"</span>,</span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a>             <span class="st">"Input binner"</span> <span class="ot">=</span> <span class="st">"#999999"</span>, <span class="st">"Refinement"</span> <span class="ot">=</span> <span class="st">"#009E73"</span>)</span>
+<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a>scale_color_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_color_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a>scale_fill_pub  <span class="ot">&lt;-</span> <span class="cf">function</span>(...) <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> pal_pub, ...)</span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>theme_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">base_size =</span> <span class="dv">12</span>) {</span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_bw</span>(<span class="at">base_size =</span> base_size) <span class="sc">+</span> <span class="fu">theme</span>(</span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>    <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(), <span class="at">panel.grid.major.y =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">color =</span> <span class="st">"black"</span>), <span class="at">legend.key =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a>    <span class="at">strip.background =</span> <span class="fu">element_rect</span>(<span class="at">fill =</span> <span class="st">"#EEF3F5"</span>, <span class="at">color =</span> <span class="cn">NA</span>),</span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.title.position =</span> <span class="st">"plot"</span></span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>save_pub <span class="ot">&lt;-</span> <span class="cf">function</span>(plot, file_base, <span class="at">width =</span> <span class="dv">190</span>, <span class="at">height =</span> <span class="dv">125</span>,</span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a>                     <span class="at">units =</span> <span class="st">"mm"</span>, <span class="at">dpi =</span> <span class="dv">350</span>) {</span>
+<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a>  <span class="fu">dir.create</span>(<span class="fu">dirname</span>(file_base), <span class="at">recursive =</span> <span class="cn">TRUE</span>, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".pdf"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">device =</span> cairo_pdf)</span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".png"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste0</span>(file_base, <span class="st">".tiff"</span>), plot, <span class="at">width =</span> width, <span class="at">height =</span> height,</span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a>         <span class="at">units =</span> units, <span class="at">dpi =</span> dpi, <span class="at">compression =</span> <span class="st">"lzw"</span>, <span class="at">bg =</span> <span class="st">"white"</span>)</span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>  <span class="fu">invisible</span>(plot)</span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>同一条 contig 在每个 binner 分支内只能属于一个 bin，但可在五个分支间重复出现。精炼器消费的是五张 <span class="in">`contig -&gt; bin`</span> 表；如果 contig ID、assembly 版本或 cutoff 不同，集合交并运算失去含义。</span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">details</span><span class="dt">&gt;</span></span>
 <span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
-<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article43"</span></span>
-<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN42</span><span class="op">=</span><span class="st">"data/small/42-binning-comparison-frozen"</span></span>
-<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
-<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_QC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-mag-qc-2026.07"</span></span>
-<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gunc-2026.07"</span></span>
-<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKM2_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
-<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
-<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article43_refinement.py <span class="dt">\</span></span>
-<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">--article42-frozen</span> <span class="st">"</span><span class="va">${FROZEN42}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span></span>
-<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a><span class="fu">## 从 frozen membership 精确重建输入 bins {#sec-code}</span></span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a><span class="fu">### 输入是 partitions，不是互不相关的 FASTA 文件 {#sec-theory}</span></span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-154"><a href="#cb11-154" aria-hidden="true" tabindex="-1"></a>同一条 contig 在每个 binner 分支内只能属于一个 bin，但可在五个分支间重复出现。精炼器消费的是五张 <span class="in">`contig -&gt; bin`</span> 表；如果 contig ID、assembly 版本或 cutoff 不同，集合交并运算失去含义。</span>
+<span id="cb11-155"><a href="#cb11-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-156"><a href="#cb11-156" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-157"><a href="#cb11-157" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT</span><span class="op">=</span><span class="st">"</span><span class="va">$PWD</span><span class="st">"</span></span>
+<span id="cb11-158"><a href="#cb11-158" aria-hidden="true" tabindex="-1"></a><span class="va">WORK</span><span class="op">=</span><span class="st">"work/article43"</span></span>
+<span id="cb11-159"><a href="#cb11-159" aria-hidden="true" tabindex="-1"></a><span class="va">FROZEN42</span><span class="op">=</span><span class="st">"data/small/42-binning-comparison-frozen"</span></span>
+<span id="cb11-160"><a href="#cb11-160" aria-hidden="true" tabindex="-1"></a><span class="va">ASSEMBLY_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-assembly-2026.07"</span></span>
+<span id="cb11-161"><a href="#cb11-161" aria-hidden="true" tabindex="-1"></a><span class="va">MAG_QC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-mag-qc-2026.07"</span></span>
+<span id="cb11-162"><a href="#cb11-162" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_ENV</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/miniconda3/envs/metagenome-gunc-2026.07"</span></span>
+<span id="cb11-163"><a href="#cb11-163" aria-hidden="true" tabindex="-1"></a><span class="va">CHECKM2_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/checkm2-v3/CheckM2_database/uniref100.KO.1.dmnd"</span></span>
+<span id="cb11-164"><a href="#cb11-164" aria-hidden="true" tabindex="-1"></a><span class="va">GUNC_DB</span><span class="op">=</span><span class="st">"/db/metagenome-mag-qc/gunc-progenomes2.1/gunc_db_progenomes2.1.dmnd"</span></span>
 <span id="cb11-165"><a href="#cb11-165" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a>准备器把五套 memberships 写为无表头 two-column contig2bin tables，并用共同 assembly 序列重建 FASTA。每个重建 candidate 必须与固化表中的 <span class="in">`CandidateSHA256`</span> 完全一致。</span>
-<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把不同 assembly 的 bins 输入同一次 refinement"}</span>
-<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a>相同字符串 contig ID 也可能代表不同序列。先核对 assembly checksum、contig length 与 candidate FASTA SHA-256。</span>
-<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-166"><a href="#cb11-166" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/prepare_article43_refinement.py <span class="dt">\</span></span>
+<span id="cb11-167"><a href="#cb11-167" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-168"><a href="#cb11-168" aria-hidden="true" tabindex="-1"></a>  <span class="at">--article42-frozen</span> <span class="st">"</span><span class="va">${FROZEN42}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-169"><a href="#cb11-169" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span></span>
+<span id="cb11-170"><a href="#cb11-170" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-171"><a href="#cb11-171" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. contig2bin 表带普通 header"}</span>
-<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a>DAS Tool/Binette 可能把 <span class="in">`Contig Bin`</span> 当作真实 assignment。用无表头 two-column TSV，或使用工具明确支持的 comment header。</span>
-<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a><span class="fu">## 共享一次 Prodigal proteins</span></span>
+<span id="cb11-172"><a href="#cb11-172" aria-hidden="true" tabindex="-1"></a>准备器把五套 memberships 写为无表头 two-column contig2bin tables，并用共同 assembly 序列重建 FASTA。每个重建 candidate 必须与固化表中的 <span class="in">`CandidateSHA256`</span> 完全一致。</span>
+<span id="cb11-173"><a href="#cb11-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-174"><a href="#cb11-174" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="1. 把不同 assembly 的 bins 输入同一次 refinement"}</span>
+<span id="cb11-175"><a href="#cb11-175" aria-hidden="true" tabindex="-1"></a>相同字符串 contig ID 也可能代表不同序列。先核对 assembly checksum、contig length 与 candidate FASTA SHA-256。</span>
+<span id="cb11-176"><a href="#cb11-176" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-177"><a href="#cb11-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a><span class="ex">prodigal</span> <span class="at">-i</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
-<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
-<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> meta <span class="at">-f</span> gff <span class="at">-o</span> work/article43/inputs/megahit-coassembly.ge1500.genes.gff</span>
-<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-178"><a href="#cb11-178" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="2. contig2bin 表带普通 header"}</span>
+<span id="cb11-179"><a href="#cb11-179" aria-hidden="true" tabindex="-1"></a>DAS Tool/Binette 可能把 <span class="in">`Contig Bin`</span> 当作真实 assignment。用无表头 two-column TSV，或使用工具明确支持的 comment header。</span>
+<span id="cb11-180"><a href="#cb11-180" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-181"><a href="#cb11-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-182"><a href="#cb11-182" aria-hidden="true" tabindex="-1"></a><span class="fu">## 共享一次 Prodigal proteins</span></span>
 <span id="cb11-183"><a href="#cb11-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a>DAS Tool 与 Binette 使用同一 protein file，避免 gene prediction 差异混入方法比较。</span>
-<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 DAS Tool</span></span>
-<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="fu">### DAS Tool 选择“值得保留的输入候选”</span></span>
+<span id="cb11-184"><a href="#cb11-184" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-185"><a href="#cb11-185" aria-hidden="true" tabindex="-1"></a><span class="ex">prodigal</span> <span class="at">-i</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
+<span id="cb11-186"><a href="#cb11-186" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
+<span id="cb11-187"><a href="#cb11-187" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> meta <span class="at">-f</span> gff <span class="at">-o</span> work/article43/inputs/megahit-coassembly.ge1500.genes.gff</span>
+<span id="cb11-188"><a href="#cb11-188" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-189"><a href="#cb11-189" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a>DAS Tool 识别 bacterial/archaeal single-copy genes，计算 completeness、redundancy 与 megabin penalty，再从多个 bin sets 中迭代选择得分较高且互不冲突的 bins <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span>。它擅长从已有候选中做非冗余选择，但受 SCG 数据库和 score threshold 影响。</span>
+<span id="cb11-190"><a href="#cb11-190" aria-hidden="true" tabindex="-1"></a>DAS Tool 与 Binette 使用同一 protein file，避免 gene prediction 差异混入方法比较。</span>
 <span id="cb11-191"><a href="#cb11-191" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a><span class="ex">DAS_Tool</span> <span class="dt">\</span></span>
-<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> metabat1.tsv,metabat_multi.tsv,semibin2.tsv,vamb.tsv,taxvamb.tsv <span class="dt">\</span></span>
-<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a>  <span class="at">-l</span> metabat1,metabat_multi,semibin2,vamb,taxvamb <span class="dt">\</span></span>
-<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
-<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
-<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> work/article43/refinement/dastool/article43 <span class="at">-t</span> 24 <span class="dt">\</span></span>
-<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a>  <span class="at">--score_threshold</span> 0.5 <span class="at">--duplicate_penalty</span> 0.6 <span class="at">--megabin_penalty</span> 0.5 <span class="dt">\</span></span>
-<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a>  <span class="at">--write_bin_evals</span> <span class="at">--write_bins</span></span>
-<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实复现 DAS Tool，再用现代 QC 复核 {#sec-audit}</span></span>
-<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a>DAS Tool 原始 score 基于 SCG completeness/redundancy 与 megabin penalty <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span>。今天应保留该 selection logic，但输出必须再经 CheckM2+GUNC；不能把 DAS score 直接翻译成 MIMAG tier。</span>
-<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 Binette</span></span>
+<span id="cb11-192"><a href="#cb11-192" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 DAS Tool</span></span>
+<span id="cb11-193"><a href="#cb11-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-194"><a href="#cb11-194" aria-hidden="true" tabindex="-1"></a><span class="fu">### DAS Tool 选择“值得保留的输入候选”</span></span>
+<span id="cb11-195"><a href="#cb11-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-196"><a href="#cb11-196" aria-hidden="true" tabindex="-1"></a>DAS Tool 识别 bacterial/archaeal single-copy genes，计算 completeness、redundancy 与 megabin penalty，再从多个 bin sets 中迭代选择得分较高且互不冲突的 bins <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span>。它擅长从已有候选中做非冗余选择，但受 SCG 数据库和 score threshold 影响。</span>
+<span id="cb11-197"><a href="#cb11-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-198"><a href="#cb11-198" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-199"><a href="#cb11-199" aria-hidden="true" tabindex="-1"></a><span class="ex">DAS_Tool</span> <span class="dt">\</span></span>
+<span id="cb11-200"><a href="#cb11-200" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> metabat1.tsv,metabat_multi.tsv,semibin2.tsv,vamb.tsv,taxvamb.tsv <span class="dt">\</span></span>
+<span id="cb11-201"><a href="#cb11-201" aria-hidden="true" tabindex="-1"></a>  <span class="at">-l</span> metabat1,metabat_multi,semibin2,vamb,taxvamb <span class="dt">\</span></span>
+<span id="cb11-202"><a href="#cb11-202" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
+<span id="cb11-203"><a href="#cb11-203" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
+<span id="cb11-204"><a href="#cb11-204" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> work/article43/refinement/dastool/article43 <span class="at">-t</span> 24 <span class="dt">\</span></span>
+<span id="cb11-205"><a href="#cb11-205" aria-hidden="true" tabindex="-1"></a>  <span class="at">--score_threshold</span> 0.5 <span class="at">--duplicate_penalty</span> 0.6 <span class="at">--megabin_penalty</span> 0.5 <span class="dt">\</span></span>
+<span id="cb11-206"><a href="#cb11-206" aria-hidden="true" tabindex="-1"></a>  <span class="at">--write_bin_evals</span> <span class="at">--write_bins</span></span>
+<span id="cb11-207"><a href="#cb11-207" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-208"><a href="#cb11-208" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a><span class="fu">### Binette 可以构造新的 split/merge candidates</span></span>
+<span id="cb11-209"><a href="#cb11-209" aria-hidden="true" tabindex="-1"></a><span class="fu">### 忠实复现 DAS Tool，再用现代 QC 复核 {#sec-audit}</span></span>
 <span id="cb11-210"><a href="#cb11-210" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a>Binette 不只挑原始 bins，还利用候选间的 contig overlap 产生 difference、intersection 与 union 组合，再用 CheckM2 评分 <span class="co">[</span><span class="ot">@mainguy2024binette</span><span class="co">]</span>。这能救回一个被不同 binners 各自污染或拆碎的 genome，也扩大了 multiple-testing/search space，因此必须独立重跑 CheckM2/GUNC，不能直接信内部 score。</span>
+<span id="cb11-211"><a href="#cb11-211" aria-hidden="true" tabindex="-1"></a>DAS Tool 原始 score 基于 SCG completeness/redundancy 与 megabin penalty <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span>。今天应保留该 selection logic，但输出必须再经 CheckM2+GUNC；不能把 DAS score 直接翻译成 MIMAG tier。</span>
 <span id="cb11-212"><a href="#cb11-212" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a><span class="ex">binette</span> <span class="at">-b</span> metabat1.tsv metabat_multi.tsv semibin2.tsv vamb.tsv taxvamb.tsv <span class="dt">\</span></span>
-<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
-<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
-<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> work/article43/refinement/binette <span class="at">--prefix</span> article43 <span class="at">--threads</span> 24 <span class="dt">\</span></span>
-<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_completeness</span> 40 <span class="at">--max_contamination</span> 10 <span class="at">--min_length</span> 200000 <span class="dt">\</span></span>
-<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a>  <span class="at">--contamination_weight</span> 2.0 <span class="at">--checkm2_db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--no-progress</span></span>
-<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a>入口阈值 40% completeness 允许 Binette 构造中间 candidates；这不是最终 MAG cutoff。所有输出随后放回同一 independent QC。</span>
-<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a><span class="fu">### 允许 Binette 搜索，但隔离内部与外部评分</span></span>
-<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a>Binette 内部使用 CheckM2 发现候选。为避免同一 score 既训练/搜索又宣告成功，本篇把最终 FASTA 重新 flatten，以新的输出目录统一跑 CheckM2 和 GUNC，并保留 raw reports。更严格的外部 benchmark 还应使用独立 marker set 或已知真值。</span>
+<span id="cb11-213"><a href="#cb11-213" aria-hidden="true" tabindex="-1"></a><span class="fu">## 运行 Binette</span></span>
+<span id="cb11-214"><a href="#cb11-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-215"><a href="#cb11-215" aria-hidden="true" tabindex="-1"></a><span class="fu">### Binette 可以构造新的 split/merge candidates</span></span>
+<span id="cb11-216"><a href="#cb11-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>Binette 不只挑原始 bins，还利用候选间的 contig overlap 产生 difference、intersection 与 union 组合，再用 CheckM2 评分 <span class="co">[</span><span class="ot">@mainguy2024binette</span><span class="co">]</span>。这能救回一个被不同 binners 各自污染或拆碎的 genome，也扩大了 multiple-testing/search space，因此必须独立重跑 CheckM2/GUNC，不能直接信内部 score。</span>
+<span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-219"><a href="#cb11-219" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-220"><a href="#cb11-220" aria-hidden="true" tabindex="-1"></a><span class="ex">binette</span> <span class="at">-b</span> metabat1.tsv metabat_multi.tsv semibin2.tsv vamb.tsv taxvamb.tsv <span class="dt">\</span></span>
+<span id="cb11-221"><a href="#cb11-221" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> work/article43/inputs/megahit-coassembly.ge1500.fna <span class="dt">\</span></span>
+<span id="cb11-222"><a href="#cb11-222" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> work/article43/inputs/megahit-coassembly.ge1500.proteins.faa <span class="dt">\</span></span>
+<span id="cb11-223"><a href="#cb11-223" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> work/article43/refinement/binette <span class="at">--prefix</span> article43 <span class="at">--threads</span> 24 <span class="dt">\</span></span>
+<span id="cb11-224"><a href="#cb11-224" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min_completeness</span> 40 <span class="at">--max_contamination</span> 10 <span class="at">--min_length</span> 200000 <span class="dt">\</span></span>
+<span id="cb11-225"><a href="#cb11-225" aria-hidden="true" tabindex="-1"></a>  <span class="at">--contamination_weight</span> 2.0 <span class="at">--checkm2_db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--no-progress</span></span>
+<span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a><span class="fu">## 统一 CheckM2/GUNC 并做 provenance</span></span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>入口阈值 40% completeness 允许 Binette 构造中间 candidates；这不是最终 MAG cutoff。所有输出随后放回同一 independent QC。</span>
 <span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article43_refinement.py <span class="dt">\</span></span>
-<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="at">--gunc-env</span> <span class="st">"</span><span class="va">${GUNC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--gunc-db</span> <span class="st">"</span><span class="va">${GUNC_DB}</span><span class="st">"</span> <span class="at">--threads</span> 24</span>
+<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a><span class="fu">### 允许 Binette 搜索，但隔离内部与外部评分</span></span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>Binette 内部使用 CheckM2 发现候选。为避免同一 score 既训练/搜索又宣告成功，本篇把最终 FASTA 重新 flatten，以新的输出目录统一跑 CheckM2 和 GUNC，并保留 raw reports。更严格的外部 benchmark 还应使用独立 marker set 或已知真值。</span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a><span class="fu">## 统一 CheckM2/GUNC 并做 provenance</span></span>
 <span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article43_refinement.py <span class="dt">\</span></span>
-<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>  <span class="at">--article42-frozen</span> <span class="st">"</span><span class="va">${FROZEN42}</span><span class="st">"</span></span>
-<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a><span class="in">`refinement-provenance-links.tsv.gz`</span> 对每个 refined bin 记录与所有 input candidates 的 overlap bp；<span class="in">`refinement-provenance.tsv`</span> 汇总 contributing branches、dominant source 与 coverage。</span>
-<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 refined bin 的 dominant input coverage 与 overlapping input-bin 数；来源不明的“新 bin”会立即暴露。](../figures/43-refinement-provenance.png)</span>{#fig-43-provenance}</span>
-<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 只比较 refined bin 总数"}</span>
-<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a>低 completeness、小 bin 或 GUNC-fail 也会增加总数。主 endpoint 必须是预定义 quality-pass bins，并报告全部 exclusions。</span>
-<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/run_article43_refinement.py <span class="dt">\</span></span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>  <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="at">--assembly-env</span> <span class="st">"</span><span class="va">${ASSEMBLY_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mag-qc-env</span> <span class="st">"</span><span class="va">${MAG_QC_ENV}</span><span class="st">"</span> <span class="at">--gunc-env</span> <span class="st">"</span><span class="va">${GUNC_ENV}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a>  <span class="at">--checkm2-db</span> <span class="st">"</span><span class="va">${CHECKM2_DB}</span><span class="st">"</span> <span class="at">--gunc-db</span> <span class="st">"</span><span class="va">${GUNC_DB}</span><span class="st">"</span> <span class="at">--threads</span> 24</span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/summarize_article43_refinement.py <span class="dt">\</span></span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>  <span class="at">--article42-frozen</span> <span class="st">"</span><span class="va">${FROZEN42}</span><span class="st">"</span></span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a><span class="in">`refinement-provenance-links.tsv.gz`</span> 对每个 refined bin 记录与所有 input candidates 的 overlap bp；<span class="in">`refinement-provenance.tsv`</span> 汇总 contributing branches、dominant source 与 coverage。</span>
 <span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. Binette 内部 CheckM2 后不再独立 QC"}</span>
-<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>搜索 score 与验收 score 完全共用会产生乐观偏差。至少重跑 CheckM2，并加入 GUNC；有 truth 时再做 post-hoc audit。</span>
-<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a>:::</span>
-<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a><span class="fu">## 复核预注册 selection ledger</span></span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a><span class="al">![每个 refined bin 的 dominant input coverage 与 overlapping input-bin 数；来源不明的“新 bin”会立即暴露。](../figures/43-refinement-provenance.png)</span>{#fig-43-provenance}</span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="3. 只比较 refined bin 总数"}</span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a>低 completeness、小 bin 或 GUNC-fail 也会增加总数。主 endpoint 必须是预定义 quality-pass bins，并报告全部 exclusions。</span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
-<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/43-bin-refinement-frozen"</span></span>
-<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a>selection <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"final-method-selection.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a>selected <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"selected-mag-candidates.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(selection<span class="sc">$</span>MockTruthUsed <span class="sc">==</span> <span class="st">"No"</span>)</span>
-<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(selected) <span class="sc">==</span> selection<span class="sc">$</span>SelectedBins)</span>
-<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(selected<span class="sc">$</span>ReferenceFreeMinimumPass))</span>
-<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
-<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a><span class="al">![primary criterion 先比较 minimum-pass bins；只有平局才查看预注册 score sum。](../figures/43-method-selection.png)</span>{#fig-43-selection}</span>
-<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“精炼后更多”升级为 non-overlap ledger</span></span>
-<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a>每个 refinement method 内必须满足 contig 唯一；最终 selected membership 也必须唯一。若两个优质 bins 共享 contig，数量不能简单相加，必须解决冲突或标记 alternative representatives。</span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="4. Binette 内部 CheckM2 后不再独立 QC"}</span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>搜索 score 与验收 score 完全共用会产生乐观偏差。至少重跑 CheckM2，并加入 GUNC；有 truth 时再做 post-hoc audit。</span>
+<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-259"><a href="#cb11-259" aria-hidden="true" tabindex="-1"></a><span class="fu">## 复核预注册 selection ledger</span></span>
+<span id="cb11-260"><a href="#cb11-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-261"><a href="#cb11-261" aria-hidden="true" tabindex="-1"></a><span class="in">```r</span></span>
+<span id="cb11-262"><a href="#cb11-262" aria-hidden="true" tabindex="-1"></a>frozen <span class="ot">&lt;-</span> <span class="st">"data/small/43-bin-refinement-frozen"</span></span>
+<span id="cb11-263"><a href="#cb11-263" aria-hidden="true" tabindex="-1"></a>selection <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"final-method-selection.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-264"><a href="#cb11-264" aria-hidden="true" tabindex="-1"></a>selected <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_tsv</span>(<span class="fu">file.path</span>(frozen, <span class="st">"selected-mag-candidates.tsv"</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb11-265"><a href="#cb11-265" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(selection<span class="sc">$</span>MockTruthUsed <span class="sc">==</span> <span class="st">"No"</span>)</span>
+<span id="cb11-266"><a href="#cb11-266" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(selected) <span class="sc">==</span> selection<span class="sc">$</span>SelectedBins)</span>
+<span id="cb11-267"><a href="#cb11-267" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">all</span>(selected<span class="sc">$</span>ReferenceFreeMinimumPass))</span>
+<span id="cb11-268"><a href="#cb11-268" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-269"><a href="#cb11-269" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 用 mock truth 选择方法却不披露"}</span>
-<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a>这会把 benchmark test set 变成 tuning set。选择规则、tie-break 与 truth access time 都应写进合同。</span>
-<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-270"><a href="#cb11-270" aria-hidden="true" tabindex="-1"></a><span class="al">![primary criterion 先比较 minimum-pass bins；只有平局才查看预注册 score sum。](../figures/43-method-selection.png)</span>{#fig-43-selection}</span>
+<span id="cb11-271"><a href="#cb11-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-272"><a href="#cb11-272" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从“精炼后更多”升级为 non-overlap ledger</span></span>
 <span id="cb11-273"><a href="#cb11-273" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总质量结果并检查图表</span></span>
+<span id="cb11-274"><a href="#cb11-274" aria-hidden="true" tabindex="-1"></a>每个 refinement method 内必须满足 contig 唯一；最终 selected membership 也必须唯一。若两个优质 bins 共享 contig，数量不能简单相加，必须解决冲突或标记 alternative representatives。</span>
 <span id="cb11-275"><a href="#cb11-275" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a><span class="fu">### “更多 MAGs”必须附带非重叠与来源记录表</span></span>
-<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a>一个 refined partition 的每条 contig 只能出现一次；每个 refined bin 都应记录所有 overlapping input bins、overlap bp、dominant source 与 contributing branches。若只留下最终 FASTA，无法判断它是原样保留、拆分还是跨方法合并。</span>
+<span id="cb11-276"><a href="#cb11-276" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="5. 用 mock truth 选择方法却不披露"}</span>
+<span id="cb11-277"><a href="#cb11-277" aria-hidden="true" tabindex="-1"></a>这会把 benchmark test set 变成 tuning set。选择规则、tie-break 与 truth access time 都应写进合同。</span>
+<span id="cb11-278"><a href="#cb11-278" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-279"><a href="#cb11-279" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
-<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article43_refinement.py <span class="dt">\</span></span>
-<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
-<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/43-bin-refinement-frozen</span>
-<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article43_refinement.R <span class="dt">\</span></span>
-<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/43-bin-refinement-frozen <span class="at">--output-dir</span> figures</span>
-<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article43_refinement.py <span class="dt">\</span></span>
-<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--frozen-dir</span> data/small/43-bin-refinement-frozen <span class="dt">\</span></span>
-<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/43-bin-refinement <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
-<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/43-bin-refinement.qmd</span>
-<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb11-280"><a href="#cb11-280" aria-hidden="true" tabindex="-1"></a><span class="fu">## 汇总质量结果并检查图表</span></span>
+<span id="cb11-281"><a href="#cb11-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-282"><a href="#cb11-282" aria-hidden="true" tabindex="-1"></a><span class="fu">### “更多 MAGs”必须附带非重叠与来源记录表</span></span>
+<span id="cb11-283"><a href="#cb11-283" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-284"><a href="#cb11-284" aria-hidden="true" tabindex="-1"></a>一个 refined partition 的每条 contig 只能出现一次；每个 refined bin 都应记录所有 overlapping input bins、overlap bp、dominant source 与 contributing branches。若只留下最终 FASTA，无法判断它是原样保留、拆分还是跨方法合并。</span>
+<span id="cb11-285"><a href="#cb11-285" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-286"><a href="#cb11-286" aria-hidden="true" tabindex="-1"></a><span class="in">```bash</span></span>
+<span id="cb11-287"><a href="#cb11-287" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/freeze_article43_refinement.py <span class="dt">\</span></span>
+<span id="cb11-288"><a href="#cb11-288" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--work-dir</span> <span class="st">"</span><span class="va">${WORK}</span><span class="st">"</span> <span class="dt">\</span></span>
+<span id="cb11-289"><a href="#cb11-289" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> data/small/43-bin-refinement-frozen</span>
+<span id="cb11-290"><a href="#cb11-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-291"><a href="#cb11-291" aria-hidden="true" tabindex="-1"></a><span class="ex">Rscript</span> scripts/plot_article43_refinement.R <span class="dt">\</span></span>
+<span id="cb11-292"><a href="#cb11-292" aria-hidden="true" tabindex="-1"></a>  <span class="at">--input-dir</span> data/small/43-bin-refinement-frozen <span class="at">--output-dir</span> figures</span>
 <span id="cb11-293"><a href="#cb11-293" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a><span class="al">![两个 refinement outputs 的 CheckM2 completeness、contamination 与 GUNC status；绿色区域不是 MIMAG high-quality。](../figures/43-quality-landscape.png)</span>{#fig-43-quality}</span>
-<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 mock truth ranking 升级为 predeclared choice</span></span>
-<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a>已知 truth 能揭示 marker-based QC 漏掉的错误，却不应在同一 benchmark 中承担 tuning 与 testing。自然数据没有 truth，因此 primary selection 只用可迁移的 CheckM2/GUNC rule；truth audit 用于理解规则何时失败。</span>
+<span id="cb11-294"><a href="#cb11-294" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> scripts/validate_article43_refinement.py <span class="dt">\</span></span>
+<span id="cb11-295"><a href="#cb11-295" aria-hidden="true" tabindex="-1"></a>  <span class="at">--project-root</span> <span class="st">"</span><span class="va">${ROOT}</span><span class="st">"</span> <span class="at">--frozen-dir</span> data/small/43-bin-refinement-frozen <span class="dt">\</span></span>
+<span id="cb11-296"><a href="#cb11-296" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> results/43-bin-refinement <span class="at">--figure-dir</span> figures <span class="dt">\</span></span>
+<span id="cb11-297"><a href="#cb11-297" aria-hidden="true" tabindex="-1"></a>  <span class="at">--chapter</span> chapters/43-bin-refinement.qmd</span>
+<span id="cb11-298"><a href="#cb11-298" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb11-299"><a href="#cb11-299" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 丢失来源链"}</span>
-<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a>最终 FASTA 必须能追到 input branch、input candidate、overlap bp、refinement command 和 checksum，否则无法人工校正。</span>
-<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb11-300"><a href="#cb11-300" aria-hidden="true" tabindex="-1"></a><span class="al">![两个 refinement outputs 的 CheckM2 completeness、contamination 与 GUNC status；绿色区域不是 MIMAG high-quality。](../figures/43-quality-landscape.png)</span>{#fig-43-quality}</span>
+<span id="cb11-301"><a href="#cb11-301" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-302"><a href="#cb11-302" aria-hidden="true" tabindex="-1"></a><span class="fu">### 从 mock truth ranking 升级为 predeclared choice</span></span>
 <span id="cb11-303"><a href="#cb11-303" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保留候选来源与精炼依据 {#sec-methods}</span></span>
+<span id="cb11-304"><a href="#cb11-304" aria-hidden="true" tabindex="-1"></a>已知 truth 能揭示 marker-based QC 漏掉的错误，却不应在同一 benchmark 中承担 tuning 与 testing。自然数据没有 truth，因此 primary selection 只用可迁移的 CheckM2/GUNC rule；truth audit 用于理解规则何时失败。</span>
 <span id="cb11-305"><a href="#cb11-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
-<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Five checksum-reconstructed bin partitions generated from the same 10,203-contig (74,932,939-bp) MEGAHIT v1.2.9 co-assembly of PRJEB52977 runs ERR9765746 and ERR9765747 were refined. Protein-coding genes were predicted once with Prodigal v2.6.3 in metagenomic mode and supplied to both refiners. DAS Tool v1.1.7 was run with score threshold 0.5, duplicate penalty 0.6, megabin penalty 0.5, and 24 threads. Binette v1.2.1 was run with minimum intermediate completeness 40%, maximum contamination 10%, minimum length 200 kb, contamination weight 2.0, CheckM2 v1.1.0 database version 3, and 24 threads. All DAS Tool and Binette outputs were independently re-evaluated with CheckM2 v1.1.0 database version 3 and GUNC v1.1.0 ProGenomes 2.1. The primary selection rule maximized bins with completeness &gt;=50%, contamination &lt;10%, and </span><span class="in">`pass.GUNC=TRUE`</span><span class="at">; ties maximized the sum of completeness minus five times contamination among passing bins, followed by a prespecified Binette tie-break. Known mock references were withheld from refinement and selection and used only for post-hoc recovery/purity auditing. Contig-level provenance, non-overlap, commands, database checksums, resources, and FASTA checksums were retained.</span></span>
+<span id="cb11-306"><a href="#cb11-306" aria-hidden="true" tabindex="-1"></a>::: {.callout-caution title="6. 丢失来源链"}</span>
+<span id="cb11-307"><a href="#cb11-307" aria-hidden="true" tabindex="-1"></a>最终 FASTA 必须能追到 input branch、input candidate、overlap bp、refinement command 和 checksum，否则无法人工校正。</span>
+<span id="cb11-308"><a href="#cb11-308" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb11-309"><a href="#cb11-309" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-310"><a href="#cb11-310" aria-hidden="true" tabindex="-1"></a><span class="fu">## 保留候选来源与精炼依据 {#sec-methods}</span></span>
 <span id="cb11-311"><a href="#cb11-311" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; DAS Tool and Binette produced 26 and 27 non-overlapping refined bins, respectively, from the same five input partitions. Independent CheckM2 and GUNC reassessment retained 21 DAS Tool and 23 Binette bins at the prespecified minimum criterion; Binette was therefore selected by the primary endpoint without invoking a tie-break. The corresponding prespecified score sums were 1,882.56 and 2,054.76. The 23 selected Binette candidates covered 57,793,968 assembled bp. In the post-hoc known-truth audit, DAS Tool and Binette yielded 13 and 17 HQ proxies, respectively, but these values were not used for selection. Shared Prodigal prediction, DAS Tool, Binette, independent CheckM2, and GUNC required 1,100.60, 32.95, 540.69, 648.02, and 1,681.44 s, with peak RAM values of 0.058, 0.427, 8.849, 9.820, and 8.839 GiB, respectively. Each refined candidate retained complete overlap-bp provenance to its contributing input bins.</span></span>
+<span id="cb11-312"><a href="#cb11-312" aria-hidden="true" tabindex="-1"></a><span class="fu">### Methods template</span></span>
 <span id="cb11-313"><a href="#cb11-313" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; Five checksum-reconstructed bin partitions generated from the same 10,203-contig (74,932,939-bp) MEGAHIT v1.2.9 co-assembly of PRJEB52977 runs ERR9765746 and ERR9765747 were refined. Protein-coding genes were predicted once with Prodigal v2.6.3 in metagenomic mode and supplied to both refiners. DAS Tool v1.1.7 was run with score threshold 0.5, duplicate penalty 0.6, megabin penalty 0.5, and 24 threads. Binette v1.2.1 was run with minimum intermediate completeness 40%, maximum contamination 10%, minimum length 200 kb, contamination weight 2.0, CheckM2 v1.1.0 database version 3, and 24 threads. All DAS Tool and Binette outputs were independently re-evaluated with CheckM2 v1.1.0 database version 3 and GUNC v1.1.0 ProGenomes 2.1. The primary selection rule maximized bins with completeness &gt;=50%, contamination &lt;10%, and </span><span class="in">`pass.GUNC=TRUE`</span><span class="at">; ties maximized the sum of completeness minus five times contamination among passing bins, followed by a prespecified Binette tie-break. Known mock references were withheld from refinement and selection and used only for post-hoc recovery/purity auditing. Contig-level provenance, non-overlap, commands, database checksums, resources, and FASTA checksums were retained.</span></span>
 <span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>确保所有 input binsets 来自同一 checksum-locked assembly 和 contig cutoff。</span>
-<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>为每套 input 写无表头 <span class="in">`contig&lt;TAB&gt;bin`</span>，检查分支内每条 contig 只出现一次。</span>
-<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>共享一份 Prodigal proteins，使 refiners 的 gene evidence 可比。</span>
-<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>在看结果前固定 DAS Tool penalties、Binette search thresholds、final pass rule 与 tie-break。</span>
-<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>所有 refined outputs 统一重跑 CheckM2+GUNC；不要直接比较各工具内部 quality label。</span>
-<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>输出每个 refined bin 的全量 overlap provenance，并审计 selected membership 不重叠。</span>
-<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>有 isolate/mock truth 时只做独立 post-hoc audit；无 truth 时可用 read recruitment、coverage uniformity 与 assembly graph 增加证据。</span>
-<span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>对最终 selected candidates 继续做完整 MIMAG 审计，不要在精炼阶段提前称为 high-quality MAGs。</span>
-<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
-<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>input binners 与 refinement methods 用不同 stage 色，避免读者把七根柱当七个同级算法。</span>
-<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>quality scatter 显示 completeness、contamination、GUNC、bin size 四个维度；阈值区域只作参考。</span>
-<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>provenance 图的 x 轴用 overlapping input-bin 数，y 轴用 dominant input coverage (%)，并在表中另存 contributing branches。</span>
-<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>method-selection 图拆为 primary count 与 tie-break score，标题明确 selected method 和 truth 未参与。</span>
-<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内全部使用英文 ASCII labels；候选 ID 不承诺 taxonomy。</span>
-<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>同时导出 PDF、350-dpi PNG 与 LZW TIFF。</span>
-<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
-<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a>精炼不是合并所有 bins：比较 DAS Tool 的 SCG 选集与 Binette 的集合运算，并用预注册规则选择不重叠候选。</span>
-<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="fu">### Results template</span></span>
+<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; DAS Tool and Binette produced 26 and 27 non-overlapping refined bins, respectively, from the same five input partitions. Independent CheckM2 and GUNC reassessment retained 21 DAS Tool and 23 Binette bins at the prespecified minimum criterion; Binette was therefore selected by the primary endpoint without invoking a tie-break. The corresponding prespecified score sums were 1,882.56 and 2,054.76. The 23 selected Binette candidates covered 57,793,968 assembled bp. In the post-hoc known-truth audit, DAS Tool and Binette yielded 13 and 17 HQ proxies, respectively, but these values were not used for selection. Shared Prodigal prediction, DAS Tool, Binette, independent CheckM2, and GUNC required 1,100.60, 32.95, 540.69, 648.02, and 1,681.44 s, with peak RAM values of 0.058, 0.427, 8.849, 9.820, and 8.839 GiB, respectively. Each refined candidate retained complete overlap-bp provenance to its contributing input bins.</span></span>
+<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a><span class="fu">## 换到自己的研究中，先检查哪些条件？ {#sec-own-data}</span></span>
+<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>确保所有 input binsets 来自同一 checksum-locked assembly 和 contig cutoff。</span>
+<span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>为每套 input 写无表头 <span class="in">`contig&lt;TAB&gt;bin`</span>，检查分支内每条 contig 只出现一次。</span>
+<span id="cb11-324"><a href="#cb11-324" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>共享一份 Prodigal proteins，使 refiners 的 gene evidence 可比。</span>
+<span id="cb11-325"><a href="#cb11-325" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>在看结果前固定 DAS Tool penalties、Binette search thresholds、final pass rule 与 tie-break。</span>
+<span id="cb11-326"><a href="#cb11-326" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>所有 refined outputs 统一重跑 CheckM2+GUNC；不要直接比较各工具内部 quality label。</span>
+<span id="cb11-327"><a href="#cb11-327" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>输出每个 refined bin 的全量 overlap provenance，并审计 selected membership 不重叠。</span>
+<span id="cb11-328"><a href="#cb11-328" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>有 isolate/mock truth 时只做独立 post-hoc audit；无 truth 时可用 read recruitment、coverage uniformity 与 assembly graph 增加证据。</span>
+<span id="cb11-329"><a href="#cb11-329" aria-hidden="true" tabindex="-1"></a><span class="ss">8. </span>对最终 selected candidates 继续做完整 MIMAG 审计，不要在精炼阶段提前称为 high-quality MAGs。</span>
+<span id="cb11-330"><a href="#cb11-330" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-331"><a href="#cb11-331" aria-hidden="true" tabindex="-1"></a><span class="fu">## 图中应该保留哪些信息？ {#sec-publication}</span></span>
+<span id="cb11-332"><a href="#cb11-332" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-333"><a href="#cb11-333" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>input binners 与 refinement methods 用不同 stage 色，避免读者把七根柱当七个同级算法。</span>
+<span id="cb11-334"><a href="#cb11-334" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>quality scatter 显示 completeness、contamination、GUNC、bin size 四个维度；阈值区域只作参考。</span>
+<span id="cb11-335"><a href="#cb11-335" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>provenance 图的 x 轴用 overlapping input-bin 数，y 轴用 dominant input coverage (%)，并在表中另存 contributing branches。</span>
+<span id="cb11-336"><a href="#cb11-336" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>method-selection 图拆为 primary count 与 tie-break score，标题明确 selected method 和 truth 未参与。</span>
+<span id="cb11-337"><a href="#cb11-337" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>图内全部使用英文 ASCII labels；候选 ID 不承诺 taxonomy。</span>
+<span id="cb11-338"><a href="#cb11-338" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>同时导出 PDF、350-dpi PNG 与 LZW TIFF。</span>
 <span id="cb11-339"><a href="#cb11-339" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DAS Tool <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span></span>
-<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Binette <span class="co">[</span><span class="ot">@mainguy2024binette</span><span class="co">]</span></span>
-<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
-<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GUNC <span class="co">[</span><span class="ot">@orakov2021gunc</span><span class="co">]</span></span>
-<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span></span>
-<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真实 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
+<span id="cb11-340"><a href="#cb11-340" aria-hidden="true" tabindex="-1"></a><span class="fu">## 回到最初的问题</span></span>
+<span id="cb11-341"><a href="#cb11-341" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-342"><a href="#cb11-342" aria-hidden="true" tabindex="-1"></a>精炼不是合并所有 bins：比较 DAS Tool 的 SCG 选集与 Binette 的集合运算，并用预注册规则选择不重叠候选。</span>
+<span id="cb11-343"><a href="#cb11-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-344"><a href="#cb11-344" aria-hidden="true" tabindex="-1"></a><span class="fu">## 参考文献 {#sec-references}</span></span>
+<span id="cb11-345"><a href="#cb11-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-346"><a href="#cb11-346" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>DAS Tool <span class="co">[</span><span class="ot">@sieber2018dastool</span><span class="co">]</span></span>
+<span id="cb11-347"><a href="#cb11-347" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Binette <span class="co">[</span><span class="ot">@mainguy2024binette</span><span class="co">]</span></span>
+<span id="cb11-348"><a href="#cb11-348" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>CheckM2 <span class="co">[</span><span class="ot">@chklovski2023checkm2</span><span class="co">]</span></span>
+<span id="cb11-349"><a href="#cb11-349" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>GUNC <span class="co">[</span><span class="ot">@orakov2021gunc</span><span class="co">]</span></span>
+<span id="cb11-350"><a href="#cb11-350" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>MIMAG <span class="co">[</span><span class="ot">@bowers2017mimag</span><span class="co">]</span></span>
+<span id="cb11-351"><a href="#cb11-351" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>真实 uneven microbial mocks <span class="co">[</span><span class="ot">@meslier2022platforms</span><span class="co">]</span></span>
 </code></pre></div><button title="复制到剪贴板" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></div>
 </div></div></div></div></div>
 </div> <!-- /content -->
